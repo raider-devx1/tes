@@ -2,15 +2,16 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Models\Jurnal;
+use App\Models\User;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 
-class JurnalSiswaController extends Controller
+class JurnalController extends Controller
 {
-    // Menampilkan daftar jurnal milik siswa yang sedang login
-    public function index()
+    // ====== ROLE: SISWA PKL (mengisi jurnal harian) ======
+    public function indexSiswa()
     {
         $jurnals = Jurnal::where('siswa_id', Auth::id())
                          ->orderBy('hari_tanggal', 'desc')
@@ -18,24 +19,21 @@ class JurnalSiswaController extends Controller
         return view('siswa.jurnal.index', compact('jurnals'));
     }
 
-    // Menampilkan form tambah jurnal
-    public function create()
+    public function createSiswa()
     {
         return view('siswa.jurnal.create');
     }
 
-    // Menyimpan data jurnal beserta foto dokumentasi
-    public function store(Request $request)
+    public function storeSiswa(Request $request)
     {
         $request->validate([
             'hari_tanggal' => 'required|date',
             'unit_kerja' => 'required|string|max:255',
             'deskripsi_pekerjaan' => 'required|string',
-            'dokumentasi' => 'nullable|image|mimes:jpeg,png,jpg|max:2048', // Maksimal 2MB
+            'dokumentasi' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
         ]);
 
         $path = null;
-        // Proses upload foto jika siswa melampirkan foto
         if ($request->hasFile('dokumentasi')) {
             $path = $request->file('dokumentasi')->store('dokumentasi_jurnal', 'public');
         }
@@ -46,17 +44,16 @@ class JurnalSiswaController extends Controller
             'unit_kerja' => $request->unit_kerja,
             'deskripsi_pekerjaan' => $request->deskripsi_pekerjaan,
             'dokumentasi' => $path,
-            'status_persetujuan' => 'pending', // Status default menunggu instruktur
+            'status_persetujuan' => 'pending',
         ]);
 
         return redirect()->route('siswa.jurnal.index')->with('success', 'Jurnal harian berhasil ditambahkan!');
     }
 
-    // Menghapus jurnal (hanya bisa jika belum disetujui)
-    public function destroy($id)
+    public function destroySiswa($id)
     {
         $jurnal = Jurnal::where('id', $id)->where('siswa_id', Auth::id())->firstOrFail();
-        
+
         if ($jurnal->status_persetujuan !== 'pending') {
             return redirect()->back()->with('error', 'Jurnal yang sudah disetujui/direvisi tidak bisa dihapus.');
         }
@@ -64,8 +61,27 @@ class JurnalSiswaController extends Controller
         if ($jurnal->dokumentasi) {
             Storage::disk('public')->delete($jurnal->dokumentasi);
         }
-        
+
         $jurnal->delete();
         return redirect()->route('siswa.jurnal.index')->with('success', 'Jurnal harian berhasil dihapus!');
+    }
+
+    // ====== ROLE: INSTRUKTUR INDUSTRI (persetujuan jurnal) ======
+    public function indexInstruktur()
+    {
+        $siswaIds = User::where('instruktur_id', Auth::id())->pluck('id');
+        $jurnals = Jurnal::whereIn('siswa_id', $siswaIds)->orderBy('hari_tanggal', 'desc')->get();
+        return view('instruktur.jurnal.index', compact('jurnals'));
+    }
+
+    public function updateInstruktur(Request $request, $id)
+    {
+        $jurnal = Jurnal::findOrFail($id);
+        $jurnal->update([
+            'status_persetujuan' => $request->status_persetujuan,
+            'catatan_instruktur' => $request->catatan_instruktur,
+            'disetujui_oleh' => Auth::id(),
+        ]);
+        return redirect()->back()->with('success', 'Status Jurnal diperbarui!');
     }
 }
