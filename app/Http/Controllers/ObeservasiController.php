@@ -25,21 +25,21 @@ class ObservasiController extends Controller
     public function storeGuru(Request $request)
     {
         $request->validate([
-            'user_id' => 'required|exists:users,id',
-            'hari_tanggal' => 'required|date',
+            'user_id'          => 'required|exists:users,id',
+            'hari_tanggal'     => 'required|date',
             'pekerjaan_projek' => 'nullable|string|max:255',
-            'permasalahan' => 'required|string',
-            'solusi' => 'required|string',
+            'permasalahan'     => 'required|string',
+            'solusi'           => 'required|string',
         ]);
 
         Observasi::create([
-            'user_id' => $request->user_id,
-            'guru_id' => Auth::id(),
-            'hari_tanggal' => $request->hari_tanggal,
+            'user_id'          => $request->user_id,
+            'guru_id'          => Auth::id(),
+            'hari_tanggal'     => $request->hari_tanggal,
             'pekerjaan_projek' => $request->pekerjaan_projek,
-            'permasalahan' => $request->permasalahan,
-            'solusi' => $request->solusi,
-            'is_approved' => false,
+            'permasalahan'     => $request->permasalahan,
+            'solusi'           => $request->solusi,
+            'is_approved'      => false,
         ]);
 
         return redirect()->route('guru.observasi.index')->with('success', 'Data observasi berhasil disimpan.');

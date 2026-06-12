@@ -11,7 +11,7 @@
                 <div class="p-6 text-gray-900">
                     
                     <div class="flex justify-end mb-6">
-                        <a href="{{ route('siswa.cetak.observasi') }}" target="_blank" class="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700">
+                        <a href="{{ route('cetak.observasi') }}" target="_blank" class="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700">
                             Cetak PDF
                         </a>
                     </div>

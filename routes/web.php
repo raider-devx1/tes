@@ -46,9 +46,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    // ---- CETAK PDF (global) ----
-    Route::get('/cetak/jurnal/{siswa_id}', [CetakPdfController::class, 'cetakJurnal'])->name('cetak.jurnal');
-    Route::get('/cetak/nilai/{siswa_id}', [CetakPdfController::class, 'cetakNilai'])->name('cetak.nilai');
+    // ---- CETAK PDF (semua role: siswa/guru/instruktur/admin) ----
+    // siswa: tanpa param (otomatis dirinya). guru/instruktur/admin: sertakan id siswa.
+    Route::get('/cetak/jurnal/{siswa_id?}',    [CetakPdfController::class, 'cetakJurnal'])->name('cetak.jurnal');
+    Route::get('/cetak/catatan/{siswa_id?}',   [CetakPdfController::class, 'cetakCatatan'])->name('cetak.catatan');
+    Route::get('/cetak/observasi/{siswa_id?}', [CetakPdfController::class, 'cetakObservasi'])->name('cetak.observasi');
+    Route::get('/cetak/nilai/{siswa_id?}',     [CetakPdfController::class, 'cetakNilai'])->name('cetak.nilai');
 
     // ============================================================
     // 1. ADMIN
@@ -75,19 +78,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
             return view('guru.dashboard', compact('siswaBimbingan'));
         })->name('dashboard');
 
-        // Manajemen siswa bimbingan
         Route::get('/siswa', [GuruController::class, 'index'])->name('siswa.index');
         Route::get('/siswa/{id}/detail', [GuruController::class, 'detailSiswa'])->name('siswa.detail');
 
-        // Observasi (guru: isi)
         Route::get('/observasi', [ObservasiController::class, 'indexGuru'])->name('observasi.index');
         Route::get('/observasi/create', [ObservasiController::class, 'createGuru'])->name('observasi.create');
         Route::post('/observasi', [ObservasiController::class, 'storeGuru'])->name('observasi.store');
 
-        // Catatan (guru: pantau)
         Route::get('/catatan', [CatatanController::class, 'indexGuru'])->name('catatan.index');
-
-        // Nilai (guru: rekap)
         Route::get('/nilai', [NilaiController::class, 'indexGuru'])->name('nilai.index');
     });
 
@@ -101,31 +99,20 @@ Route::middleware(['auth', 'verified'])->group(function () {
             return view('siswa.dashboard', compact('jumlahJurnal', 'jurnalDisetujui'));
         })->name('dashboard');
 
-        // Jurnal (siswa: isi)
         Route::get('/jurnal', [JurnalController::class, 'indexSiswa'])->name('jurnal.index');
         Route::get('/jurnal/tambah', [JurnalController::class, 'createSiswa'])->name('jurnal.create');
         Route::post('/jurnal', [JurnalController::class, 'storeSiswa'])->name('jurnal.store');
         Route::delete('/jurnal/{id}', [JurnalController::class, 'destroySiswa'])->name('jurnal.destroy');
 
-        // Catatan (siswa: isi)
         Route::get('/catatan', [CatatanController::class, 'indexSiswa'])->name('catatan.index');
         Route::get('/catatan/create', [CatatanController::class, 'createSiswa'])->name('catatan.create');
         Route::post('/catatan', [CatatanController::class, 'storeSiswa'])->name('catatan.store');
 
-        // Observasi (siswa: lihat)
         Route::get('/observasi', [ObservasiController::class, 'indexSiswa'])->name('observasi.index');
-
-        // Nilai (siswa: lihat)
         Route::get('/nilai', [NilaiController::class, 'indexSiswa'])->name('nilai.index');
 
-        // Dokumen (siswa: upload)
         Route::get('/dokumen', [DokumenSiswaController::class, 'index'])->name('dokumen.index');
         Route::post('/dokumen', [DokumenSiswaController::class, 'store'])->name('dokumen.store');
-
-        // Cetak PDF (siswa)
-        Route::get('/cetak-catatan', [CetakPdfController::class, 'cetakCatatan'])->name('cetak.catatan');
-        Route::get('/cetak-observasi', [CetakPdfController::class, 'cetakObservasi'])->name('cetak.observasi');
-        Route::get('/cetak-nilai', [CetakPdfController::class, 'cetakNilai'])->name('cetak.nilai');
     });
 
     // ============================================================
@@ -139,23 +126,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
             return view('instruktur.dashboard', compact('siswaBimbingan', 'jurnalPending'));
         })->name('dashboard');
 
-        // Jurnal (instruktur: persetujuan)
         Route::get('/jurnal', [JurnalController::class, 'indexInstruktur'])->name('jurnal.index');
         Route::put('/jurnal/{id}/update', [JurnalController::class, 'updateInstruktur'])->name('jurnal.update');
 
-        // Absensi (instruktur: isi)
         Route::get('/absensi', [AbsensiController::class, 'indexInstruktur'])->name('absensi.index');
         Route::post('/absensi', [AbsensiController::class, 'storeInstruktur'])->name('absensi.store');
 
-        // Catatan (instruktur: persetujuan)
         Route::get('/catatan', [CatatanController::class, 'indexInstruktur'])->name('catatan.index');
         Route::put('/catatan/{id}/approve', [CatatanController::class, 'approveInstruktur'])->name('catatan.approve');
 
-        // Observasi (instruktur: persetujuan)
         Route::get('/observasi', [ObservasiController::class, 'indexInstruktur'])->name('observasi.index');
         Route::put('/observasi/{id}/approve', [ObservasiController::class, 'approveInstruktur'])->name('observasi.approve');
 
-        // Nilai (instruktur: isi)
         Route::get('/nilai', [NilaiController::class, 'indexInstruktur'])->name('nilai.index');
         Route::get('/nilai/create', [NilaiController::class, 'createInstruktur'])->name('nilai.create');
         Route::post('/nilai', [NilaiController::class, 'storeInstruktur'])->name('nilai.store');

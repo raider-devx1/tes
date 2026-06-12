@@ -29,6 +29,7 @@
                                 <th class="border p-2 w-1/4">Permasalahan</th>
                                 <th class="border p-2 w-1/4">Solusi</th>
                                 <th class="border p-2">Status</th>
+                                <th class="border p-2 text-center">Cetak</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -46,9 +47,12 @@
                                         <span class="bg-yellow-100 text-yellow-700 px-2 py-1 rounded text-xs font-bold uppercase">Pending</span>
                                     @endif
                                 </td>
+                                <td class="border p-2 text-center">
+    <a href="<?php echo e(route('cetak.observasi', $obs->user_id)); ?>" target="_blank" class="bg-red-600 hover:bg-red-700 text-white text-xs py-1 px-2 rounded">PDF</a>
+</td>
                             </tr>
                             @empty
-                            <tr><td colspan="6" class="border p-2 text-center">Belum ada data observasi.</td></tr>
+                            <tr><td colspan="7" class="border p-2 text-center">Belum ada data observasi.</td></tr>
                             @endforelse
                         </tbody>
                     </table>

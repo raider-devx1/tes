@@ -14,6 +14,9 @@
                     <a href="{{ route('siswa.jurnal.create') }}" class="bg-blue-600 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded">
                         + Tambah Jurnal
                     </a>
+                    <a href="<?php echo e(route('cetak.jurnal')); ?>" target="_blank" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">
+    Cetak PDF
+</a>
                 </div>
 
                 @if(session('success'))

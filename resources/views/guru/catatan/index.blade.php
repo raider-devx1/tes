@@ -19,6 +19,7 @@
                                 <th class="px-4 py-3 border">Hasil/Pelaksanaan</th>
                                 <th class="px-4 py-3 border">Catatan Instruktur</th>
                                 <th class="px-4 py-3 border text-center">Status</th>
+                                <th class="px-4 py-3 border text-center">Cetak</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -36,10 +37,13 @@
                                             <span class="text-yellow-600 font-bold">Menunggu</span>
                                         @endif
                                     </td>
+                                    <td class="px-4 py-3 border text-center">
+    <a href="<?php echo e(route('cetak.catatan', $item->user_id)); ?>" target="_blank" class="bg-red-600 hover:bg-red-700 text-white text-xs py-1 px-2 rounded">PDF</a>
+</td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="6" class="px-4 py-4 text-center">Belum ada catatan kegiatan dari siswa bimbingan.</td>
+                                    <td colspan="7" class="px-4 py-4 text-center">Belum ada catatan kegiatan dari siswa bimbingan.</td>
                                 </tr>
                             @endforelse
                         </tbody>

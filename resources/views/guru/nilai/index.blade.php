@@ -16,6 +16,7 @@
                                 <th class="px-4 py-3 border text-center">Pengembangan Hard</th>
                                 <th class="px-4 py-3 border text-center">Kewirausahaan</th>
                                 <th class="px-4 py-3 border text-center bg-blue-50 text-blue-900">Total Akhir</th>
+                                <th class="px-4 py-3 border text-center">Cetak</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -27,10 +28,13 @@
                                     <td class="px-4 py-4 text-center border">{{ $item->pengembangan_hard_skill }}</td>
                                     <td class="px-4 py-4 text-center border">{{ $item->kewirausahaan }}</td>
                                     <td class="px-4 py-4 text-center font-black text-blue-700 bg-blue-50/50 border">{{ $item->rata_rata }}</td>
+                                    <td class="px-4 py-4 text-center border">
+    <a href="<?php echo e(route('cetak.nilai', $item->user_id)); ?>" target="_blank" class="bg-red-600 hover:bg-red-700 text-white text-xs py-1 px-2 rounded">PDF</a>
+</td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="6" class="px-4 py-4 text-center text-gray-500">Belum ada siswa bimbingan yang selesai dinilai oleh instruktur.</td>
+                                    <td colspan="7" class="px-4 py-4 text-center text-gray-500">Belum ada siswa bimbingan yang selesai dinilai oleh instruktur.</td>
                                 </tr>
                             @endforelse
                         </tbody>

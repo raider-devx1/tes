@@ -12,15 +12,15 @@ class DokumenSiswaController extends Controller
     public function index()
     {
         $dokumen = Dokumen::where('siswa_id', Auth::id())->first();
-        $nilai = Nilai::where('siswa_id', Auth::id())->first(); // Untuk melihat nilai akhir
+        $nilai   = Nilai::where('user_id', Auth::id())->first(); // ✅ FIX: siswa_id -> user_id
         return view('siswa.dokumen.index', compact('dokumen', 'nilai'));
     }
 
     public function store(Request $request)
     {
         $request->validate([
-            'laporan_akhir' => 'nullable|mimes:pdf|max:5120', // Max 5MB PDF
-            'surat_tugas' => 'nullable|mimes:pdf|max:2048',
+            'laporan_akhir'    => 'nullable|mimes:pdf|max:5120',
+            'surat_tugas'      => 'nullable|mimes:pdf|max:2048',
             'surat_penerimaan' => 'nullable|mimes:pdf|max:2048',
         ]);
 

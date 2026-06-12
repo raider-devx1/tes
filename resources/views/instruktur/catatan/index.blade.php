@@ -49,6 +49,7 @@
                                             </form>
                                         @endif
                                     </td>
+                                    <a href="<?php echo e(route('cetak.catatan', $item->user_id)); ?>" target="_blank" class="inline-block mt-2 bg-red-600 hover:bg-red-700 text-white text-xs px-3 py-1.5 rounded">Cetak PDF</a>
                                 </tr>
                             @empty
                                 <tr>

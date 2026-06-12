@@ -10,7 +10,7 @@
                     <div class="text-center py-6 text-gray-500">Belum ada rilis lembar penilaian kompetensi dari instruktur industri Anda.</div>
                 @else
                     <div class="flex justify-end mb-4">
-                        <a href="{{ route('siswa.cetak.nilai') }}" target="_blank" class="bg-red-600 hover:bg-red-700 text-white text-sm px-4 py-2 rounded font-semibold transition">Cetak Format Dokumen PDF</a>
+                        <a href="{{ route('cetak.nilai') }}" target="_blank" class="bg-red-600 hover:bg-red-700 text-white text-sm px-4 py-2 rounded font-semibold transition">Cetak Format Dokumen PDF</a>
                     </div>
 
                     <div class="border rounded-lg overflow-hidden bg-gray-50 p-4 mb-6">

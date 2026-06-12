@@ -24,6 +24,7 @@
                                 <th class="border p-3 w-1/3">Deskripsi Pekerjaan</th>
                                 <th class="border p-3">Foto</th>
                                 <th class="border p-3 text-center">Tindakan Persetujuan</th>
+                                <th class="border p-3 text-center">Cetak</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -55,10 +56,13 @@
                                         <button type="submit" class="bg-blue-600 hover:bg-blue-800 text-white font-bold py-1 px-2 rounded text-sm">Simpan</button>
                                     </form>
                                 </td>
+                                <td class="border p-3 text-center">
+    <a href="<?php echo e(route('cetak.jurnal', $jurnal->siswa_id)); ?>" target="_blank" class="bg-red-600 hover:bg-red-700 text-white text-xs py-1 px-2 rounded">PDF</a>
+</td>
                             </tr>
                             @empty
                             <tr>
-                                <td colspan="5" class="border p-4 text-center text-gray-500">Belum ada jurnal dari siswa bimbingan Anda.</td>
+                                <td colspan="6" class="border p-4 text-center text-gray-500">Belum ada jurnal dari siswa bimbingan Anda.</td>
                             </tr>
                             @endforelse
                         </tbody>

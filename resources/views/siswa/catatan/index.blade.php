@@ -14,7 +14,7 @@
                         <a href="{{ route('siswa.catatan.create') }}" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
                             + Tambah Catatan
                         </a>
-                        <a href="{{ route('siswa.cetak.catatan') }}" target="_blank" class="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700">
+                        <a href="{{ route('cetak.catatan') }}" target="_blank" class="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700">
                             Cetak PDF
                         </a>
                     </div>
