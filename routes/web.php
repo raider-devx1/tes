@@ -1,155 +1,111 @@
 <?php
 
-use App\Http\Controllers\AdminController;
-use App\Http\Controllers\CetakPdfController;
-use App\Http\Controllers\DokumenSiswaController;
-use App\Http\Controllers\GuruController;
-use App\Http\Controllers\InstrukturController;
-use App\Http\Controllers\JurnalSiswaController;
+use App\Http\Controllers\AbsensiController;
+use App\Http\Controllers\Admin\InformasiController as AdminInformasiController;
+use App\Http\Controllers\Admin\PengaturanController;
+use App\Http\Controllers\Admin\PeriodeController;
+use App\Http\Controllers\Admin\PerusahaanController;
+use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\CatatanController;
+use App\Http\Controllers\CetakController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DokumenController;
+use App\Http\Controllers\InformasiPublikController;
+use App\Http\Controllers\JurnalController;
+use App\Http\Controllers\NilaiController;
+use App\Http\Controllers\NotifikasiController;
+use App\Http\Controllers\ObservasiController;
 use App\Http\Controllers\ProfileController;
-use App\Models\Jurnal;
-use App\Models\Perusahaan;
-
-// Import Model untuk kebutuhan statistik di Dashboard
-use App\Models\User;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {return view('welcome');});
-
-Route::middleware(['auth', 'verified'])->get('/dashboard', function () {
-    $role = auth()->user()->role;
-
-    if ($role === 'admin') {
-        return redirect()->route('admin.dashboard');
-    }
-
-    if ($role === 'guru_pembimbing') {
-        return redirect()->route('guru.dashboard');
-    }
-
-    if ($role === 'siswa_pkl') {
-        return redirect()->route('siswa.dashboard');
-    }
-
-    if ($role === 'instruktur_industri') {
-        return redirect()->route('instruktur.dashboard');
-    }
-
-    return abort(403);
-})->name('dashboard');
+Route::get('/', fn () => view('welcome'));
 
 Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+    // Profil (bawaan Breeze)
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    Route::get('/cetak/jurnal/{siswa_id}', [CetakPdfController::class, 'cetakJurnal'])->name('cetak.jurnal');
-    Route::get('/cetak/nilai/{siswa_id}', [CetakPdfController::class, 'cetakNilai'])->name('cetak.nilai');
+    // Notifikasi (semua peran)
+    Route::get('/notifikasi', [NotifikasiController::class, 'index'])->name('notifikasi.index');
+    Route::get('/notifikasi/{notifikasi}/baca', [NotifikasiController::class, 'baca'])->name('notifikasi.baca');
 
-    // 1. ADMIN
-    Route::middleware(['role:admin'])->prefix('admin')->name('admin.')->group(function () {
-        Route::get('/dashboard', function () {
-            $jumlahSiswa      = User::where('role', 'siswa_pkl')->count();
-            $jumlahGuru       = User::where('role', 'guru_pembimbing')->count();
-            $jumlahInstruktur = User::where('role', 'instruktur_industri')->count();
-            $jumlahPerusahaan = Perusahaan::count();
-            return view('admin.dashboard', compact('jumlahSiswa', 'jumlahGuru', 'jumlahInstruktur', 'jumlahPerusahaan'));
-        })->name('dashboard');
+    // Panduan / Informasi umum (semua peran, read-only)
+    Route::get('/panduan', [InformasiPublikController::class, 'index'])->name('informasi.index');
+    Route::get('/panduan/{informasi}', [InformasiPublikController::class, 'show'])->name('informasi.show');
 
-        Route::get('/siswa', [AdminController::class, 'indexSiswa'])->name('siswa.index');
-        Route::put('/siswa/mapping/{id}', [AdminController::class, 'updateMapping'])->name('siswa.mapping');
+    /* ===================== JURNAL ===================== */
+    Route::middleware('role:siswa_pkl,instruktur_industri,guru_pembimbing')->group(function () {
+        Route::get('/jurnal', [JurnalController::class, 'index'])->name('jurnal.index');
+    });
+    Route::middleware('role:siswa_pkl')->group(function () {
+        Route::get('/jurnal/tambah', [JurnalController::class, 'create'])->name('jurnal.create');
+        Route::post('/jurnal', [JurnalController::class, 'store'])->name('jurnal.store');
+        Route::delete('/jurnal/{jurnal}', [JurnalController::class, 'destroy'])->name('jurnal.destroy');
+    });
+    Route::middleware('role:instruktur_industri')->put('/jurnal/{jurnal}/approve', [JurnalController::class, 'approve'])->name('jurnal.approve');
+
+    /* ===================== CATATAN KEGIATAN ===================== */
+    Route::middleware('role:siswa_pkl,instruktur_industri,guru_pembimbing')->get('/catatan', [CatatanController::class, 'index'])->name('catatan.index');
+    Route::middleware('role:siswa_pkl')->group(function () {
+        Route::get('/catatan/tambah', [CatatanController::class, 'create'])->name('catatan.create');
+        Route::post('/catatan', [CatatanController::class, 'store'])->name('catatan.store');
+        Route::delete('/catatan/{catatan}', [CatatanController::class, 'destroy'])->name('catatan.destroy');
+    });
+    Route::middleware('role:instruktur_industri')->put('/catatan/{catatan}/approve', [CatatanController::class, 'approve'])->name('catatan.approve');
+
+    /* ===================== OBSERVASI ===================== */
+    Route::middleware('role:guru_pembimbing,siswa_pkl,instruktur_industri')->get('/observasi', [ObservasiController::class, 'index'])->name('observasi.index');
+    Route::middleware('role:guru_pembimbing')->group(function () {
+        Route::get('/observasi/tambah', [ObservasiController::class, 'create'])->name('observasi.create');
+        Route::post('/observasi', [ObservasiController::class, 'store'])->name('observasi.store');
+        Route::delete('/observasi/{observasi}', [ObservasiController::class, 'destroy'])->name('observasi.destroy');
+    });
+    Route::middleware('role:instruktur_industri')->put('/observasi/{observasi}/approve', [ObservasiController::class, 'approve'])->name('observasi.approve');
+
+    /* ===================== ABSENSI ===================== */
+    Route::middleware('role:instruktur_industri,siswa_pkl,guru_pembimbing')->group(function () {
+        Route::get('/absensi', [AbsensiController::class, 'index'])->name('absensi.index');
+    });
+    Route::middleware('role:instruktur_industri')->post('/absensi', [AbsensiController::class, 'store'])->name('absensi.store');
+
+    /* ===================== NILAI ===================== */
+    Route::middleware('role:instruktur_industri,siswa_pkl,guru_pembimbing')->get('/nilai', [NilaiController::class, 'index'])->name('nilai.index');
+    Route::middleware('role:instruktur_industri')->post('/nilai', [NilaiController::class, 'store'])->name('nilai.store');
+
+    /* ===================== DOKUMEN ===================== */
+    Route::middleware('role:siswa_pkl,guru_pembimbing,instruktur_industri')->group(function () {
+        Route::get('/dokumen', [DokumenController::class, 'index'])->name('dokumen.index');
+    });
+    Route::middleware('role:siswa_pkl')->group(function () {
+        Route::post('/dokumen', [DokumenController::class, 'store'])->name('dokumen.store');
+        Route::delete('/dokumen/{dokumen}', [DokumenController::class, 'destroy'])->name('dokumen.destroy');
     });
 
-    // 2. GURU PEMBIMBING
-    Route::middleware(['role:guru_pembimbing'])->prefix('guru')->name('guru.')->group(function () {
-        Route::get('/dashboard', function () {
-            $siswaBimbingan = User::where('role', 'siswa_pkl')->where('guru_id', Auth::id())->count();
-            return view('guru.dashboard', compact('siswaBimbingan'));
-        })->name('dashboard');
-
-        Route::get('/siswa', [GuruController::class, 'index'])->name('siswa.index');
-        Route::get('/siswa/{id}/detail', [GuruController::class, 'detailSiswa'])->name('siswa.detail');
-        // RUTE OBSERVASI LAMA DIHAPUS AGAR TIDAK BENTROK
+    /* ===================== CETAK PDF ===================== */
+    Route::prefix('cetak')->name('cetak.')->group(function () {
+        Route::get('/jurnal/{siswa?}',    [CetakController::class, 'jurnal'])->name('jurnal');
+        Route::get('/catatan/{siswa?}',   [CetakController::class, 'catatan'])->name('catatan');
+        Route::get('/observasi/{siswa?}', [CetakController::class, 'observasi'])->name('observasi');
+        Route::get('/nilai/{siswa?}',     [CetakController::class, 'nilai'])->name('nilai');
     });
 
-    // 3. SISWA
-    Route::middleware(['role:siswa_pkl'])->prefix('siswa')->name('siswa.')->group(function () {
-        Route::get('/dashboard', function () {
-            $jumlahJurnal    = Jurnal::where('siswa_id', Auth::id())->count();
-            $jurnalDisetujui = Jurnal::where('siswa_id', Auth::id())->where('status_persetujuan', 'disetujui')->count();
-            return view('siswa.dashboard', compact('jumlahJurnal', 'jurnalDisetujui'));
-        })->name('dashboard');
+    /* ===================== ADMIN ===================== */
+    Route::middleware('role:admin')->prefix('admin')->name('admin.')->group(function () {
+        Route::get('/pengguna', [UserController::class, 'index'])->name('users.index');
+        Route::post('/pengguna', [UserController::class, 'store'])->name('users.store');
+        Route::put('/pengguna/{user}/mapping', [UserController::class, 'updateMapping'])->name('users.mapping');
+        Route::delete('/pengguna/{user}', [UserController::class, 'destroy'])->name('users.destroy');
 
-        Route::get('/jurnal', [JurnalSiswaController::class, 'index'])->name('jurnal.index');
-        Route::get('/jurnal/tambah', [JurnalSiswaController::class, 'create'])->name('jurnal.create');
-        Route::post('/jurnal', [JurnalSiswaController::class, 'store'])->name('jurnal.store');
-        Route::delete('/jurnal/{id}', [JurnalSiswaController::class, 'destroy'])->name('jurnal.destroy');
-
-        Route::get('/dokumen', [DokumenSiswaController::class, 'index'])->name('dokumen.index');
-        Route::post('/dokumen', [DokumenSiswaController::class, 'store'])->name('dokumen.store');
+        Route::resource('perusahaan', PerusahaanController::class)->only(['index', 'store', 'update', 'destroy']);
+        Route::resource('periode', PeriodeController::class)->only(['index', 'store', 'destroy']);
+        Route::put('/periode/{periode}/aktifkan', [PeriodeController::class, 'aktifkan'])->name('periode.aktifkan');
+        Route::resource('informasi', AdminInformasiController::class)->except(['show']);
+        Route::get('/pengaturan', [PengaturanController::class, 'edit'])->name('pengaturan.edit');
+        Route::put('/pengaturan', [PengaturanController::class, 'update'])->name('pengaturan.update');
     });
-
-    // 4. INSTRUKTUR
-    Route::middleware(['role:instruktur_industri'])->prefix('instruktur')->name('instruktur.')->group(function () {
-        Route::get('/dashboard', function () {
-            $siswaBimbingan = User::where('role', 'siswa_pkl')->where('instruktur_id', Auth::id())->count();
-            $siswaIds       = User::where('instruktur_id', Auth::id())->pluck('id');
-            $jurnalPending  = Jurnal::whereIn('siswa_id', $siswaIds)->where('status_persetujuan', 'pending')->count();
-            return view('instruktur.dashboard', compact('siswaBimbingan', 'jurnalPending'));
-        })->name('dashboard');
-
-        Route::get('/jurnal', [InstrukturController::class, 'jurnalIndex'])->name('jurnal.index');
-        Route::put('/jurnal/{id}/update', [InstrukturController::class, 'jurnalUpdate'])->name('jurnal.update');
-        Route::get('/absensi', [InstrukturController::class, 'absensiIndex'])->name('absensi.index');
-        Route::post('/absensi', [InstrukturController::class, 'absensiStore'])->name('absensi.store');
-
-        Route::get('/nilai', [InstrukturController::class, 'nilaiIndex'])->name('nilai.index');
-        Route::post('/nilai', [InstrukturController::class, 'nilaiStore'])->name('nilai.store');
-    });
-
-    // --- GRUP ROUTE CATATAN ---
-    Route::middleware(['auth', 'role:siswa_pkl'])->prefix('siswa')->name('siswa.')->group(function () {
-        Route::resource('catatan', App\Http\Controllers\CatatanSiswaController::class)->only(['index', 'create', 'store']);
-        Route::get('/cetak-catatan', [App\Http\Controllers\CetakPdfController::class, 'cetakCatatan'])->name('cetak.catatan');
-    });
-    Route::middleware(['auth', 'role:guru_pembimbing'])->prefix('guru')->name('guru.')->group(function () {
-        Route::get('/catatan', [App\Http\Controllers\CatatanGuruController::class, 'index'])->name('catatan.index');
-    });
-    Route::middleware(['auth', 'role:instruktur_industri'])->prefix('instruktur')->name('instruktur.')->group(function () {
-        Route::get('/catatan', [App\Http\Controllers\CatatanInstrukturController::class, 'index'])->name('catatan.index');
-        Route::put('/catatan/{id}/approve', [App\Http\Controllers\CatatanInstrukturController::class, 'approve'])->name('catatan.approve');
-    });
-
-    // --- GRUP ROUTE OBSERVASI ---
-    Route::middleware(['auth', 'role:guru_pembimbing'])->prefix('guru')->name('guru.')->group(function () {
-        Route::resource('observasi', App\Http\Controllers\ObservasiGuruController::class)->except(['show']);
-    });
-    Route::middleware(['auth', 'role:siswa_pkl'])->prefix('siswa')->name('siswa.')->group(function () {
-        Route::get('/observasi', [App\Http\Controllers\ObservasiSiswaController::class, 'index'])->name('observasi.index');
-        Route::get('/cetak-observasi', [App\Http\Controllers\CetakPdfController::class, 'cetakObservasi'])->name('cetak.observasi');
-    });
-    Route::middleware(['auth', 'role:instruktur_industri'])->prefix('instruktur')->name('instruktur.')->group(function () {
-        Route::get('/observasi', [App\Http\Controllers\ObservasiInstrukturController::class, 'index'])->name('observasi.index');
-        Route::put('/observasi/{id}/approve', [App\Http\Controllers\ObservasiInstrukturController::class, 'approve'])->name('observasi.approve');
-    });
-
-// Rute khusus Peran Instruktur Industri (Input Data & Kelola Penilaian)
-    Route::middleware(['auth', 'role:instruktur_industri'])->prefix('instruktur')->name('instruktur.')->group(function () {
-        Route::resource('nilai', App\Http\Controllers\NilaiController::class)->except(['show']);
-    });
-
-// Rute khusus Peran Siswa (Lihat Nilai & Unduh Cetak Dokumen)
-    Route::middleware(['auth', 'role:siswa_pkl'])->prefix('siswa')->name('siswa.')->group(function () {
-        Route::get('/nilai', [App\Http\Controllers\NilaiController::class, 'siswaIndex'])->name('nilai.index');
-        Route::get('/cetak-nilai', [App\Http\Controllers\CetakPdfController::class, 'cetakNilai'])->name('cetak.nilai');
-    });
-
-// Rute khusus Peran Guru Pembimbing (Monitoring Rekapitulasi Nilai)
-    Route::middleware(['auth', 'role:guru_pembimbing'])->prefix('guru')->name('guru.')->group(function () {
-        Route::get('/nilai', [App\Http\Controllers\NilaiController::class, 'guruIndex'])->name('nilai.index');
-    });
-
 });
 
 require __DIR__ . '/auth.php';

@@ -2,18 +2,20 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Absensi extends Model
 {
-    use HasFactory;
+    protected $table = 'absensis';
 
     protected $fillable = [
-        'siswa_id', 'instruktur_id', 'tanggal', 'status', 'jam_masuk', 'jam_pulang'
+        'siswa_id', 'instruktur_id', 'tanggal', 'status', 'jam_masuk', 'jam_pulang',
     ];
 
-    public function siswa()
+    protected $casts = ['tanggal' => 'date'];
+
+    public function siswa(): BelongsTo
     {
         return $this->belongsTo(User::class, 'siswa_id');
     }

@@ -3,88 +3,66 @@
 namespace App\Http\Controllers;
 
 use App\Models\Nilai;
+use App\Models\Notifikasi;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
+/**
+ * Lembar Penilaian PKL (skala 1-5, 4 komponen).
+ *  - Instruktur : input / ubah nilai siswa bimbingannya
+ *  - Siswa & Guru : melihat nilai (read-only)
+ * Menggantikan NilaiController lama + InstrukturController::nilai* (versi ganda yang bentrok).
+ */
 class NilaiController extends Controller
 {
-    // ==========================================
-    // ALUR AKSES PERAN: INSTRUKTUR INDUSTRI
-    // ==========================================
     public function index()
     {
-        $instrukturId = Auth::id();
-        
-        // Mengambil rekap siswa yang terdaftar di bawah perusahaan tempat instruktur bertugas
-        $siswa = User::where('role', 'siswa_pkl')
-                     ->where('instruktur_id', $instrukturId)
-                     ->with('nilai')
-                     ->get();
+        $user = Auth::user();
 
-        return view('instruktur.nilai.index', compact('siswa'));
-    }
+        if ($user->isInstruktur()) {
+            $siswas = User::where('instruktur_id', $user->id)->where('role', User::ROLE_SISWA)->with('nilai')->get();
+            return view('nilai.kelola', compact('siswas'));
+        }
 
-    public function create(Request $request)
-    {
-        $siswaId = $request->query('siswa_id');
-        
-        // Memastikan ID yang dicari benar-benar user dengan role siswa_pkl
-        $siswa = User::where('role', 'siswa_pkl')->findOrFail($siswaId);
+        if ($user->isSiswa()) {
+            $nilai = Nilai::with('instruktur')->where('siswa_id', $user->id)->first();
+            return view('nilai.siswa', compact('nilai'));
+        }
 
-        return view('instruktur.nilai.create', compact('siswa'));
+        // guru: rekap
+        $nilais = Nilai::with('siswa')
+            ->whereIn('siswa_id', User::where('guru_id', $user->id)->pluck('id'))
+            ->get();
+        return view('nilai.rekap', compact('nilais'));
     }
 
     public function store(Request $request)
     {
-        $request->validate([
-            'user_id' => 'required|exists:users,id',
-            'soft_skill' => 'required|integer|between:1,5',
-            'hard_skill' => 'required|integer|between:1,5',
-            'pengembangan_hard_skill' => 'required|integer|between:1,5',
-            'kewirausahaan' => 'required|integer|between:1,5',
-            'catatan_rekomendasi' => 'nullable|string',
+        abort_unless(Auth::user()->isInstruktur(), 403);
+
+        $data = $request->validate([
+            'siswa_id'                => ['required', 'exists:users,id'],
+            'soft_skill'              => ['required', 'integer', 'between:1,5'],
+            'hard_skill'              => ['required', 'integer', 'between:1,5'],
+            'pengembangan_hard_skill' => ['required', 'integer', 'between:1,5'],
+            'kewirausahaan'           => ['required', 'integer', 'between:1,5'],
+            'catatan_rekomendasi'     => ['nullable', 'string'],
         ]);
 
-        // Kalkulasi Rata-rata dari akumulasi skor inputan
-        $rataRata = ($request->soft_skill + $request->hard_skill + $request->pengembangan_hard_skill + $request->kewirausahaan) / 4;
+        abort_unless(User::where('id', $data['siswa_id'])->where('instruktur_id', Auth::id())->exists(), 403);
+
+        $nilai = new Nilai($data);
+        $nilai->instruktur_id = Auth::id();
+        $nilai->rata_rata = $nilai->hitungRataRata();
 
         Nilai::updateOrCreate(
-            ['user_id' => $request->user_id],
-            [
-                'instruktur_id' => Auth::id(),
-                'soft_skill' => $request->soft_skill,
-                'hard_skill' => $request->hard_skill,
-                'pengembangan_hard_skill' => $request->pengembangan_hard_skill,
-                'kewirausahaan' => $request->kewirausahaan,
-                'rata_rata' => $rataRata,
-                'catatan_rekomendasi' => $request->catatan_rekomendasi,
-            ]
+            ['siswa_id' => $data['siswa_id']],
+            $nilai->only(['instruktur_id', 'soft_skill', 'hard_skill', 'pengembangan_hard_skill', 'kewirausahaan', 'rata_rata', 'catatan_rekomendasi'])
         );
 
-        return redirect()->route('instruktur.nilai.index')->with('success', 'Lembar evaluasi penilaian siswa sukses disimpan.');
-    }
+        Notifikasi::kirim($data['siswa_id'], 'Nilai PKL tersedia', 'Instruktur telah mengisi nilai PKL Anda.', route('nilai.index'));
 
-    // ==========================================
-    // ALUR AKSES PERAN: SISWA PKL
-    // ==========================================
-    public function siswaIndex()
-    {
-        $nilai = Nilai::where('user_id', Auth::id())->with('instruktur')->first();
-        return view('siswa.nilai.index', compact('nilai'));
-    }
-
-    // ==========================================
-    // ALUR AKSES PERAN: GURU PEMBIMBING
-    // ==========================================
-    public function guruIndex()
-    {
-        // Menampilkan seluruh hasil capaian nilai perkembangan dari anak didik bimbingannya
-        $nilaiSiswa = Nilai::whereHas('user', function ($query) {
-            $query->where('guru_id', Auth::id())
-                  ->where('role', 'siswa_pkl'); // Filter tambahan memastikan hanya role siswa_pkl
-        })->with('user')->latest()->get();
-
-        return view('guru.nilai.index', compact('nilaiSiswa'));
+        return back()->with('success', 'Nilai PKL berhasil disimpan.');
     }
 }

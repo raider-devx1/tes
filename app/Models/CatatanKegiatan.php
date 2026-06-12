@@ -2,24 +2,23 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Models\Concerns\PunyaStatusPersetujuan;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class CatatanKegiatan extends Model
 {
-    use HasFactory;
+    use PunyaStatusPersetujuan;
+
+    protected $table = 'catatan_kegiatans';
 
     protected $fillable = [
-        'user_id',
-        'nama_pekerjaan',
-        'perencanaan_kegiatan',
-        'pelaksanaan_kegiatan',
-        'catatan_instruktur',
-        'is_approved',
+        'siswa_id', 'nama_pekerjaan', 'perencanaan', 'pelaksanaan',
+        'catatan_instruktur', 'status_persetujuan', 'disetujui_oleh',
     ];
 
-    public function user()
+    public function siswa(): BelongsTo
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class, 'siswa_id');
     }
 }

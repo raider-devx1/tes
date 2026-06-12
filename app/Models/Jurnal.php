@@ -2,26 +2,22 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Models\Concerns\PunyaStatusPersetujuan;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Jurnal extends Model
 {
-    use HasFactory;
+    use PunyaStatusPersetujuan;
 
     protected $fillable = [
-        'siswa_id',
-        'hari_tanggal',
-        'unit_kerja',
-        'deskripsi_pekerjaan',
-        'dokumentasi',
-        'catatan_instruktur',
-        'status_persetujuan',
-        'disetujui_oleh',
+        'siswa_id', 'hari_tanggal', 'unit_kerja', 'deskripsi_pekerjaan',
+        'dokumentasi', 'catatan_instruktur', 'status_persetujuan', 'disetujui_oleh',
     ];
 
-    // Relasi balik ke User (Siswa)
-    public function siswa()
+    protected $casts = ['hari_tanggal' => 'date'];
+
+    public function siswa(): BelongsTo
     {
         return $this->belongsTo(User::class, 'siswa_id');
     }

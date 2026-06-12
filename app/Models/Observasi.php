@@ -2,23 +2,27 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Models\Concerns\PunyaStatusPersetujuan;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Observasi extends Model
 {
-    use HasFactory;
+    use PunyaStatusPersetujuan;
 
     protected $fillable = [
-        'user_id',
-        'guru_id',
-        'hari_tanggal',
-        'pekerjaan_projek',
-        'permasalahan',
-        'solusi',
-        'is_approved',
+        'siswa_id', 'guru_id', 'hari_tanggal', 'permasalahan', 'solusi',
+        'status_persetujuan', 'disetujui_oleh',
     ];
 
-    public function user() { return $this->belongsTo(User::class, 'user_id'); }
-    public function guru() { return $this->belongsTo(User::class, 'guru_id'); }
+    protected $casts = ['hari_tanggal' => 'date'];
+
+    public function siswa(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'siswa_id');
+    }
+    public function guru(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'guru_id');
+    }
 }
