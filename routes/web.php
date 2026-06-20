@@ -11,6 +11,7 @@ use App\Http\Controllers\JurnalController;
 use App\Http\Controllers\NilaiController;
 use App\Http\Controllers\ObservasiController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\PeriodePklController;
 use App\Models\Jurnal;
 use App\Models\Perusahaan;
 use App\Models\User;
@@ -77,6 +78,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::get('/siswa', [AdminController::class, 'indexSiswa'])->name('siswa.index');
         Route::put('/siswa/mapping/{id}', [AdminController::class, 'updateMapping'])->name('siswa.mapping');
+
+        // ---- MASTER DATA: PERIODE PKL ----
+Route::resource('periode', PeriodePklController::class)->except(['show']);
+Route::put('/periode/{periode}/aktifkan', [PeriodePklController::class, 'aktifkan'])
+      ->name('periode.aktifkan');
     });
 
     // ============================================================

@@ -57,7 +57,10 @@
                     <a href="#" class="block px-3 py-2 rounded-lg text-gray-400 cursor-not-allowed">Data Guru Pembimbing <span class="text-[10px]">(segera)</span></a>
                     <a href="#" class="block px-3 py-2 rounded-lg text-gray-400 cursor-not-allowed">Data Industri Mitra <span class="text-[10px]">(segera)</span></a>
                     <a href="#" class="block px-3 py-2 rounded-lg text-gray-400 cursor-not-allowed">Data Instruktur <span class="text-[10px]">(segera)</span></a>
-                    <a href="#" class="block px-3 py-2 rounded-lg text-gray-400 cursor-not-allowed">Periode PKL <span class="text-[10px]">(segera)</span></a>
+                  <a href="{{ route('admin.periode.index') }}"
+   class="block px-3 py-2 rounded-lg {{ request()->routeIs('admin.periode.*') ? 'bg-blue-50 text-[#2563EB] font-medium' : 'text-gray-700 hover:bg-blue-50' }}">
+    Periode PKL
+</a>
                 </div>
             </div>
 

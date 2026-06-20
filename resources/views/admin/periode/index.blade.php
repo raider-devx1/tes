@@ -1,0 +1,79 @@
+<x-app-layout title="Periode PKL">
+
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+        <div>
+            <h2 class="text-xl font-bold text-gray-800">Master Data — Periode PKL</h2>
+            <p class="text-sm text-gray-500">Kelola gelombang/periode pelaksanaan PKL.</p>
+        </div>
+        <a href="{{ route('admin.periode.create') }}"
+           class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#2563EB] text-white text-sm font-medium hover:bg-blue-700">
+            + Tambah Periode
+        </a>
+    </div>
+
+    <div class="bg-white rounded-2xl shadow-sm border border-blue-100 p-5">
+
+        <form method="GET" class="mb-4 flex gap-2">
+            <input type="text" name="q" value="{{ $q }}" placeholder="Cari nama / tahun ajaran..."
+                   class="w-full sm:w-72 rounded-lg border-blue-100 focus:border-[#2563EB] focus:ring-[#2563EB] text-sm">
+            <button class="px-4 py-2 rounded-lg bg-blue-50 text-[#2563EB] text-sm font-medium hover:bg-blue-100">Cari</button>
+            @if($q)
+                <a href="{{ route('admin.periode.index') }}" class="px-4 py-2 rounded-lg text-gray-500 text-sm hover:bg-gray-50">Reset</a>
+            @endif
+        </form>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="text-left text-gray-500 border-b border-blue-100">
+                        <th class="py-3 px-3">Nama Periode</th>
+                        <th class="py-3 px-3">Tahun Ajaran</th>
+                        <th class="py-3 px-3">Mulai</th>
+                        <th class="py-3 px-3">Selesai</th>
+                        <th class="py-3 px-3">Status</th>
+                        <th class="py-3 px-3 text-right">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($periode as $p)
+                        <tr class="border-b border-blue-50 hover:bg-blue-50/40">
+                            <td class="py-3 px-3 font-medium text-gray-800">{{ $p->nama }}</td>
+                            <td class="py-3 px-3 text-gray-600">{{ $p->tahun_ajaran }}</td>
+                            <td class="py-3 px-3 text-gray-600">{{ $p->tanggal_mulai?->format('d M Y') }}</td>
+                            <td class="py-3 px-3 text-gray-600">{{ $p->tanggal_selesai?->format('d M Y') }}</td>
+                            <td class="py-3 px-3">
+                                @if($p->is_active)
+                                    <span class="text-xs px-2 py-1 rounded-full bg-[#2563EB] text-white">Aktif</span>
+                                @else
+                                    <span class="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-500">Nonaktif</span>
+                                @endif
+                            </td>
+                            <td class="py-3 px-3">
+                                <div class="flex items-center justify-end gap-2">
+                                    @unless($p->is_active)
+                                        <form method="POST" action="{{ route('admin.periode.aktifkan', $p) }}">
+                                            @csrf @method('PUT')
+                                            <button class="text-xs px-3 py-1.5 rounded-lg bg-green-50 text-green-600 hover:bg-green-100">Aktifkan</button>
+                                        </form>
+                                    @endunless
+                                    <a href="{{ route('admin.periode.edit', $p) }}" class="text-xs px-3 py-1.5 rounded-lg bg-blue-50 text-[#2563EB] hover:bg-blue-100">Edit</a>
+                                    <form method="POST" action="{{ route('admin.periode.destroy', $p) }}" onsubmit="return confirm('Hapus periode ini?')">
+                                        @csrf @method('DELETE')
+                                        <button class="text-xs px-3 py-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100">Hapus</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr><td colspan="6" class="py-8 text-center text-gray-400">Belum ada data periode.</td></tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+
+        <div class="mt-4">
+             {{ $periode->links() }}
+        </div>
+    </div>
+
+</x-app-layout>
