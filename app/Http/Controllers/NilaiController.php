@@ -9,14 +9,35 @@ use Illuminate\Support\Facades\Auth;
 
 class NilaiController extends Controller
 {
-    // ====== ROLE: INSTRUKTUR INDUSTRI (mengisi nilai) ======
+    // Bobot nilai akhir (silakan sesuaikan)
+    private const BOBOT_INSTRUKTUR = 0.50; // 1–5 dikonversi ke 0–100
+    private const BOBOT_GURU       = 0.20; // 0–100
+    private const BOBOT_LAPORAN    = 0.30; // 0–100
+
+    /** Hitung nilai akhir (0–100). Null jika komponen belum lengkap. */
+    private function hitungNilaiAkhir(Nilai $n): ?float
+    {
+        if (is_null($n->rata_rata) || is_null($n->nilai_guru) || is_null($n->nilai_laporan)) {
+            return null;
+        }
+
+        $instruktur100 = ($n->rata_rata / 5) * 100;
+
+        return round(
+            ($instruktur100 * self::BOBOT_INSTRUKTUR)
+            + ($n->nilai_guru * self::BOBOT_GURU)
+            + ($n->nilai_laporan * self::BOBOT_LAPORAN),
+            2
+        );
+    }
+
+    /* ===================== INSTRUKTUR INDUSTRI ===================== */
     public function indexInstruktur()
     {
-        $instrukturId = Auth::id();
         $siswa = User::where('role', 'siswa_pkl')
-                     ->where('instruktur_id', $instrukturId)
-                     ->with('nilai')
-                     ->get();
+            ->where('instruktur_id', Auth::id())
+            ->with('nilai')
+            ->get();
 
         return view('instruktur.nilai.index', compact('siswa'));
     }
@@ -40,39 +61,70 @@ class NilaiController extends Controller
             'catatan_rekomendasi'     => 'nullable|string',
         ]);
 
-        $rataRata = ($request->soft_skill + $request->hard_skill + $request->pengembangan_hard_skill + $request->kewirausahaan) / 4;
+        $rataRata = ($request->soft_skill + $request->hard_skill
+            + $request->pengembangan_hard_skill + $request->kewirausahaan) / 4;
 
-        Nilai::updateOrCreate(
-            ['user_id' => $request->user_id],
-            [
-                'instruktur_id'           => Auth::id(),
-                'soft_skill'              => $request->soft_skill,
-                'hard_skill'              => $request->hard_skill,
-                'pengembangan_hard_skill' => $request->pengembangan_hard_skill,
-                'kewirausahaan'           => $request->kewirausahaan,
-                'rata_rata'               => $rataRata,
-                'catatan_rekomendasi'     => $request->catatan_rekomendasi,
-            ]
-        );
+        $nilai = Nilai::firstOrNew(['user_id' => $request->user_id]);
+        $nilai->instruktur_id           = Auth::id();
+        $nilai->soft_skill              = $request->soft_skill;
+        $nilai->hard_skill              = $request->hard_skill;
+        $nilai->pengembangan_hard_skill = $request->pengembangan_hard_skill;
+        $nilai->kewirausahaan           = $request->kewirausahaan;
+        $nilai->rata_rata               = $rataRata;
+        $nilai->catatan_rekomendasi     = $request->catatan_rekomendasi;
+        $nilai->nilai_akhir             = $this->hitungNilaiAkhir($nilai); // recompute
+        $nilai->save();
 
-        return redirect()->route('instruktur.nilai.index')->with('success', 'Lembar evaluasi penilaian siswa sukses disimpan.');
+        return redirect()->route('instruktur.nilai.index')
+            ->with('success', 'Lembar evaluasi penilaian siswa sukses disimpan.');
     }
 
-    // ====== ROLE: SISWA PKL (melihat nilai) ======
+    /* ===================== SISWA PKL ===================== */
     public function indexSiswa()
     {
-        $nilai = Nilai::where('user_id', Auth::id())->with('instruktur')->first();
+        $nilai = Nilai::where('user_id', Auth::id())
+            ->with(['instruktur', 'guru'])
+            ->first();
+
         return view('siswa.nilai.index', compact('nilai'));
     }
 
-    // ====== ROLE: GURU PEMBIMBING (rekap nilai) ======
+    /* ===================== GURU PEMBIMBING ===================== */
     public function indexGuru()
     {
-        $nilaiSiswa = Nilai::whereHas('user', function ($query) {
-            $query->where('guru_id', Auth::id())
-                  ->where('role', 'siswa_pkl');
-        })->with('user')->latest()->get();
+        // Tampilkan SEMUA siswa bimbingan agar guru bisa input nilai guru & laporan
+        $siswa = User::where('role', 'siswa_pkl')
+            ->where('guru_id', Auth::id())
+            ->with('nilai')
+            ->get();
 
-        return view('guru.nilai.index', compact('nilaiSiswa'));
+        return view('guru.nilai.index', compact('siswa'));
+    }
+
+    public function storeGuru(Request $request)
+    {
+        $request->validate([
+            'user_id'       => 'required|exists:users,id',
+            'nilai_guru'    => 'required|numeric|between:0,100',
+            'nilai_laporan' => 'required|numeric|between:0,100',
+            'catatan_guru'  => 'nullable|string',
+        ]);
+
+        // pastikan siswa benar-benar bimbingan guru ini
+        $siswa = User::where('id', $request->user_id)
+            ->where('role', 'siswa_pkl')
+            ->where('guru_id', Auth::id())
+            ->firstOrFail();
+
+        $nilai = Nilai::firstOrNew(['user_id' => $siswa->id]);
+        $nilai->guru_id       = Auth::id();
+        $nilai->nilai_guru    = $request->nilai_guru;
+        $nilai->nilai_laporan = $request->nilai_laporan;
+        $nilai->catatan_guru  = $request->catatan_guru;
+        $nilai->nilai_akhir   = $this->hitungNilaiAkhir($nilai); // recompute
+        $nilai->save();
+
+        return redirect()->route('guru.nilai.index')
+            ->with('success', 'Nilai guru & laporan berhasil disimpan.');
     }
 }

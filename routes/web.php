@@ -101,7 +101,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/observasi', [ObservasiController::class, 'storeGuru'])->name('observasi.store');
 
         Route::get('/catatan', [CatatanController::class, 'indexGuru'])->name('catatan.index');
-        Route::get('/nilai', [NilaiController::class, 'indexGuru'])->name('nilai.index');
+        // sebelumnya: Route::get('/nilai', [NilaiController::class, 'indexGuru'])->name('nilai.index');
+Route::get('/nilai',  [NilaiController::class, 'indexGuru'])->name('nilai.index');
+Route::post('/nilai', [NilaiController::class, 'storeGuru'])->name('nilai.store');
     });
 
     // ============================================================
