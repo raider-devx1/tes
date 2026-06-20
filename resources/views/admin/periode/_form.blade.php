@@ -44,4 +44,5 @@
                class="rounded border-blue-200 text-[#2563EB] focus:ring-[#2563EB]">
         Jadikan periode aktif (periode lain otomatis nonaktif)
     </label>
+    
 </div>
