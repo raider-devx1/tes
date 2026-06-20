@@ -75,9 +75,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::put('/informasi/{informasi}', [InformasiController::class, 'update'])->name('informasi.update');
         Route::delete('/informasi/{informasi}', [InformasiController::class, 'destroy'])->name('informasi.destroy');
 
-        Route::get('/siswa', [AdminController::class, 'indexSiswa'])->name('siswa.index');
-        Route::put('/siswa/mapping/{id}', [AdminController::class, 'updateMapping'])->name('siswa.mapping');
+        // ---- IMPORT / EXPORT SISWA ----
+Route::get('/siswa/export/excel', [SiswaController::class, 'exportExcel'])->name('siswa.export.excel');
+Route::get('/siswa/export/pdf', [SiswaController::class, 'exportPdf'])->name('siswa.export.pdf');
+Route::get('/siswa/template', [SiswaController::class, 'template'])->name('siswa.template');
+Route::post('/siswa/import', [SiswaController::class, 'import'])->name('siswa.import');
 
+      
         // ---- MASTER DATA: PERIODE PKL ----
         Route::resource('periode', PeriodePklController::class)->except(['show']);
         Route::put('/periode/{periode}/aktifkan', [PeriodePklController::class, 'aktifkan'])

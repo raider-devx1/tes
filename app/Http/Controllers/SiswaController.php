@@ -2,6 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\SiswaExport;
+use App\Exports\SiswaTemplateExport;
+use App\Imports\SiswaImport;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Maatwebsite\Excel\Facades\Excel;
 use App\Models\PeriodePkl;
 use App\Models\Perusahaan;
 use App\Models\User;
@@ -129,4 +134,61 @@ class SiswaController extends Controller
 
         return back()->with('success', 'Data siswa berhasil dihapus.');
     }
+
+    public function exportExcel(Request $request)
+{
+    $q = trim($request->get('q', ''));
+    $status = $request->get('status', '');
+
+    return Excel::download(new SiswaExport($q, $status), 'data-siswa-' . date('Ymd-His') . '.xlsx');
+}
+
+public function exportPdf(Request $request)
+{
+    $q = trim($request->get('q', ''));
+    $status = $request->get('status', '');
+
+    $siswa = User::query()
+        ->where('role', 'siswa_pkl')
+        ->with(['perusahaan', 'guru', 'instruktur', 'periode'])
+        ->when($q, function ($query) use ($q) {
+            $query->where('name', 'like', "%{$q}%")
+                  ->orWhere('nisn', 'like', "%{$q}%")
+                  ->orWhere('email', 'like', "%{$q}%");
+        })
+        ->when($status, fn ($query) => $query->where('status_pkl', $status))
+        ->orderBy('name')
+        ->get();
+
+    $pdf = Pdf::loadView('admin.siswa.pdf', compact('siswa'))->setPaper('a4', 'landscape');
+
+    return $pdf->download('data-siswa-' . date('Ymd-His') . '.pdf');
+}
+
+public function template()
+{
+    return Excel::download(new SiswaTemplateExport, 'template-import-siswa.xlsx');
+}
+
+public function import(Request $request)
+{
+    $request->validate([
+        'file' => ['required', 'file', 'mimes:xlsx,xls,csv'],
+    ]);
+
+    try {
+        Excel::import(new SiswaImport, $request->file('file'));
+    } catch (\Maatwebsite\Excel\Validators\ValidationException $e) {
+        $pesan = collect($e->failures())
+            ->map(fn ($f) => "Baris {$f->row()}: " . implode(', ', $f->errors()))
+            ->take(10)
+            ->implode(' | ');
+
+        return back()->with('error', 'Sebagian data gagal diimpor. ' . $pesan);
+    }
+
+    return back()->with('success', 'Data siswa berhasil diimpor.');
+}
+
+
 }
