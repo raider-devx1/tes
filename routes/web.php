@@ -64,13 +64,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // 1. ADMIN
     // ============================================================
     Route::middleware(['role:admin'])->prefix('admin')->name('admin.')->group(function () {
-        Route::get('/dashboard', function () {
-            $jumlahSiswa      = User::where('role', 'siswa_pkl')->count();
-            $jumlahGuru       = User::where('role', 'guru_pembimbing')->count();
-            $jumlahInstruktur = User::where('role', 'instruktur_industri')->count();
-            $jumlahPerusahaan = Perusahaan::count();
-            return view('admin.dashboard', compact('jumlahSiswa', 'jumlahGuru', 'jumlahInstruktur', 'jumlahPerusahaan'));
-        })->name('dashboard');
+         Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
+
 
         // ---- KELOLA INFORMASI PKL ----
         Route::get('/informasi', [InformasiController::class, 'adminIndex'])->name('informasi.index');

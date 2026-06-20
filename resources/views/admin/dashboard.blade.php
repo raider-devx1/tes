@@ -1,40 +1,110 @@
-<x-app-layout>
-    <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">{{ __('Dashboard Admin / Koordinator PKL') }}</h2>
-    </x-slot>
+<x-app-layout title="Dashboard" :notif="$notifikasi">
 
-    <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
-                <h3 class="text-2xl font-bold mb-2">Selamat Datang, Koordinator!</h3>
-                <p class="text-gray-600 mb-6">Ringkasan statistik pengguna aplikasi LMS PKL SMK N 1 Majene.</p>
+    @php
+        $cards = [
+            ['Total Siswa PKL', $stats['siswa']],
+            ['Guru Pembimbing', $stats['guru']],
+            ['Instruktur Industri', $stats['instruktur']],
+            ['Industri Mitra', $stats['industri']],
+            ['Total Jurnal PKL', $stats['jurnal']],
+            ['Jurnal Menunggu', $stats['jurnalPending']],
+            ['Total Dokumen', $stats['dokumen']],
+            ['Total Observasi', $stats['observasi']],
+        ];
+    @endphp
 
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
-                        <p class="text-xs text-blue-600 font-bold uppercase">Total Siswa PKL</p>
-                        <h4 class="text-4xl font-bold text-blue-800">{{ $jumlahSiswa }}</h4>
-                    </div>
-                    <div class="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
-                        <p class="text-xs text-green-600 font-bold uppercase">Guru Pembimbing</p>
-                        <h4 class="text-4xl font-bold text-green-800">{{ $jumlahGuru }}</h4>
-                    </div>
-                    <div class="bg-purple-50 border border-purple-200 rounded-lg p-4 text-center">
-                        <p class="text-xs text-purple-600 font-bold uppercase">Instruktur Industri</p>
-                        <h4 class="text-4xl font-bold text-purple-800">{{ $jumlahInstruktur }}</h4>
-                    </div>
-                    <div class="bg-orange-50 border border-orange-200 rounded-lg p-4 text-center">
-                        <p class="text-xs text-orange-600 font-bold uppercase">Tempat Industri / DUDI</p>
-                        <h4 class="text-4xl font-bold text-orange-800">{{ $jumlahPerusahaan }}</h4>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-1 gap-6">
-                    <a href="{{ route('admin.siswa.index') }}" class="block p-8 bg-white border-2 border-gray-200 rounded-xl shadow-sm hover:border-indigo-500 hover:shadow-md transition">
-                        <h5 class="text-2xl font-bold tracking-tight text-gray-900 mb-2">⚙️ Kelola Pemetaan (Mapping) Siswa</h5>
-                        <p class="font-normal text-gray-600">Klik di sini untuk mengatur penempatan siswa. Hubungkan siswa dengan tempat industrinya, tentukan instruktur yang bertugas, dan pilih guru pembimbingnya.</p>
-                    </a>
-                </div>
+    {{-- Card statistik (tanpa ikon) --}}
+    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
+        @foreach($cards as [$label, $value])
+            <div class="bg-white rounded-2xl shadow-sm border border-blue-100 border-l-4 border-l-[#2563EB] p-5">
+                <p class="text-xs uppercase tracking-wide text-gray-400"> {{ $label }} </p>
+                <h3 class="text-3xl font-bold text-gray-800 mt-1"> {{ $value }} </h3>
             </div>
+        @endforeach
+    </div>
+
+    {{-- Grafik --}}
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <div class="bg-white rounded-2xl shadow-sm border border-blue-100 p-5">
+            <h4 class="font-semibold text-gray-800 mb-4">Grafik Kehadiran Siswa</h4>
+            <canvas id="chartKehadiran" height="160"></canvas>
+        </div>
+        <div class="bg-white rounded-2xl shadow-sm border border-blue-100 p-5">
+            <h4 class="font-semibold text-gray-800 mb-4">Progress Jurnal</h4>
+            <canvas id="chartJurnal" height="160"></canvas>
+        </div>
+        <div class="bg-white rounded-2xl shadow-sm border border-blue-100 p-5">
+            <h4 class="font-semibold text-gray-800 mb-4">Distribusi Siswa per Jurusan</h4>
+            <canvas id="chartJurusan" height="160"></canvas>
+        </div>
+        <div class="bg-white rounded-2xl shadow-sm border border-blue-100 p-5">
+            <h4 class="font-semibold text-gray-800 mb-4">Rata-rata Nilai PKL</h4>
+            <canvas id="chartNilai" height="160"></canvas>
         </div>
     </div>
+
+    {{-- Panel notifikasi --}}
+    <div class="bg-white rounded-2xl shadow-sm border border-blue-100 p-5">
+        <div class="flex items-center justify-between mb-4">
+            <h4 class="font-semibold text-gray-800">Notifikasi Sistem</h4>
+            <span class="text-xs px-2 py-1 rounded-full bg-[#2563EB] text-white"> {{ count($notifikasi) }} </span>
+        </div>
+        <div class="space-y-2">
+            @forelse($notifikasi as $n)
+                <div class="flex items-center gap-3 p-3 rounded-lg bg-blue-50">
+                    <span class="w-2 h-2 rounded-full bg-[#2563EB] shrink-0"></span>
+                    <span class="text-sm text-gray-700"> {{ $n['text'] }} </span>
+                </div>
+            @empty
+                <p class="text-sm text-gray-400 text-center py-4">Semua kondisi aman. Tidak ada peringatan.</p>
+            @endforelse
+        </div>
+    </div>
+
+    @push('scripts')
+    <script>
+        Chart.defaults.color = '#475569';
+
+        new Chart(document.getElementById('chartKehadiran'), {
+            type: 'bar',
+            data: {
+                labels: {{ Js::from(array_keys($kehadiran)) }},
+                datasets: [{ label: 'Jumlah', data: {{ Js::from(array_values($kehadiran)) }},
+                    backgroundColor: ['#1E3A8A','#2563EB','#3B82F6','#93C5FD'], borderRadius: 6 }]
+            },
+            options: { plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true}} }
+        });
+
+        new Chart(document.getElementById('chartJurnal'), {
+            type: 'doughnut',
+            data: {
+                labels: {{ Js::from(array_keys($jurnalStatus)) }},
+                datasets: [{ data: {{ Js::from(array_values($jurnalStatus)) }},
+                    backgroundColor: ['#1E3A8A','#2563EB','#93C5FD'] }]
+            },
+            options: { plugins:{legend:{position:'bottom'}} }
+        });
+
+        new Chart(document.getElementById('chartJurusan'), {
+            type: 'bar',
+            data: {
+                labels: {{ Js::from($perJurusan->keys()) }},
+                datasets: [{ label: 'Siswa', data: {{ Js::from($perJurusan->values()) }},
+                    backgroundColor: '#2563EB', borderRadius: 6 }]
+            },
+            options: { indexAxis:'y', plugins:{legend:{display:false}}, scales:{x:{beginAtZero:true}} }
+        });
+
+        new Chart(document.getElementById('chartNilai'), {
+            type: 'radar',
+            data: {
+                labels: {{ Js::from(array_keys($nilaiRata)) }},
+                datasets: [{ label: 'Rata-rata (1-5)', data: {{ Js::from(array_values($nilaiRata)) }},
+                    backgroundColor: 'rgba(37,99,235,0.2)', borderColor: '#2563EB', pointBackgroundColor: '#2563EB' }]
+            },
+            options: { scales:{ r:{ suggestedMin:0, suggestedMax:5 } } }
+        });
+    </script>
+    @endpush
+
 </x-app-layout>
