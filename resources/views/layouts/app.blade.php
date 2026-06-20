@@ -61,6 +61,7 @@
    class="block px-3 py-2 rounded-lg {{ request()->routeIs('admin.guru.*') ? 'bg-blue-50 text-[#2563EB] font-medium' : 'text-gray-700 hover:bg-blue-50' }}">
     Data Guru Pembimbing
 </a>
+
                    <a href="{{ route('admin.industri.index') }}"
    class="block px-3 py-2 rounded-lg {{ request()->routeIs('admin.industri.*') ? 'bg-blue-50 text-[#2563EB] font-medium' : 'text-gray-700 hover:bg-blue-50' }}">
     Data Industri Mitra
