@@ -6,6 +6,7 @@ use App\Http\Controllers\CatatanController;
 use App\Http\Controllers\CetakPdfController;
 use App\Http\Controllers\DokumenSiswaController;
 use App\Http\Controllers\GuruController;
+use App\Http\Controllers\InformasiController;
 use App\Http\Controllers\JurnalController;
 use App\Http\Controllers\NilaiController;
 use App\Http\Controllers\ObservasiController;
@@ -23,6 +24,7 @@ Route::get('/', function () {
 Route::middleware(['auth', 'verified'])->get('/dashboard', function () {
     $role = auth()->user()->role;
 
+   
     if ($role === 'admin') {
         return redirect()->route('admin.dashboard');
     }
@@ -35,6 +37,9 @@ Route::middleware(['auth', 'verified'])->get('/dashboard', function () {
     if ($role === 'instruktur_industri') {
         return redirect()->route('instruktur.dashboard');
     }
+     // ---- INFORMASI & PANDUAN PKL (semua role bisa melihat) ----
+    Route::get('/informasi', [InformasiController::class, 'index'])->name('informasi.index');
+
 
     return abort(403);
 })->name('dashboard');
@@ -48,10 +53,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // ---- CETAK PDF (semua role: siswa/guru/instruktur/admin) ----
     // siswa: tanpa param (otomatis dirinya). guru/instruktur/admin: sertakan id siswa.
-    Route::get('/cetak/jurnal/{siswa_id?}',    [CetakPdfController::class, 'cetakJurnal'])->name('cetak.jurnal');
-    Route::get('/cetak/catatan/{siswa_id?}',   [CetakPdfController::class, 'cetakCatatan'])->name('cetak.catatan');
+    Route::get('/cetak/jurnal/{siswa_id?}', [CetakPdfController::class, 'cetakJurnal'])->name('cetak.jurnal');
+    Route::get('/cetak/catatan/{siswa_id?}', [CetakPdfController::class, 'cetakCatatan'])->name('cetak.catatan');
     Route::get('/cetak/observasi/{siswa_id?}', [CetakPdfController::class, 'cetakObservasi'])->name('cetak.observasi');
-    Route::get('/cetak/nilai/{siswa_id?}',     [CetakPdfController::class, 'cetakNilai'])->name('cetak.nilai');
+    Route::get('/cetak/nilai/{siswa_id?}', [CetakPdfController::class, 'cetakNilai'])->name('cetak.nilai');
 
     // ============================================================
     // 1. ADMIN
@@ -64,6 +69,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
             $jumlahPerusahaan = Perusahaan::count();
             return view('admin.dashboard', compact('jumlahSiswa', 'jumlahGuru', 'jumlahInstruktur', 'jumlahPerusahaan'));
         })->name('dashboard');
+
+        // ---- KELOLA INFORMASI PKL ----
+        Route::get('/informasi', [InformasiController::class, 'adminIndex'])->name('informasi.index');
+        Route::get('/informasi/create', [InformasiController::class, 'create'])->name('informasi.create');
+        Route::post('/informasi', [InformasiController::class, 'store'])->name('informasi.store');
+        Route::get('/informasi/{informasi}/edit', [InformasiController::class, 'edit'])->name('informasi.edit');
+        Route::put('/informasi/{informasi}', [InformasiController::class, 'update'])->name('informasi.update');
+        Route::delete('/informasi/{informasi}', [InformasiController::class, 'destroy'])->name('informasi.destroy');
 
         Route::get('/siswa', [AdminController::class, 'indexSiswa'])->name('siswa.index');
         Route::put('/siswa/mapping/{id}', [AdminController::class, 'updateMapping'])->name('siswa.mapping');
