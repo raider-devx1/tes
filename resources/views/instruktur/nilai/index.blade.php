@@ -1,81 +1,77 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">Rekap & Penilaian (Guru Pembimbing)</h2>
+        <h2 class="font-semibold text-xl text-gray-800 leading-tight">Penilaian Akhir PKL</h2>
     </x-slot>
 
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
-
-                @if(session('success'))
-                    <div class="bg-green-100 text-green-700 p-3 mb-4 rounded font-medium"> session('success') </div>
+                
+                @if(session('success')) 
+                    <div class="bg-green-100 text-green-700 p-3 mb-4 rounded font-medium">
+                        {{ session('success') }}
+                    </div> 
                 @endif
 
-                <p class="text-sm text-gray-500 mb-4">
-                    Nilai Instruktur (skala 1–5) diisi oleh instruktur industri.
-                    <strong>Nilai Guru</strong> &amp; <strong>Nilai Laporan</strong> (skala 0–100) diisi oleh Anda.
-                    Nilai Akhir = 50% Instruktur + 20% Guru + 30% Laporan.
-                </p>
-
                 <div class="overflow-x-auto">
-                    <table class="w-full text-sm text-left text-gray-600 border">
-                        <thead class="text-xs text-gray-700 uppercase bg-gray-50">
-                            <tr>
-                                <th class="px-3 py-3 border">Siswa</th>
-                                <th class="px-3 py-3 border text-center">Instruktur (/5)</th>
-                                <th class="px-3 py-3 border text-center">Nilai Guru (0–100)</th>
-                                <th class="px-3 py-3 border text-center">Nilai Laporan (0–100)</th>
-                                <th class="px-3 py-3 border">Catatan Guru</th>
-                                <th class="px-3 py-3 border text-center bg-blue-50 text-blue-900">Nilai Akhir</th>
-                                <th class="px-3 py-3 border text-center">Aksi</th>
+                    <table class="w-full text-left border-collapse border border-gray-200">
+                        <thead>
+                            <tr class="bg-gray-100">
+                                <th class="border p-2">Siswa</th>
+                                <th class="border p-2 text-center" colspan="4">Kriteria Nilai (1 - 5)</th>
+                                <th class="border p-2">Catatan Instruktur</th>
+                                <th class="border p-2 text-center">Aksi</th>
+                            </tr>
+                            <tr class="bg-gray-50 text-xs">
+                                <th class="border p-2"></th>
+                                <th class="border p-2 text-center">Soft Skills</th>
+                                <th class="border p-2 text-center">Hard Skills</th>
+                                <th class="border p-2 text-center">Pengembangan</th>
+                                <th class="border p-2 text-center">Kewirausahaan</th>
+                                <th class="border p-2"></th>
+                                <th class="border p-2"></th>
                             </tr>
                         </thead>
                         <tbody>
                             @forelse($siswa as $item)
-                                @php $n = $item->nilai; @endphp
-                                <tr class="bg-white border-b hover:bg-gray-50">
-                                    <td class="px-3 py-3 border font-bold text-gray-900"> $item->name </td>
-
-                                    <td class="px-3 py-3 border text-center">
-                                         $n && !is_null($n->rata_rata) ? number_format($n->rata_rata, 2) : '—' 
+                                @php 
+                                    // Mengambil relasi data nilai siswa jika sudah ada
+                                    $n = $item->nilai; 
+                                @endphp
+                                <tr class="hover:bg-gray-50">
+                                    <td class="border p-2 font-bold text-gray-800">{{ $item->name }}</td>
+                                    
+                                    <td class="border p-2 text-center">
+                                        <input type="number" form="form-nilai-{{ $item->id }}" name="soft_skill" min="1" max="5" value="{{ $n->soft_skill ?? '' }}" class="w-16 border-gray-300 rounded text-center" required>
                                     </td>
-
-                                    <td class="px-3 py-3 border text-center">
-                                        <input type="number" form="form-guru- $item->id " name="nilai_guru"
-                                               min="0" max="100" step="0.01"
-                                               value=" old('nilai_guru', $n->nilai_guru ?? '') "
-                                               class="w-20 border-gray-300 rounded text-center" required>
+                                    <td class="border p-2 text-center">
+                                        <input type="number" form="form-nilai-{{ $item->id }}" name="hard_skill" min="1" max="5" value="{{ $n->hard_skill ?? '' }}" class="w-16 border-gray-300 rounded text-center" required>
                                     </td>
-
-                                    <td class="px-3 py-3 border text-center">
-                                        <input type="number" form="form-guru- $item->id " name="nilai_laporan"
-                                               min="0" max="100" step="0.01"
-                                               value=" old('nilai_laporan', $n->nilai_laporan ?? '') "
-                                               class="w-20 border-gray-300 rounded text-center" required>
+                                    <td class="border p-2 text-center">
+                                        <input type="number" form="form-nilai-{{ $item->id }}" name="pengembangan_hard_skill" min="1" max="5" value="{{ $n->pengembangan_hard_skill ?? '' }}" class="w-16 border-gray-300 rounded text-center" required>
                                     </td>
-
-                                    <td class="px-3 py-3 border">
-                                        <textarea form="form-guru- $item->id " name="catatan_guru" rows="1"
-                                                  placeholder="Opsional..."
-                                                  class="w-full border-gray-300 rounded text-sm"> old('catatan_guru', $n->catatan_guru ?? '') </textarea>
+                                    <td class="border p-2 text-center">
+                                        <input type="number" form="form-nilai-{{ $item->id }}" name="kewirausahaan" min="1" max="5" value="{{ $n->kewirausahaan ?? '' }}" class="w-16 border-gray-300 rounded text-center" required>
                                     </td>
-
-                                    <td class="px-3 py-3 border text-center font-black text-blue-700 bg-blue-50/50">
-                                         $n && !is_null($n->nilai_akhir) ? number_format($n->nilai_akhir, 2) : 'Menunggu' 
+                                    <td class="border p-2">
+                                        <textarea form="form-nilai-{{ $item->id }}" name="catatan_rekomendasi" rows="1" placeholder="Opsional..." class="w-full border-gray-300 rounded text-sm">{{ $n->catatan_rekomendasi ?? '' }}</textarea>
                                     </td>
-
-                                    <td class="px-3 py-3 border text-center whitespace-nowrap">
-                                        <form id="form-guru- $item->id " action=" route('guru.nilai.store') " method="POST">
+                                    
+                                    <td class="border p-2 text-center">
+                                        <form id="form-nilai-{{ $item->id }}" action="{{ route('instruktur.nilai.store') }}" method="POST">
                                             @csrf
-                                            <input type="hidden" name="user_id" value=" $item->id ">
-                                            <button type="submit" class="bg-blue-600 text-white font-semibold py-1.5 px-4 rounded text-xs hover:bg-blue-800">Simpan</button>
+                                            <input type="hidden" name="user_id" value="{{ $item->id }}">
+                                            <button type="submit" class="bg-blue-600 text-white font-semibold py-1.5 px-4 rounded text-sm hover:bg-blue-800 transition">
+                                                Simpan
+                                            </button>
                                         </form>
-                                        <a href=" route('cetak.nilai', $item->id) " target="_blank"
-                                           class="inline-block mt-2 bg-red-600 hover:bg-red-700 text-white text-xs px-3 py-1.5 rounded">PDF</a>
                                     </td>
+                                    <a href="<?php echo e(route('cetak.nilai', $item->id)); ?>" target="_blank" class="inline-block mt-2 bg-red-600 hover:bg-red-700 text-white text-xs px-3 py-1.5 rounded">Cetak PDF</a>
                                 </tr>
                             @empty
-                                <tr><td colspan="7" class="px-4 py-6 text-center text-gray-500">Belum ada siswa bimbingan.</td></tr>
+                                <tr>
+                                    <td colspan="7" class="border p-6 text-center text-gray-500">Tidak ada data siswa PKL yang Anda bimbing saat ini.</td>
+                                </tr>
                             @endforelse
                         </tbody>
                     </table>
