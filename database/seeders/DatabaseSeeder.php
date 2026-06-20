@@ -11,6 +11,7 @@ class DatabaseSeeder extends Seeder
         // Panggil UserSeeder agar dieksekusi saat migrate:fresh --seed
         $this->call([
             UserSeeder::class,
+            PeriodePklSeeder::class,
         ]);
     }
 }

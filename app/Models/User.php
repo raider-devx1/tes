@@ -11,15 +11,23 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
 #[Fillable([
-    'name', 
-    'email', 
-    'password', 
-    'role', 
-    'kelas', 
-    'jurusan', 
-    'perusahaan_id', 
-    'instruktur_id', 
-    'guru_id'
+    'name',
+    'email',
+    'password',
+    'role',
+    'no_hp',
+    'foto',
+    'nisn',
+    'jenis_kelamin',
+    'status_pkl',
+    'nip',
+    'jabatan',
+    'kelas',
+    'jurusan',
+    'perusahaan_id',
+    'instruktur_id',
+    'guru_id',
+    'periode_id',
 ])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
@@ -69,5 +77,10 @@ class User extends Authenticatable
     public function nilai()
     {
         return $this->hasOne(Nilai::class, 'user_id');
+    }
+
+    public function periode()
+    {
+        return $this->belongsTo(PeriodePkl::class, 'periode_id');
     }
 }
