@@ -37,8 +37,7 @@ Route::middleware(['auth', 'verified'])->get('/dashboard', function () {
     if ($role === 'instruktur_industri') {
         return redirect()->route('instruktur.dashboard');
     }
-     // ---- INFORMASI & PANDUAN PKL (semua role bisa melihat) ----
-    Route::get('/informasi', [InformasiController::class, 'index'])->name('informasi.index');
+   
 
 
     return abort(403);
@@ -50,6 +49,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+      // ---- INFORMASI & PANDUAN PKL (semua role bisa melihat) ----
+    Route::get('/informasi', [InformasiController::class, 'index'])->name('informasi.index');
 
     // ---- CETAK PDF (semua role: siswa/guru/instruktur/admin) ----
     // siswa: tanpa param (otomatis dirinya). guru/instruktur/admin: sertakan id siswa.
