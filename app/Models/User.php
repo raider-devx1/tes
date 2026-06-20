@@ -83,4 +83,8 @@ class User extends Authenticatable
     {
         return $this->belongsTo(PeriodePkl::class, 'periode_id');
     }
+    public function dokumen()
+{
+    return $this->hasOne(\App\Models\Dokumen::class, 'siswa_id');
+}
 }

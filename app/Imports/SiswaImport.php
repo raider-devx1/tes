@@ -1,21 +1,47 @@
 <?php
 
-namespace App\Exports;
+namespace App\Imports;
 
-use Maatwebsite\Excel\Concerns\FromArray;
-use Maatwebsite\Excel\Concerns\WithHeadings;
+use App\Models\User;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
+use Maatwebsite\Excel\Concerns\SkipsEmptyRows;
+use Maatwebsite\Excel\Concerns\ToModel;
+use Maatwebsite\Excel\Concerns\WithHeadingRow;
+use Maatwebsite\Excel\Concerns\WithValidation;
 
-class SiswaTemplateExport implements FromArray, WithHeadings
+class SiswaImport implements ToModel, WithHeadingRow, WithValidation, SkipsEmptyRows
 {
-    public function headings(): array
+    public function model(array $row)
     {
-        return ['nama', 'email', 'password', 'nisn', 'jk', 'no_hp', 'kelas', 'jurusan', 'status_pkl'];
+        return new User([
+            'name'          => $row['nama'],
+            'email'         => $row['email'],
+            'password'      => Hash::make($row['password'] ?? 'password123'),
+            'nisn'          => $row['nisn'] ?? null,
+            'jenis_kelamin' => in_array($row['jk'] ?? null, ['L', 'P']) ? $row['jk'] : null,
+            'no_hp'         => $row['no_hp'] ?? null,
+            'kelas'         => $row['kelas'] ?? null,
+            'jurusan'       => $row['jurusan'] ?? null,
+            'status_pkl'    => in_array($row['status_pkl'] ?? null, ['belum', 'aktif', 'selesai']) ? $row['status_pkl'] : 'belum',
+            'role'          => 'siswa_pkl',
+        ]);
     }
 
-    public function array(): array
+    public function rules(): array
     {
         return [
-            ['Budi Santoso', 'budi@example.com', 'password123', '0012345678', 'L', '08123456789', 'XII RPL 1', 'Rekayasa Perangkat Lunak', 'belum'],
+            'nama'  => ['required', 'string', 'max:100'],
+            'email' => ['required', 'email', 'max:150', Rule::unique('users', 'email')],
+        ];
+    }
+
+    public function customValidationMessages(): array
+    {
+        return [
+            'nama.required'  => 'Kolom nama wajib diisi.',
+            'email.required' => 'Kolom email wajib diisi.',
+            'email.unique'   => 'Email :input sudah terdaftar.',
         ];
     }
 }

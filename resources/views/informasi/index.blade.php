@@ -1,4 +1,4 @@
-<x-app-layout>
+<x-app-layout title="Informasi & Panduan PKL">
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">
             Informasi & Panduan PKL
@@ -12,14 +12,18 @@
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                     <div class="p-6 text-gray-900">
                         <h3 class="text-lg font-bold text-blue-700 mb-4 border-b pb-2">
-                             $kategoriLabels[$kategori] ?? ucfirst($kategori) 
+                            {{ ucfirst($kategori) }}
                         </h3>
 
-                        <div class="space-y-4">
+                        <div class="space-y-6">
                             @foreach ($items as $info)
                                 <div class="border-l-4 border-blue-500 pl-4">
-                                    <h4 class="font-semibold text-gray-800"> $info->judul </h4>
-                                    <p class="text-gray-600 text-sm mt-1 whitespace-pre-line"> $info->konten </p>
+                                    <h4 class="font-semibold text-gray-800 text-base">
+                                        {{ $info->judul }}
+                                    </h4>
+                                    <div class="konten-html text-gray-600 text-sm mt-2 leading-relaxed">
+                                        {!! $info->konten !!}
+                                    </div>
                                 </div>
                             @endforeach
                         </div>
@@ -35,4 +39,22 @@
 
         </div>
     </div>
+
+    {{-- Styling agar output rich-text (Quill) tampil benar tanpa plugin typography --}}
+    @push('styles')
+    <style>
+        .konten-html h1 { font-size: 1.5rem; font-weight: 700; margin: .75rem 0 .5rem; color: #1f2937; }
+        .konten-html h2 { font-size: 1.25rem; font-weight: 700; margin: .75rem 0 .5rem; color: #1f2937; }
+        .konten-html h3 { font-size: 1.1rem; font-weight: 600; margin: .5rem 0; color: #1f2937; }
+        .konten-html p { margin: .5rem 0; }
+        .konten-html ul { list-style: disc; padding-left: 1.5rem; margin: .5rem 0; }
+        .konten-html ol { list-style: decimal; padding-left: 1.5rem; margin: .5rem 0; }
+        .konten-html li { margin: .25rem 0; }
+        .konten-html a { color: #2563EB; text-decoration: underline; }
+        .konten-html strong { font-weight: 700; }
+        .konten-html em { font-style: italic; }
+        .konten-html u { text-decoration: underline; }
+        .konten-html blockquote { border-left: 3px solid #93C5FD; padding-left: 1rem; color: #6b7280; font-style: italic; margin: .5rem 0; }
+    </style>
+    @endpush
 </x-app-layout>

@@ -15,6 +15,9 @@ use App\Http\Controllers\PerusahaanController;
 use App\Http\Controllers\GuruPembimbingController;
 use App\Http\Controllers\InstrukturController;
 use App\Http\Controllers\SiswaController;
+use App\Http\Controllers\MonitoringController;
+use App\Http\Controllers\EvaluasiController;
+use App\Http\Controllers\DokumenController;
 use App\Http\Controllers\ProfileController;
 use App\Models\Jurnal;
 use App\Models\User;
@@ -95,6 +98,20 @@ Route::resource('guru', GuruPembimbingController::class)->except(['show']);
 Route::resource('instruktur', InstrukturController::class)->except(['show']);
 // ---- MASTER DATA: DATA SISWA PKL ----
 Route::resource('siswa', SiswaController::class)->except(['show']);
+
+// ---- MONITORING (read-only) ----
+Route::get('/monitoring/jurnal', [MonitoringController::class, 'jurnal'])->name('monitoring.jurnal');
+Route::get('/monitoring/catatan', [MonitoringController::class, 'catatan'])->name('monitoring.catatan');
+Route::get('/monitoring/absensi', [MonitoringController::class, 'absensi'])->name('monitoring.absensi');
+
+// ---- EVALUASI & NILAI (read-only) ----
+Route::get('/evaluasi/observasi', [EvaluasiController::class, 'observasi'])->name('evaluasi.observasi');
+Route::get('/evaluasi/penilaian', [EvaluasiController::class, 'penilaian'])->name('evaluasi.penilaian');
+Route::get('/evaluasi/rekap', [EvaluasiController::class, 'rekap'])->name('evaluasi.rekap');
+
+// ---- MONITORING DOKUMEN (read-only) ----
+Route::get('/dokumen', [DokumenController::class, 'index'])->name('dokumen.index');
+
     });
 
     // ============================================================

@@ -47,7 +47,7 @@
             </a>
 
             {{-- Master Data --}}
-            <div x-data="{ open: {{ request()->routeIs('admin.siswa.*') ? 'true' : 'false' }} }">
+          <div x-data="{ open: {{ request()->routeIs('admin.siswa.*', 'admin.guru.*', 'admin.industri.*', 'admin.instruktur.*', 'admin.periode.*') ? 'true' : 'false' }} }">
                 <button @click="open = !open" class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-gray-700 hover:bg-blue-50">
                     <span class="flex items-center gap-3 font-medium"><span>🗂️</span> Master Data</span>
                     <svg class="w-4 h-4 transition" :class="open && 'rotate-180'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
@@ -78,30 +78,48 @@
             </div>
 
             {{-- Monitoring PKL --}}
-            <div x-data="{ open: false }">
-                <button @click="open = !open" class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-gray-700 hover:bg-blue-50">
-                    <span class="flex items-center gap-3 font-medium"><span>📡</span> Monitoring PKL</span>
-                    <svg class="w-4 h-4 transition" :class="open && 'rotate-180'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-                </button>
-                <div x-show="open" x-collapse class="ml-4 mt-1 space-y-1 border-l border-blue-100 pl-3">
-                    <a href="#" class="block px-3 py-2 rounded-lg text-gray-400 cursor-not-allowed">Jurnal Kegiatan <span class="text-[10px]">(segera)</span></a>
-                    <a href="#" class="block px-3 py-2 rounded-lg text-gray-400 cursor-not-allowed">Catatan Kegiatan <span class="text-[10px]">(segera)</span></a>
-                    <a href="#" class="block px-3 py-2 rounded-lg text-gray-400 cursor-not-allowed">Absensi Siswa <span class="text-[10px]">(segera)</span></a>
-                </div>
-            </div>
+          <div x-data="{ open: {{ request()->routeIs('admin.monitoring.*') ? 'true' : 'false' }} }">
+    <button @click="open = !open" class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-gray-700 hover:bg-blue-50">
+        <span class="flex items-center gap-3 font-medium"><span>📡</span> Monitoring PKL</span>
+        <svg class="w-4 h-4 transition" :class="open && 'rotate-180'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+    </button>
+    <div x-show="open" x-collapse class="ml-4 mt-1 space-y-1 border-l border-blue-100 pl-3">
+        <a href="<?= e(route('admin.monitoring.jurnal')) ?>"
+           class="block px-3 py-2 rounded-lg <?= request()->routeIs('admin.monitoring.jurnal') ? 'bg-blue-50 text-[#2563EB] font-medium' : 'text-gray-600 hover:bg-blue-50' ?>">
+            Jurnal Kegiatan
+        </a>
+        <a href="<?= e(route('admin.monitoring.catatan')) ?>"
+           class="block px-3 py-2 rounded-lg <?= request()->routeIs('admin.monitoring.catatan') ? 'bg-blue-50 text-[#2563EB] font-medium' : 'text-gray-600 hover:bg-blue-50' ?>">
+            Catatan Kegiatan
+        </a>
+        <a href="<?= e(route('admin.monitoring.absensi')) ?>"
+           class="block px-3 py-2 rounded-lg <?= request()->routeIs('admin.monitoring.absensi') ? 'bg-blue-50 text-[#2563EB] font-medium' : 'text-gray-600 hover:bg-blue-50' ?>">
+            Absensi Siswa
+        </a>
+    </div>
+</div>
 
             {{-- Evaluasi & Nilai --}}
-            <div x-data="{ open: false }">
-                <button @click="open = !open" class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-gray-700 hover:bg-blue-50">
-                    <span class="flex items-center gap-3 font-medium"><span>📝</span> Evaluasi & Nilai</span>
-                    <svg class="w-4 h-4 transition" :class="open && 'rotate-180'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-                </button>
-                <div x-show="open" x-collapse class="ml-4 mt-1 space-y-1 border-l border-blue-100 pl-3">
-                    <a href="#" class="block px-3 py-2 rounded-lg text-gray-400 cursor-not-allowed">Observasi Guru <span class="text-[10px]">(segera)</span></a>
-                    <a href="#" class="block px-3 py-2 rounded-lg text-gray-400 cursor-not-allowed">Penilaian PKL <span class="text-[10px]">(segera)</span></a>
-                    <a href="#" class="block px-3 py-2 rounded-lg text-gray-400 cursor-not-allowed">Rekap Penilaian <span class="text-[10px]">(segera)</span></a>
-                </div>
-            </div>
+            <div x-data="{ open: <?= request()->routeIs('admin.evaluasi.*') ? 'true' : 'false' ?> }">
+    <button @click="open = !open" class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-gray-700 hover:bg-blue-50">
+        <span class="flex items-center gap-3 font-medium"><span>📝</span> Evaluasi & Nilai</span>
+        <svg class="w-4 h-4 transition" :class="open && 'rotate-180'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+    </button>
+    <div x-show="open" x-collapse class="ml-4 mt-1 space-y-1 border-l border-blue-100 pl-3">
+        <a href="<?= e(route('admin.evaluasi.observasi')) ?>"
+           class="block px-3 py-2 rounded-lg <?= request()->routeIs('admin.evaluasi.observasi') ? 'bg-blue-50 text-[#2563EB] font-medium' : 'text-gray-600 hover:bg-blue-50' ?>">
+            Observasi Guru
+        </a>
+        <a href="<?= e(route('admin.evaluasi.penilaian')) ?>"
+           class="block px-3 py-2 rounded-lg <?= request()->routeIs('admin.evaluasi.penilaian') ? 'bg-blue-50 text-[#2563EB] font-medium' : 'text-gray-600 hover:bg-blue-50' ?>">
+            Penilaian PKL
+        </a>
+        <a href="<?= e(route('admin.evaluasi.rekap')) ?>"
+           class="block px-3 py-2 rounded-lg <?= request()->routeIs('admin.evaluasi.rekap') ? 'bg-blue-50 text-[#2563EB] font-medium' : 'text-gray-600 hover:bg-blue-50' ?>">
+            Rekap Penilaian
+        </a>
+    </div>
+</div>
 
             {{-- Dokumen --}}
             <div x-data="{ open: false }">
@@ -110,8 +128,10 @@
                     <svg class="w-4 h-4 transition" :class="open && 'rotate-180'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                 </button>
                 <div x-show="open" x-collapse class="ml-4 mt-1 space-y-1 border-l border-blue-100 pl-3">
-                    <a href="#" class="block px-3 py-2 rounded-lg text-gray-400 cursor-not-allowed">Surat Tugas / Penerimaan <span class="text-[10px]">(segera)</span></a>
-                    <a href="#" class="block px-3 py-2 rounded-lg text-gray-400 cursor-not-allowed">Laporan & Sertifikat <span class="text-[10px]">(segera)</span></a>
+                   <a href="{{ route('admin.dokumen.index') }}"
+   class="flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium {{ request()->routeIs('admin.dokumen.*') ? 'bg-blue-50 text-[#2563EB]' : 'text-gray-700 hover:bg-blue-50' }}">
+    <span>📁</span> Dokumen Siswa
+</a>
                 </div>
             </div>
 

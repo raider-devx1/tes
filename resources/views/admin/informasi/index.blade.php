@@ -11,7 +11,7 @@
                 <div class="p-6 text-gray-900">
 
                     <div class="flex justify-between items-center mb-6">
-                        <a href=" route('admin.informasi.create') "
+                        <a href="{{ route('admin.informasi.create') }}"
                            class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
                             + Tambah Informasi
                         </a>
@@ -19,7 +19,7 @@
 
                     @if(session('success'))
                         <div class="bg-green-100 text-green-800 p-3 rounded mb-4">
-                             session('success') 
+                            {{ session('success') }}
                         </div>
                     @endif
 
@@ -37,14 +37,14 @@
                             <tbody>
                                 @forelse ($informasi as $item)
                                     <tr class="bg-white border-b hover:bg-gray-50">
-                                        <td class="px-4 py-3 border text-center"> $item->urutan </td>
-                                        <td class="px-4 py-3 border font-medium text-gray-900"> $item->judul </td>
-                                        <td class="px-4 py-3 border"> $kategoriLabels[$item->kategori] ?? $item->kategori </td>
-                                        <td class="px-4 py-3 border"> Str::limit($item->konten, 80) </td>
+                                        <td class="px-4 py-3 border text-center">{{ $item->urutan }}</td>
+                                        <td class="px-4 py-3 border font-medium text-gray-900">{{ $item->judul }}</td>
+                                        <td class="px-4 py-3 border">{{ $kategoriLabels[$item->kategori] ?? $item->kategori }}</td>
+                                        <td class="px-4 py-3 border">{{ \Illuminate\Support\Str::limit($item->konten, 80) }}</td>
                                         <td class="px-4 py-3 border text-center whitespace-nowrap">
-                                            <a href=" route('admin.informasi.edit', $item->id) "
+                                            <a href="{{ route('admin.informasi.edit', $item->id) }}"
                                                class="text-blue-600 hover:underline">Edit</a>
-                                            <form action=" route('admin.informasi.destroy', $item->id) "
+                                            <form action="{{ route('admin.informasi.destroy', $item->id) }}"
                                                   method="POST" class="inline"
                                                   onsubmit="return confirm('Hapus informasi ini?')">
                                                 @csrf
