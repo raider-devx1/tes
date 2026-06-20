@@ -1,83 +1,97 @@
-<x-app-layout>
-    <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Kelola Pemetaan Siswa PKL') }}
-        </h2>
-    </x-slot>
+<x-app-layout title="Data Siswa PKL">
 
-    <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
-                
-                @if(session('success'))
-                    <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4">
-                        {{ session('success') }}
-                    </div>
-                @endif
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+        <div>
+            <h2 class="text-xl font-bold text-gray-800">Master Data — Siswa PKL</h2>
+            <p class="text-sm text-gray-500">Kelola data peserta PKL beserta pemetaan pembimbing & tempat magang.</p>
+        </div>
+        <a href="{{ route('admin.siswa.create') }}"
+           class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#2563EB] text-white text-sm font-medium hover:bg-blue-700">
+            + Tambah Siswa
+        </a>
+    </div>
 
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left border-collapse">
-                        <thead>
-                            <tr class="bg-gray-100">
-                                <th class="border-b p-3">Nama Siswa</th>
-                                <th class="border-b p-3">Kelas & Jurusan</th>
-                                <th class="border-b p-3">Penempatan (Industri, Instruktur, Guru)</th>
-                                <th class="border-b p-3 text-center">Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach($siswas as $siswa)
-                            <tr class="border-b hover:bg-gray-50">
-                                <form action="{{ route('admin.siswa.mapping', $siswa->id) }}" method="POST">
-                                    @csrf
-                                    @method('PUT')
-                                    
-                                    <td class="p-3 font-semibold">{{ $siswa->name }}</td>
-                                    
-                                    <td class="p-3">
-                                        <input type="text" name="kelas" value="{{ $siswa->kelas }}" placeholder="Kelas (ex: XI)" class="border rounded p-1 w-full text-sm mb-1">
-                                        <input type="text" name="jurusan" value="{{ $siswa->jurusan }}" placeholder="Jurusan (ex: TKJ)" class="border rounded p-1 w-full text-sm">
-                                    </td>
-                                    
-                                    <td class="p-3">
-                                        <select name="perusahaan_id" class="border rounded p-1 w-full text-sm mb-1">
-                                            <option value="">-- Pilih Tempat Industri --</option>
-                                            @foreach($perusahaans as $p)
-                                                <option value="{{ $p->id }}" {{ $siswa->perusahaan_id == $p->id ? 'selected' : '' }}>{{ $p->nama_perusahaan }}</option>
-                                            @endforeach
-                                        </select>
+    <div class="bg-white rounded-2xl shadow-sm border border-blue-100 p-5">
 
-                                        <select name="instruktur_id" class="border rounded p-1 w-full text-sm mb-1">
-                                            <option value="">-- Pilih Instruktur Industri --</option>
-                                            @foreach($instrukturs as $inst)
-                                                <option value="{{ $inst->id }}" {{ $siswa->instruktur_id == $inst->id ? 'selected' : '' }}>{{ $inst->name }}</option>
-                                            @endforeach
-                                        </select>
+        <form method="GET" class="mb-4 flex flex-wrap gap-2">
+            <input type="text" name="q" value="{{ $q }}" placeholder="Cari nama / NISN / email..."
+                   class="w-full sm:w-64 rounded-lg border-blue-100 focus:border-[#2563EB] focus:ring-[#2563EB] text-sm">
+            <select name="status" class="rounded-lg border-blue-100 focus:border-[#2563EB] focus:ring-[#2563EB] text-sm">
+                <option value="">Semua Status</option>
+                <option value="belum" {{ $status === 'belum' ? 'selected' : '' }}>Belum</option>
+                <option value="aktif" {{ $status === 'aktif' ? 'selected' : '' }}>Aktif</option>
+                <option value="selesai" {{ $status === 'selesai' ? 'selected' : '' }}>Selesai</option>
+            </select>
+            <button class="px-4 py-2 rounded-lg bg-blue-50 text-[#2563EB] text-sm font-medium hover:bg-blue-100">Cari</button>
+            @if($q || $status)
+                <a href="{{ route('admin.siswa.index') }}" class="px-4 py-2 rounded-lg text-gray-500 text-sm hover:bg-gray-50">Reset</a>
+            @endif
+        </form>
 
-                                        <select name="guru_id" class="border rounded p-1 w-full text-sm">
-                                            <option value="">-- Pilih Guru Pembimbing --</option>
-                                            @foreach($gurus as $guru)
-                                                <option value="{{ $guru->id }}" {{ $siswa->guru_id == $guru->id ? 'selected' : '' }}>{{ $guru->name }}</option>
-                                            @endforeach
-                                        </select>
-                                    </td>
-                                    
-                                    <td class="p-3 text-center">
-                                        <button type="submit" class="bg-blue-600 hover:bg-blue-800 text-white font-bold py-1 px-4 rounded text-sm w-full mb-2">
-                                            Simpan Mapping
-                                        </button>
-                                        <a href="{{ route('cetak.jurnal', $siswa->id) }}" target="_blank" class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-1 px-4 rounded text-sm w-full inline-block">
-                                            Test Cetak PDF
-                                        </a>
-                                    </td>
-                                </form>
-                            </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="text-left text-gray-500 border-b border-blue-100">
+                        <th class="py-3 px-3">Siswa</th>
+                        <th class="py-3 px-3">Kelas / Jurusan</th>
+                        <th class="py-3 px-3">Tempat PKL</th>
+                        <th class="py-3 px-3">Pembimbing</th>
+                        <th class="py-3 px-3 text-center">Status</th>
+                        <th class="py-3 px-3 text-right">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($siswa as $s)
+                        <tr class="border-b border-blue-50 hover:bg-blue-50/40">
+                            <td class="py-3 px-3">
+                                <div class="flex items-center gap-3">
+                                    <img src="{{ $s->foto ? asset('storage/' . $s->foto) : 'https://ui-avatars.com/api/?background=DBEAFE&color=1E3A8A&name=' . urlencode($s->name) }}"
+                                         alt="foto" class="w-9 h-9 rounded-full object-cover">
+                                    <div>
+                                        <div class="font-medium text-gray-800">{{ $s->name }}</div>
+                                        <div class="text-xs text-gray-400">NISN: {{ $s->nisn ?? '-' }}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="py-3 px-3 text-gray-600">
+                                <div>{{ $s->kelas ?? '-' }}</div>
+                                <div class="text-xs text-gray-400">{{ $s->jurusan ?? '-' }}</div>
+                            </td>
+                            <td class="py-3 px-3 text-gray-600">{{ $s->perusahaan->nama_perusahaan ?? '-' }}</td>
+                            <td class="py-3 px-3 text-gray-600">
+                                <div>G: {{ $s->guru->name ?? '-' }}</div>
+                                <div class="text-xs text-gray-400">I: {{ $s->instruktur->name ?? '-' }}</div>
+                            </td>
+                            <td class="py-3 px-3 text-center">
+                                @php
+                                    $badge = [
+                                        'belum'   => 'bg-gray-100 text-gray-600',
+                                        'aktif'   => 'bg-green-50 text-green-600',
+                                        'selesai' => 'bg-blue-50 text-[#2563EB]',
+                                    ][$s->status_pkl] ?? 'bg-gray-100 text-gray-600';
+                                @endphp
+                                <span class="text-xs px-2 py-1 rounded-full {{ $badge }}">{{ ucfirst($s->status_pkl) }}</span>
+                            </td>
+                            <td class="py-3 px-3">
+                                <div class="flex items-center justify-end gap-2">
+                                    <a href="{{ route('admin.siswa.edit', $s) }}" class="text-xs px-3 py-1.5 rounded-lg bg-blue-50 text-[#2563EB] hover:bg-blue-100">Edit</a>
+                                    <form method="POST" action="{{ route('admin.siswa.destroy', $s) }}" onsubmit="return confirm('Hapus data siswa ini?')">
+                                        @csrf @method('DELETE')
+                                        <button class="text-xs px-3 py-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100">Hapus</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr><td colspan="6" class="py-8 text-center text-gray-400">Belum ada data siswa.</td></tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
 
-            </div>
+        <div class="mt-4">
+            {!! $siswa->links() !!}
         </div>
     </div>
+
 </x-app-layout>

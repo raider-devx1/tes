@@ -13,6 +13,8 @@ use App\Http\Controllers\ObservasiController;
 use App\Http\Controllers\PeriodePklController;
 use App\Http\Controllers\PerusahaanController;
 use App\Http\Controllers\GuruPembimbingController;
+use App\Http\Controllers\InstrukturController;
+use App\Http\Controllers\SiswaController;
 use App\Http\Controllers\ProfileController;
 use App\Models\Jurnal;
 use App\Models\User;
@@ -85,6 +87,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::resource('industri', PerusahaanController::class)->except(['show']);
         // ---- MASTER DATA: AKUN GURU PEMBIMBING ----
 Route::resource('guru', GuruPembimbingController::class)->except(['show']);
+// ---- MASTER DATA: AKUN INSTRUKTUR INDUSTRI ----
+Route::resource('instruktur', InstrukturController::class)->except(['show']);
+// ---- MASTER DATA: DATA SISWA PKL ----
+Route::resource('siswa', SiswaController::class)->except(['show']);
     });
 
     // ============================================================
