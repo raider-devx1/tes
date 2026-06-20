@@ -2,12 +2,28 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\PeriodePklRequest;
 use App\Models\PeriodePkl;
 use Illuminate\Http\Request;
 
 class PeriodePklController extends Controller
 {
+    /** Aturan validasi periode (dipakai store & update). */
+    private function validateData(Request $request): array
+    {
+        $request->merge(['is_active' => $request->boolean('is_active')]);
+
+        return $request->validate([
+            'nama'            => ['required', 'string', 'max:100'],
+            'tahun_ajaran'    => ['required', 'string', 'max:20'],
+            'tanggal_mulai'   => ['required', 'date'],
+            'tanggal_selesai' => ['required', 'date', 'after_or_equal:tanggal_mulai'],
+            'is_active'       => ['boolean'],
+            'keterangan'      => ['nullable', 'string'],
+        ], [
+            'tanggal_selesai.after_or_equal' => 'Tanggal selesai harus sama atau setelah tanggal mulai.',
+        ]);
+    }
+
     public function index(Request $request)
     {
         $q = trim($request->get('q', ''));
@@ -30,9 +46,9 @@ class PeriodePklController extends Controller
         return view('admin.periode.create', ['periode' => new PeriodePkl()]);
     }
 
-    public function store(PeriodePklRequest $request)
+    public function store(Request $request)
     {
-        PeriodePkl::create($request->validated());
+        PeriodePkl::create($this->validateData($request));
         return redirect()->route('admin.periode.index')
             ->with('success', 'Periode PKL berhasil ditambahkan.');
     }
@@ -42,9 +58,9 @@ class PeriodePklController extends Controller
         return view('admin.periode.edit', compact('periode'));
     }
 
-    public function update(PeriodePklRequest $request, PeriodePkl $periode)
+    public function update(Request $request, PeriodePkl $periode)
     {
-        $periode->update($request->validated());
+        $periode->update($this->validateData($request));
         return redirect()->route('admin.periode.index')
             ->with('success', 'Periode PKL berhasil diperbarui.');
     }

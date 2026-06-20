@@ -54,8 +54,14 @@
                 </button>
                 <div x-show="open" x-collapse class="ml-4 mt-1 space-y-1 border-l border-blue-100 pl-3">
                     <a href="{{ route('admin.siswa.index') }}" class="block px-3 py-2 rounded-lg {{ request()->routeIs('admin.siswa.*') ? 'text-[#2563EB] font-semibold bg-blue-50/50' : 'text-gray-600 hover:bg-blue-50/30' }}">Data Siswa</a>
-                    <a href="#" class="block px-3 py-2 rounded-lg text-gray-400 cursor-not-allowed">Data Guru Pembimbing <span class="text-[10px]">(segera)</span></a>
-                    <a href="#" class="block px-3 py-2 rounded-lg text-gray-400 cursor-not-allowed">Data Industri Mitra <span class="text-[10px]">(segera)</span></a>
+                    <a href="{{ route('admin.guru.index') }}"
+   class="block px-3 py-2 rounded-lg {{ request()->routeIs('admin.guru.*') ? 'bg-blue-50 text-[#2563EB] font-medium' : 'text-gray-700 hover:bg-blue-50' }}">
+    Data Guru Pembimbing
+</a>
+                   <a href="{{ route('admin.industri.index') }}"
+   class="block px-3 py-2 rounded-lg {{ request()->routeIs('admin.industri.*') ? 'bg-blue-50 text-[#2563EB] font-medium' : 'text-gray-700 hover:bg-blue-50' }}">
+    Data Industri Mitra
+</a>
                     <a href="#" class="block px-3 py-2 rounded-lg text-gray-400 cursor-not-allowed">Data Instruktur <span class="text-[10px]">(segera)</span></a>
                   <a href="{{ route('admin.periode.index') }}"
    class="block px-3 py-2 rounded-lg {{ request()->routeIs('admin.periode.*') ? 'bg-blue-50 text-[#2563EB] font-medium' : 'text-gray-700 hover:bg-blue-50' }}">

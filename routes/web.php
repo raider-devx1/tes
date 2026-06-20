@@ -10,10 +10,11 @@ use App\Http\Controllers\InformasiController;
 use App\Http\Controllers\JurnalController;
 use App\Http\Controllers\NilaiController;
 use App\Http\Controllers\ObservasiController;
-use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PeriodePklController;
+use App\Http\Controllers\PerusahaanController;
+use App\Http\Controllers\GuruPembimbingController;
+use App\Http\Controllers\ProfileController;
 use App\Models\Jurnal;
-use App\Models\Perusahaan;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -25,7 +26,6 @@ Route::get('/', function () {
 Route::middleware(['auth', 'verified'])->get('/dashboard', function () {
     $role = auth()->user()->role;
 
-   
     if ($role === 'admin') {
         return redirect()->route('admin.dashboard');
     }
@@ -38,8 +38,6 @@ Route::middleware(['auth', 'verified'])->get('/dashboard', function () {
     if ($role === 'instruktur_industri') {
         return redirect()->route('instruktur.dashboard');
     }
-   
-
 
     return abort(403);
 })->name('dashboard');
@@ -51,7 +49,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-      // ---- INFORMASI & PANDUAN PKL (semua role bisa melihat) ----
+    // ---- INFORMASI & PANDUAN PKL (semua role bisa melihat) ----
     Route::get('/informasi', [InformasiController::class, 'index'])->name('informasi.index');
 
     // ---- CETAK PDF (semua role: siswa/guru/instruktur/admin) ----
@@ -65,8 +63,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // 1. ADMIN
     // ============================================================
     Route::middleware(['role:admin'])->prefix('admin')->name('admin.')->group(function () {
-         Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
-
+        Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
 
         // ---- KELOLA INFORMASI PKL ----
         Route::get('/informasi', [InformasiController::class, 'adminIndex'])->name('informasi.index');
@@ -80,9 +77,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::put('/siswa/mapping/{id}', [AdminController::class, 'updateMapping'])->name('siswa.mapping');
 
         // ---- MASTER DATA: PERIODE PKL ----
-Route::resource('periode', PeriodePklController::class)->except(['show']);
-Route::put('/periode/{periode}/aktifkan', [PeriodePklController::class, 'aktifkan'])
-      ->name('periode.aktifkan');
+        Route::resource('periode', PeriodePklController::class)->except(['show']);
+        Route::put('/periode/{periode}/aktifkan', [PeriodePklController::class, 'aktifkan'])
+            ->name('periode.aktifkan');
+
+        // ---- MASTER DATA: INDUSTRI / PERUSAHAAN ----
+        Route::resource('industri', PerusahaanController::class)->except(['show']);
+        // ---- MASTER DATA: AKUN GURU PEMBIMBING ----
+Route::resource('guru', GuruPembimbingController::class)->except(['show']);
     });
 
     // ============================================================
@@ -103,8 +105,10 @@ Route::put('/periode/{periode}/aktifkan', [PeriodePklController::class, 'aktifka
 
         Route::get('/catatan', [CatatanController::class, 'indexGuru'])->name('catatan.index');
         // sebelumnya: Route::get('/nilai', [NilaiController::class, 'indexGuru'])->name('nilai.index');
-Route::get('/nilai',  [NilaiController::class, 'indexGuru'])->name('nilai.index');
-Route::post('/nilai', [NilaiController::class, 'storeGuru'])->name('nilai.store');
+        Route::get('/nilai', [NilaiController::class, 'indexGuru'])->name('nilai.index');
+        Route::post('/nilai', [NilaiController::class, 'storeGuru'])->name('nilai.store');
+
+        
     });
 
     // ============================================================
