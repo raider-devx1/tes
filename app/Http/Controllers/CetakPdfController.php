@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Absensi;
 use App\Models\CatatanKegiatan;
 use App\Models\Jurnal;
 use App\Models\Nilai;
 use App\Models\Observasi;
 use App\Models\Pengaturan;
+use App\Models\PeriodePkl;
 use App\Models\User;
 use Barryvdh\DomPDF\Facade\Pdf;
 
@@ -65,7 +67,8 @@ class CetakPdfController extends Controller
         $data = [
             'nama_siswa'      => $siswa->name,
             'kelas'           => $siswa->kelas ?? 'Belum Diatur',
-            'dunia_kerja'     => $siswa->perusahaan->nama ?? 'Belum Diatur',
+            // FIX: kolom yang benar adalah nama_perusahaan
+            'dunia_kerja'     => $siswa->perusahaan->nama_perusahaan ?? 'Belum Diatur',
             'nama_instruktur' => $siswa->instruktur->name ?? 'Belum Diatur',
             'nama_guru'       => $siswa->guru->name ?? 'Belum Diatur',
             'catatan'         => $catatan,
@@ -105,16 +108,36 @@ class CetakPdfController extends Controller
             return redirect()->back()->with('error', 'Cetak gagal, nilai siswa belum diinput oleh instruktur industri.');
         }
 
+        // Rekap kehadiran otomatis dari tabel absensi
+        $kehadiran = [
+            'sakit' => Absensi::where('siswa_id', $siswa->id)->where('status', 'Sakit')->count(),
+            'izin'  => Absensi::where('siswa_id', $siswa->id)->where('status', 'Izin')->count(),
+            'alpha' => Absensi::where('siswa_id', $siswa->id)->where('status', 'Alpha')->count(),
+        ];
+
+        // Tanggal observasi terakhir (jika ada)
+        $tanggalObservasi = optional(
+            Observasi::where('user_id', $siswa->id)->orderBy('hari_tanggal', 'desc')->first()
+        )->hari_tanggal;
+
+        $pengaturan  = $this->getPengaturan();
+        $tahunAjaran = optional(PeriodePkl::aktif())->tahun_ajaran ?? '2025/2026';
+
         $data = [
-            'nama_siswa'      => $siswa->name,
-            'kelas'           => $siswa->kelas ?? 'Belum Diatur',
-            'dunia_kerja'     => $siswa->perusahaan->nama ?? 'Belum Diatur',
-            'nama_instruktur' => $siswa->instruktur->name ?? 'Belum Diatur',
-            'nama_guru'       => $siswa->guru->name ?? 'Belum Diatur',
-            'nilai'           => $nilai,
+            'nama_sekolah'      => $pengaturan['nama_sekolah'] ?? 'UPTD SMKN 1 MAJENE',
+            'tahun_ajaran'      => $tahunAjaran,
+            'nama_siswa'        => $siswa->name,
+            'kelas'             => $siswa->kelas ?? 'Belum Diatur',
+            'program_keahlian'  => $siswa->jurusan ?? 'Belum Diatur',
+            'dunia_kerja'       => $siswa->perusahaan->nama_perusahaan ?? 'Belum Diatur',
+            'tanggal_observasi' => $tanggalObservasi,
+            'nama_instruktur'   => $siswa->instruktur->name ?? 'Belum Diatur',
+            'nama_guru'         => $siswa->guru->name ?? 'Belum Diatur',
+            'nilai'             => $nilai,
+            'kehadiran'         => $kehadiran,
         ];
 
         $pdf = Pdf::loadView('pdf.nilai', $data)->setPaper('a4', 'portrait');
-        return $pdf->stream('Lembar_Penilaian_PKL_'.$siswa->name.'.pdf');
+        return $pdf->stream('Daftar_Nilai_PKL_'.$siswa->name.'.pdf');
     }
 }

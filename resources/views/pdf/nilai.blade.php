@@ -2,117 +2,116 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Lembar Penilaian Sertifikasi PKL</title>
+    <title>Daftar Nilai Murid PKL</title>
     <style>
-        body { font-family: 'Helvetica', Arial, sans-serif; font-size: 11pt; color: #000; margin: 15px; }
-        .title-doc { text-align: center; font-weight: bold; font-size: 14pt; margin-bottom: 25px; text-transform: uppercase; letter-spacing: 0.5px; }
-        
-        .table-biodata { width: 100%; margin-bottom: 25px; }
-        .table-biodata td { padding: 4px 0; vertical-align: top; }
-        .table-biodata td.label { width: 180px; }
-        .table-biodata td.colon { width: 15px; text-align: center; }
-        
-        .table-score { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        .table-score th, .table-score td { border: 1px solid #000; padding: 10px 8px; vertical-align: middle; }
-        .table-score th { text-align: center; font-weight: bold; font-size: 10pt; background-color: #f2f2f2; }
-        
-        .text-center { text-align: center !important; }
-        .font-bold { font-weight: bold; }
-        
-        .box-rekomendasi { border: 1px solid #000; padding: 12px; margin-top: 25px; min-height: 80px; }
-        .box-rekomendasi h4 { margin: 0 0 6px 0; font-size: 11pt; font-weight: bold; }
-        .box-rekomendasi p { margin: 0; font-style: italic; color: #333; font-size: 10pt; }
+        body { font-family: Arial, Helvetica, sans-serif; font-size: 11pt; color:#000; margin: 30px; }
 
-        .footer-sign { width: 100%; margin-top: 50px; }
-        .footer-sign td { width: 50%; text-align: center; vertical-align: top; }
+        .header { text-align:center; font-weight:bold; line-height:1.5; margin-bottom:20px; }
+        .header div { text-transform:uppercase; }
+
+        .biodata { width:100%; margin-bottom:18px; }
+        .biodata td { padding:2px 0; vertical-align:top; }
+        .biodata td.label { width:160px; }
+        .biodata td.colon { width:12px; }
+
+        table.nilai { width:100%; border-collapse:collapse; margin-bottom:22px; }
+        table.nilai th, table.nilai td { border:1px solid #000; padding:7px 8px; vertical-align:middle; }
+        table.nilai th { background:#f2f2f2; text-align:center; font-size:10.5pt; }
+        .text-center { text-align:center; }
+
+        table.hadir { border-collapse:collapse; margin-bottom:35px; }
+        table.hadir td { border:1px solid #000; padding:5px 10px; }
+        table.hadir .judul-hadir { border:none; padding:0 0 4px 0; font-weight:bold; }
+
+        .footer { width:100%; margin-top:10px; }
+        .footer td { width:50%; vertical-align:top; text-align:center; }
+        .nama-ttd { margin-top:70px; }
     </style>
 </head>
 <body>
 
-    <div class="title-doc">LEMBAR PENILAIAN PERKEMBANGAN SISWA PKL</div>
+    <div class="header">
+        <div>DAFTAR NILAI MURID</div>
+        <div>MATA PELAJARAN PKL</div>
+        <div>{{ $nama_sekolah }}</div>
+        <div>TAHUN PELAJARAN {{ $tahun_ajaran }}</div>
+    </div>
 
-    <table class="table-biodata" border="0">
+    <table class="biodata">
+        <tr><td class="label">Nama Murid</td><td class="colon">:</td><td>{{ $nama_siswa }}</td></tr>
+        <tr><td class="label">Kelas</td><td class="colon">:</td><td>{{ $kelas }}</td></tr>
+        <tr><td class="label">Program Keahlian</td><td class="colon">:</td><td>{{ $program_keahlian }}</td></tr>
+        <tr><td class="label">Tempat PKL</td><td class="colon">:</td><td>{{ $dunia_kerja }}</td></tr>
         <tr>
-            <td class="label">Nama Peserta Didik</td>
-            <td class="colon">:</td>
-            <td class="font-bold">{{ $nama_siswa }}</td>
+            <td class="label">Tanggal Observasi</td><td class="colon">:</td>
+            <td>{{ $tanggal_observasi ? \Carbon\Carbon::parse($tanggal_observasi)->format('d F Y') : '.....................' }}</td>
         </tr>
-        <tr>
-            <td class="label">Kelas</td>
-            <td class="colon">:</td>
-            <td>{{ $kelas }}</td>
-        </tr>
-        <tr>
-            <td class="label">Dunia Kerja Tempat PKL</td>
-            <td class="colon">:</td>
-            <td>{{ $dunia_kerja }}</td>
-        </tr>
-        <tr>
-            <td class="label">Nama Instruktur / Penilai</td>
-            <td class="colon">:</td>
-            <td>{{ $nama_instruktur }}</td>
-        </tr>
-        <tr>
-            <td class="label">Nama Guru Pembimbing</td>
-            <td class="colon">:</td>
-            <td>{{ $nama_guru }}</td>
-        </tr>
+        <tr><td class="label">Nama Instruktur</td><td class="colon">:</td><td>{{ $nama_instruktur }}</td></tr>
+        <tr><td class="label">Nama Pembimbing</td><td class="colon">:</td><td>{{ $nama_guru }}</td></tr>
     </table>
 
-    <table class="table-score">
+    @php
+        $predikat = function ($n) {
+            if (is_null($n)) return '-';
+            return match (true) {
+                $n >= 5 => 'Sangat Baik',
+                $n == 4 => 'Baik',
+                $n == 3 => 'Cukup',
+                $n == 2 => 'Kurang',
+                default => 'Sangat Kurang',
+            };
+        };
+    @endphp
+
+    <table class="nilai">
         <thead>
             <tr>
-                <th width="8%">NO</th>
-                <th width="67%">KOMPONEN PENILAIAN EVALUASI</th>
-                <th width="25%">SKOR NILAI (1 - 5)</th>
+                <th width="60%">Tujuan Pembelajaran</th>
+                <th width="12%">Skor</th>
+                <th width="28%">Deskripsi</th>
             </tr>
         </thead>
         <tbody>
             <tr>
-                <td class="text-center">1</td>
-                <td>Internalisasi dan Penerapan Soft Skill</td>
-                <td class="text-center font-bold">{{ $nilai->soft_skill }}</td>
+                <td>1. Internalisasi dan Penerapan Soft Skills</td>
+                <td class="text-center">{{ $nilai->soft_skill ?? '-' }}</td>
+                <td class="text-center">{{ $predikat($nilai->soft_skill) }}</td>
             </tr>
             <tr>
-                <td class="text-center">2</td>
-                <td>Penerapan Hard Skill</td>
-                <td class="text-center font-bold">{{ $nilai->hard_skill }}</td>
+                <td>2. Penerapan Hard Skills</td>
+                <td class="text-center">{{ $nilai->hard_skill ?? '-' }}</td>
+                <td class="text-center">{{ $predikat($nilai->hard_skill) }}</td>
             </tr>
             <tr>
-                <td class="text-center">3</td>
-                <td>Peningkatan dan Pengembangan Hard Skill</td>
-                <td class="text-center font-bold">{{ $nilai->pengembangan_hard_skill }}</td>
+                <td>3. Peningkatan &amp; Pengembangan Hard Skills</td>
+                <td class="text-center">{{ $nilai->pengembangan_hard_skill ?? '-' }}</td>
+                <td class="text-center">{{ $predikat($nilai->pengembangan_hard_skill) }}</td>
             </tr>
             <tr>
-                <td class="text-center">4</td>
-                <td>Penyiapan Kemandirian dan Kewirausahaan</td>
-                <td class="text-center font-bold">{{ $nilai->kewirausahaan }}</td>
-            </tr>
-            <tr style="background-color: #f9f9f9;">
-                <td colspan="2" class="font-bold" style="text-align: right; padding-right: 15px;">NILAI AKHIR RATA-RATA :</td>
-                <td class="text-center font-bold" style="font-size: 13pt; color: #1e3a8a;">{{ $nilai->rata_rata }}</td>
+                <td>4. Penyiapan kemandirian kewirausahaan</td>
+                <td class="text-center">{{ $nilai->kewirausahaan ?? '-' }}</td>
+                <td class="text-center">{{ $predikat($nilai->kewirausahaan) }}</td>
             </tr>
         </tbody>
     </table>
 
-    <div class="box-rekomendasi">
-        <h4>Catatan Masukan / Rekomendasi Karir dari Instruktur Industri:</h4>
-        <p>{{ $nilai->catatan_rekomendasi ? '"'.$nilai->catatan_rekomendasi.'"' : '-' }}</p>
-    </div>
+    <table class="hadir">
+        <tr><td class="judul-hadir" colspan="2">Kehadiran :</td></tr>
+        <tr><td>Sakit</td><td>: {{ $kehadiran['sakit'] ?? 0 }} Hari</td></tr>
+        <tr><td>Ijin</td><td>: {{ $kehadiran['izin'] ?? 0 }} Hari</td></tr>
+        <tr><td>Tanpa Keterangan</td><td>: {{ $kehadiran['alpha'] ?? 0 }} Hari</td></tr>
+    </table>
 
-    <table class="footer-sign">
+    <table class="footer">
         <tr>
             <td>
-                <br>
-                Guru Pembimbing PKL,
-                <br><br><br><br><br>
-                ( {{ $nama_guru }} )
+                Instruktur,
+                <div class="nama-ttd">( {{ $nama_instruktur }} )</div>
             </td>
             <td>
-                Jepara, ......................... 2026<br>
-                Instruktur Industri,
-                <br><br><br><br><br>
-                ( {{ $nama_instruktur }} )
+                ...................., ...................... {{ date('Y') }} <br>
+                Guru Pembimbing,
+                <div class="nama-ttd">( {{ $nama_guru }} )</div>
             </td>
         </tr>
     </table>
