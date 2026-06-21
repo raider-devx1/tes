@@ -126,6 +126,10 @@ Route::get('/dokumen', [DokumenController::class, 'index'])->name('dokumen.index
         Route::get('/siswa', [GuruController::class, 'index'])->name('siswa.index');
         Route::get('/siswa/{id}/detail', [GuruController::class, 'detailSiswa'])->name('siswa.detail');
 
+        // ---- MONITORING (dipisah: Jurnal & Absensi) ----
+    Route::get('/monitoring/jurnal',  [GuruController::class, 'monitoringJurnal'])->name('monitoring.jurnal');
+    Route::get('/monitoring/absensi', [GuruController::class, 'monitoringAbsensi'])->name('monitoring.absensi');
+
        // Observasi (dikelola ObservasiController, bukan GuruController lagi)
         Route::get('/observasi',         [ObservasiController::class, 'indexGuru'])->name('observasi.index');
         Route::get('/observasi/create',  [ObservasiController::class, 'createGuru'])->name('observasi.create');
@@ -167,7 +171,7 @@ Route::get('/dokumen', [DokumenController::class, 'index'])->name('dokumen.index
 
         // Lihat rekap kehadiran sendiri
         Route::get('/absensi', [AbsensiController::class, 'indexSiswa'])->name('absensi.index');
-        
+
     });
 
     // ============================================================
