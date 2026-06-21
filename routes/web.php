@@ -64,6 +64,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/cetak/observasi/{siswa_id?}', [CetakPdfController::class, 'cetakObservasi'])->name('cetak.observasi');
     Route::get('/cetak/nilai/{siswa_id?}', [CetakPdfController::class, 'cetakNilai'])->name('cetak.nilai');
 
+    // Surat Tugas (global)
+    Route::get('/dokumen/surat-tugas/lihat',    [DokumenController::class, 'lihatSuratTugas'])->name('dokumen.surat-tugas.lihat');
+    Route::get('/dokumen/surat-tugas/download', [DokumenController::class, 'downloadSuratTugas'])->name('dokumen.surat-tugas.download');
+    
+    Route::get('/dokumen/{siswa}/{jenis}/lihat',    [DokumenController::class, 'lihat'])->name('dokumen.lihat');
+    Route::get('/dokumen/{siswa}/{jenis}/download', [DokumenController::class, 'download'])->name('dokumen.download');
+
+
     // ============================================================
     // 1. ADMIN
     // ============================================================
@@ -109,8 +117,10 @@ Route::get('/evaluasi/observasi', [EvaluasiController::class, 'observasi'])->nam
 Route::get('/evaluasi/penilaian', [EvaluasiController::class, 'penilaian'])->name('evaluasi.penilaian');
 Route::get('/evaluasi/rekap', [EvaluasiController::class, 'rekap'])->name('evaluasi.rekap');
 
-// ---- MONITORING DOKUMEN (read-only) ----
-Route::get('/dokumen', [DokumenController::class, 'index'])->name('dokumen.index');
+// ---- MONITORING DOKUMEN ----
+Route::get('/dokumen',                      [DokumenController::class, 'adminIndex'])->name('dokumen.index');
+    Route::get('/dokumen/surat-tugas',          [DokumenController::class, 'suratTugasIndex'])->name('dokumen.surat-tugas.index');
+    Route::post('/dokumen/{siswa}/surat-tugas', [DokumenController::class, 'uploadSuratTugas'])->name('dokumen.surat-tugas');
 
     });
 
@@ -140,6 +150,7 @@ Route::get('/dokumen', [DokumenController::class, 'index'])->name('dokumen.index
         Route::get('/nilai', [NilaiController::class, 'indexGuru'])->name('nilai.index');
         Route::post('/nilai', [NilaiController::class, 'storeGuru'])->name('nilai.store');
 
+        Route::get('/dokumen', [DokumenController::class, 'guruIndex'])->name('dokumen.index');
         
     });
 
@@ -166,8 +177,8 @@ Route::get('/dokumen', [DokumenController::class, 'index'])->name('dokumen.index
         Route::get('/observasi', [ObservasiController::class, 'indexSiswa'])->name('observasi.index');
         Route::get('/nilai', [NilaiController::class, 'indexSiswa'])->name('nilai.index');
 
-        Route::get('/dokumen', [DokumenSiswaController::class, 'index'])->name('dokumen.index');
-        Route::post('/dokumen', [DokumenSiswaController::class, 'store'])->name('dokumen.store');
+        Route::get('/dokumen',  [DokumenController::class, 'siswaIndex'])->name('dokumen.index');
+    Route::post('/dokumen', [DokumenController::class, 'siswaStore'])->name('dokumen.store');
 
         // Lihat rekap kehadiran sendiri
         Route::get('/absensi', [AbsensiController::class, 'indexSiswa'])->name('absensi.index');

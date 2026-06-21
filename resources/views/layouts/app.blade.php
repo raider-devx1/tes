@@ -121,19 +121,27 @@
     </div>
 </div>
 
-            {{-- Dokumen --}}
-            <div x-data="{ open: false }">
-                <button @click="open = !open" class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-gray-700 hover:bg-blue-50">
-                    <span class="flex items-center gap-3 font-medium"><span>📁</span> Dokumen</span>
-                    <svg class="w-4 h-4 transition" :class="open && 'rotate-180'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-                </button>
-                <div x-show="open" x-collapse class="ml-4 mt-1 space-y-1 border-l border-blue-100 pl-3">
-                   <a href="{{ route('admin.dokumen.index') }}"
-   class="flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium {{ request()->routeIs('admin.dokumen.*') ? 'bg-blue-50 text-[#2563EB]' : 'text-gray-700 hover:bg-blue-50' }}">
-    <span>📁</span> Dokumen Siswa
-</a>
-                </div>
-            </div>
+           <div x-data="{ open: {{ request()->routeIs('admin.dokumen.*') ? 'true' : 'false' }} }">
+    <button @click="open = !open" class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-gray-700 hover:bg-blue-50">
+        <span class="flex items-center gap-3 font-medium"><span>📁</span> Dokumen</span>
+        <svg class="w-4 h-4 transition" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-width="2" d="M19 9l-7 7-7-7"/>
+        </svg>
+    </button>
+    <div x-show="open" x-collapse class="ml-4 mt-1 space-y-1 border-l border-blue-100 pl-3" x-cloak>
+
+        <a href="{{ route('admin.dokumen.index') }}"
+           class="block px-3 py-2 rounded-lg {{ request()->routeIs('admin.dokumen.index') ? 'bg-blue-50 text-[#2563EB] font-medium' : 'text-gray-600 hover:bg-blue-50' }}">
+            Dokumen Siswa
+        </a>
+
+        <a href="{{ route('admin.dokumen.surat-tugas.index') }}"
+           class="block px-3 py-2 rounded-lg {{ request()->routeIs('admin.dokumen.surat-tugas.*') ? 'bg-blue-50 text-[#2563EB] font-medium' : 'text-gray-600 hover:bg-blue-50' }}">
+            Surat Tugas
+        </a>
+
+    </div>
+</div>
 
             {{-- Informasi Umum PKL --}}
             <a href="{{ route('admin.informasi.index') }}"
