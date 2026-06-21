@@ -71,6 +71,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dokumen/{siswa}/{jenis}/lihat',    [DokumenController::class, 'lihat'])->name('dokumen.lihat');
     Route::get('/dokumen/{siswa}/{jenis}/download', [DokumenController::class, 'download'])->name('dokumen.download');
 
+    
     // ============================================================
     // 1. ADMIN
     // ============================================================
