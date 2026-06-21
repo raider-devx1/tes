@@ -24,10 +24,10 @@
     </a>
 
     <!-- Modal Import -->
-    <div x-show="importOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" @click.self="importOpen = false">
+   <div x-show="importOpen" x-cloak style="display: none;" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" @click.self="importOpen = false">
         <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
             <h3 class="text-lg font-bold text-gray-800 mb-1">Import Data Siswa</h3>
-            <p class="text-sm text-gray-500 mb-4">Unggah file Excel (.xlsx/.csv) sesuai format template.</p>
+           <p class="text-sm text-gray-500 mb-4">Unggah file Excel (.xlsx/.csv) sesuai template. Kolom <b>tempat_pkl</b> & <b>pembimbing</b> harus cocok dengan data yang sudah terdaftar.</p>
 
             <form method="POST" action="<?= e(route('admin.siswa.import')) ?>" enctype="multipart/form-data">
                 @csrf
