@@ -84,7 +84,7 @@ class CetakPdfController extends Controller
         $data = [
             'nama_siswa'       => $siswa->name,
             'kelas'            => $siswa->kelas ?? 'Belum Diatur',
-            'dunia_kerja'      => $siswa->perusahaan->nama ?? 'Belum Diatur',
+            'dunia_kerja'      => $siswa->perusahaan->nama_perusahaan ?? 'Belum Diatur',
             'nama_instruktur'  => $siswa->instruktur->name ?? 'Belum Diatur',
             'nama_guru'        => $siswa->guru->name ?? 'Belum Diatur',
             'pekerjaan_projek' => $observasi->first()?->pekerjaan_projek ?? '-',
