@@ -24,8 +24,9 @@
         table.hadir .judul-hadir { border:none; padding:0 0 4px 0; font-weight:bold; }
 
         .footer { width:100%; margin-top:10px; }
-        .footer td { width:50%; vertical-align:top; text-align:center; }
+        .footer td { width:50%; vertical-align:top; text-align:left; }
         .nama-ttd { margin-top:70px; }
+.nip-ttd  { margin-top:2px; }   /* NIP tepat di bawah nama */
     </style>
 </head>
 <body>
@@ -103,18 +104,20 @@
     </table>
 
     <table class="footer">
-        <tr>
-            <td>
-                Instruktur,
-                <div class="nama-ttd">( {{ $nama_instruktur }} )</div>
-            </td>
-            <td>
-                ...................., ...................... {{ date('Y') }} <br>
-                Guru Pembimbing,
-                <div class="nama-ttd">( {{ $nama_guru }} )</div>
-            </td>
-        </tr>
-    </table>
+    <tr>
+        <td>
+            <br>
+            Instruktur
+            <div class="nama-ttd"> {{ $nama_instruktur }} </div>
+        </td>
+        <td>
+            Majene, {{ $tanggal_cetak }} <br>
+            Guru Pembimbing,
+            <div class="nama-ttd">{{ $nama_guru }} </div>
+            <div class="nip-ttd">NIP. {{ $nip_guru }}</div>
+        </td>
+    </tr>
+</table>
 
 </body>
 </html>

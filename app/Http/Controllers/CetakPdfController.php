@@ -9,6 +9,7 @@ use App\Models\Nilai;
 use App\Models\Observasi;
 use App\Models\Pengaturan;
 use App\Models\PeriodePkl;
+use Carbon\Carbon;
 use App\Models\User;
 use Barryvdh\DomPDF\Facade\Pdf;
 
@@ -123,19 +124,21 @@ class CetakPdfController extends Controller
         $pengaturan  = $this->getPengaturan();
         $tahunAjaran = optional(PeriodePkl::aktif())->tahun_ajaran ?? '2025/2026';
 
-        $data = [
-            'nama_sekolah'      => $pengaturan['nama_sekolah'] ?? 'UPTD SMKN 1 MAJENE',
-            'tahun_ajaran'      => $tahunAjaran,
-            'nama_siswa'        => $siswa->name,
-            'kelas'             => $siswa->kelas ?? 'Belum Diatur',
-            'program_keahlian'  => $siswa->jurusan ?? 'Belum Diatur',
-            'dunia_kerja'       => $siswa->perusahaan->nama_perusahaan ?? 'Belum Diatur',
-            'tanggal_observasi' => $tanggalObservasi,
-            'nama_instruktur'   => $siswa->instruktur->name ?? 'Belum Diatur',
-            'nama_guru'         => $siswa->guru->name ?? 'Belum Diatur',
-            'nilai'             => $nilai,
-            'kehadiran'         => $kehadiran,
-        ];
+       $data = [
+    'nama_sekolah'      => $pengaturan['nama_sekolah'] ?? 'UPTD SMKN 1 MAJENE',
+    'tahun_ajaran'      => $tahunAjaran,
+    'nama_siswa'        => $siswa->name,
+    'kelas'             => $siswa->kelas ?? 'Belum Diatur',
+    'program_keahlian'  => $siswa->jurusan ?? 'Belum Diatur',
+    'dunia_kerja'       => $siswa->perusahaan->nama_perusahaan ?? 'Belum Diatur',
+    'tanggal_observasi' => $tanggalObservasi,
+    'nama_instruktur'   => $siswa->instruktur->name ?? 'Belum Diatur',
+    'nama_guru'         => $siswa->guru->name ?? 'Belum Diatur',
+    'nip_guru'          => $siswa->guru->nip ?? '-',                       // ← NIP guru pembimbing
+    'tanggal_cetak'     => Carbon::now()->locale('id')->translatedFormat('d F Y'), // ← cth: 21 Juni 2026
+    'nilai'             => $nilai,
+    'kehadiran'         => $kehadiran,
+];
 
         $pdf = Pdf::loadView('pdf.nilai', $data)->setPaper('a4', 'portrait');
         return $pdf->stream('Daftar_Nilai_PKL_'.$siswa->name.'.pdf');
