@@ -5,57 +5,81 @@
             <p class="text-sm text-gray-500">Pantau kehadiran siswa PKL (hanya-baca).</p>
         </div>
 
+        {{-- Rekap --}}
         <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
             <div class="bg-white rounded-xl border border-blue-100 p-4">
                 <p class="text-xs text-gray-500">Hadir</p>
-                <p class="text-2xl font-bold text-green-600"><?= e($rekap['Hadir']) ?></p>
+                <p class="text-2xl font-bold text-green-600">{{ $rekap['Hadir'] ?? 0 }}</p>
             </div>
             <div class="bg-white rounded-xl border border-blue-100 p-4">
                 <p class="text-xs text-gray-500">Izin</p>
-                <p class="text-2xl font-bold text-blue-600"><?= e($rekap['Izin']) ?></p>
+                <p class="text-2xl font-bold text-blue-600">{{ $rekap['Izin'] ?? 0 }}</p>
             </div>
             <div class="bg-white rounded-xl border border-blue-100 p-4">
                 <p class="text-xs text-gray-500">Sakit</p>
-                <p class="text-2xl font-bold text-amber-500"><?= e($rekap['Sakit']) ?></p>
+                <p class="text-2xl font-bold text-amber-500">{{ $rekap['Sakit'] ?? 0 }}</p>
             </div>
             <div class="bg-white rounded-xl border border-blue-100 p-4">
                 <p class="text-xs text-gray-500">Alpha</p>
-                <p class="text-2xl font-bold text-red-500"><?= e($rekap['Alpha']) ?></p>
+                <p class="text-2xl font-bold text-red-500">{{ $rekap['Alpha'] ?? 0 }}</p>
             </div>
         </div>
 
+        {{-- Filter --}}
         <form method="GET" class="bg-white rounded-xl border border-blue-100 p-4 flex flex-wrap gap-3 items-end">
-            <div class="flex-1 min-w-[180px]">
+            <div class="flex-1 min-w-[160px]">
                 <label class="block text-xs text-gray-500 mb-1">Cari siswa</label>
-                <input type="text" name="q" value="<?= e($q) ?>" placeholder="Nama / NISN"
+                <input type="text" name="q" value="{{ $q }}" placeholder="Nama / NISN"
                        class="w-full rounded-lg border-gray-200 text-sm focus:border-[#2563EB] focus:ring-[#2563EB]">
+            </div>
+            <div>
+                <label class="block text-xs text-gray-500 mb-1">Kelas</label>
+                <select name="kelas" class="rounded-lg border-gray-200 text-sm focus:border-[#2563EB] focus:ring-[#2563EB]">
+                    <option value="">Semua</option>
+                    @foreach($kelasList as $k)
+                        <option value="{{ $k }}" {{ $kelas === $k ? 'selected' : '' }}>{{ $k }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs text-gray-500 mb-1">Jurusan</label>
+                <select name="jurusan" class="rounded-lg border-gray-200 text-sm focus:border-[#2563EB] focus:ring-[#2563EB]">
+                    <option value="">Semua</option>
+                    @foreach($jurusanList as $jr)
+                        <option value="{{ $jr }}" {{ $jurusan === $jr ? 'selected' : '' }}>{{ $jr }}</option>
+                    @endforeach
+                </select>
             </div>
             <div>
                 <label class="block text-xs text-gray-500 mb-1">Status</label>
                 <select name="status" class="rounded-lg border-gray-200 text-sm focus:border-[#2563EB] focus:ring-[#2563EB]">
                     <option value="">Semua</option>
-                    <option value="Hadir" <?= $status === 'Hadir' ? 'selected' : '' ?>>Hadir</option>
-                    <option value="Izin" <?= $status === 'Izin' ? 'selected' : '' ?>>Izin</option>
-                    <option value="Sakit" <?= $status === 'Sakit' ? 'selected' : '' ?>>Sakit</option>
-                    <option value="Alpha" <?= $status === 'Alpha' ? 'selected' : '' ?>>Alpha</option>
+                    <option value="Hadir" {{ $status === 'Hadir' ? 'selected' : '' }}>Hadir</option>
+                    <option value="Izin" {{ $status === 'Izin' ? 'selected' : '' }}>Izin</option>
+                    <option value="Sakit" {{ $status === 'Sakit' ? 'selected' : '' }}>Sakit</option>
+                    <option value="Alpha" {{ $status === 'Alpha' ? 'selected' : '' }}>Alpha</option>
                 </select>
             </div>
             <div>
                 <label class="block text-xs text-gray-500 mb-1">Tanggal</label>
-                <input type="date" name="tanggal" value="<?= e($tanggal) ?>"
+                <input type="date" name="tanggal" value="{{ $tanggal }}"
                        class="rounded-lg border-gray-200 text-sm focus:border-[#2563EB] focus:ring-[#2563EB]">
             </div>
             <button type="submit" class="px-4 py-2 rounded-lg bg-[#2563EB] text-white text-sm font-medium hover:bg-blue-700">Filter</button>
-            <a href="<?= e(route('admin.monitoring.absensi')) ?>" class="px-4 py-2 rounded-lg text-gray-500 text-sm hover:bg-gray-50">Reset</a>
+            <a href="{{ route('admin.monitoring.absensi') }}" class="px-4 py-2 rounded-lg text-gray-500 text-sm hover:bg-gray-50">Reset</a>
         </form>
 
+        {{-- Tabel --}}
         <div class="bg-white rounded-xl border border-blue-100 overflow-hidden">
             <div class="overflow-x-auto">
                 <table class="w-full text-sm">
                     <thead class="bg-blue-50 text-gray-600 text-left">
                         <tr>
+                            <th class="px-4 py-3 text-center w-12">No</th>
                             <th class="px-4 py-3">Tanggal</th>
                             <th class="px-4 py-3">Siswa</th>
+                            <th class="px-4 py-3">Kelas</th>
+                            <th class="px-4 py-3">Jurusan</th>
                             <th class="px-4 py-3 text-center">Status</th>
                             <th class="px-4 py-3 text-center">Jam Masuk</th>
                             <th class="px-4 py-3 text-center">Jam Pulang</th>
@@ -73,22 +97,25 @@
                                 };
                             @endphp
                             <tr class="hover:bg-blue-50/40">
-                                <td class="px-4 py-3 whitespace-nowrap"><?= e(\Carbon\Carbon::parse($a->tanggal)->format('d M Y')) ?></td>
-                                <td class="px-4 py-3 font-medium text-gray-800"><?= e($a->siswa->name ?? '-') ?></td>
+                                <td class="px-4 py-3 text-center text-gray-500">{{ ($absensi->currentPage() - 1) * $absensi->perPage() + $loop->iteration }}</td>
+                                <td class="px-4 py-3 whitespace-nowrap">{{ \Carbon\Carbon::parse($a->tanggal)->format('d M Y') }}</td>
+                                <td class="px-4 py-3 font-medium text-gray-800">{{ $a->siswa->name ?? '-' }}</td>
+                                <td class="px-4 py-3">{{ $a->siswa->kelas ?? '-' }}</td>
+                                <td class="px-4 py-3">{{ $a->siswa->jurusan ?? '-' }}</td>
                                 <td class="px-4 py-3 text-center">
-                                    <span class="inline-block px-2.5 py-1 rounded-full text-xs font-medium <?= e($badge) ?>"><?= e($a->status) ?></span>
+                                    <span class="inline-block px-2.5 py-1 rounded-full text-xs font-medium {{ $badge }}">{{ $a->status }}</span>
                                 </td>
-                                <td class="px-4 py-3 text-center"><?= e($a->jam_masuk ?? '-') ?></td>
-                                <td class="px-4 py-3 text-center"><?= e($a->jam_pulang ?? '-') ?></td>
+                                <td class="px-4 py-3 text-center">{{ $a->jam_masuk ?? '-' }}</td>
+                                <td class="px-4 py-3 text-center">{{ $a->jam_pulang ?? '-' }}</td>
                             </tr>
                         @empty
-                            <tr><td colspan="5" class="px-4 py-8 text-center text-gray-400">Tidak ada data absensi.</td></tr>
+                            <tr><td colspan="8" class="px-4 py-8 text-center text-gray-400">Tidak ada data absensi.</td></tr>
                         @endforelse
                     </tbody>
                 </table>
             </div>
         </div>
 
-        <div><?= $absensi->links() ?></div>
+        <div>{!! $absensi->links() !!}</div>
     </div>
 </x-app-layout>
