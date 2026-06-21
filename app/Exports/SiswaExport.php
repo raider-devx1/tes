@@ -36,8 +36,8 @@ class SiswaExport implements FromQuery, WithHeadings, WithMapping, ShouldAutoSiz
     {
         return [
             'No', 'Nama', 'NISN', 'Email', 'JK', 'No. HP',
-            'Kelas', 'Jurusan', 'Status PKL', 'Perusahaan',
-            'Guru Pembimbing', 'Instruktur', 'Periode',
+            'Kelas', 'Jurusan', 'Tempat PKL',
+            'Guru Pembimbing', 'Instruktur', 'Periode', 'Status PKL',
         ];
     }
 
@@ -55,11 +55,11 @@ class SiswaExport implements FromQuery, WithHeadings, WithMapping, ShouldAutoSiz
             $siswa->no_hp,
             $siswa->kelas,
             $siswa->jurusan,
-            ucfirst($siswa->status_pkl),
             $siswa->perusahaan->nama_perusahaan ?? '-',
             $siswa->guru->name ?? '-',
             $siswa->instruktur->name ?? '-',
             $siswa->periode->nama ?? '-',
+            ucfirst($siswa->status_pkl),
         ];
     }
 

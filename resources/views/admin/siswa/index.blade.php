@@ -5,52 +5,51 @@
             <h2 class="text-xl font-bold text-gray-800">Master Data — Siswa PKL</h2>
             <p class="text-sm text-gray-500">Kelola data peserta PKL beserta pemetaan pembimbing & tempat magang.</p>
         </div>
-       <div class="flex flex-wrap items-center gap-2" x-data="{ importOpen: false }">
-    <a href="<?= e(route('admin.siswa.export.excel', request()->only('q', 'status'))) ?>"
-       class="inline-flex items-center gap-1 px-3 py-2 rounded-lg bg-green-50 text-green-700 text-sm font-medium hover:bg-green-100">
-        ⬇ Excel
-    </a>
-    <a href="<?= e(route('admin.siswa.export.pdf', request()->only('q', 'status'))) ?>"
-       class="inline-flex items-center gap-1 px-3 py-2 rounded-lg bg-red-50 text-red-600 text-sm font-medium hover:bg-red-100">
-        ⬇ PDF
-    </a>
-    <button @click="importOpen = true"
-            class="inline-flex items-center gap-1 px-3 py-2 rounded-lg bg-amber-50 text-amber-700 text-sm font-medium hover:bg-amber-100">
-        ⬆ Import
-    </button>
-    <a href="<?= e(route('admin.siswa.create')) ?>"
-       class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#2563EB] text-white text-sm font-medium hover:bg-blue-700">
-        + Tambah Siswa
-    </a>
+        <div class="flex flex-wrap items-center gap-2" x-data="{ importOpen: false }">
+            <a href="{{ route('admin.siswa.export.excel', request()->only('q', 'status')) }}"
+                class="inline-flex items-center gap-1 px-3 py-2 rounded-lg bg-green-50 text-green-700 text-sm font-medium hover:bg-green-100">
+                ⬇ Excel
+            </a>
+            <a href="{{ route('admin.siswa.export.pdf', request()->only('q', 'status')) }}"
+                class="inline-flex items-center gap-1 px-3 py-2 rounded-lg bg-red-50 text-red-600 text-sm font-medium hover:bg-red-100">
+                ⬇ PDF
+            </a>
+            <button @click="importOpen = true"
+                class="inline-flex items-center gap-1 px-3 py-2 rounded-lg bg-amber-50 text-amber-700 text-sm font-medium hover:bg-amber-100">
+                ⬆ Import
+            </button>
+            <a href="{{ route('admin.siswa.create') }}"
+                class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#2563EB] text-white text-sm font-medium hover:bg-blue-700">
+                + Tambah Siswa
+            </a>
 
-    <!-- Modal Import -->
-   <div x-show="importOpen" x-cloak style="display: none;" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" @click.self="importOpen = false">
-        <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
-            <h3 class="text-lg font-bold text-gray-800 mb-1">Import Data Siswa</h3>
-           <p class="text-sm text-gray-500 mb-4">Unggah file Excel (.xlsx/.csv) sesuai template. Kolom <b>tempat_pkl</b> & <b>pembimbing</b> harus cocok dengan data yang sudah terdaftar.</p>
+            <div x-show="importOpen" x-cloak style="display: none;" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" @click.self="importOpen = false">
+                <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
+                    <h3 class="text-lg font-bold text-gray-800 mb-1">Import Data Siswa</h3>
+                    <p class="text-sm text-gray-500 mb-4">Unggah file Excel (.xlsx/.csv) sesuai template. Kolom <b>tempat_pkl</b> & <b>pembimbing</b> harus cocok dengan data yang sudah terdaftar.</p>
 
-            <form method="POST" action="<?= e(route('admin.siswa.import')) ?>" enctype="multipart/form-data">
-                @csrf
-                <input type="file" name="file" accept=".xlsx,.xls,.csv" required
-                       class="w-full text-sm text-gray-600 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-blue-50 file:text-[#2563EB] hover:file:bg-blue-100 mb-4">
-                <div class="flex items-center justify-between gap-3">
-                    <a href="<?= e(route('admin.siswa.template')) ?>" class="text-sm text-[#2563EB] hover:underline">⬇ Unduh Template</a>
-                    <div class="flex gap-2">
-                        <button type="button" @click="importOpen = false" class="px-4 py-2 rounded-lg text-gray-500 text-sm hover:bg-gray-50">Batal</button>
-                        <button type="submit" class="px-4 py-2 rounded-lg bg-[#2563EB] text-white text-sm font-medium hover:bg-blue-700">Import</button>
-                    </div>
+                    <form method="POST" action="{{ route('admin.siswa.import') }}" enctype="multipart/form-data">
+                        @csrf
+                        <input type="file" name="file" accept=".xlsx,.xls,.csv" required
+                            class="w-full text-sm text-gray-600 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-blue-50 file:text-[#2563EB] hover:file:bg-blue-100 mb-4">
+                        <div class="flex items-center justify-between gap-3">
+                            <a href="{{ route('admin.siswa.template') }}" class="text-sm text-[#2563EB] hover:underline">⬇ Unduh Template</a>
+                            <div class="flex gap-2">
+                                <button type="button" @click="importOpen = false" class="px-4 py-2 rounded-lg text-gray-500 text-sm hover:bg-gray-50">Batal</button>
+                                <button type="submit" class="px-4 py-2 rounded-lg bg-[#2563EB] text-white text-sm font-medium hover:bg-blue-700">Import</button>
+                            </div>
+                        </div>
+                    </form>
                 </div>
-            </form>
+            </div>
         </div>
-    </div>
-</div>
     </div>
 
     <div class="bg-white rounded-2xl shadow-sm border border-blue-100 p-5">
 
         <form method="GET" class="mb-4 flex flex-wrap gap-2">
             <input type="text" name="q" value="{{ $q }}" placeholder="Cari nama / NISN / email..."
-                   class="w-full sm:w-64 rounded-lg border-blue-100 focus:border-[#2563EB] focus:ring-[#2563EB] text-sm">
+                class="w-full sm:w-64 rounded-lg border-blue-100 focus:border-[#2563EB] focus:ring-[#2563EB] text-sm">
             <select name="status" class="rounded-lg border-blue-100 focus:border-[#2563EB] focus:ring-[#2563EB] text-sm">
                 <option value="">Semua Status</option>
                 <option value="belum" {{ $status === 'belum' ? 'selected' : '' }}>Belum</option>
@@ -70,7 +69,8 @@
                         <th class="py-3 px-3">Siswa</th>
                         <th class="py-3 px-3">Kelas / Jurusan</th>
                         <th class="py-3 px-3">Tempat PKL</th>
-                        <th class="py-3 px-3">Pembimbing</th>
+                        <th class="py-3 px-3">Guru Pembimbing</th>
+                        <th class="py-3 px-3">Instruktur</th>
                         <th class="py-3 px-3 text-center">Status</th>
                         <th class="py-3 px-3 text-right">Aksi</th>
                     </tr>
@@ -93,10 +93,8 @@
                                 <div class="text-xs text-gray-400">{{ $s->jurusan ?? '-' }}</div>
                             </td>
                             <td class="py-3 px-3 text-gray-600">{{ $s->perusahaan->nama_perusahaan ?? '-' }}</td>
-                            <td class="py-3 px-3 text-gray-600">
-                                <div>G: {{ $s->guru->name ?? '-' }}</div>
-                                <div class="text-xs text-gray-400">I: {{ $s->instruktur->name ?? '-' }}</div>
-                            </td>
+                            <td class="py-3 px-3 text-gray-600">{{ $s->guru->name ?? '-' }}</td>
+                            <td class="py-3 px-3 text-gray-600">{{ $s->instruktur->name ?? '-' }}</td>
                             <td class="py-3 px-3 text-center">
                                 @php
                                     $badge = [
@@ -118,7 +116,7 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="6" class="py-8 text-center text-gray-400">Belum ada data siswa.</td></tr>
+                        <tr><td colspan="7" class="py-8 text-center text-gray-400">Belum ada data siswa.</td></tr>
                     @endforelse
                 </tbody>
             </table>
