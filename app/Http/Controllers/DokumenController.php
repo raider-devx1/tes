@@ -21,19 +21,23 @@ class DokumenController extends Controller
 
     /** Dashboard rekap dokumen semua siswa (hanya-baca). */
     public function adminIndex(Request $request)
-    {
-        $q     = trim($request->get('q', ''));
-        $siswa = $this->querySiswa($q)->paginate(15)->withQueryString();
+{
+    $q     = trim($request->get('q', ''));
+    $siswa = $this->querySiswa($q)->paginate(15)->withQueryString();
 
-        $rekap = [
-            'totalSiswa'      => User::where('role', 'siswa_pkl')->count(),
-            'laporan'         => Dokumen::whereNotNull('laporan_akhir')->count(),
-            'suratPenerimaan' => Dokumen::whereNotNull('surat_penerimaan')->count(),
-            'suratTugas'      => Pengaturan::ambil('surat_tugas') ? 'Tersedia' : 'Belum', // global
-        ];
+    $rekap = [
+        'totalSiswa'      => User::where('role', 'siswa_pkl')->count(),
+        'laporan'         => Dokumen::whereNotNull('laporan_akhir')->count(),
+        'suratPenerimaan' => Dokumen::whereNotNull('surat_penerimaan')->count(),
+        // "lengkap" sekarang = punya Laporan + Surat Penerimaan (2 dokumen yang diunggah siswa)
+        'lengkap'         => Dokumen::whereNotNull('laporan_akhir')
+                                ->whereNotNull('surat_penerimaan')->count(),
+        // Surat Tugas global (status, bukan jumlah per siswa)
+        'suratTugas'      => Pengaturan::ambil('surat_tugas') ? 'Tersedia' : 'Belum',
+    ];
 
-        return view('admin.dokumen.index', compact('siswa', 'q', 'rekap'));
-    }
+    return view('admin.dokumen.index', compact('siswa', 'q', 'rekap'));
+}
 
     /*
     |--------------------------------------------------------------------------
