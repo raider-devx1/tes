@@ -4,7 +4,6 @@ use App\Http\Controllers\AbsensiController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\CatatanController;
 use App\Http\Controllers\CetakPdfController;
-use App\Http\Controllers\DokumenSiswaController;
 use App\Http\Controllers\GuruController;
 use App\Http\Controllers\InformasiController;
 use App\Http\Controllers\JurnalController;
@@ -64,13 +63,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/cetak/observasi/{siswa_id?}', [CetakPdfController::class, 'cetakObservasi'])->name('cetak.observasi');
     Route::get('/cetak/nilai/{siswa_id?}', [CetakPdfController::class, 'cetakNilai'])->name('cetak.nilai');
 
-    // Surat Tugas (global)
+   // Surat Tugas (global)
     Route::get('/dokumen/surat-tugas/lihat',    [DokumenController::class, 'lihatSuratTugas'])->name('dokumen.surat-tugas.lihat');
     Route::get('/dokumen/surat-tugas/download', [DokumenController::class, 'downloadSuratTugas'])->name('dokumen.surat-tugas.download');
-    
+
+    // Dokumen per-siswa (surat_penerimaan & laporan_akhir)
     Route::get('/dokumen/{siswa}/{jenis}/lihat',    [DokumenController::class, 'lihat'])->name('dokumen.lihat');
     Route::get('/dokumen/{siswa}/{jenis}/download', [DokumenController::class, 'download'])->name('dokumen.download');
-
 
     // ============================================================
     // 1. ADMIN
@@ -118,9 +117,9 @@ Route::get('/evaluasi/penilaian', [EvaluasiController::class, 'penilaian'])->nam
 Route::get('/evaluasi/rekap', [EvaluasiController::class, 'rekap'])->name('evaluasi.rekap');
 
 // ---- MONITORING DOKUMEN ----
-Route::get('/dokumen',                      [DokumenController::class, 'adminIndex'])->name('dokumen.index');
-    Route::get('/dokumen/surat-tugas',          [DokumenController::class, 'suratTugasIndex'])->name('dokumen.surat-tugas.index');
-    Route::post('/dokumen/{siswa}/surat-tugas', [DokumenController::class, 'uploadSuratTugas'])->name('dokumen.surat-tugas');
+Route::get('/dokumen',             [DokumenController::class, 'adminIndex'])->name('dokumen.index');
+Route::get('/dokumen/surat-tugas', [DokumenController::class, 'suratTugasIndex'])->name('dokumen.surat-tugas.index');
+Route::post('/dokumen/surat-tugas',[DokumenController::class, 'uploadSuratTugas'])->name('dokumen.surat-tugas'); // ← global, tanpa {siswa}
 
     });
 
