@@ -9,24 +9,38 @@ use Illuminate\Support\Facades\Auth;
 
 class ObservasiController extends Controller
 {
+    /*
+    |--------------------------------------------------------------------------
+    | ROLE: GURU PEMBIMBING (mengisi lembar observasi)
+    |--------------------------------------------------------------------------
+    */
 
-
-    // ====== ROLE: GURU PEMBIMBING (mengisi observasi) ======
+    /** Daftar seluruh observasi yang dibuat guru ini. */
     public function indexGuru()
     {
-        $observasis = Observasi::where('guru_id', Auth::id())->with('user')->latest()->get();
-        return view('guru.observasi.index', compact('observasis'));
+        $observasi = Observasi::where('guru_id', Auth::id())
+            ->with('user')
+            ->latest()
+            ->get();
+
+        return view('guru.observasi.index', compact('observasi'));
     }
 
+    /** Form tambah observasi (hanya siswa bimbingan guru ini yang bisa dipilih). */
     public function createGuru()
     {
-        $siswa = User::where('role', 'siswa_pkl')->where('guru_id', Auth::id())->get();
-        return view('guru.observasi.create', compact('siswa'));
+        $siswas = User::where('role', 'siswa_pkl')
+            ->where('guru_id', Auth::id())
+            ->orderBy('name')
+            ->get();
+
+        return view('guru.observasi.create', compact('siswas'));
     }
 
+    /** Simpan observasi baru. */
     public function storeGuru(Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
             'user_id'          => 'required|exists:users,id',
             'hari_tanggal'     => 'required|date',
             'pekerjaan_projek' => 'nullable|string|max:255',
@@ -34,33 +48,57 @@ class ObservasiController extends Controller
             'solusi'           => 'required|string',
         ]);
 
+        // Pastikan siswa yang dipilih benar-benar bimbingan guru ini
+        $siswa = User::where('id', $validated['user_id'])
+            ->where('guru_id', Auth::id())
+            ->firstOrFail();
+
         Observasi::create([
-            'user_id'          => $request->user_id,
+            'user_id'          => $siswa->id,
             'guru_id'          => Auth::id(),
-            'hari_tanggal'     => $request->hari_tanggal,
-            'pekerjaan_projek' => $request->pekerjaan_projek,
-            'permasalahan'     => $request->permasalahan,
-            'solusi'           => $request->solusi,
+            'hari_tanggal'     => $validated['hari_tanggal'],
+            'pekerjaan_projek' => $validated['pekerjaan_projek'] ?? null,
+            'permasalahan'     => $validated['permasalahan'],
+            'solusi'           => $validated['solusi'],
             'is_approved'      => false,
         ]);
 
-        return redirect()->route('guru.observasi.index')->with('success', 'Data observasi berhasil disimpan.');
+        return redirect()->route('guru.observasi.index')
+            ->with('success', 'Data observasi berhasil disimpan.');
     }
 
-    // ====== ROLE: SISWA PKL (melihat observasi) ======
+    /*
+    |--------------------------------------------------------------------------
+    | ROLE: SISWA PKL (melihat observasi)
+    |--------------------------------------------------------------------------
+    */
+
     public function indexSiswa()
     {
-        $observasi = Observasi::where('user_id', Auth::id())->with('guru')->latest()->get();
+        $observasi = Observasi::where('user_id', Auth::id())
+            ->with('guru')
+            ->latest()
+            ->get();
+
         return view('siswa.observasi.index', compact('observasi'));
     }
 
-    // ====== ROLE: INSTRUKTUR INDUSTRI (menyetujui observasi) ======
+    /*
+    |--------------------------------------------------------------------------
+    | ROLE: INSTRUKTUR INDUSTRI (menyetujui observasi)
+    |--------------------------------------------------------------------------
+    */
+
     public function indexInstruktur()
     {
         $instruktur_id = Auth::id();
+
         $observasi = Observasi::whereHas('user', function ($q) use ($instruktur_id) {
-            $q->where('instruktur_id', $instruktur_id);
-        })->with(['user', 'guru'])->latest()->get();
+                $q->where('instruktur_id', $instruktur_id);
+            })
+            ->with(['user', 'guru'])
+            ->latest()
+            ->get();
 
         return view('instruktur.observasi.index', compact('observasi'));
     }
@@ -68,6 +106,10 @@ class ObservasiController extends Controller
     public function approveInstruktur($id)
     {
         $observasi = Observasi::findOrFail($id);
+
+        // Hanya boleh menyetujui observasi siswa binaannya
+        abort_unless($observasi->user->instruktur_id === Auth::id(), 403, 'Akses ditolak.');
+
         $observasi->update(['is_approved' => true]);
 
         return redirect()->back()->with('success', 'Observasi berhasil disetujui.');

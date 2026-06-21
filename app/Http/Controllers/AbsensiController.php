@@ -9,6 +9,37 @@ use Illuminate\Support\Facades\Auth;
 
 class AbsensiController extends Controller
 {
+    /*
+|--------------------------------------------------------------------------
+| ROLE: SISWA PKL (melihat rekap kehadiran sendiri)
+|--------------------------------------------------------------------------
+*/
+public function indexSiswa(Request $request)
+{
+    $query = Absensi::where('siswa_id', Auth::id());
+
+    // Filter opsional per bulan (format: YYYY-MM)
+    if ($request->filled('bulan')) {
+        $tanggal = \Carbon\Carbon::parse($request->bulan . '-01');
+        $query->whereYear('tanggal', $tanggal->year)
+              ->whereMonth('tanggal', $tanggal->month);
+    }
+
+    $absensis = $query->orderBy('tanggal', 'desc')->get();
+
+    // Rekap ringkas
+    $rekap = [
+        'Hadir' => $absensis->where('status', 'Hadir')->count(),
+        'Izin'  => $absensis->where('status', 'Izin')->count(),
+        'Sakit' => $absensis->where('status', 'Sakit')->count(),
+        'Alpha' => $absensis->where('status', 'Alpha')->count(),
+    ];
+
+    $bulan = $request->bulan ?? date('Y-m');
+
+    return view('siswa.absensi.index', compact('absensis', 'rekap', 'bulan'));
+}
+
     // ====== ROLE: INSTRUKTUR INDUSTRI (mengisi absensi) ======
     public function indexInstruktur(Request $request)
     {

@@ -19,6 +19,20 @@ class Observasi extends Model
         'is_approved',
     ];
 
-    public function user() { return $this->belongsTo(User::class, 'user_id'); }
-    public function guru() { return $this->belongsTo(User::class, 'guru_id'); }
+    protected $casts = [
+        'hari_tanggal' => 'date',
+        'is_approved'  => 'boolean',
+    ];
+
+    // Siswa yang diobservasi
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
+    // Guru pembimbing yang mengisi
+    public function guru()
+    {
+        return $this->belongsTo(User::class, 'guru_id');
+    }
 }

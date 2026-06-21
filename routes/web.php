@@ -126,9 +126,10 @@ Route::get('/dokumen', [DokumenController::class, 'index'])->name('dokumen.index
         Route::get('/siswa', [GuruController::class, 'index'])->name('siswa.index');
         Route::get('/siswa/{id}/detail', [GuruController::class, 'detailSiswa'])->name('siswa.detail');
 
-        Route::get('/observasi', [ObservasiController::class, 'indexGuru'])->name('observasi.index');
-        Route::get('/observasi/create', [ObservasiController::class, 'createGuru'])->name('observasi.create');
-        Route::post('/observasi', [ObservasiController::class, 'storeGuru'])->name('observasi.store');
+       // Observasi (dikelola ObservasiController, bukan GuruController lagi)
+        Route::get('/observasi',         [ObservasiController::class, 'indexGuru'])->name('observasi.index');
+        Route::get('/observasi/create',  [ObservasiController::class, 'createGuru'])->name('observasi.create');
+        Route::post('/observasi',        [ObservasiController::class, 'storeGuru'])->name('observasi.store');
 
         Route::get('/catatan', [CatatanController::class, 'indexGuru'])->name('catatan.index');
         // sebelumnya: Route::get('/nilai', [NilaiController::class, 'indexGuru'])->name('nilai.index');
@@ -148,6 +149,7 @@ Route::get('/dokumen', [DokumenController::class, 'index'])->name('dokumen.index
             return view('siswa.dashboard', compact('jumlahJurnal', 'jurnalDisetujui'));
         })->name('dashboard');
 
+        
         Route::get('/jurnal', [JurnalController::class, 'indexSiswa'])->name('jurnal.index');
         Route::get('/jurnal/tambah', [JurnalController::class, 'createSiswa'])->name('jurnal.create');
         Route::post('/jurnal', [JurnalController::class, 'storeSiswa'])->name('jurnal.store');
@@ -162,6 +164,10 @@ Route::get('/dokumen', [DokumenController::class, 'index'])->name('dokumen.index
 
         Route::get('/dokumen', [DokumenSiswaController::class, 'index'])->name('dokumen.index');
         Route::post('/dokumen', [DokumenSiswaController::class, 'store'])->name('dokumen.store');
+
+        // Lihat rekap kehadiran sendiri
+        Route::get('/absensi', [AbsensiController::class, 'indexSiswa'])->name('absensi.index');
+        
     });
 
     // ============================================================
