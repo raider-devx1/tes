@@ -42,6 +42,12 @@
                         <p class="font-normal text-gray-700">Pantau dan unduh rekapitulasi perolehan nilai perkembangan
                             siswa bimbingan.</p>
                     </a>
+
+                    <a href="{{ route('guru.dokumen.index') }}"
+   class="block p-6 bg-white rounded-lg border border-gray-200 shadow-md hover:bg-gray-100 transition duration-200">
+    <h5 class="mb-2 text-2xl font-bold tracking-tight text-gray-900">📁 Dokumen Siswa</h5>
+    <p class="font-normal text-gray-700">Lihat & unduh Surat Tugas, Surat Penerimaan Industri, dan Laporan PKL siswa bimbingan Anda sesuai hak akses.</p>
+</a>
                 </div>
             </div>
         </div>

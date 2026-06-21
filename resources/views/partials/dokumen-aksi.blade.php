@@ -1,6 +1,7 @@
 @php
     $user    = auth()->user();
     $dokumen = $siswa->dokumen;
+    $exclude = $exclude ?? [];   // jenis yang ingin disembunyikan
 @endphp
 
 <table class="w-full text-sm border border-gray-200 rounded-lg overflow-hidden">
@@ -13,16 +14,15 @@
     </thead>
     <tbody class="divide-y divide-gray-100">
         @foreach(\App\Models\Dokumen::ATURAN as $jenis => $info)
+            @continue(in_array($jenis, $exclude, true))
             @php
                 if ($jenis === 'surat_tugas') {
-                    // berkas global
                     $adaFile    = \App\Models\Pengaturan::ambil('surat_tugas');
                     $urlLihat   = route('dokumen.surat-tugas.lihat');
                     $urlUnduh   = route('dokumen.surat-tugas.download');
                     $bolehLihat = in_array($user->role, $info['lihat'], true);
                     $bolehUnduh = in_array($user->role, $info['download'], true);
                 } else {
-                    // dokumen per-siswa
                     $adaFile    = optional($dokumen)->{$jenis};
                     $urlLihat   = route('dokumen.lihat', [$siswa->id, $jenis]);
                     $urlUnduh   = route('dokumen.download', [$siswa->id, $jenis]);
