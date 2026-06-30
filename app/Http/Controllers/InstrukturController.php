@@ -23,10 +23,8 @@ class InstrukturController extends Controller
             'password' => [$instruktur ? 'nullable' : 'required', 'string', 'min:6', 'confirmed'],
             // --- Data industri (ditulis langsung) ---
             'nama_perusahaan' => ['required', 'string', 'max:150'],
-            'bidang_usaha'    => ['nullable', 'string', 'max:150'],
             'alamat'          => ['required', 'string', 'max:255'],
             'telepon'         => ['nullable', 'string', 'max:20'],
-            'kuota'           => ['required', 'integer', 'min:0', 'max:1000'],
         ]);
     }
 
@@ -60,14 +58,12 @@ class InstrukturController extends Controller
         $data = $this->validateData($request);
 
         DB::transaction(function () use ($data) {
-            // 1) Buat data industri
+            // 1) Buat data industri (kuota memakai default 0 dari DB)
             $perusahaan = Perusahaan::create([
                 'nama_perusahaan'     => $data['nama_perusahaan'],
-                'bidang_usaha'        => $data['bidang_usaha'] ?? null,
                 'alamat'              => $data['alamat'],
                 'telepon'             => $data['telepon'] ?? null,
                 'pembimbing_industri' => $data['name'], // = nama instruktur
-                'kuota'               => $data['kuota'],
             ]);
 
             // 2) Buat akun instruktur & tautkan ke industri
@@ -99,11 +95,9 @@ class InstrukturController extends Controller
         DB::transaction(function () use ($data, $instruktur) {
             $perusahaanData = [
                 'nama_perusahaan'     => $data['nama_perusahaan'],
-                'bidang_usaha'        => $data['bidang_usaha'] ?? null,
                 'alamat'              => $data['alamat'],
                 'telepon'             => $data['telepon'] ?? null,
                 'pembimbing_industri' => $data['name'],
-                'kuota'               => $data['kuota'],
             ];
 
             // Perbarui industri tertaut; buat baru bila belum ada

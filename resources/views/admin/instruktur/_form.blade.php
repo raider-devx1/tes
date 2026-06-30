@@ -71,8 +71,8 @@
                            class="w-full rounded-lg border-blue-100 focus:border-[#2563EB] focus:ring-[#2563EB] text-sm">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Bidang Usaha</label>
-                    <input type="text" name="bidang_usaha" value="{{ old('bidang_usaha', $it?->perusahaan?->bidang_usaha) }}" placeholder="cth: Teknologi Informasi"
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Telepon Industri</label>
+                    <input type="text" name="telepon" value="{{ old('telepon', $it?->perusahaan?->telepon) }}"
                            class="w-full rounded-lg border-blue-100 focus:border-[#2563EB] focus:ring-[#2563EB] text-sm">
                 </div>
             </div>
@@ -80,18 +80,6 @@
                 <label class="block text-sm font-medium text-gray-700 mb-1">Alamat</label>
                 <input type="text" name="alamat" value="{{ old('alamat', $it?->perusahaan?->alamat) }}" required
                        class="w-full rounded-lg border-blue-100 focus:border-[#2563EB] focus:ring-[#2563EB] text-sm">
-            </div>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Telepon Industri</label>
-                    <input type="text" name="telepon" value="{{ old('telepon', $it?->perusahaan?->telepon) }}"
-                           class="w-full rounded-lg border-blue-100 focus:border-[#2563EB] focus:ring-[#2563EB] text-sm">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Kuota Siswa</label>
-                    <input type="number" name="kuota" min="0" max="1000" value="{{ old('kuota', $it?->perusahaan?->kuota ?? 1) }}" required
-                           class="w-full rounded-lg border-blue-100 focus:border-[#2563EB] focus:ring-[#2563EB] text-sm">
-                </div>
             </div>
         </div>
     </div>
