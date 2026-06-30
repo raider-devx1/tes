@@ -5,24 +5,46 @@
             <p class="text-sm text-gray-500">Pantau hasil observasi guru terhadap siswa PKL (hanya-baca).</p>
         </div>
 
-        <form method="GET" class="bg-white rounded-xl border border-blue-100 p-4 flex flex-wrap gap-3 items-end">
-            <div class="flex-1 min-w-[200px]">
+        {{-- FILTER --}}
+        <form method="GET" class="bg-white rounded-xl border border-blue-100 p-4 grid grid-cols-1 md:grid-cols-5 gap-3 items-end">
+            <div class="md:col-span-2">
                 <label class="block text-xs text-gray-500 mb-1">Cari siswa</label>
                 <input type="text" name="q" value="{{ $q }}" placeholder="Nama / NISN"
                        class="w-full rounded-lg border-gray-200 text-sm focus:border-[#2563EB] focus:ring-[#2563EB]">
             </div>
             <div>
-                <label class="block text-xs text-gray-500 mb-1">Status</label>
-                <select name="approved" class="rounded-lg border-gray-200 text-sm focus:border-[#2563EB] focus:ring-[#2563EB]">
+                <label class="block text-xs text-gray-500 mb-1">Kelas</label>
+                <select name="kelas" class="w-full rounded-lg border-gray-200 text-sm focus:border-[#2563EB] focus:ring-[#2563EB]">
                     <option value="">Semua</option>
-                    <option value="1" {{ $approved === '1' ? 'selected' : '' }}>Disetujui</option>
-                    <option value="0" {{ $approved === '0' ? 'selected' : '' }}>Belum</option>
+                    @foreach ($kelasList as $k)
+                        <option value="{{ $k }}" @selected($kelas === $k)>{{ $k }}</option>
+                    @endforeach
                 </select>
             </div>
-            <button type="submit" class="px-4 py-2 rounded-lg bg-[#2563EB] text-white text-sm font-medium hover:bg-blue-700">Filter</button>
-            <a href="{{ route('admin.evaluasi.observasi') }}" class="px-4 py-2 rounded-lg text-gray-500 text-sm hover:bg-gray-50">Reset</a>
+            <div>
+                <label class="block text-xs text-gray-500 mb-1">Jurusan</label>
+                <select name="jurusan" class="w-full rounded-lg border-gray-200 text-sm focus:border-[#2563EB] focus:ring-[#2563EB]">
+                    <option value="">Semua</option>
+                    @foreach ($jurusanList as $j)
+                        <option value="{{ $j }}" @selected($jurusan === $j)>{{ $j }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs text-gray-500 mb-1">Status</label>
+                <select name="status" class="w-full rounded-lg border-gray-200 text-sm focus:border-[#2563EB] focus:ring-[#2563EB]">
+                    <option value="">Semua</option>
+                    <option value="1" @selected($status === '1')>Disetujui</option>
+                    <option value="0" @selected($status === '0')>Belum</option>
+                </select>
+            </div>
+            <div class="md:col-span-5 flex gap-2">
+                <button type="submit" class="px-4 py-2 rounded-lg bg-[#2563EB] text-white text-sm font-medium hover:bg-blue-700">Filter</button>
+                <a href="{{ route('admin.evaluasi.observasi') }}" class="px-4 py-2 rounded-lg text-gray-500 text-sm hover:bg-gray-50">Reset</a>
+            </div>
         </form>
 
+        {{-- TABEL --}}
         <div class="bg-white rounded-xl border border-blue-100 overflow-hidden">
             <div class="overflow-x-auto">
                 <table class="w-full text-sm">
@@ -30,20 +52,22 @@
                         <tr>
                             <th class="px-4 py-3">Tanggal</th>
                             <th class="px-4 py-3">Siswa</th>
+                            <th class="px-4 py-3">Kelas</th>
+                            <th class="px-4 py-3">Jurusan</th>
                             <th class="px-4 py-3">Guru</th>
                             <th class="px-4 py-3">Pekerjaan / Projek</th>
-                            <th class="px-4 py-3">Permasalahan</th>
                             <th class="px-4 py-3 text-center">Status</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100">
                         @forelse($observasi as $o)
                             <tr class="hover:bg-blue-50/40">
-                                <td class="px-4 py-3 whitespace-nowrap">{{ \Carbon\Carbon::parse($o->hari_tanggal)->format('d M Y') }}</td>
+                                <td class="px-4 py-3 whitespace-nowrap">{{ \Carbon\Carbon::parse($o->hari_tanggal)->translatedFormat('d M Y') }}</td>
                                 <td class="px-4 py-3 font-medium text-gray-800">{{ $o->user->name ?? '-' }}</td>
+                                <td class="px-4 py-3">{{ $o->user->kelas ?? '-' }}</td>
+                                <td class="px-4 py-3">{{ $o->user->jurusan ?? '-' }}</td>
                                 <td class="px-4 py-3">{{ $o->guru->name ?? '-' }}</td>
-                                <td class="px-4 py-3 text-gray-600">{{ \Illuminate\Support\Str::limit($o->pekerjaan_projek, 50) }}</td>
-                                <td class="px-4 py-3 text-gray-600">{{ \Illuminate\Support\Str::limit($o->permasalahan, 50) }}</td>
+                                <td class="px-4 py-3 text-gray-600">{{ $o->pekerjaan_projek ?? '-' }}</td>
                                 <td class="px-4 py-3 text-center">
                                     @if($o->is_approved)
                                         <span class="inline-block px-2.5 py-1 rounded-full text-xs font-medium bg-green-50 text-green-700">Disetujui</span>
@@ -53,13 +77,14 @@
                                 </td>
                             </tr>
                         @empty
-                            <tr><td colspan="6" class="px-4 py-8 text-center text-gray-400">Tidak ada data observasi.</td></tr>
+                            <tr><td colspan="7" class="px-4 py-8 text-center text-gray-400">Tidak ada data observasi.</td></tr>
                         @endforelse
                     </tbody>
                 </table>
             </div>
         </div>
 
+        {{-- PAGINATION (15/halaman) --}}
         <div>
             {!! $observasi->links() !!}
         </div>
