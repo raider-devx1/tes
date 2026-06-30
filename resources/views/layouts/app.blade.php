@@ -47,35 +47,37 @@
             </a>
 
             {{-- Master Data --}}
-          <div x-data="{ open: {{ request()->routeIs('admin.siswa.*', 'admin.guru.*', 'admin.industri.*', 'admin.instruktur.*', 'admin.periode.*') ? 'true' : 'false' }} }">
-                <button @click="open = !open" class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-gray-700 hover:bg-blue-50">
-                    <span class="flex items-center gap-3 font-medium"><span>🗂️</span> Master Data</span>
-                    <svg class="w-4 h-4 transition" :class="open && 'rotate-180'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-                </button>
-                <div x-show="open" x-collapse class="ml-4 mt-1 space-y-1 border-l border-blue-100 pl-3">
-                   <a href="{{ route('admin.siswa.index') }}"
-   class="block px-3 py-2 rounded-lg {{ request()->routeIs('admin.siswa.*') ? 'bg-blue-50 text-[#2563EB] font-medium' : 'text-gray-700 hover:bg-blue-50' }}">
-    Data Siswa
-</a>
-                    <a href="{{ route('admin.guru.index') }}"
-   class="block px-3 py-2 rounded-lg {{ request()->routeIs('admin.guru.*') ? 'bg-blue-50 text-[#2563EB] font-medium' : 'text-gray-700 hover:bg-blue-50' }}">
-    Data Guru Pembimbing
-</a>
+          <div x-data="{ open: {{ request()->routeIs('admin.siswa.*', 'admin.guru.*', 'admin.instruktur.*', 'admin.periode.*') ? 'true' : 'false' }} }">
+    <button @click="open = !open" class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-gray-700 hover:bg-blue-50">
+        <span class="flex items-center gap-3 font-medium"><span>🗂️</span> Master Data</span>
+        <svg class="w-4 h-4 transition" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-width="2" d="M19 9l-7 7-7-7"/>
+        </svg>
+    </button>
+    <div x-show="open" x-collapse class="ml-4 mt-1 space-y-1 border-l border-blue-100 pl-3" x-cloak>
+        
+        <a href="{{ route('admin.siswa.index') }}"
+           class="block px-3 py-2 rounded-lg {{ request()->routeIs('admin.siswa.*') ? 'bg-blue-50 text-[#2563EB] font-medium' : 'text-gray-600 hover:bg-blue-50' }}">
+            Data Siswa
+        </a>
 
-                   <a href="{{ route('admin.industri.index') }}"
-   class="block px-3 py-2 rounded-lg {{ request()->routeIs('admin.industri.*') ? 'bg-blue-50 text-[#2563EB] font-medium' : 'text-gray-700 hover:bg-blue-50' }}">
-    Data Industri Mitra
-</a>
-                   <a href="{{ route('admin.instruktur.index') }}"
-   class="block px-3 py-2 rounded-lg {{ request()->routeIs('admin.instruktur.*') ? 'bg-blue-50 text-[#2563EB] font-medium' : 'text-gray-700 hover:bg-blue-50' }}">
-    Data Instruktur Industri
-</a>
-                  <a href="{{ route('admin.periode.index') }}"
-   class="block px-3 py-2 rounded-lg {{ request()->routeIs('admin.periode.*') ? 'bg-blue-50 text-[#2563EB] font-medium' : 'text-gray-700 hover:bg-blue-50' }}">
-    Periode PKL
-</a>
-                </div>
-            </div>
+        <a href="{{ route('admin.guru.index') }}"
+           class="block px-3 py-2 rounded-lg {{ request()->routeIs('admin.guru.*') ? 'bg-blue-50 text-[#2563EB] font-medium' : 'text-gray-600 hover:bg-blue-50' }}">
+            Data Guru Pembimbing
+        </a>
+
+        <a href="{{ route('admin.instruktur.index') }}"
+           class="block px-3 py-2 rounded-lg {{ request()->routeIs('admin.instruktur.*') ? 'bg-blue-50 text-[#2563EB] font-medium' : 'text-gray-600 hover:bg-blue-50' }}">
+            Data Instruktur Industri
+        </a>
+
+        <a href="{{ route('admin.periode.index') }}"
+           class="block px-3 py-2 rounded-lg {{ request()->routeIs('admin.periode.*') ? 'bg-blue-50 text-[#2563EB] font-medium' : 'text-gray-600 hover:bg-blue-50' }}">
+            Periode PKL
+        </a>
+        
+    </div>
+</div>
 
             {{-- Monitoring PKL --}}
           <div x-data="{ open: {{ request()->routeIs('admin.monitoring.*') ? 'true' : 'false' }} }">
