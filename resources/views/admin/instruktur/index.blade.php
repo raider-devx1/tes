@@ -30,7 +30,6 @@
                         <th class="py-3 px-3">Email</th>
                         <th class="py-3 px-3">Jabatan</th>
                         <th class="py-3 px-3">Industri</th>
-                        <th class="py-3 px-3">Bidang Usaha</th>
                         <th class="py-3 px-3">No. HP</th>
                         <th class="py-3 px-3 text-right">Aksi</th>
                     </tr>
@@ -42,7 +41,6 @@
                             <td class="py-3 px-3 text-gray-600">{{ $it->email }}</td>
                             <td class="py-3 px-3 text-gray-600">{{ $it->jabatan ?? '-' }}</td>
                             <td class="py-3 px-3 text-gray-600">{{ $it->perusahaan?->nama_perusahaan ?? '-' }}</td>
-                            <td class="py-3 px-3 text-gray-600">{{ $it->perusahaan?->bidang_usaha ?? '-' }}</td>
                             <td class="py-3 px-3 text-gray-600">{{ $it->no_hp ?? '-' }}</td>
                             <td class="py-3 px-3">
                                 <div class="flex items-center justify-end gap-2">
@@ -57,7 +55,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="py-8 text-center text-gray-400">Belum ada akun instruktur industri.</td>
+                            <td colspan="6" class="py-8 text-center text-gray-400">Belum ada akun instruktur industri.</td>
                         </tr>
                     @endforelse
                 </tbody>
