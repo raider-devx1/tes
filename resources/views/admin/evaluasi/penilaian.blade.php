@@ -2,7 +2,7 @@
     <div class="max-w-7xl mx-auto space-y-6">
         <div>
             <h2 class="text-2xl font-bold text-gray-800">Penilaian PKL</h2>
-            <p class="text-sm text-gray-500">Rekap nilai siswa dari instruktur &amp; guru (hanya-baca).</p>
+            <p class="text-sm text-gray-500">Rekap nilai seluruh siswa PKL — termasuk yang belum dinilai (hanya-baca).</p>
         </div>
 
         {{-- FILTER --}}
@@ -64,40 +64,49 @@
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100">
-                        @forelse($nilai as $n)
+                        @forelse($siswa as $s)
                             @php
-                                $akhir = $n->nilai_akhir;
-                                $gradeBadge = is_null($akhir) ? 'bg-gray-100 text-gray-400'
+                                $n      = $s->nilai; // bisa null kalau belum dinilai
+                                $akhir  = $n?->nilai_akhir;
+                                $sudah  = $n && ! is_null($akhir);
+                                $gradeBadge = ! $sudah ? 'bg-gray-100 text-gray-500'
                                     : ($akhir >= 85 ? 'bg-green-50 text-green-700'
                                     : ($akhir >= 70 ? 'bg-blue-50 text-blue-700'
                                     : ($akhir >= 60 ? 'bg-amber-50 text-amber-700' : 'bg-red-50 text-red-600')));
                             @endphp
                             <tr class="hover:bg-blue-50/40">
-                                <td class="px-4 py-3 font-medium text-gray-800">{{ $n->user->name ?? '-' }}</td>
-                                <td class="px-4 py-3">{{ $n->user->kelas ?? '-' }}</td>
-                                <td class="px-4 py-3">{{ $n->user->jurusan ?? '-' }}</td>
-                                <td class="px-4 py-3 text-center">{{ $n->soft_skill ?? '-' }}</td>
-                                <td class="px-4 py-3 text-center">{{ $n->hard_skill ?? '-' }}</td>
-                                <td class="px-4 py-3 text-center">{{ $n->pengembangan_hard_skill ?? '-' }}</td>
-                                <td class="px-4 py-3 text-center">{{ $n->kewirausahaan ?? '-' }}</td>
-                                <td class="px-4 py-3 text-center font-medium">{{ is_null($n->rata_rata) ? '-' : number_format($n->rata_rata, 2) }}</td>
-                                <td class="px-4 py-3 text-center">{{ $n->nilai_guru ?? '-' }}</td>
-                                <td class="px-4 py-3 text-center">{{ $n->nilai_laporan ?? '-' }}</td>
+                                <td class="px-4 py-3 font-medium text-gray-800">
+                                    {{ $s->name }}
+                                    <div class="text-xs text-gray-400">NISN: {{ $s->nisn ?? '-' }}</div>
+                                </td>
+                                <td class="px-4 py-3">{{ $s->kelas ?? '-' }}</td>
+                                <td class="px-4 py-3">{{ $s->jurusan ?? '-' }}</td>
+                                <td class="px-4 py-3 text-center">{{ $n?->soft_skill ?? '-' }}</td>
+                                <td class="px-4 py-3 text-center">{{ $n?->hard_skill ?? '-' }}</td>
+                                <td class="px-4 py-3 text-center">{{ $n?->pengembangan_hard_skill ?? '-' }}</td>
+                                <td class="px-4 py-3 text-center">{{ $n?->kewirausahaan ?? '-' }}</td>
+                                <td class="px-4 py-3 text-center font-medium">
+                                    {{ is_null($n?->rata_rata) ? '-' : number_format($n->rata_rata, 2) }}
+                                </td>
+                                <td class="px-4 py-3 text-center">{{ $n?->nilai_guru ?? '-' }}</td>
+                                <td class="px-4 py-3 text-center">{{ $n?->nilai_laporan ?? '-' }}</td>
                                 <td class="px-4 py-3 text-center">
-                                    <span class="inline-block px-2.5 py-1 rounded-full text-xs font-bold {{ $gradeBadge }}">{{ is_null($akhir) ? 'Belum' : number_format($akhir, 2) }}</span>
+                                    <span class="inline-block px-2.5 py-1 rounded-full text-xs font-bold {{ $gradeBadge }}">
+                                        {{ ! $sudah ? 'Belum' : number_format($akhir, 2) }}
+                                    </span>
                                 </td>
                             </tr>
                         @empty
-                            <tr><td colspan="11" class="px-4 py-8 text-center text-gray-400">Belum ada data penilaian.</td></tr>
+                            <tr><td colspan="11" class="px-4 py-8 text-center text-gray-400">Tidak ada siswa PKL.</td></tr>
                         @endforelse
                     </tbody>
                 </table>
             </div>
         </div>
 
-        {{-- PAGINATION (15/halaman) --}}
+        {{-- PAGINATION --}}
         <div>
-            {!! $nilai->links() !!}
+            {!! $siswa->links() !!}
         </div>
     </div>
 </x-app-layout>

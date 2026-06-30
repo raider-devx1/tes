@@ -35,31 +35,40 @@ class EvaluasiController extends Controller
     }
 
     public function penilaian(Request $request)
-    {
-        $q       = trim($request->get('q', ''));
-        $kelas   = $request->get('kelas');
-        $jurusan = $request->get('jurusan');
-        $status  = $request->get('status'); // 'sudah' | 'belum'
+{
+    $q       = trim($request->get('q', ''));
+    $kelas   = $request->get('kelas');
+    $jurusan = $request->get('jurusan');
+    $status  = $request->get('status'); // 'sudah' | 'belum'
 
-        $nilai = Nilai::query()
-            ->with(['user', 'instruktur', 'guru'])
-            ->when($q, fn ($query) => $query->whereHas('user', fn ($u) =>
-                $u->where('name', 'like', "%{$q}%")->orWhere('nisn', 'like', "%{$q}%")))
-            ->when($kelas, fn ($query) => $query->whereHas('user', fn ($u) => $u->where('kelas', $kelas)))
-            ->when($jurusan, fn ($query) => $query->whereHas('user', fn ($u) => $u->where('jurusan', $jurusan)))
-            ->when($status === 'sudah', fn ($query) => $query->whereNotNull('nilai_akhir'))
-            ->when($status === 'belum', fn ($query) => $query->whereNull('nilai_akhir'))
-            ->orderByDesc('nilai_akhir')
-            ->paginate(15)
-            ->withQueryString();
+    // Basis query = SISWA PKL (bukan tabel nilai),
+    // supaya siswa yang BELUM dinilai pun ikut tampil.
+    $siswa = User::query()
+        ->where('role', 'siswa_pkl')
+        ->with(['nilai', 'nilai.instruktur', 'nilai.guru'])
+        ->when($q, fn ($query) => $query->where(fn ($u) =>
+            $u->where('name', 'like', "%{$q}%")->orWhere('nisn', 'like', "%{$q}%")))
+        ->when($kelas, fn ($query) => $query->where('kelas', $kelas))
+        ->when($jurusan, fn ($query) => $query->where('jurusan', $jurusan))
+        // Sudah dinilai = punya baris nilai DAN nilai_akhir terisi
+        ->when($status === 'sudah', fn ($query) =>
+            $query->whereHas('nilai', fn ($n) => $n->whereNotNull('nilai_akhir')))
+        // Belum dinilai = tidak punya baris nilai SAMA SEKALI,
+        // ATAU punya baris nilai tapi nilai_akhir masih kosong
+        ->when($status === 'belum', fn ($query) =>
+            $query->where(fn ($u) =>
+                $u->whereDoesntHave('nilai')
+                  ->orWhereHas('nilai', fn ($n) => $n->whereNull('nilai_akhir'))))
+        ->orderBy('name')
+        ->paginate(15)
+        ->withQueryString();
 
-        [$kelasList, $jurusanList] = $this->opsiFilter();
+    [$kelasList, $jurusanList] = $this->opsiFilter();
 
-        return view('admin.evaluasi.penilaian', compact(
-            'nilai', 'q', 'kelas', 'jurusan', 'status', 'kelasList', 'jurusanList'
-        ));
-    }
-
+    return view('admin.evaluasi.penilaian', compact(
+        'siswa', 'q', 'kelas', 'jurusan', 'status', 'kelasList', 'jurusanList'
+    ));
+}
     public function rekap()
     {
         $totalSiswa   = User::where('role', 'siswa_pkl')->count();

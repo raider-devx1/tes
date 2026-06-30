@@ -5,7 +5,7 @@
             <p class="text-sm text-gray-500">Pantau & unduh dokumen yang diunggah siswa (hanya-baca). Surat Tugas dikelola global.</p>
         </div>
 
-        {{-- Rekapitulasi Berkas --}}
+        {{-- KARTU REKAP --}}
         <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
             <div class="bg-white rounded-xl border border-blue-100 p-4">
                 <p class="text-xs text-gray-500">Total Siswa</p>
@@ -25,31 +25,60 @@
             </div>
             <div class="bg-white rounded-xl border border-blue-100 p-4">
                 <p class="text-xs text-gray-500">Surat Tugas (Global)</p>
-                <p class="text-lg font-bold text-gray-700">
-                    {{ $rekap['suratTugas'] ?? '-' }}
-                </p>
+                <p class="text-lg font-bold text-gray-700">{{ $rekap['suratTugas'] ?? '-' }}</p>
                 <a href="{{ route('admin.dokumen.surat-tugas.index') }}" class="text-[11px] text-[#2563EB] hover:underline">Kelola →</a>
             </div>
         </div>
 
-        {{-- Filter Pencarian --}}
-        <form method="GET" class="bg-white rounded-xl border border-blue-100 p-4 flex flex-wrap gap-3 items-end">
-            <div class="flex-1 min-w-[200px]">
+        {{-- FILTER --}}
+        <form method="GET" class="bg-white rounded-xl border border-blue-100 p-4 grid grid-cols-1 md:grid-cols-5 gap-3 items-end">
+            <div class="md:col-span-2">
                 <label class="block text-xs text-gray-500 mb-1">Cari siswa</label>
                 <input type="text" name="q" value="{{ $q }}" placeholder="Nama / NISN"
                        class="w-full rounded-lg border-gray-200 text-sm focus:border-[#2563EB] focus:ring-[#2563EB]">
             </div>
-            <button type="submit" class="px-4 py-2 rounded-lg bg-[#2563EB] text-white text-sm font-medium hover:bg-blue-700">Filter</button>
-            <a href="{{ route('admin.dokumen.index') }}" class="px-4 py-2 rounded-lg text-gray-500 text-sm hover:bg-gray-50">Reset</a>
+            <div>
+                <label class="block text-xs text-gray-500 mb-1">Kelas</label>
+                <select name="kelas" class="w-full rounded-lg border-gray-200 text-sm focus:border-[#2563EB] focus:ring-[#2563EB]">
+                    <option value="">Semua</option>
+                    @foreach ($kelasList as $k)
+                        <option value="{{ $k }}" @selected($kelas === $k)>{{ $k }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs text-gray-500 mb-1">Jurusan</label>
+                <select name="jurusan" class="w-full rounded-lg border-gray-200 text-sm focus:border-[#2563EB] focus:ring-[#2563EB]">
+                    <option value="">Semua</option>
+                    @foreach ($jurusanList as $j)
+                        <option value="{{ $j }}" @selected($jurusan === $j)>{{ $j }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs text-gray-500 mb-1">Status</label>
+                <select name="status" class="w-full rounded-lg border-gray-200 text-sm focus:border-[#2563EB] focus:ring-[#2563EB]">
+                    <option value="">Semua</option>
+                    <option value="lengkap" @selected($status === 'lengkap')>Lengkap</option>
+                    <option value="sebagian" @selected($status === 'sebagian')>Sebagian</option>
+                    <option value="belum" @selected($status === 'belum')>Belum</option>
+                </select>
+            </div>
+            <div class="md:col-span-5 flex gap-2">
+                <button type="submit" class="px-4 py-2 rounded-lg bg-[#2563EB] text-white text-sm font-medium hover:bg-blue-700">Filter</button>
+                <a href="{{ route('admin.dokumen.index') }}" class="px-4 py-2 rounded-lg text-gray-500 text-sm hover:bg-gray-50">Reset</a>
+            </div>
         </form>
 
-        {{-- Tabel Utama Monitoring --}}
+        {{-- TABEL --}}
         <div class="bg-white rounded-xl border border-blue-100 overflow-hidden">
             <div class="overflow-x-auto">
                 <table class="w-full text-sm">
                     <thead class="bg-blue-50 text-gray-600 text-left">
                         <tr>
                             <th class="px-4 py-3">Siswa</th>
+                            <th class="px-4 py-3">Kelas</th>
+                            <th class="px-4 py-3">Jurusan</th>
                             <th class="px-4 py-3 text-center">Laporan Akhir</th>
                             <th class="px-4 py-3 text-center">Surat Penerimaan</th>
                             <th class="px-4 py-3 text-center">Status</th>
@@ -69,6 +98,8 @@
                                     {{ $s->name }}
                                     <div class="text-xs text-gray-400">NISN: {{ $s->nisn ?? '-' }}</div>
                                 </td>
+                                <td class="px-4 py-3">{{ $s->kelas ?? '-' }}</td>
+                                <td class="px-4 py-3">{{ $s->jurusan ?? '-' }}</td>
                                 <td class="px-4 py-3 text-center">
                                     @if($d?->laporan_akhir)
                                         <a href="{{ route('dokumen.lihat', [$s->id, 'laporan_akhir']) }}" target="_blank" class="text-[#2563EB] hover:underline">Lihat PDF</a>
@@ -88,14 +119,14 @@
                                 </td>
                             </tr>
                         @empty
-                            <tr><td colspan="4" class="px-4 py-8 text-center text-gray-400">Tidak ada data siswa.</td></tr>
+                            <tr><td colspan="6" class="px-4 py-8 text-center text-gray-400">Tidak ada data siswa.</td></tr>
                         @endforelse
                     </tbody>
                 </table>
             </div>
         </div>
 
-        {{-- Navigasi Halaman --}}
+        {{-- PAGINATION --}}
         <div>
             {!! $siswa->links() !!}
         </div>

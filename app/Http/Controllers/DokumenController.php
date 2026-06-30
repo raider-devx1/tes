@@ -13,6 +13,8 @@ use Illuminate\Support\Str;
 
 class DokumenController extends Controller
 {
+
+
     /*
     |--------------------------------------------------------------------------
     | ADMIN
@@ -20,23 +22,32 @@ class DokumenController extends Controller
     */
 
     /** Dashboard rekap dokumen semua siswa (hanya-baca). */
-    public function adminIndex(Request $request)
+  /** Dashboard rekap dokumen semua siswa (hanya-baca). */
+public function adminIndex(Request $request)
 {
-    $q     = trim($request->get('q', ''));
-    $siswa = $this->querySiswa($q)->paginate(15)->withQueryString();
+    $q       = trim($request->get('q', ''));
+    $kelas   = $request->get('kelas');
+    $jurusan = $request->get('jurusan');
+    $status  = $request->get('status'); // lengkap | sebagian | belum
+
+    $siswa = $this->querySiswa($q, $kelas, $jurusan, $status)
+        ->paginate(15)
+        ->withQueryString();
 
     $rekap = [
         'totalSiswa'      => User::where('role', 'siswa_pkl')->count(),
         'laporan'         => Dokumen::whereNotNull('laporan_akhir')->count(),
         'suratPenerimaan' => Dokumen::whereNotNull('surat_penerimaan')->count(),
-        // "lengkap" sekarang = punya Laporan + Surat Penerimaan (2 dokumen yang diunggah siswa)
         'lengkap'         => Dokumen::whereNotNull('laporan_akhir')
                                 ->whereNotNull('surat_penerimaan')->count(),
-        // Surat Tugas global (status, bukan jumlah per siswa)
         'suratTugas'      => Pengaturan::ambil('surat_tugas') ? 'Tersedia' : 'Belum',
     ];
 
-    return view('admin.dokumen.index', compact('siswa', 'q', 'rekap'));
+    [$kelasList, $jurusanList] = $this->opsiFilter();
+
+    return view('admin.dokumen.index', compact(
+        'siswa', 'q', 'kelas', 'jurusan', 'status', 'rekap', 'kelasList', 'jurusanList'
+    ));
 }
 
     /*
@@ -172,16 +183,49 @@ class DokumenController extends Controller
     |--------------------------------------------------------------------------
     */
 
-    /** Query dasar daftar siswa PKL + filter pencarian. */
-    private function querySiswa(string $q = '')
-    {
-        return User::query()
-            ->where('role', 'siswa_pkl')
-            ->with('dokumen')
-            ->when($q, fn ($query) => $query->where(fn ($w) =>
-                $w->where('name', 'like', "%{$q}%")->orWhere('nisn', 'like', "%{$q}%")))
-            ->orderBy('name');
-    }
+   /** Query dasar daftar siswa PKL + filter pencarian, kelas, jurusan, status dokumen. */
+private function querySiswa(
+    string $q = '',
+    ?string $kelas = null,
+    ?string $jurusan = null,
+    ?string $status = null
+) {
+    return User::query()
+        ->where('role', 'siswa_pkl')
+        ->with('dokumen')
+        ->when($q, fn ($query) => $query->where(fn ($w) =>
+            $w->where('name', 'like', "%{$q}%")->orWhere('nisn', 'like', "%{$q}%")))
+        ->when($kelas,   fn ($query) => $query->where('kelas', $kelas))
+        ->when($jurusan, fn ($query) => $query->where('jurusan', $jurusan))
+        // Lengkap = punya kedua dokumen (laporan + surat penerimaan)
+        ->when($status === 'lengkap', fn ($query) =>
+            $query->whereHas('dokumen', fn ($d) =>
+                $d->whereNotNull('laporan_akhir')->whereNotNull('surat_penerimaan')))
+        // Sebagian = persis salah satu dokumen yang ada
+        ->when($status === 'sebagian', fn ($query) =>
+            $query->whereHas('dokumen', fn ($d) =>
+                $d->where(fn ($w) => $w->whereNotNull('laporan_akhir')->whereNull('surat_penerimaan'))
+                  ->orWhere(fn ($w) => $w->whereNull('laporan_akhir')->whereNotNull('surat_penerimaan'))))
+        // Belum = tidak punya baris dokumen, ATAU kedua dokumen masih kosong
+        ->when($status === 'belum', fn ($query) =>
+            $query->where(fn ($u) =>
+                $u->whereDoesntHave('dokumen')
+                  ->orWhereHas('dokumen', fn ($d) =>
+                      $d->whereNull('laporan_akhir')->whereNull('surat_penerimaan'))))
+        ->orderBy('name');
+}
+
+/** Opsi dropdown Kelas & Jurusan dari data siswa PKL. */
+private function opsiFilter(): array
+{
+    $kelasList = User::where('role', 'siswa_pkl')
+        ->whereNotNull('kelas')->distinct()->orderBy('kelas')->pluck('kelas');
+
+    $jurusanList = User::where('role', 'siswa_pkl')
+        ->whereNotNull('jurusan')->distinct()->orderBy('jurusan')->pluck('jurusan');
+
+    return [$kelasList, $jurusanList];
+}
 
     /** Pastikan user berhak (cek role + relasi kepemilikan); jika tidak, 403/404. */
     private function pastikanBoleh(string $aksi, string $jenis, User $siswa): void
@@ -224,4 +268,6 @@ class DokumenController extends Controller
 
         return [$path, $siswa, $info];
     }
+
+    
 }
