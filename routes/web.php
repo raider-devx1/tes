@@ -10,7 +10,6 @@ use App\Http\Controllers\JurnalController;
 use App\Http\Controllers\NilaiController;
 use App\Http\Controllers\ObservasiController;
 use App\Http\Controllers\PeriodePklController;
-use App\Http\Controllers\PerusahaanController;
 use App\Http\Controllers\GuruPembimbingController;
 use App\Http\Controllers\InstrukturController;
 use App\Http\Controllers\SiswaController;
@@ -98,8 +97,7 @@ Route::post('/siswa/import', [SiswaController::class, 'import'])->name('siswa.im
         Route::put('/periode/{periode}/aktifkan', [PeriodePklController::class, 'aktifkan'])
             ->name('periode.aktifkan');
 
-        // ---- MASTER DATA: INDUSTRI / PERUSAHAAN ----
-        Route::resource('industri', PerusahaanController::class)->except(['show']);
+       
         // ---- MASTER DATA: AKUN GURU PEMBIMBING ----
 Route::resource('guru', GuruPembimbingController::class)->except(['show']);
 // ---- MASTER DATA: AKUN INSTRUKTUR INDUSTRI ----
