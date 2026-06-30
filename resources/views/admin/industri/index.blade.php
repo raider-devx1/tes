@@ -11,6 +11,7 @@
         </a>
     </div>
 
+    
     <div class="bg-white rounded-2xl shadow-sm border border-blue-100 p-5">
 
         <form method="GET" class="mb-4 flex gap-2">
