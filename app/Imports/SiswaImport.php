@@ -21,10 +21,17 @@ class SiswaImport implements ToModel, WithHeadingRow, WithValidation, SkipsEmpty
             ? Perusahaan::where('nama_perusahaan', $row['tempat_pkl'])->value('id')
             : null;
 
-        // Guru pembimbing
-        $guruId = !empty($row['pembimbing'])
-            ? User::where('role', 'guru_pembimbing')->where('name', $row['pembimbing'])->value('id')
-            : null;
+        // Guru pembimbing — boleh diisi NIP ATAU nama
+        $guruId = null;
+        if (!empty($row['pembimbing'])) {
+            $pembimbing = trim((string) $row['pembimbing']);
+            $guruId = User::where('role', 'guru_pembimbing')
+                ->where(function ($q) use ($pembimbing) {
+                    $q->where('nip', $pembimbing)
+                      ->orWhere('name', $pembimbing);
+                })
+                ->value('id');
+        }
 
         // Instruktur industri (dipisah dari pembimbing)
         $instrukturId = !empty($row['instruktur'])
@@ -62,7 +69,26 @@ class SiswaImport implements ToModel, WithHeadingRow, WithValidation, SkipsEmpty
             'status_pkl' => ['nullable', Rule::in(['belum', 'aktif', 'selesai'])],
             // Opsional, tapi jika diisi WAJIB sudah terdaftar lebih dulu
             'tempat_pkl' => ['nullable', Rule::exists('perusahaans', 'nama_perusahaan')],
-            'pembimbing' => ['nullable', Rule::exists('users', 'name')->where('role', 'guru_pembimbing')],
+
+            // Pembimbing: valid jika cocok dengan NIP ATAU nama guru pembimbing yang ada
+            'pembimbing' => [
+                'nullable',
+                function ($attribute, $value, $fail) {
+                    $val = trim((string) $value);
+                    if ($val === '') {
+                        return;
+                    }
+                    $ada = User::where('role', 'guru_pembimbing')
+                        ->where(function ($q) use ($val) {
+                            $q->where('nip', $val)->orWhere('name', $val);
+                        })
+                        ->exists();
+                    if (!$ada) {
+                        $fail("Guru pembimbing \"{$val}\" belum terdaftar. Isi dengan NIP atau nama persis yang ada di Master Data Guru.");
+                    }
+                },
+            ],
+
             'instruktur' => ['nullable', Rule::exists('users', 'name')->where('role', 'instruktur_industri')],
             'periode'    => ['nullable', Rule::exists('periode_pkls', 'nama')],
         ];
@@ -76,7 +102,6 @@ class SiswaImport implements ToModel, WithHeadingRow, WithValidation, SkipsEmpty
             'email.unique'      => 'Email :input sudah terdaftar.',
             'status_pkl.in'     => 'Status PKL ":input" tidak valid (pakai: belum / aktif / selesai).',
             'tempat_pkl.exists' => 'Tempat PKL ":input" belum terdaftar di Master Data Industri. Tambahkan industrinya dulu.',
-            'pembimbing.exists' => 'Guru pembimbing ":input" belum terdaftar di Master Data Guru. Tambahkan gurunya dulu.',
             'instruktur.exists' => 'Instruktur ":input" belum terdaftar di Master Data Instruktur. Tambahkan instrukturnya dulu.',
             'periode.exists'    => 'Periode ":input" belum terdaftar di Master Data Periode.',
         ];
