@@ -26,6 +26,7 @@
             <table class="w-full text-sm">
                 <thead>
                     <tr class="text-left text-gray-500 border-b border-blue-100">
+                        <th class="py-3 px-3 w-12 text-center">No</th>
                         <th class="py-3 px-3">Nama Periode</th>
                         <th class="py-3 px-3">Tahun Ajaran</th>
                         <th class="py-3 px-3">Mulai</th>
@@ -37,6 +38,9 @@
                 <tbody>
                     @forelse($periode as $p)
                         <tr class="border-b border-blue-50 hover:bg-blue-50/40">
+                            <td class="py-3 px-3 text-center text-gray-500">
+    {{ $periode->firstItem() + $loop->index }}
+</td>
                             <td class="py-3 px-3 font-medium text-gray-800">{{ $p->nama }}</td>
                             <td class="py-3 px-3 text-gray-600">{{ $p->tahun_ajaran }}</td>
                             <td class="py-3 px-3 text-gray-600">{{ $p->tanggal_mulai?->format('d M Y') }}</td>
@@ -65,7 +69,7 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="6" class="py-8 text-center text-gray-400">Belum ada data periode.</td></tr>
+                        <tr><td colspan="7" class="py-8 text-center text-gray-400">Belum ada data periode.</td></tr>
                     @endforelse
                 </tbody>
             </table>

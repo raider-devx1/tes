@@ -66,6 +66,7 @@
             <table class="w-full text-sm">
                 <thead>
                     <tr class="text-left text-gray-500 border-b border-blue-100">
+                        <th class="py-3 px-3 w-12 text-center">No</th>
                         <th class="py-3 px-3">Siswa</th>
                         <th class="py-3 px-3">Kelas / Jurusan</th>
                         <th class="py-3 px-3">Tempat PKL</th>
@@ -78,6 +79,9 @@
                 <tbody>
                     @forelse($siswa as $s)
                         <tr class="border-b border-blue-50 hover:bg-blue-50/40">
+                            <td class="py-3 px-3 text-center text-gray-500">
+    {{ $siswa->firstItem() + $loop->index }}
+</td>
                             <td class="py-3 px-3">
                                 <div class="flex items-center gap-3">
                                     <img src="{{ $s->foto ? asset('storage/' . $s->foto) : 'https://ui-avatars.com/api/?background=DBEAFE&color=1E3A8A&name=' . urlencode($s->name) }}"
@@ -116,7 +120,7 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="7" class="py-8 text-center text-gray-400">Belum ada data siswa.</td></tr>
+                        <tr><td colspan="8" class="py-8 text-center text-gray-400">Belum ada data siswa.</td></tr>
                     @endforelse
                 </tbody>
             </table>
