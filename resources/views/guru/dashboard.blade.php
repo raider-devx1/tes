@@ -1,66 +1,95 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">{{ __('Dashboard Guru Pembimbing') }}</h2>
+        <h2 class="text-xl font-semibold tracking-tight text-[#0a0b0d]">Dashboard Guru Pembimbing</h2>
     </x-slot>
 
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
-                <h3 class="text-2xl font-bold mb-2">Selamat Datang, {{ Auth::user()->name }}!</h3>
-                <p class="text-gray-600 mb-6">Pusat monitoring dan observasi kegiatan siswa bimbingan Anda.</p>
 
-                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-8 w-full md:w-1/3">
-                    <p class="text-sm text-blue-600 font-bold uppercase">Jumlah Siswa Bimbingan</p>
-                    <h4 class="text-4xl font-bold text-blue-800">{{ $siswaBimbingan }}</h4>
+            {{-- ===== HERO BAND GELAP + STATISTIK ===== --}}
+            <div class="rounded-3xl bg-[#0a0b0d] p-8 md:p-12 text-white">
+                <p class="text-sm font-medium text-[#a8acb3]">Ruang Guru Pembimbing</p>
+                <h3 class="mt-2 text-3xl md:text-4xl font-normal tracking-tight">Selamat Datang, {{ auth()->user()->name }}!</h3>
+                <p class="mt-3 max-w-xl text-[#a8acb3]">Pusat monitoring dan observasi kegiatan siswa bimbingan Anda.</p>
+
+                <div class="mt-8 w-full md:w-1/3">
+                    <div class="rounded-2xl bg-[#16181c] p-6">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-[#a8acb3]">Jumlah Siswa Bimbingan</p>
+                        <p class="mt-2 text-4xl font-normal tracking-tight text-white">{{ $siswaBimbingan }}</p>
+                    </div>
                 </div>
+            </div>
 
-                <div class="grid grid-cols-1 gap-6">
-                    <a href="{{ route('guru.siswa.index') }}"
-                        class="block p-8 bg-white border-2 border-gray-200 rounded-xl shadow-sm hover:border-indigo-500 hover:shadow-md transition">
-                        <h5 class="text-2xl font-bold tracking-tight text-gray-900 mb-2">📊 Ruang Monitoring & Daftar
-                            Siswa</h5>
-                        <p class="font-normal text-gray-600">Klik di sini untuk melihat daftar siswa, membaca aktivitas
-                            jurnal mereka, mengecek riwayat absensi industri, serta menginput Lembar Observasi
-                            Kunjungan.</p>
-                    </a>
+            {{-- ===== KARTU NAVIGASI ===== --}}
+            <div class="grid grid-cols-1 gap-4">
 
+                <a href="{{ route('guru.siswa.index') }}"
+                   class="group block rounded-3xl border border-[#dee1e6] bg-white p-8 transition hover:border-[#0052ff]">
+                    <div class="flex items-start justify-between gap-4">
+                        <div>
+                            <h5 class="text-2xl font-semibold tracking-tight text-[#0a0b0d]">Ruang Monitoring &amp; Daftar Siswa</h5>
+                            <p class="mt-2 max-w-3xl text-sm text-[#5b616e]">Klik di sini untuk melihat daftar siswa, membaca aktivitas jurnal mereka, mengecek riwayat absensi industri, serta menginput Lembar Observasi Kunjungan.</p>
+                        </div>
+                        <span class="text-[#0052ff] transition group-hover:translate-x-1">&rarr;</span>
+                    </div>
+                </a>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <a href="{{ route('guru.monitoring.jurnal') }}"
-    class="block p-6 bg-white rounded-lg border border-gray-200 shadow-md hover:bg-gray-100 transition duration-200">
-    <h5 class="mb-2 text-2xl font-bold tracking-tight text-gray-900">📓 Jurnal Siswa</h5>
-    <p class="font-normal text-gray-700">Pantau seluruh jurnal harian siswa bimbingan beserta status persetujuannya (disetujui / menunggu / revisi).</p>
-</a>
+                       class="group block rounded-2xl border border-[#dee1e6] bg-white p-6 transition hover:border-[#0052ff]">
+                        <div class="flex items-center justify-between">
+                            <h5 class="text-lg font-semibold text-[#0a0b0d]">Jurnal Siswa</h5>
+                            <span class="text-[#0052ff] transition group-hover:translate-x-1">&rarr;</span>
+                        </div>
+                        <p class="mt-2 text-sm text-[#5b616e]">Pantau seluruh jurnal harian siswa bimbingan beserta status persetujuannya (disetujui / menunggu / revisi).</p>
+                    </a>
 
-<a href="{{ route('guru.monitoring.absensi') }}"
-    class="block p-6 bg-white rounded-lg border border-gray-200 shadow-md hover:bg-gray-100 transition duration-200">
-    <h5 class="mb-2 text-2xl font-bold tracking-tight text-gray-900">🗓️ Absensi Siswa</h5>
-    <p class="font-normal text-gray-700">Lihat rekap kehadiran siswa bimbingan di industri: Hadir, Izin, Sakit, dan Alpha.</p>
-</a>
-                    <!-- Card Catatan Kegiatan Siswa -->
+                    <a href="{{ route('guru.monitoring.absensi') }}"
+                       class="group block rounded-2xl border border-[#dee1e6] bg-white p-6 transition hover:border-[#0052ff]">
+                        <div class="flex items-center justify-between">
+                            <h5 class="text-lg font-semibold text-[#0a0b0d]">Absensi Siswa</h5>
+                            <span class="text-[#0052ff] transition group-hover:translate-x-1">&rarr;</span>
+                        </div>
+                        <p class="mt-2 text-sm text-[#5b616e]">Lihat rekap kehadiran siswa bimbingan di industri: Hadir, Izin, Sakit, dan Alpha.</p>
+                    </a>
+
                     <a href="{{ route('guru.catatan.index') }}"
-                        class="block p-6 bg-white rounded-lg border border-gray-200 shadow-md hover:bg-gray-100">
-                        <h5 class="mb-2 text-2xl font-bold tracking-tight text-gray-900">Catatan Kegiatan Siswa</h5>
-                        <p class="font-normal text-gray-700">Pantau refleksi dan catatan kegiatan yang ditulis oleh
-                            siswa bimbingan.</p>
+                       class="group block rounded-2xl border border-[#dee1e6] bg-white p-6 transition hover:border-[#0052ff]">
+                        <div class="flex items-center justify-between">
+                            <h5 class="text-lg font-semibold text-[#0a0b0d]">Catatan Kegiatan Siswa</h5>
+                            <span class="text-[#0052ff] transition group-hover:translate-x-1">&rarr;</span>
+                        </div>
+                        <p class="mt-2 text-sm text-[#5b616e]">Pantau refleksi dan catatan kegiatan yang ditulis oleh siswa bimbingan.</p>
                     </a>
+
                     <a href="{{ route('guru.observasi.index') }}"
-                        class="block p-6 bg-white rounded-lg border border-gray-200 shadow-md hover:bg-gray-100">
-                        <h5 class="mb-2 text-2xl font-bold tracking-tight text-gray-900">Lembar Observasi</h5>
-                        <p class="font-normal text-gray-700">Monitor perkembangan siswa, catat permasalahan, dan berikan
-                            solusi pemecahan masalah.</p>
+                       class="group block rounded-2xl border border-[#dee1e6] bg-white p-6 transition hover:border-[#0052ff]">
+                        <div class="flex items-center justify-between">
+                            <h5 class="text-lg font-semibold text-[#0a0b0d]">Lembar Observasi</h5>
+                            <span class="text-[#0052ff] transition group-hover:translate-x-1">&rarr;</span>
+                        </div>
+                        <p class="mt-2 text-sm text-[#5b616e]">Monitor perkembangan siswa, catat permasalahan, dan berikan solusi pemecahan masalah.</p>
                     </a>
+
                     <a href="{{ route('guru.nilai.index') }}"
-                        class="block p-6 bg-white rounded-lg border border-gray-200 shadow-md hover:bg-gray-100 transition duration-200">
-                        <h5 class="mb-2 text-2xl font-bold tracking-tight text-gray-900">Rekap Nilai Siswa</h5>
-                        <p class="font-normal text-gray-700">Pantau dan unduh rekapitulasi perolehan nilai perkembangan
-                            siswa bimbingan.</p>
+                       class="group block rounded-2xl border border-[#dee1e6] bg-white p-6 transition hover:border-[#0052ff]">
+                        <div class="flex items-center justify-between">
+                            <h5 class="text-lg font-semibold text-[#0a0b0d]">Rekap Nilai Siswa</h5>
+                            <span class="text-[#0052ff] transition group-hover:translate-x-1">&rarr;</span>
+                        </div>
+                        <p class="mt-2 text-sm text-[#5b616e]">Pantau dan unduh rekapitulasi perolehan nilai perkembangan siswa bimbingan.</p>
                     </a>
 
                     <a href="{{ route('guru.dokumen.index') }}"
-   class="block p-6 bg-white rounded-lg border border-gray-200 shadow-md hover:bg-gray-100 transition duration-200">
-    <h5 class="mb-2 text-2xl font-bold tracking-tight text-gray-900">📁 Dokumen Siswa</h5>
-    <p class="font-normal text-gray-700">Lihat & unduh Surat Tugas, Surat Penerimaan Industri, dan Laporan PKL siswa bimbingan Anda sesuai hak akses.</p>
-</a>
+                       class="group block rounded-2xl border border-[#dee1e6] bg-white p-6 transition hover:border-[#0052ff]">
+                        <div class="flex items-center justify-between">
+                            <h5 class="text-lg font-semibold text-[#0a0b0d]">Dokumen Siswa</h5>
+                            <span class="text-[#0052ff] transition group-hover:translate-x-1">&rarr;</span>
+                        </div>
+                        <p class="mt-2 text-sm text-[#5b616e]">Lihat &amp; unduh Surat Tugas, Surat Penerimaan Industri, dan Laporan PKL siswa bimbingan Anda sesuai hak akses.</p>
+                    </a>
                 </div>
+
             </div>
         </div>
     </div>

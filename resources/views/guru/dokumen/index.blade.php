@@ -1,12 +1,18 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">Dokumen Siswa Bimbingan</h2>
+        <div class="flex items-center justify-between gap-4">
+            <h2 class="text-xl font-semibold tracking-tight text-[#0a0b0d]">Dokumen Siswa Bimbingan</h2>
+            <button type="button" onclick="history.back()"
+                    class="inline-flex items-center gap-1 rounded-full bg-[#eef0f3] px-4 py-2 text-sm font-semibold text-[#0a0b0d] transition hover:bg-[#dee1e6]">
+                &larr; Kembali
+            </button>
+        </div>
     </x-slot>
 
     <div class="py-12">
-        <div class="max-w-6xl mx-auto sm:px-6 lg:px-8 space-y-6">
+        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
 
-            <p class="text-sm text-gray-500">Lihat & unduh dokumen siswa bimbingan Anda sesuai hak akses.</p>
+            <p class="text-sm text-[#5b616e]">Lihat &amp; unduh dokumen siswa bimbingan Anda sesuai hak akses.</p>
 
             @php
                 $suratTugas   = \App\Models\Pengaturan::ambil('surat_tugas');
@@ -15,85 +21,95 @@
                 $bolehUnduhST = in_array(auth()->user()->role, $aturanST['download'], true);
             @endphp
 
-            {{-- Kartu Surat Tugas global --}}
-            <div class="bg-white rounded-xl border border-blue-100 p-5">
+            {{-- ===== KARTU SURAT TUGAS ===== --}}
+            <div class="rounded-2xl border border-[#dee1e6] bg-white p-6">
                 <div class="flex items-start justify-between gap-4 flex-wrap">
                     <div>
-                        <h3 class="font-bold text-gray-800 flex items-center gap-2">📄 Surat Tugas PKL</h3>
-                        <p class="text-xs text-gray-500 mt-1">Berkas resmi dari Admin — berlaku sebagai acuan untuk <strong>semua</strong> siswa bimbingan.</p>
+                        <h3 class="font-semibold text-[#0a0b0d]">Surat Tugas PKL</h3>
+                        <p class="text-xs text-[#7c828a] mt-1">Berkas resmi dari Admin — berlaku sebagai acuan untuk <strong class="text-[#5b616e]">semua</strong> siswa bimbingan.</p>
                         @if($suratTugas)
-                            <span class="inline-block mt-2 text-xs text-green-600">● Tersedia</span>
+                            <span class="inline-block mt-2 text-xs font-semibold text-[#05b169]">● Tersedia</span>
                         @else
-                            <span class="inline-block mt-2 text-xs text-gray-400">○ Belum diunggah Admin</span>
+                            <span class="inline-block mt-2 text-xs text-[#a8acb3]">○ Belum diunggah Admin</span>
                         @endif
                     </div>
                     <div class="flex gap-2 shrink-0">
                         @if($suratTugas && $bolehLihatST)
                             <a href="{{ route('dokumen.surat-tugas.lihat') }}" target="_blank"
-                               class="px-3 py-2 rounded-lg bg-gray-100 text-gray-700 text-sm hover:bg-gray-200 transition">Lihat</a>
+                               class="inline-flex items-center rounded-full bg-[#eef0f3] px-4 py-2 text-sm font-semibold text-[#0a0b0d] transition hover:bg-[#dee1e6]">Lihat</a>
                         @endif
                         @if($suratTugas && $bolehUnduhST)
                             <a href="{{ route('dokumen.surat-tugas.download') }}"
-                               class="px-3 py-2 rounded-lg bg-[#2563EB] text-white text-sm hover:bg-blue-700 transition">Download</a>
+                               class="inline-flex items-center rounded-full bg-[#0052ff] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#003ecc]">Download</a>
                         @endif
                         @if(!$suratTugas)
-                            <span class="text-xs text-gray-400 italic self-center">Menunggu unggahan Admin</span>
+                            <span class="text-xs text-[#a8acb3] italic self-center">Menunggu unggahan Admin</span>
                         @endif
                     </div>
                 </div>
             </div>
 
-            {{-- Filter: pencarian nama/NISN + dropdown status --}}
-            <form method="GET" class="bg-white rounded-xl border border-blue-100 p-4 flex flex-wrap gap-3 items-end">
+            {{-- ===== KARTU FILTER ===== --}}
+            <form method="GET" action="{{ route('guru.dokumen.index') }}" class="rounded-2xl border border-[#dee1e6] bg-white p-5 flex flex-wrap gap-3 items-end">
                 <div class="flex-1 min-w-[200px]">
-                    <label class="block text-xs text-gray-500 mb-1">Cari siswa</label>
+                    <label class="block text-xs font-semibold uppercase tracking-wide text-[#7c828a] mb-1">Cari siswa</label>
                     <input type="text" name="q" value="{{ request('q') }}" placeholder="Nama / NISN"
-                           class="w-full rounded-lg border-gray-200 text-sm focus:border-[#2563EB] focus:ring-[#2563EB]">
+                           class="w-full rounded-full border-[#dee1e6] bg-[#f7f7f7] px-5 py-2.5 text-sm text-[#0a0b0d] placeholder-[#a8acb3] focus:border-[#0052ff] focus:ring-[#0052ff]">
                 </div>
                 <div>
-                    <label class="block text-xs text-gray-500 mb-1">Status Dokumen</label>
-                    <select name="status" class="rounded-lg border-gray-200 text-sm focus:border-[#2563EB] focus:ring-[#2563EB]">
+                    <label class="block text-xs font-semibold uppercase tracking-wide text-[#7c828a] mb-1">Status Dokumen</label>
+                    <select name="status"
+                            class="rounded-xl border-[#dee1e6] bg-white px-3 py-2.5 text-sm text-[#0a0b0d] focus:border-[#0052ff] focus:ring-[#0052ff]">
                         <option value="">Semua</option>
                         <option value="lengkap" @selected(request('status') === 'lengkap')>Lengkap</option>
                         <option value="sebagian" @selected(request('status') === 'sebagian')>Sebagian</option>
                         <option value="belum" @selected(request('status') === 'belum')>Belum</option>
                     </select>
                 </div>
-                <button type="submit" class="px-4 py-2 rounded-lg bg-[#2563EB] text-white text-sm font-medium hover:bg-blue-700 transition">Filter</button>
-                <a href="{{ route('guru.dokumen.index') }}" class="px-4 py-2 rounded-lg text-gray-500 text-sm hover:bg-gray-50 transition inline-block text-center">Reset</a>
+                <button type="submit"
+                        class="inline-flex items-center rounded-full bg-[#0052ff] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#003ecc]">Filter</button>
+                <a href="{{ route('guru.dokumen.index') }}"
+                   class="inline-flex items-center rounded-full bg-[#eef0f3] px-5 py-2.5 text-sm font-semibold text-[#0a0b0d] transition hover:bg-[#dee1e6]">Reset</a>
             </form>
 
-            {{-- Tabel dokumen per siswa --}}
-            <div class="bg-white rounded-xl border border-blue-100 overflow-hidden">
+            {{-- ===== KARTU TABEL ===== --}}
+            <div class="rounded-2xl border border-[#dee1e6] bg-white overflow-hidden">
                 <div class="overflow-x-auto">
-                    <table class="w-full text-sm">
-                        <thead class="bg-blue-50 text-gray-600 text-left">
-                            <tr>
-                                <th class="px-4 py-3 text-center w-12">No</th>
-                                <th class="px-4 py-3">Nama</th>
-                                <th class="px-4 py-3">NISN</th>
-                                <th class="px-4 py-3">Kelas</th>
-                                <th class="px-4 py-3 text-center">Status</th>
-                                <th class="px-4 py-3">Dokumen</th>
+                    <table class="w-full text-sm text-left">
+                        <thead>
+                            <tr class="bg-[#f7f7f7] text-xs uppercase tracking-wide text-[#7c828a]">
+                                <th class="px-4 py-3 text-center w-12 font-semibold">No</th>
+                                <th class="px-4 py-3 font-semibold">Nama</th>
+                                <th class="px-4 py-3 font-semibold">NISN</th>
+                                <th class="px-4 py-3 font-semibold">Kelas</th>
+                                <th class="px-4 py-3 text-center font-semibold">Status</th>
+                                <th class="px-4 py-3 font-semibold">Dokumen</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-gray-100">
+                        <tbody class="divide-y divide-[#eef0f3]">
                             @forelse($siswa as $s)
                                 @php
                                     $d = $s->dokumen;
                                     $punyaLaporan = $d && $d->laporan_akhir;
                                     $punyaSurat   = $d && $d->surat_penerimaan;
-                                    if ($punyaLaporan && $punyaSurat) { $stLabel = 'Lengkap';  $stClass = 'bg-green-50 text-green-700'; }
-                                    elseif ($punyaLaporan || $punyaSurat) { $stLabel = 'Sebagian'; $stClass = 'bg-amber-50 text-amber-700'; }
-                                    else { $stLabel = 'Belum'; $stClass = 'bg-red-50 text-red-600'; }
+                                    if ($punyaLaporan && $punyaSurat) { 
+                                        $stLabel = 'Lengkap';  
+                                        $stClass = 'bg-[#05b169]/10 text-[#05b169]'; 
+                                    } elseif ($punyaLaporan || $punyaSurat) { 
+                                        $stLabel = 'Sebagian'; 
+                                        $stClass = 'bg-[#f4b000]/10 text-[#f4b000]'; 
+                                    } else { 
+                                        $stLabel = 'Belum'; 
+                                        $stClass = 'bg-[#cf202f]/10 text-[#cf202f]'; 
+                                    }
                                 @endphp
-                                <tr class="hover:bg-blue-50/40 align-top transition">
-                                    <td class="px-4 py-3 text-center text-gray-500">{{ $siswa->firstItem() + $loop->index }}</td>
-                                    <td class="px-4 py-3 font-medium text-gray-800">{{ $s->name }}</td>
-                                    <td class="px-4 py-3 text-gray-600 whitespace-nowrap">{{ $s->nisn ?? '-' }}</td>
-                                    <td class="px-4 py-3 text-gray-600">{{ $s->kelas ?? '-' }}</td>
+                                <tr class="align-top transition hover:bg-[#f7f7f7]">
+                                    <td class="px-4 py-3 text-center text-[#7c828a]">{{ $siswa->firstItem() + $loop->index }}</td>
+                                    <td class="px-4 py-3 font-semibold text-[#0a0b0d]">{{ $s->name }}</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-[#5b616e]">{{ $s->nisn ?? '-' }}</td>
+                                    <td class="px-4 py-3 text-[#5b616e]">{{ $s->kelas ?? '-' }}</td>
                                     <td class="px-4 py-3 text-center">
-                                        <span class="inline-block px-2.5 py-1 rounded-full text-xs font-medium {{ $stClass }}">{{ $stLabel }}</span>
+                                        <span class="inline-block rounded-full px-2.5 py-1 text-xs font-semibold {{ $stClass }}">{{ $stLabel }}</span>
                                     </td>
                                     <td class="px-4 py-3">
                                         @include('partials.dokumen-aksi', ['siswa' => $s, 'exclude' => ['surat_tugas']])
@@ -101,7 +117,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="6" class="px-4 py-8 text-center text-gray-400 italic">Belum ada siswa bimbingan.</td>
+                                    <td colspan="6" class="px-4 py-8 text-center text-[#a8acb3] italic">Belum ada siswa bimbingan.</td>
                                 </tr>
                             @endforelse
                         </tbody>
@@ -109,7 +125,7 @@
                 </div>
             </div>
 
-            {{-- Pagination --}}
+            {{-- ===== PAGINATION ===== --}}
             <div class="mt-2">
                 {!! $siswa->links() !!}
             </div>

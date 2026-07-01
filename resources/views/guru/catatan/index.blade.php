@@ -1,30 +1,36 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            Catatan Kegiatan Siswa Bimbingan
-        </h2>
+        <div class="flex items-center justify-between gap-4">
+            <h2 class="text-xl font-semibold tracking-tight text-[#0a0b0d]">
+                Catatan Kegiatan Siswa Bimbingan
+            </h2>
+            <button type="button" onclick="history.back()"
+                    class="inline-flex items-center gap-1 rounded-full bg-[#eef0f3] px-4 py-2 text-sm font-semibold text-[#0a0b0d] transition hover:bg-[#dee1e6]">
+                &larr; Kembali
+            </button>
+        </div>
     </x-slot>
 
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
+            <div class="rounded-3xl border border-[#dee1e6] bg-white p-6 md:p-8">
 
-                {{-- ===== FILTER PENCARIAN ===== --}}
+                {{-- ===== FORM FILTER ===== --}}
                 <form method="GET" action="{{ route('guru.catatan.index') }}" class="mb-6">
                     <div class="flex flex-col md:flex-row gap-3 md:items-end">
                         <div class="flex-1">
-                            <label class="block text-xs font-medium text-gray-600 mb-1">
+                            <label class="block text-xs font-semibold uppercase tracking-wide text-[#7c828a] mb-1">
                                 Cari (Nama / NISN)
                             </label>
                             <input type="text" name="q" value="{{ request('q') }}"
                                    placeholder="Ketik nama atau NISN siswa..."
-                                   class="w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                   class="w-full rounded-full border-[#dee1e6] bg-[#f7f7f7] px-5 py-2.5 text-sm text-[#0a0b0d] placeholder-[#a8acb3] focus:border-[#0052ff] focus:ring-[#0052ff]">
                         </div>
 
                         <div class="w-full md:w-56">
-                            <label class="block text-xs font-medium text-gray-600 mb-1">Status</label>
+                            <label class="block text-xs font-semibold uppercase tracking-wide text-[#7c828a] mb-1">Status</label>
                             <select name="status"
-                                    class="w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                    class="w-full rounded-xl border-[#dee1e6] bg-white px-3 py-2.5 text-sm text-[#0a0b0d] focus:border-[#0052ff] focus:ring-[#0052ff]">
                                 <option value="">-- Semua Status --</option>
                                 <option value="disetujui" @selected(request('status') === 'disetujui')>Disetujui</option>
                                 <option value="menunggu" @selected(request('status') === 'menunggu')>Menunggu</option>
@@ -33,57 +39,58 @@
 
                         <div class="flex gap-2">
                             <button type="submit"
-                                    class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-md transition">
+                                    class="inline-flex items-center rounded-full bg-[#0052ff] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#003ecc]">
                                 Cari
                             </button>
                             <a href="{{ route('guru.catatan.index') }}"
-                               class="bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm font-medium px-4 py-2 rounded-md transition inline-block text-center">
+                               class="inline-flex items-center rounded-full bg-[#eef0f3] px-5 py-2.5 text-sm font-semibold text-[#0a0b0d] transition hover:bg-[#dee1e6]">
                                 Reset
                             </a>
                         </div>
                     </div>
                 </form>
 
-                {{-- ===== TABEL ===== --}}
-                <div class="overflow-x-auto">
-                    <table class="w-full text-sm text-left text-gray-500 border">
-                        <thead class="text-xs text-gray-700 uppercase bg-gray-50">
-                            <tr>
-                                <th class="px-4 py-3 border text-center w-12">No</th>
-                                <th class="px-4 py-3 border">Nama Siswa</th>
-                                <th class="px-4 py-3 border">NISN</th>
-                                <th class="px-4 py-3 border">Pekerjaan</th>
-                                <th class="px-4 py-3 border">Perencanaan</th>
-                                <th class="px-4 py-3 border">Hasil/Pelaksanaan</th>
-                                <th class="px-4 py-3 border">Catatan Instruktur</th>
-                                <th class="px-4 py-3 border text-center">Status</th>
-                                <th class="px-4 py-3 border text-center">Cetak</th>
+                {{-- ===== TABEL CATATAN ===== --}}
+                <div class="overflow-x-auto rounded-2xl border border-[#eef0f3]">
+                    <table class="w-full text-left text-sm">
+                        <thead>
+                            <tr class="bg-[#f7f7f7] text-xs uppercase tracking-wide text-[#7c828a]">
+                                <th class="px-4 py-3 text-center w-12 font-semibold">No</th>
+                                <th class="px-4 py-3 font-semibold">Nama Siswa</th>
+                                <th class="px-4 py-3 font-semibold">NISN</th>
+                                <th class="px-4 py-3 font-semibold">Pekerjaan</th>
+                                <th class="px-4 py-3 font-semibold">Perencanaan</th>
+                                <th class="px-4 py-3 font-semibold">Hasil/Pelaksanaan</th>
+                                <th class="px-4 py-3 font-semibold">Catatan Instruktur</th>
+                                <th class="px-4 py-3 text-center font-semibold">Status</th>
+                                <th class="px-4 py-3 text-center font-semibold">Cetak</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody class="divide-y divide-[#eef0f3]">
                             @forelse ($catatan as $item)
-                                <tr class="bg-white border-b hover:bg-gray-50 transition">
-                                    <td class="px-4 py-3 border text-center">{{ $catatan->firstItem() + $loop->index }}</td>
-                                    <td class="px-4 py-3 border font-medium text-gray-900">{{ $item->user->name ?? '-' }}</td>
-                                    <td class="px-4 py-3 border text-gray-600">{{ $item->user->nisn ?? '-' }}</td>
-                                    <td class="px-4 py-3 border text-gray-600">{{ $item->nama_pekerjaan }}</td>
-                                    <td class="px-4 py-3 border text-gray-600">{{ $item->perencanaan_kegiatan }}</td>
-                                    <td class="px-4 py-3 border text-gray-600">{{ $item->pelaksanaan_kegiatan }}</td>
-                                    <td class="px-4 py-3 border text-gray-600">{{ $item->catatan_instruktur ?? '-' }}</td>
-                                    <td class="px-4 py-3 border text-center">
+                                <tr class="align-top transition hover:bg-[#f7f7f7]">
+                                    <td class="px-4 py-3 text-center text-[#7c828a]">{{ $catatan->firstItem() + $loop->index }}</td>
+                                    <td class="px-4 py-3 font-semibold text-[#0a0b0d]">{{ $item->user->name }}</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-[#5b616e]">{{ $item->user->nisn ?? '-' }}</td>
+                                    <td class="px-4 py-3 text-[#5b616e]">{{ $item->nama_pekerjaan }}</td>
+                                    <td class="px-4 py-3 text-[#5b616e]">{{ $item->perencanaan_kegiatan }}</td>
+                                    <td class="px-4 py-3 text-[#5b616e]">{{ $item->pelaksanaan_kegiatan }}</td>
+                                    <td class="px-4 py-3 text-[#5b616e]">{{ $item->catatan_instruktur ?? '-' }}</td>
+                                    <td class="px-4 py-3 text-center">
                                         @if($item->is_approved)
-                                            <span class="text-green-600 font-bold">Disetujui</span>
+                                            <span class="inline-flex items-center rounded-full bg-[#05b169]/10 px-3 py-1 text-xs font-semibold text-[#05b169]">Disetujui</span>
                                         @else
-                                            <span class="text-yellow-600 font-bold">Menunggu</span>
+                                            <span class="inline-flex items-center rounded-full bg-[#f4b000]/10 px-3 py-1 text-xs font-semibold text-[#f4b000]">Menunggu</span>
                                         @endif
                                     </td>
-                                    <td class="px-4 py-3 border text-center">
-                                        <a href="{{ route('cetak.catatan', $item->user_id) }}" target="_blank" class="bg-red-600 hover:bg-red-700 text-white text-xs py-1 px-2 rounded transition">PDF</a>
+                                    <td class="px-4 py-3 text-center">
+                                        <a href="{{ route('cetak.catatan', $item->user_id) }}" target="_blank"
+                                           class="inline-flex items-center rounded-full bg-[#eef0f3] px-3 py-1.5 text-xs font-semibold text-[#0a0b0d] transition hover:bg-[#dee1e6]">PDF</a>
                                     </td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="9" class="px-4 py-4 text-center text-gray-400 italic">
+                                    <td colspan="9" class="px-4 py-8 text-center text-[#a8acb3] italic">
                                         Tidak ada catatan yang cocok / belum ada catatan dari siswa bimbingan.
                                     </td>
                                 </tr>
@@ -92,7 +99,7 @@
                     </table>
                 </div>
 
-                {{-- Pagination --}}
+                {{-- ===== PAGINATION ===== --}}
                 <div class="mt-4">
                     {!! $catatan->links() !!}
                 </div>

@@ -1,95 +1,122 @@
 <x-app-layout>
-    <div class="max-w-6xl mx-auto py-6 px-4">
-        <div class="flex items-center justify-between mb-6">
-            <h1 class="text-xl font-semibold text-gray-800">Lembar Observasi</h1>
-            <a href="{{ route('guru.observasi.create') }}"
-               class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition">
-                + Tambah Observasi
-            </a>
-        </div>
-
-        @if (session('success'))
-            <div class="mb-4 rounded-lg bg-green-50 border border-green-200 p-3 text-sm text-green-700">
-                {{ session('success') }}
+    <x-slot name="header">
+        <div class="flex items-center justify-between gap-4">
+            <h2 class="text-xl font-semibold tracking-tight text-[#0a0b0d]">
+                Lembar Observasi
+            </h2>
+            <div class="flex items-center gap-2">
+                <a href="{{ route('guru.observasi.create') }}"
+                   class="inline-flex items-center rounded-full bg-[#0052ff] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#003ecc]">
+                    + Tambah Observasi
+                </a>
+                <button type="button" onclick="history.back()"
+                        class="inline-flex items-center gap-1 rounded-full bg-[#eef0f3] px-4 py-2 text-sm font-semibold text-[#0a0b0d] transition hover:bg-[#dee1e6]">
+                    &larr; Kembali
+                </button>
             </div>
-        @endif
-
-        {{-- Filter: pencarian nama/NISN + dropdown status --}}
-        <form method="GET" class="mb-4 flex flex-wrap gap-2">
-            <input type="text" name="q" value="{{ request('q') }}" placeholder="Cari nama / NISN..."
-                   class="w-full sm:w-64 rounded-lg border-gray-200 text-sm focus:border-blue-600 focus:ring-blue-600">
-            <select name="status" class="rounded-lg border-gray-200 text-sm focus:border-blue-600 focus:ring-blue-600">
-                <option value="">Semua Status</option>
-                <option value="1" @selected(request('status') === '1')>Disetujui</option>
-                <option value="0" @selected(request('status') === '0')>Menunggu</option>
-            </select>
-            <button type="submit" class="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition">Cari</button>
-            @if(request('q') || request()->filled('status'))
-                <a href="{{ route('guru.observasi.index') }}" class="px-4 py-2 rounded-lg text-gray-500 text-sm hover:bg-gray-50 transition inline-block text-center">Reset</a>
-            @endif
-        </form>
-
-        <div class="bg-white rounded-xl shadow-sm border overflow-hidden">
-            <table class="min-w-full text-sm">
-                <thead class="bg-gray-50 text-gray-600">
-                    <tr>
-                        <th class="px-4 py-3 text-center w-12">No</th>
-                        <th class="px-4 py-3 text-left">Tanggal</th>
-                        <th class="px-4 py-3 text-left">Siswa</th>
-                        <th class="px-4 py-3 text-left">NISN</th>
-                        <th class="px-4 py-3 text-left">Pekerjaan/Projek</th>
-                        <th class="px-4 py-3 text-left">Permasalahan</th>
-                        <th class="px-4 py-3 text-center">Status</th>
-                        <th class="px-4 py-3 text-center">Cetak</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-100">
-                    @forelse ($observasi as $obs)
-                        <tr class="hover:bg-gray-50 transition">
-                            <td class="px-4 py-3 text-center text-gray-500">
-                                {{ $observasi->firstItem() + $loop->index }}
-                            </td>
-                            <td class="px-4 py-3 whitespace-nowrap">
-                                {{ \Illuminate\Support\Carbon::parse($obs->hari_tanggal)->translatedFormat('d M Y') }}
-                            </td>
-                            <td class="px-4 py-3 font-medium text-gray-800">
-                                {{ $obs->user->name ?? '-' }}
-                            </td>
-                            <td class="px-4 py-3 text-gray-600 whitespace-nowrap">
-                                {{ $obs->user->nisn ?? '-' }}
-                            </td>
-                            <td class="px-4 py-3 text-gray-600">
-                                {{ $obs->pekerjaan_projek ?? '-' }}
-                            </td>
-                            <td class="px-4 py-3 text-gray-600">
-                                {{ $obs->permasalahan }}
-                            </td>
-                            <td class="px-4 py-3 text-center">
-                                @if ($obs->is_approved)
-                                    <span class="px-2 py-1 rounded-full text-xs bg-green-100 text-green-700 font-medium">Disetujui</span>
-                                @else
-                                    <span class="px-2 py-1 rounded-full text-xs bg-yellow-100 text-yellow-700 font-medium">Menunggu</span>
-                                @endif
-                            </td>
-                            <td class="px-4 py-3 text-center">
-                                <a href="{{ route('cetak.observasi', $obs->user_id) }}" target="_blank"
-                                   class="text-blue-600 hover:underline">PDF</a>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="8" class="px-4 py-6 text-center text-gray-400 italic">
-                                Belum ada data observasi.
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
         </div>
+    </x-slot>
 
-        {{-- Pagination --}}
-        <div class="mt-4">
-            {!! $observasi->links() !!}
+    <div class="py-12">
+        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+            <div class="rounded-3xl border border-[#dee1e6] bg-white p-6 md:p-8">
+
+                @if (session('success'))
+                    <div class="mb-4 rounded-2xl border border-[#05b169]/30 bg-[#05b169]/10 px-4 py-3 text-sm font-medium text-[#05b169]">
+                        {{ session('success') }}
+                    </div>
+                @endif
+
+                {{-- ===== FORM FILTER ===== --}}
+                <form method="GET" action="{{ route('guru.observasi.index') }}" class="mb-6">
+                    <div class="flex flex-col md:flex-row gap-3 md:items-end">
+                        <div class="flex-1">
+                            <label class="block text-xs font-semibold uppercase tracking-wide text-[#7c828a] mb-1">
+                                Cari (Nama / NISN)
+                            </label>
+                            <input type="text" name="q" value="{{ request('q') }}"
+                                   placeholder="Ketik nama atau NISN siswa..."
+                                   class="w-full rounded-full border-[#dee1e6] bg-[#f7f7f7] px-5 py-2.5 text-sm text-[#0a0b0d] placeholder-[#a8acb3] focus:border-[#0052ff] focus:ring-[#0052ff]">
+                        </div>
+
+                        <div class="w-full md:w-56">
+                            <label class="block text-xs font-semibold uppercase tracking-wide text-[#7c828a] mb-1">Status</label>
+                            <select name="status"
+                                    class="w-full rounded-xl border-[#dee1e6] bg-white px-3 py-2.5 text-sm text-[#0a0b0d] focus:border-[#0052ff] focus:ring-[#0052ff]">
+                                <option value="">-- Semua Status --</option>
+                                <option value="1" @selected(request('status') === '1')>Disetujui</option>
+                                <option value="0" @selected(request('status') === '0')>Menunggu</option>
+                            </select>
+                        </div>
+
+                        <div class="flex gap-2">
+                            <button type="submit"
+                                    class="inline-flex items-center rounded-full bg-[#0052ff] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#003ecc]">
+                                Cari
+                            </button>
+                            <a href="{{ route('guru.observasi.index') }}"
+                               class="inline-flex items-center rounded-full bg-[#eef0f3] px-5 py-2.5 text-sm font-semibold text-[#0a0b0d] transition hover:bg-[#dee1e6]">
+                                Reset
+                            </a>
+                        </div>
+                    </div>
+                </form>
+
+                {{-- ===== TABEL OBSERVASI ===== --}}
+                <div class="overflow-x-auto rounded-2xl border border-[#eef0f3]">
+                    <table class="w-full text-left text-sm">
+                        <thead>
+                            <tr class="bg-[#f7f7f7] text-xs uppercase tracking-wide text-[#7c828a]">
+                                <th class="px-4 py-3 text-center w-12 font-semibold">No</th>
+                                <th class="px-4 py-3 font-semibold">Tanggal</th>
+                                <th class="px-4 py-3 font-semibold">Siswa</th>
+                                <th class="px-4 py-3 font-semibold">NISN</th>
+                                <th class="px-4 py-3 font-semibold">Pekerjaan/Projek</th>
+                                <th class="px-4 py-3 font-semibold">Permasalahan</th>
+                                <th class="px-4 py-3 text-center font-semibold">Status</th>
+                                <th class="px-4 py-3 text-center font-semibold">Cetak</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-[#eef0f3]">
+                            @forelse ($observasi as $obs)
+                                <tr class="align-top transition hover:bg-[#f7f7f7]">
+                                    <td class="px-4 py-3 text-center text-[#7c828a]">{{ $observasi->firstItem() + $loop->index }}</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-[#5b616e]">
+                                        {{ \Carbon\Carbon::parse($obs->hari_tanggal)->translatedFormat('d M Y') }}
+                                    </td>
+                                    <td class="px-4 py-3 font-semibold text-[#0a0b0d]">{{ $obs->user->name }}</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-[#5b616e]">{{ $obs->user->nisn ?? '-' }}</td>
+                                    <td class="px-4 py-3 text-[#5b616e]">{{ $obs->pekerjaan_projek }}</td>
+                                    <td class="px-4 py-3 text-[#5b616e]">{{ $obs->permasalahan }}</td>
+                                    <td class="px-4 py-3 text-center">
+                                        @if ($obs->is_approved)
+                                            <span class="inline-flex items-center rounded-full bg-[#05b169]/10 px-3 py-1 text-xs font-semibold text-[#05b169]">Disetujui</span>
+                                        @else
+                                            <span class="inline-flex items-center rounded-full bg-[#f4b000]/10 px-3 py-1 text-xs font-semibold text-[#f4b000]">Menunggu</span>
+                                        @endif
+                                    </td>
+                                    <td class="px-4 py-3 text-center">
+                                        <a href="{{ route('cetak.observasi', $obs->user_id) }}" target="_blank"
+                                           class="inline-flex items-center rounded-full bg-[#eef0f3] px-3 py-1.5 text-xs font-semibold text-[#0a0b0d] transition hover:bg-[#dee1e6]">PDF</a>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="8" class="px-4 py-8 text-center text-[#a8acb3] italic">
+                                        Belum ada data observasi.
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+
+                {{-- ===== PAGINATION ===== --}}
+                <div class="mt-4">
+                    {!! $observasi->links() !!}
+                </div>
+
+            </div>
         </div>
     </div>
 </x-app-layout>
