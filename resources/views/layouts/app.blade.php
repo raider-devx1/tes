@@ -158,6 +158,10 @@
                     <svg class="w-4 h-4 transition" :class="open && 'rotate-180'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                 </button>
                 <div x-show="open" x-collapse class="ml-4 mt-1 space-y-1 border-l border-blue-100 pl-3">
+                    <a href="{{ route('admin.riwayat.index') }}"
+   class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition duration-150 ease-in-out">
+    Riwayat Aktivitas
+</a>
                     <a href="#" class="block px-3 py-2 rounded-lg text-gray-400 cursor-not-allowed">Manajemen User <span class="text-[10px]">(segera)</span></a>
                     <a href="#" class="block px-3 py-2 rounded-lg text-gray-400 cursor-not-allowed">Notifikasi <span class="text-[10px]">(segera)</span></a>
                     <a href="{{ route('profile.edit') }}" class="block px-3 py-2 rounded-lg text-gray-700 hover:bg-blue-50">Profil Admin</a>

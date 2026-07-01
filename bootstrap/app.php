@@ -12,11 +12,16 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        // Daftarkan alias middleware kustom Anda di sini
-        $middleware->alias([
-            'role' => \App\Http\Middleware\CheckRole::class,
-        ]);
-    })
+    // Daftarkan alias middleware kustom Anda di sini
+    $middleware->alias([
+        'role' => \App\Http\Middleware\CheckRole::class,
+    ]);
+
+    // Catat aktivitas (audit log) untuk semua request web
+    $middleware->web(append: [
+        \App\Http\Middleware\LogActivity::class,
+    ]);
+})
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*'),

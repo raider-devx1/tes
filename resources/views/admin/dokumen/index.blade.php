@@ -5,32 +5,32 @@
             <p class="text-sm text-gray-500">Pantau & unduh dokumen yang diunggah siswa (hanya-baca). Surat Tugas dikelola global.</p>
         </div>
 
-        {{-- KARTU REKAP --}}
+        {{-- ===== KARTU REKAP ===== --}}
         <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
             <div class="bg-white rounded-xl border border-blue-100 p-4">
                 <p class="text-xs text-gray-500">Total Siswa</p>
-                <p class="text-2xl font-bold text-gray-800">{{ $rekap['totalSiswa'] ?? 0 }}</p>
+                <p class="text-2xl font-bold text-gray-800">{{ $rekap['totalSiswa'] }}</p>
             </div>
             <div class="bg-white rounded-xl border border-blue-100 p-4">
                 <p class="text-xs text-gray-500">Laporan Akhir</p>
-                <p class="text-2xl font-bold text-[#2563EB]">{{ $rekap['laporan'] ?? 0 }}</p>
+                <p class="text-2xl font-bold text-[#2563EB]">{{ $rekap['laporan'] }}</p>
             </div>
             <div class="bg-white rounded-xl border border-blue-100 p-4">
                 <p class="text-xs text-gray-500">Surat Penerimaan</p>
-                <p class="text-2xl font-bold text-[#2563EB]">{{ $rekap['suratPenerimaan'] ?? 0 }}</p>
+                <p class="text-2xl font-bold text-[#2563EB]">{{ $rekap['suratPenerimaan'] }}</p>
             </div>
             <div class="bg-white rounded-xl border border-blue-100 p-4">
                 <p class="text-xs text-gray-500">Lengkap</p>
-                <p class="text-2xl font-bold text-green-600">{{ $rekap['lengkap'] ?? 0 }}</p>
+                <p class="text-2xl font-bold text-green-600">{{ $rekap['lengkap'] }}</p>
             </div>
             <div class="bg-white rounded-xl border border-blue-100 p-4">
                 <p class="text-xs text-gray-500">Surat Tugas (Global)</p>
-                <p class="text-lg font-bold text-gray-700">{{ $rekap['suratTugas'] ?? '-' }}</p>
-                <a href="{{ route('admin.dokumen.surat-tugas.index') }}" class="text-[11px] text-[#2563EB] hover:underline">Kelola →</a>
+                <p class="text-lg font-bold text-gray-700">{{ $rekap['suratTugas'] }}</p>
+                <a href="{{ route('admin.dokumen.surat-tugas') }}" class="text-[11px] text-[#2563EB] hover:underline">Kelola →</a>
             </div>
         </div>
 
-        {{-- FILTER --}}
+        {{-- ===== FILTER ===== --}}
         <form method="GET" class="bg-white rounded-xl border border-blue-100 p-4 grid grid-cols-1 md:grid-cols-5 gap-3 items-end">
             <div class="md:col-span-2">
                 <label class="block text-xs text-gray-500 mb-1">Cari siswa</label>
@@ -65,17 +65,18 @@
                 </select>
             </div>
             <div class="md:col-span-5 flex gap-2">
-                <button type="submit" class="px-4 py-2 rounded-lg bg-[#2563EB] text-white text-sm font-medium hover:bg-blue-700">Filter</button>
-                <a href="{{ route('admin.dokumen.index') }}" class="px-4 py-2 rounded-lg text-gray-500 text-sm hover:bg-gray-50">Reset</a>
+                <button type="submit" class="px-4 py-2 rounded-lg bg-[#2563EB] text-white text-sm font-medium hover:bg-blue-700 transition">Filter</button>
+                <a href="{{ route('admin.dokumen.index') }}" class="px-4 py-2 rounded-lg text-gray-500 text-sm hover:bg-gray-50 transition inline-block text-center">Reset</a>
             </div>
         </form>
 
-        {{-- TABEL --}}
+        {{-- ===== TABEL ===== --}}
         <div class="bg-white rounded-xl border border-blue-100 overflow-hidden">
             <div class="overflow-x-auto">
                 <table class="w-full text-sm">
                     <thead class="bg-blue-50 text-gray-600 text-left">
                         <tr>
+                            <th class="px-4 py-3 text-center w-12">No</th>
                             <th class="px-4 py-3">Siswa</th>
                             <th class="px-4 py-3">Kelas</th>
                             <th class="px-4 py-3">Jurusan</th>
@@ -93,23 +94,25 @@
                                     ? ['Lengkap', 'bg-green-50 text-green-700']
                                     : ($ada === 0 ? ['Belum', 'bg-red-50 text-red-600'] : ['Sebagian', 'bg-amber-50 text-amber-700']);
                             @endphp
-                            <tr class="hover:bg-blue-50/40">
+                            <tr class="hover:bg-blue-50/40 transition">
+                                <td class="px-4 py-3 text-center text-gray-500">{{ $siswa->firstItem() + $loop->index }}</td>
                                 <td class="px-4 py-3 font-medium text-gray-800">
                                     {{ $s->name }}
                                     <div class="text-xs text-gray-400">NISN: {{ $s->nisn ?? '-' }}</div>
                                 </td>
-                                <td class="px-4 py-3">{{ $s->kelas ?? '-' }}</td>
-                                <td class="px-4 py-3">{{ $s->jurusan ?? '-' }}</td>
+                                <td class="px-4 py-3 text-gray-600">{{ $s->kelas ?? '-' }}</td>
+                                <td class="px-4 py-3 text-gray-600">{{ $s->jurusan ?? '-' }}</td>
                                 <td class="px-4 py-3 text-center">
                                     @if($d?->laporan_akhir)
-                                        <a href="{{ route('dokumen.lihat', [$s->id, 'laporan_akhir']) }}" target="_blank" class="text-[#2563EB] hover:underline">Lihat PDF</a>
+                                        <a href="{{ route('dokumen.lihat', [$s->id, 'laporan_akhir']) }}" target="_blank" class="text-[#2563EB] hover:underline font-medium">Lihat PDF</a>
+                                    </td>
                                     @else
                                         <span class="text-gray-300">–</span>
                                     @endif
                                 </td>
                                 <td class="px-4 py-3 text-center">
                                     @if($d?->surat_penerimaan)
-                                        <a href="{{ route('dokumen.lihat', [$s->id, 'surat_penerimaan']) }}" target="_blank" class="text-[#2563EB] hover:underline">Lihat PDF</a>
+                                        <a href="{{ route('dokumen.lihat', [$s->id, 'surat_penerimaan']) }}" target="_blank" class="text-[#2563EB] hover:underline font-medium">Lihat PDF</a>
                                     @else
                                         <span class="text-gray-300">–</span>
                                     @endif
@@ -119,14 +122,16 @@
                                 </td>
                             </tr>
                         @empty
-                            <tr><td colspan="6" class="px-4 py-8 text-center text-gray-400">Tidak ada data siswa.</td></tr>
+                            <tr>
+                                <td colspan="7" class="px-4 py-8 text-center text-gray-400 italic">Tidak ada data siswa.</td>
+                            </tr>
                         @endforelse
                     </tbody>
                 </table>
             </div>
         </div>
 
-        {{-- PAGINATION --}}
+        {{-- ===== PAGINATION ===== --}}
         <div>
             {!! $siswa->links() !!}
         </div>

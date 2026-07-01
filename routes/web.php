@@ -17,6 +17,7 @@ use App\Http\Controllers\MonitoringController;
 use App\Http\Controllers\EvaluasiController;
 use App\Http\Controllers\DokumenController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\RiwayatController;
 use App\Models\Jurnal;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
@@ -76,6 +77,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // ============================================================
     Route::middleware(['role:admin'])->prefix('admin')->name('admin.')->group(function () {
         Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
+
+        // ---- PENGATURAN: RIWAYAT AKTIVITAS ----
+Route::get('/riwayat', [RiwayatController::class, 'index'])->name('riwayat.index');
 
         // ---- KELOLA INFORMASI PKL ----
         Route::get('/informasi', [InformasiController::class, 'adminIndex'])->name('informasi.index');
@@ -201,7 +205,7 @@ Route::post('/dokumen/surat-tugas',[DokumenController::class, 'uploadSuratTugas'
         })->name('dashboard');
 
         Route::get('/siswa', [InstrukturController::class, 'monitoringSiswa'])->name('siswa.index');
-        
+
         Route::get('/jurnal', [JurnalController::class, 'indexInstruktur'])->name('jurnal.index');
         Route::put('/jurnal/{id}/update', [JurnalController::class, 'updateInstruktur'])->name('jurnal.update');
 
