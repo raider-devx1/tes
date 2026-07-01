@@ -23,19 +23,6 @@
                                    class="w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
                         </div>
 
-                        <div class="w-full md:w-64">
-                            <label class="block text-xs font-medium text-gray-600 mb-1">Periode PKL</label>
-                            <select name="periode_id"
-                                    class="w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
-                                <option value="">-- Semua Periode --</option>
-                                @foreach($periodes as $periode)
-                                    <option value="{{ $periode->id }}" @selected(request('periode_id') == $periode->id)>
-                                        {{ $periode->nama }}{{ $periode->tahun_ajaran ? ' (' . $periode->tahun_ajaran . ')' : '' }}
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
-
                         <div class="flex gap-2">
                             <button type="submit"
                                     class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-2 rounded-md transition">
@@ -60,8 +47,6 @@
                                 <th class="border p-3">Kelas</th>
                                 <th class="border p-3">Jurusan</th>
                                 <th class="border p-3">Guru Pembimbing</th>
-                                <th class="border p-3">Tempat Industri</th>
-                                <th class="border p-3">Periode PKL</th>
                                 <th class="border p-3 text-center">Aksi</th>
                             </tr>
                         </thead>
@@ -76,13 +61,6 @@
                                     <td class="border p-3 text-gray-600">{{ $siswa->kelas ?? '-' }}</td>
                                     <td class="border p-3 text-gray-600">{{ $siswa->jurusan ?? '-' }}</td>
                                     <td class="border p-3 text-gray-600">{{ $siswa->guru->name ?? '-' }}</td>
-                                    <td class="border p-3 text-gray-600">{{ $siswa->perusahaan->nama_perusahaan ?? '-' }}</td>
-                                    <td class="border p-3 text-gray-600">
-                                        {{ $siswa->periode->nama ?? '-' }}
-                                        @if($siswa->periode && $siswa->periode->tahun_ajaran)
-                                            <span class="block text-xs text-gray-400">{{ $siswa->periode->tahun_ajaran }}</span>
-                                        @endif
-                                    </td>
                                     <td class="border p-3">
                                         <div class="flex flex-wrap justify-center gap-2">
                                             <a href="{{ route('instruktur.jurnal.index', ['siswa_id' => $siswa->id]) }}"
@@ -110,7 +88,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="9" class="border p-4 text-center text-gray-400 italic">
+                                    <td colspan="7" class="border p-4 text-center text-gray-400 italic">
                                         Tidak ada siswa yang cocok dengan pencarian / belum ada siswa bimbingan.
                                     </td>
                                 </tr>

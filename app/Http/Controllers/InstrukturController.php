@@ -144,12 +144,12 @@ class InstrukturController extends Controller
         return back()->with('success', 'Akun instruktur industri berhasil dihapus.');
     }
 
-    /** Ruang Monitoring & Daftar Siswa bimbingan industri (instruktur yang login). */
+   /** Ruang Monitoring & Daftar Siswa bimbingan industri (instruktur yang login). */
 public function monitoringSiswa(Request $request)
 {
     $query = User::where('role', 'siswa_pkl')
         ->where('instruktur_id', Auth::id())
-        ->with(['guru', 'perusahaan', 'periode']);
+        ->with(['guru', 'perusahaan']);
 
     // Filter pencarian teks: nama, NISN, kelas, jurusan
     if ($request->filled('q')) {
@@ -162,16 +162,9 @@ public function monitoringSiswa(Request $request)
         });
     }
 
-    // Filter dropdown: Periode PKL
-    if ($request->filled('periode_id')) {
-        $query->where('periode_id', $request->periode_id);
-    }
-
     $siswas = $query->orderBy('name')->paginate(15)->withQueryString();
 
-    $periodes = PeriodePkl::orderByDesc('tahun_ajaran')->orderBy('nama')->get();
-
-    return view('instruktur.siswa.index', compact('siswas', 'periodes'));
+    return view('instruktur.siswa.index', compact('siswas'));
 }
 
 }
