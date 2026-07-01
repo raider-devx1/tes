@@ -1,16 +1,22 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            Input Absensi Siswa
-        </h2>
+        <div class="flex items-center justify-between gap-4">
+            <h2 class="text-xl font-semibold tracking-tight text-[#0a0b0d]">
+                Input Absensi Siswa
+            </h2>
+            <button type="button" onclick="history.back()"
+                    class="inline-flex items-center gap-1 rounded-full bg-[#eef0f3] px-4 py-2 text-sm font-semibold text-[#0a0b0d] transition hover:bg-[#dee1e6]">
+                &larr; Kembali
+            </button>
+        </div>
     </x-slot>
 
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
+            <div class="rounded-3xl border border-[#dee1e6] bg-white p-6 md:p-8">
 
                 @if(session('success'))
-                    <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4">
+                    <div class="mb-4 rounded-2xl border border-[#05b169]/30 bg-[#05b169]/10 px-4 py-3 text-sm font-medium text-[#05b169]">
                         {{ session('success') }}
                     </div>
                 @endif
@@ -19,20 +25,20 @@
                 <form action="{{ route('instruktur.absensi.index') }}" method="GET" class="mb-6">
                     <div class="flex flex-col md:flex-row gap-3 md:items-end">
                         <div>
-                            <label class="block text-xs font-medium text-gray-600 mb-1">Tanggal Absen</label>
+                            <label class="block text-xs font-semibold uppercase tracking-wide text-[#7c828a] mb-1">Tanggal Absen</label>
                             <input type="date" name="tanggal" value="{{ $tanggal }}"
-                                   class="rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                   class="rounded-xl border-[#dee1e6] bg-white px-3 py-2.5 text-sm text-[#0a0b0d] focus:border-[#0052ff] focus:ring-[#0052ff]">
                         </div>
                         <div class="flex-1">
-                            <label class="block text-xs font-medium text-gray-600 mb-1">Cari (Nama / NISN)</label>
+                            <label class="block text-xs font-semibold uppercase tracking-wide text-[#7c828a] mb-1">Cari (Nama / NISN)</label>
                             <input type="text" name="q" value="{{ request('q') }}"
                                    placeholder="Ketik nama atau NISN siswa..."
-                                   class="w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                   class="w-full rounded-full border-[#dee1e6] bg-[#f7f7f7] px-5 py-2.5 text-sm text-[#0a0b0d] placeholder-[#a8acb3] focus:border-[#0052ff] focus:ring-[#0052ff]">
                         </div>
                         <div class="w-full md:w-56">
-                            <label class="block text-xs font-medium text-gray-600 mb-1">Status Kehadiran</label>
+                            <label class="block text-xs font-semibold uppercase tracking-wide text-[#7c828a] mb-1">Status Kehadiran</label>
                             <select name="status"
-                                    class="w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                    class="w-full rounded-xl border-[#dee1e6] bg-white px-3 py-2.5 text-sm text-[#0a0b0d] focus:border-[#0052ff] focus:ring-[#0052ff]">
                                 <option value="">-- Semua Status --</option>
                                 <option value="Hadir" @selected(request('status') === 'Hadir')>Hadir</option>
                                 <option value="Izin"  @selected(request('status') === 'Izin')>Izin</option>
@@ -41,60 +47,63 @@
                             </select>
                         </div>
                         <div class="flex gap-2">
-                            <button type="submit" class="bg-gray-600 hover:bg-gray-800 text-white text-sm font-medium px-4 py-2 rounded-md transition duration-200">Tampilkan</button>
+                            <button type="submit" class="inline-flex items-center rounded-full bg-[#0052ff] text-white px-5 py-2.5 text-sm font-semibold transition hover:bg-[#003ecc]">Tampilkan</button>
                             <a href="{{ route('instruktur.absensi.index') }}"
-                               class="bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm font-medium px-4 py-2 rounded-md inline-block text-center transition duration-200">Reset</a>
+                               class="inline-flex items-center rounded-full bg-[#eef0f3] px-5 py-2.5 text-sm font-semibold text-[#0a0b0d] transition hover:bg-[#dee1e6]">Reset</a>
                         </div>
                     </div>
                 </form>
 
-                <hr class="mb-6">
+                <hr class="mb-6 border-[#eef0f3]">
 
                 {{-- ===== FORM SIMPAN ABSENSI ===== --}}
                 <form action="{{ route('instruktur.absensi.store') }}" method="POST">
                     @csrf
                     <input type="hidden" name="tanggal" value="{{ $tanggal }}">
 
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left border-collapse border border-gray-200">
+                    <div class="overflow-x-auto rounded-2xl border border-[#eef0f3]">
+                        <table class="w-full text-left text-sm">
                             <thead>
-                                <tr class="bg-gray-100 text-xs uppercase text-gray-700">
-                                    <th class="border p-3 text-center w-12">No</th>
-                                    <th class="border p-3">Nama Siswa</th>
-                                    <th class="border p-3">NISN</th>
-                                    <th class="border p-3">Status Kehadiran</th>
-                                    <th class="border p-3 text-center w-40">Jam Masuk</th>
-                                    <th class="border p-3 text-center w-40">Jam Pulang</th>
+                                <tr class="bg-[#f7f7f7] text-xs uppercase tracking-wide text-[#7c828a]">
+                                    <th class="px-4 py-3 text-center w-12 font-semibold">No</th>
+                                    <th class="px-4 py-3 font-semibold">Nama Siswa</th>
+                                    <th class="px-4 py-3 font-semibold">NISN</th>
+                                    <th class="px-4 py-3 font-semibold">Status Kehadiran</th>
+                                    <th class="px-4 py-3 text-center w-40 font-semibold">Jam Masuk</th>
+                                    <th class="px-4 py-3 text-center w-40 font-semibold">Jam Pulang</th>
                                 </tr>
                             </thead>
-                            <tbody>
+                            <tbody class="divide-y divide-[#eef0f3]">
                                 @forelse($siswas as $siswa)
                                     @php
                                         // Cari data absen siswa ini di tanggal yang dipilih (jika sudah ada)
                                         $absen = $absensis->get($siswa->id);
                                     @endphp
-                                    <tr class="hover:bg-gray-50 transition">
-                                        <td class="border p-3 text-center text-gray-500">{{ $siswas->firstItem() + $loop->index }}</td>
-                                        <td class="border p-3 font-bold text-gray-900">{{ $siswa->name }}</td>
-                                        <td class="border p-3 text-sm text-gray-600 whitespace-nowrap">{{ $siswa->nisn ?? '-' }}</td>
-                                        <td class="border p-3">
-                                            <select name="absensi[{{ $siswa->id }}][status]" class="border-gray-300 rounded text-sm w-full">
+                                    <tr class="transition hover:bg-[#f7f7f7]">
+                                        <td class="px-4 py-3 text-center text-[#7c828a]">{{ $siswas->firstItem() + $loop->index }}</td>
+                                        <td class="px-4 py-3 font-semibold text-[#0a0b0d]">{{ $siswa->name }}</td>
+                                        <td class="px-4 py-3 whitespace-nowrap text-[#5b616e]">{{ $siswa->nisn ?? '-' }}</td>
+                                        <td class="px-4 py-3">
+                                            <select name="absensi[{{ $siswa->id }}][status]"
+                                                    class="w-full rounded-lg border-[#dee1e6] text-sm focus:border-[#0052ff] focus:ring-[#0052ff]">
                                                 <option value="Hadir" @selected(optional($absen)->status === 'Hadir')>Hadir</option>
                                                 <option value="Izin"  @selected(optional($absen)->status === 'Izin')>Izin</option>
                                                 <option value="Sakit" @selected(optional($absen)->status === 'Sakit')>Sakit</option>
                                                 <option value="Alpha" @selected(optional($absen)->status === 'Alpha')>Alpha (Tanpa Keterangan)</option>
                                             </select>
                                         </td>
-                                        <td class="border p-3 text-center">
-                                            <input type="time" name="absensi[{{ $siswa->id }}][jam_masuk]" value="{{ optional($absen)->jam_masuk }}" class="border-gray-300 rounded text-sm w-32 text-center">
+                                        <td class="px-4 py-3 text-center">
+                                            <input type="time" name="absensi[{{ $siswa->id }}][jam_masuk]" value="{{ optional($absen)->jam_masuk }}"
+                                                   class="w-32 rounded-lg border-[#dee1e6] text-center text-sm focus:border-[#0052ff] focus:ring-[#0052ff]">
                                         </td>
-                                        <td class="border p-3 text-center">
-                                            <input type="time" name="absensi[{{ $siswa->id }}][jam_pulang]" value="{{ optional($absen)->jam_pulang }}" class="border-gray-300 rounded text-sm w-32 text-center">
+                                        <td class="px-4 py-3 text-center">
+                                            <input type="time" name="absensi[{{ $siswa->id }}][jam_pulang]" value="{{ optional($absen)->jam_pulang }}"
+                                                   class="w-32 rounded-lg border-[#dee1e6] text-center text-sm focus:border-[#0052ff] focus:ring-[#0052ff]">
                                         </td>
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="6" class="border p-4 text-center text-gray-400 italic">Belum ada siswa bimbingan yang di-mapping ke Anda / tidak cocok dengan pencarian.</td>
+                                        <td colspan="6" class="px-4 py-8 text-center text-[#a8acb3] italic">Belum ada siswa bimbingan yang di-mapping ke Anda / tidak cocok dengan pencarian.</td>
                                     </tr>
                                 @endforelse
                             </tbody>
@@ -103,7 +112,8 @@
 
                     @if($siswas->count() > 0)
                         <div class="mt-6 flex justify-end">
-                            <button type="submit" class="bg-blue-600 hover:bg-blue-800 text-white font-bold py-2 px-6 rounded text-sm shadow-lg transition duration-200">
+                            <button type="submit"
+                                    class="inline-flex items-center rounded-full bg-[#0052ff] px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-[#003ecc]">
                                 Simpan Absensi
                             </button>
                         </div>

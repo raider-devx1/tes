@@ -1,63 +1,90 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">{{ __('Dashboard Instruktur Industri') }}</h2>
+        <h2 class="text-xl font-semibold tracking-tight text-[#0a0b0d]">Dashboard Instruktur</h2>
     </x-slot>
 
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
-                <h3 class="text-2xl font-bold mb-2">Selamat Datang, {{ Auth::user()->name }}!</h3>
-                <p class="text-gray-600 mb-6">Kelola absensi dan validasi kegiatan siswa bimbingan Anda.</p>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-                    <div class="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
-                        <p class="text-sm text-indigo-600 font-bold uppercase">Siswa Bimbingan Industri</p>
-                        <h4 class="text-4xl font-bold text-indigo-800">{{ $siswaBimbingan }}</h4>
+            {{-- Hero band gelap + statistik --}}
+            <div class="rounded-3xl bg-[#0a0b0d] p-8 md:p-12 text-white">
+                <p class="text-sm font-medium text-[#a8acb3]">Ruang Instruktur Industri</p>
+                <h3 class="mt-2 text-3xl md:text-4xl font-normal tracking-tight">
+                    Selamat Datang, {{ auth()->user()->name }}!
+                </h3>
+                <p class="mt-3 max-w-xl text-[#a8acb3]">Kelola absensi dan validasi kegiatan siswa bimbingan Anda.</p>
+
+                <div class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="rounded-2xl bg-[#16181c] p-6">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-[#a8acb3]">Siswa Bimbingan Industri</p>
+                        <p class="mt-2 text-4xl font-normal tracking-tight text-white">{{ $siswaBimbingan }}</p>
                     </div>
-                    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                        <p class="text-sm text-yellow-600 font-bold uppercase">Jurnal Menunggu Validasi</p>
-                        <h4 class="text-4xl font-bold text-yellow-800">{{ $jurnalPending }}</h4>
+                    <div class="rounded-2xl bg-[#16181c] p-6">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-[#a8acb3]">Jurnal Menunggu Validasi</p>
+                        <p class="mt-2 text-4xl font-normal tracking-tight text-[#f4b000]">{{ $jurnalPending }}</p>
                     </div>
                 </div>
+            </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <a href="{{ route('instruktur.siswa.index') }}"
-    class="md:col-span-3 block p-6 bg-white border-2 border-gray-200 rounded-xl hover:border-indigo-500 hover:shadow-md transition duration-200">
-    <h5 class="text-2xl font-bold tracking-tight text-gray-900 mb-2">📊 Ruang Monitoring & Daftar Siswa</h5>
-    <p class="font-normal text-gray-600">Lihat seluruh siswa bimbingan industri dalam bentuk tabel lengkap dengan pencarian & filter, lalu langsung menuju validasi jurnal, persetujuan catatan, persetujuan observasi, input absensi, atau lembar penilaian PKL.</p>
-</a>
+            {{-- Kartu navigasi --}}
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
 
-                    <a href="{{ route('instruktur.jurnal.index') }}"
-                        class="block p-6 bg-white border-2 border-gray-200 rounded-xl hover:border-indigo-500 transition text-center">
-                        <h5 class="text-lg font-bold text-gray-900 mb-2">✅ Validasi Jurnal</h5>
-                        <p class="text-sm text-gray-600">Periksa, beri catatan, dan setujui jurnal harian siswa.</p>
-                    </a>
-                    <!-- Card Persetujuan Catatan -->
-                    <a href="{{ route('instruktur.catatan.index') }}"
-                        class="block p-6 bg-white rounded-lg border border-gray-200 shadow-md hover:bg-gray-100">
-                        <h5 class="mb-2 text-2xl font-bold tracking-tight text-gray-900">Persetujuan Catatan</h5>
-                        <p class="font-normal text-gray-700">Berikan catatan instruktur dan persetujuan pada kegiatan
-                            siswa.</p>
-                    </a>
+                <a href="{{ route('instruktur.siswa.index') }}"
+                   class="group md:col-span-3 block rounded-3xl border border-[#dee1e6] bg-white p-8 transition hover:border-[#0052ff]">
+                    <div class="flex items-start justify-between gap-4">
+                        <div>
+                            <h5 class="text-2xl font-semibold tracking-tight text-[#0a0b0d]">Ruang Monitoring &amp; Daftar Siswa</h5>
+                            <p class="mt-2 max-w-3xl text-sm text-[#5b616e]">Lihat seluruh siswa bimbingan industri dalam bentuk tabel lengkap dengan pencarian &amp; filter, lalu langsung menuju validasi jurnal, persetujuan catatan, persetujuan observasi, input absensi, atau lembar penilaian PKL.</p>
+                        </div>
+                        <span class="text-[#0052ff] transition group-hover:translate-x-1">&rarr;</span>
+                    </div>
+                </a>
 
-                    <a href="{{ route('instruktur.observasi.index') }}"
-                        class="block p-6 bg-white rounded-lg border border-gray-200 shadow-md hover:bg-gray-100">
-                        <h5 class="mb-2 text-2xl font-bold tracking-tight text-gray-900">Persetujuan Observasi</h5>
-                        <p class="font-normal text-gray-700">Tinjau dan setujui lembar observasi yang diajukan oleh guru
-                            pembimbing.</p>
-                    </a>
-                    <a href="{{ route('instruktur.absensi.index') }}"
-                        class="block p-6 bg-white border-2 border-gray-200 rounded-xl hover:border-indigo-500 transition text-center">
-                        <h5 class="text-lg font-bold text-gray-900 mb-2">📅 Input Absensi</h5>
-                        <p class="text-sm text-gray-600">Kelola kehadiran harian (jam masuk/pulang) siswa.</p>
-                    </a>
-                    <a href="{{ route('instruktur.nilai.index') }}"
-                        class="block p-6 bg-white rounded-lg border border-gray-200 shadow-md hover:bg-gray-100 transition duration-200">
-                        <h5 class="mb-2 text-2xl font-bold tracking-tight text-gray-900">Lembar Penilaian PKL</h5>
-                        <p class="font-normal text-gray-700">Input nilai evaluasi kompetensi perkembangan hard-skill &
-                            soft-skill siswa bimbingan.</p>
-                    </a>
-                </div>
+                <a href="{{ route('instruktur.jurnal.index') }}"
+                   class="group block rounded-2xl border border-[#dee1e6] bg-white p-6 transition hover:border-[#0052ff]">
+                    <div class="flex items-center justify-between">
+                        <h5 class="text-lg font-semibold text-[#0a0b0d]">Validasi Jurnal</h5>
+                        <span class="text-[#0052ff] transition group-hover:translate-x-1">&rarr;</span>
+                    </div>
+                    <p class="mt-2 text-sm text-[#5b616e]">Periksa, beri catatan, dan setujui jurnal harian siswa.</p>
+                </a>
+
+                <a href="{{ route('instruktur.catatan.index') }}"
+                   class="group block rounded-2xl border border-[#dee1e6] bg-white p-6 transition hover:border-[#0052ff]">
+                    <div class="flex items-center justify-between">
+                        <h5 class="text-lg font-semibold text-[#0a0b0d]">Persetujuan Catatan</h5>
+                        <span class="text-[#0052ff] transition group-hover:translate-x-1">&rarr;</span>
+                    </div>
+                    <p class="mt-2 text-sm text-[#5b616e]">Berikan catatan instruktur dan persetujuan pada kegiatan siswa.</p>
+                </a>
+
+                <a href="{{ route('instruktur.observasi.index') }}"
+                   class="group block rounded-2xl border border-[#dee1e6] bg-white p-6 transition hover:border-[#0052ff]">
+                    <div class="flex items-center justify-between">
+                        <h5 class="text-lg font-semibold text-[#0a0b0d]">Persetujuan Observasi</h5>
+                        <span class="text-[#0052ff] transition group-hover:translate-x-1">&rarr;</span>
+                    </div>
+                    <p class="mt-2 text-sm text-[#5b616e]">Tinjau dan setujui lembar observasi yang diajukan oleh guru pembimbing.</p>
+                </a>
+
+                <a href="{{ route('instruktur.absensi.index') }}"
+                   class="group block rounded-2xl border border-[#dee1e6] bg-white p-6 transition hover:border-[#0052ff]">
+                    <div class="flex items-center justify-between">
+                        <h5 class="text-lg font-semibold text-[#0a0b0d]">Input Absensi</h5>
+                        <span class="text-[#0052ff] transition group-hover:translate-x-1">&rarr;</span>
+                    </div>
+                    <p class="mt-2 text-sm text-[#5b616e]">Kelola kehadiran harian (jam masuk/pulang) siswa.</p>
+                </a>
+
+                <a href="{{ route('instruktur.nilai.index') }}"
+                   class="group block rounded-2xl border border-[#dee1e6] bg-white p-6 transition hover:border-[#0052ff]">
+                    <div class="flex items-center justify-between">
+                        <h5 class="text-lg font-semibold text-[#0a0b0d]">Lembar Penilaian PKL</h5>
+                        <span class="text-[#0052ff] transition group-hover:translate-x-1">&rarr;</span>
+                    </div>
+                    <p class="mt-2 text-sm text-[#5b616e]">Input nilai evaluasi kompetensi perkembangan hard-skill &amp; soft-skill siswa bimbingan.</p>
+                </a>
+
             </div>
         </div>
     </div>
