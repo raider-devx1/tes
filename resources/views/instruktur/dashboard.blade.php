@@ -21,6 +21,12 @@
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <a href="{{ route('instruktur.siswa.index') }}"
+    class="md:col-span-3 block p-6 bg-white border-2 border-gray-200 rounded-xl hover:border-indigo-500 hover:shadow-md transition duration-200">
+    <h5 class="text-2xl font-bold tracking-tight text-gray-900 mb-2">📊 Ruang Monitoring & Daftar Siswa</h5>
+    <p class="font-normal text-gray-600">Lihat seluruh siswa bimbingan industri dalam bentuk tabel lengkap dengan pencarian & filter, lalu langsung menuju validasi jurnal, persetujuan catatan, persetujuan observasi, input absensi, atau lembar penilaian PKL.</p>
+</a>
+
                     <a href="{{ route('instruktur.jurnal.index') }}"
                         class="block p-6 bg-white border-2 border-gray-200 rounded-xl hover:border-indigo-500 transition text-center">
                         <h5 class="text-lg font-bold text-gray-900 mb-2">✅ Validasi Jurnal</h5>

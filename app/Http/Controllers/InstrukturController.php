@@ -4,9 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\Perusahaan;
 use App\Models\User;
+use App\Models\PeriodePkl;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
 
 class InstrukturController extends Controller
@@ -141,4 +143,35 @@ class InstrukturController extends Controller
 
         return back()->with('success', 'Akun instruktur industri berhasil dihapus.');
     }
+
+    /** Ruang Monitoring & Daftar Siswa bimbingan industri (instruktur yang login). */
+public function monitoringSiswa(Request $request)
+{
+    $query = User::where('role', 'siswa_pkl')
+        ->where('instruktur_id', Auth::id())
+        ->with(['guru', 'perusahaan', 'periode']);
+
+    // Filter pencarian teks: nama, NISN, kelas, jurusan
+    if ($request->filled('q')) {
+        $q = $request->q;
+        $query->where(function ($sub) use ($q) {
+            $sub->where('name', 'like', "%{$q}%")
+                ->orWhere('nisn', 'like', "%{$q}%")
+                ->orWhere('kelas', 'like', "%{$q}%")
+                ->orWhere('jurusan', 'like', "%{$q}%");
+        });
+    }
+
+    // Filter dropdown: Periode PKL
+    if ($request->filled('periode_id')) {
+        $query->where('periode_id', $request->periode_id);
+    }
+
+    $siswas = $query->orderBy('name')->paginate(15)->withQueryString();
+
+    $periodes = PeriodePkl::orderByDesc('tahun_ajaran')->orderBy('nama')->get();
+
+    return view('instruktur.siswa.index', compact('siswas', 'periodes'));
+}
+
 }

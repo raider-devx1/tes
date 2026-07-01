@@ -200,6 +200,8 @@ Route::post('/dokumen/surat-tugas',[DokumenController::class, 'uploadSuratTugas'
             return view('instruktur.dashboard', compact('siswaBimbingan', 'jurnalPending'));
         })->name('dashboard');
 
+        Route::get('/siswa', [InstrukturController::class, 'monitoringSiswa'])->name('siswa.index');
+        
         Route::get('/jurnal', [JurnalController::class, 'indexInstruktur'])->name('jurnal.index');
         Route::put('/jurnal/{id}/update', [JurnalController::class, 'updateInstruktur'])->name('jurnal.update');
 
