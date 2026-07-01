@@ -60,26 +60,26 @@
                                     <td class="border p-3 text-gray-600 whitespace-nowrap">{{ $siswa->nisn ?? '-' }}</td>
                                     <td class="border p-3 text-gray-600">{{ $siswa->kelas ?? '-' }}</td>
                                     <td class="border p-3 text-gray-600">{{ $siswa->jurusan ?? '-' }}</td>
-                                    <td class="border p-3 text-gray-600">{{ $siswa->guru->name ?? '-' }}</td>
+                                    <td class="border p-3 text-gray-600">{{ optional($siswa->guru)->name ?? '-' }}</td>
                                     <td class="border p-3">
                                         <div class="flex flex-wrap justify-center gap-2">
-                                            <a href="{{ route('instruktur.jurnal.index', ['siswa_id' => $siswa->id]) }}"
+                                            <a href="{{ route('instruktur.jurnal.index', ['q' => $siswa->nisn]) }}"
                                                class="bg-blue-500 hover:bg-blue-700 text-white text-xs py-1 px-3 rounded shadow transition text-center">
                                                 Validasi Jurnal
                                             </a>
-                                            <a href="{{ route('instruktur.catatan.index', ['siswa_id' => $siswa->id]) }}"
+                                            <a href="{{ route('instruktur.catatan.index', ['q' => $siswa->nisn]) }}"
                                                class="bg-purple-500 hover:bg-purple-700 text-white text-xs py-1 px-3 rounded shadow transition text-center">
                                                 Persetujuan Catatan
                                             </a>
-                                            <a href="{{ route('instruktur.observasi.index', ['siswa_id' => $siswa->id]) }}"
+                                            <a href="{{ route('instruktur.observasi.index', ['q' => $siswa->nisn]) }}"
                                                class="bg-amber-500 hover:bg-amber-700 text-white text-xs py-1 px-3 rounded shadow transition text-center">
                                                 Persetujuan Observasi
                                             </a>
-                                            <a href="{{ route('instruktur.absensi.index', ['siswa_id' => $siswa->id]) }}"
+                                            <a href="{{ route('instruktur.absensi.index', ['q' => $siswa->nisn]) }}"
                                                class="bg-green-500 hover:bg-green-700 text-white text-xs py-1 px-3 rounded shadow transition text-center">
                                                 Input Absensi
                                             </a>
-                                            <a href="{{ route('instruktur.nilai.create', ['siswa_id' => $siswa->id]) }}"
+                                            <a href="{{ route('instruktur.nilai.index', ['q' => $siswa->nisn]) }}"
                                                class="bg-indigo-500 hover:bg-indigo-700 text-white text-xs py-1 px-3 rounded shadow transition text-center">
                                                 Lembar Penilaian PKL
                                             </a>
@@ -97,7 +97,7 @@
                     </table>
                 </div>
 
-                {{-- Pagination --}}
+                {{-- ===== PAGINATION ===== --}}
                 <div class="mt-4">
                     {!! $siswas->links() !!}
                 </div>
