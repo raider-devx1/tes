@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\Jurnal;
+use App\Models\PeriodePkl;
 use App\Models\Absensi;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -11,11 +12,37 @@ use Illuminate\Support\Facades\Auth;
 class GuruController extends Controller
 {
     // Daftar siswa bimbingan
-    public function index()
-    {
-        $siswas = User::where('role', 'siswa_pkl')->where('guru_id', Auth::id())->get();
-        return view('guru.siswa.index', compact('siswas'));
+   // Daftar siswa bimbingan (tabel lengkap + filter + pagination)
+public function index(Request $request)
+{
+    $query = User::where('role', 'siswa_pkl')
+        ->where('guru_id', Auth::id())
+        ->with(['instruktur', 'perusahaan', 'periode']);
+
+    // Filter pencarian teks: nama, NISN, kelas, jurusan, nama instruktur
+    if ($request->filled('q')) {
+        $q = $request->q;
+        $query->where(function ($sub) use ($q) {
+            $sub->where('name', 'like', "%{$q}%")
+                ->orWhere('nisn', 'like', "%{$q}%")
+                ->orWhere('kelas', 'like', "%{$q}%")
+                ->orWhere('jurusan', 'like', "%{$q}%")
+                ->orWhereHas('instruktur', fn ($i) => $i->where('name', 'like', "%{$q}%"));
+        });
     }
+
+    // Filter dropdown: Periode PKL
+    if ($request->filled('periode_id')) {
+        $query->where('periode_id', $request->periode_id);
+    }
+
+    $siswas = $query->orderBy('name')->paginate(15)->withQueryString();
+
+    // Opsi dropdown periode
+    $periodes = PeriodePkl::orderByDesc('tahun_ajaran')->orderBy('nama')->get();
+
+    return view('guru.siswa.index', compact('siswas', 'periodes'));
+}
 
     // (Opsional) detail 1 siswa — boleh tetap dipakai atau dihapus
     public function detailSiswa($id)
