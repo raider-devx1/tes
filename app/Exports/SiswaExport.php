@@ -6,12 +6,16 @@ use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Maatwebsite\Excel\Concerns\FromQuery;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
+use Maatwebsite\Excel\Concerns\WithColumnFormatting;
+use Maatwebsite\Excel\Concerns\WithCustomValueBinder;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Concerns\WithStyles;
+use PhpOffice\PhpSpreadsheet\Cell\StringValueBinder;
+use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
-class SiswaExport implements FromQuery, WithHeadings, WithMapping, ShouldAutoSize, WithStyles
+class SiswaExport extends StringValueBinder implements FromQuery, WithHeadings, WithMapping, ShouldAutoSize, WithStyles, WithColumnFormatting, WithCustomValueBinder
 {
     public function __construct(
         protected string $q = '',
@@ -60,6 +64,18 @@ class SiswaExport implements FromQuery, WithHeadings, WithMapping, ShouldAutoSiz
             $siswa->instruktur->name ?? '-',
             $siswa->periode->nama ?? '-',
             ucfirst($siswa->status_pkl),
+        ];
+    }
+
+    /**
+     * Paksa kolom NISN & No. HP jadi TEXT agar tidak format ilmiah / 0 depan hilang.
+     * C = NISN, F = No. HP
+     */
+    public function columnFormats(): array
+    {
+        return [
+            'C' => NumberFormat::FORMAT_TEXT, // NISN
+            'F' => NumberFormat::FORMAT_TEXT, // No. HP
         ];
     }
 

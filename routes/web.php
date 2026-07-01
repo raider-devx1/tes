@@ -97,6 +97,12 @@ Route::post('/siswa/import', [SiswaController::class, 'import'])->name('siswa.im
         Route::put('/periode/{periode}/aktifkan', [PeriodePklController::class, 'aktifkan'])
             ->name('periode.aktifkan');
 
+
+// ---- IMPORT / EXPORT GURU ----
+Route::get('/guru/export/excel', [GuruPembimbingController::class, 'exportExcel'])->name('guru.export.excel');
+Route::get('/guru/export/pdf',   [GuruPembimbingController::class, 'exportPdf'])->name('guru.export.pdf');
+Route::get('/guru/template',     [GuruPembimbingController::class, 'template'])->name('guru.template');
+Route::post('/guru/import',      [GuruPembimbingController::class, 'import'])->name('guru.import');
        
         // ---- MASTER DATA: AKUN GURU PEMBIMBING ----
 Route::resource('guru', GuruPembimbingController::class)->except(['show']);
