@@ -18,25 +18,27 @@ use Illuminate\Validation\Rule;
 class SiswaController extends Controller
 {
     /** Validasi data siswa (dipakai store & update). */
-    private function validateData(Request $request, ?User $siswa = null): array
-    {
-        return $request->validate([
-            'name'          => ['required', 'string', 'max:100'],
-            'email'         => ['required', 'email', 'max:150', Rule::unique('users', 'email')->ignore($siswa?->id)],
-            'nisn'          => ['nullable', 'string', 'max:20'],
-            'jenis_kelamin' => ['nullable', Rule::in(['L', 'P'])],
-            'no_hp'         => ['nullable', 'string', 'max:20'],
-            'kelas'         => ['nullable', 'string', 'max:50'],
-            'jurusan'       => ['nullable', 'string', 'max:100'],
-            'status_pkl'    => ['required', Rule::in(['belum', 'aktif', 'selesai'])],
-            'perusahaan_id' => ['nullable', 'exists:perusahaans,id'],
-            'instruktur_id' => ['nullable', 'exists:users,id'],
-            'guru_id'       => ['nullable', 'exists:users,id'],
-            'periode_id'    => ['nullable', 'exists:periode_pkls,id'],
-            'foto'          => ['nullable', 'image', 'mimes:jpeg,jpg,png', 'max:2048'],
-            'password'      => [$siswa ? 'nullable' : 'required', 'string', 'min:6', 'confirmed'],
-        ]);
-    }
+private function validateData(Request $request, ?User $siswa = null): array
+{
+    return $request->validate([
+        'name'          => ['required', 'string', 'max:100'],
+        // Email opsional & boleh sama (tidak lagi unik)
+        'email'         => ['nullable', 'email', 'max:150'],
+        // NISN = identitas login siswa: wajib & unik
+        'nisn'          => ['required', 'string', 'max:20', Rule::unique('users', 'nisn')->ignore($siswa?->id)],
+        'jenis_kelamin' => ['nullable', Rule::in(['L', 'P'])],
+        'no_hp'         => ['nullable', 'string', 'max:20'],
+        'kelas'         => ['nullable', 'string', 'max:50'],
+        'jurusan'       => ['nullable', 'string', 'max:100'],
+        'status_pkl'    => ['required', Rule::in(['belum', 'aktif', 'selesai'])],
+        'perusahaan_id' => ['nullable', 'exists:perusahaans,id'],
+        'instruktur_id' => ['nullable', 'exists:users,id'],
+        'guru_id'       => ['nullable', 'exists:users,id'],
+        'periode_id'    => ['nullable', 'exists:periode_pkls,id'],
+        'foto'          => ['nullable', 'image', 'mimes:jpeg,jpg,png', 'max:2048'],
+        'password'      => [$siswa ? 'nullable' : 'required', 'string', 'min:6', 'confirmed'],
+    ]);
+}
 
     /** Data untuk semua dropdown form. */
     private function dropdownData(): array

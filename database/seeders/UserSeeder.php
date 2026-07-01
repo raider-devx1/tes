@@ -6,51 +6,78 @@ use Illuminate\Database\Seeder;
 use App\Models\User;
 use App\Models\Perusahaan;
 use App\Models\PeriodePkl;
+use App\Models\Jurnal;
+use App\Models\CatatanKegiatan;
+use App\Models\Observasi;
+use App\Models\Nilai;
+use App\Models\Absensi;
+use App\Models\Dokumen;
 use Illuminate\Support\Facades\Hash;
 
 class UserSeeder extends Seeder
 {
     public function run(): void
     {
-        // 0. Buat Periode PKL Aktif (fondasi penempatan siswa)
-        $periode = PeriodePkl::create([
+        // Set true untuk menaruh SEMUA siswa ke guru1 (uji pagination halaman "Daftar Siswa Bimbingan" guru)
+        $fokusSatuGuru = false;
+
+        /* ============================================================
+         | 0. PERIODE PKL  (2 periode -> untuk uji filter dropdown periode)
+         |    Catatan: model PeriodePkl otomatis menonaktifkan periode lain
+         |    saat sebuah periode di-set is_active = true.
+         ============================================================ */
+        $periodeLama = PeriodePkl::create([
+            'nama'            => 'PKL Gelombang 0 (Lampau)',
+            'tahun_ajaran'    => '2024/2025',
+            'tanggal_mulai'   => '2025-01-06',
+            'tanggal_selesai' => '2025-06-30',
+            'is_active'       => false,
+            'keterangan'      => 'Periode lampau untuk uji filter.',
+        ]);
+
+        $periodeAktif = PeriodePkl::create([
             'nama'            => 'PKL Gelombang 1',
             'tahun_ajaran'    => '2025/2026',
             'tanggal_mulai'   => '2026-01-06',
             'tanggal_selesai' => '2026-06-30',
             'is_active'       => true,
-            'keterangan'      => 'Periode PKL default hasil seeder',
+            'keterangan'      => 'Periode PKL aktif hasil seeder.',
         ]);
 
-        // 1. Buat Data Perusahaan / Industri
+        /* ============================================================
+         | 1. PERUSAHAAN / INDUSTRI
+         ============================================================ */
         $pt1 = Perusahaan::create([
             'nama_perusahaan'     => 'PT Semen Tonasa',
-           
+            'bidang_usaha'        => 'Manufaktur',
             'alamat'              => 'Kabupaten Pangkep',
             'telepon'             => '0410123456',
             'email'               => 'hrd@sementonasa.co.id',
             'pembimbing_industri' => 'Pak Anton',
-            
+            'kuota'               => 10,
         ]);
         $pt2 = Perusahaan::create([
             'nama_perusahaan'     => 'PT Telkom Indonesia',
-           
+            'bidang_usaha'        => 'Telekomunikasi',
             'alamat'              => 'Kabupaten Majene',
             'telepon'             => '0422123456',
             'email'               => 'magang@telkom.co.id',
             'pembimbing_industri' => 'Mbak Rina',
-           
+            'kuota'               => 10,
         ]);
         $pt3 = Perusahaan::create([
             'nama_perusahaan'     => 'Dinas Kominfo',
+            'bidang_usaha'        => 'Pemerintahan',
             'alamat'              => 'Provinsi Sulawesi Barat',
             'telepon'             => '0426123456',
             'email'               => 'kominfo@sulbarprov.go.id',
             'pembimbing_industri' => 'Pak Joko',
-           
+            'kuota'               => 10,
         ]);
 
-        // 2. Buat Akun Admin
+        /* ============================================================
+         | 2. ADMIN
+         ============================================================ */
         User::create([
             'name'     => 'Admin HKI SMKN 1 Majene',
             'email'    => 'admin@smkn1majene.sch.id',
@@ -59,7 +86,9 @@ class UserSeeder extends Seeder
             'no_hp'    => '081200000001',
         ]);
 
-        // 3. Buat 3 Akun Guru Pembimbing (dengan NIP)
+        /* ============================================================
+         | 3. GURU PEMBIMBING (3 akun)
+         ============================================================ */
         $guru1 = User::create([
             'name' => 'Pak Budi (Guru)', 'email' => 'guru1@smkn1majene.sch.id',
             'password' => Hash::make('password123'), 'role' => 'guru_pembimbing',
@@ -76,7 +105,9 @@ class UserSeeder extends Seeder
             'nip' => '197905202003121003', 'no_hp' => '081211110003',
         ]);
 
-        // 4. Buat 3 Akun Instruktur Industri (dengan Jabatan)
+        /* ============================================================
+         | 4. INSTRUKTUR INDUSTRI (3 akun, masing-masing 1 perusahaan)
+         ============================================================ */
         $ins1 = User::create([
             'name' => 'Pak Anton (Semen Tonasa)', 'email' => 'anton@tonasa.com',
             'password' => Hash::make('password123'), 'role' => 'instruktur_industri',
@@ -96,56 +127,155 @@ class UserSeeder extends Seeder
             'perusahaan_id' => $pt3->id,
         ]);
 
-        // 5. Buat 3 Akun Siswa (di-mapping + data master lengkap)
-        User::create([
-            'name'          => 'Siswa Ahmad',
-            'email'         => 'ahmad@siswa.com',
-            'password'      => Hash::make('password123'),
-            'role'          => 'siswa_pkl',
-            'nisn'          => '0051234561',
-            'jenis_kelamin' => 'L',
-            'no_hp'         => '081233330001',
-            'status_pkl'    => 'aktif',
-            'kelas'         => 'XI TKJ 1',
-            'jurusan'       => 'Teknik Komputer dan Jaringan',
-            'perusahaan_id' => $pt1->id,
-            'instruktur_id' => $ins1->id,
-            'guru_id'       => $guru1->id,
-            'periode_id'    => $periode->id,
-        ]);
+        /* ============================================================
+         | 5. 20 SISWA PKL + SEMUA DATA PENDUKUNG
+         ============================================================ */
+        $gurus = [$guru1, $guru2, $guru3];
+        $industri = [
+            ['ins' => $ins1, 'pt' => $pt1],
+            ['ins' => $ins2, 'pt' => $pt2],
+            ['ins' => $ins3, 'pt' => $pt3],
+        ];
 
-        User::create([
-            'name'          => 'Siswa Nisa',
-            'email'         => 'nisa@siswa.com',
-            'password'      => Hash::make('password123'),
-            'role'          => 'siswa_pkl',
-            'nisn'          => '0051234562',
-            'jenis_kelamin' => 'P',
-            'no_hp'         => '081233330002',
-            'status_pkl'    => 'aktif',
-            'kelas'         => 'XI RPL 2',
-            'jurusan'       => 'Rekayasa Perangkat Lunak',
-            'perusahaan_id' => $pt2->id,
-            'instruktur_id' => $ins2->id,
-            'guru_id'       => $guru2->id,
-            'periode_id'    => $periode->id,
-        ]);
+        $namaList = [
+            'Andi', 'Budi', 'Citra', 'Dewi', 'Eka', 'Fajar', 'Gina', 'Hadi',
+            'Indah', 'Joko', 'Kiki', 'Lina', 'Maya', 'Nanda', 'Omar', 'Putri',
+            'Qori', 'Rian', 'Sari', 'Tono',
+        ];
 
-        User::create([
-            'name'          => 'Siswa Reza',
-            'email'         => 'reza@siswa.com',
-            'password'      => Hash::make('password123'),
-            'role'          => 'siswa_pkl',
-            'nisn'          => '0051234563',
-            'jenis_kelamin' => 'L',
-            'no_hp'         => '081233330003',
-            'status_pkl'    => 'aktif',
-            'kelas'         => 'XI MM 1',
-            'jurusan'       => 'Multimedia',
-            'perusahaan_id' => $pt3->id,
-            'instruktur_id' => $ins3->id,
-            'guru_id'       => $guru3->id,
-            'periode_id'    => $periode->id,
-        ]);
+        $kelasList = ['XI TKJ 1', 'XI TKJ 2', 'XI RPL 1', 'XI RPL 2', 'XI MM 1'];
+        $jurusanMap = [
+            'XI TKJ 1' => 'Teknik Komputer dan Jaringan',
+            'XI TKJ 2' => 'Teknik Komputer dan Jaringan',
+            'XI RPL 1' => 'Rekayasa Perangkat Lunak',
+            'XI RPL 2' => 'Rekayasa Perangkat Lunak',
+            'XI MM 1'  => 'Multimedia',
+        ];
+
+        $statusJurnal = ['pending', 'disetujui', 'revisi'];
+        $statusAbsen  = ['Hadir', 'Hadir', 'Izin', 'Sakit', 'Alpha'];
+
+        for ($i = 1; $i <= 20; $i++) {
+            $guru  = $fokusSatuGuru ? $guru1 : $gurus[($i - 1) % 3];
+            $ind   = $industri[($i - 1) % 3];
+            $kelas = $kelasList[($i - 1) % count($kelasList)];
+
+            // Sebagian siswa di periode lampau (i = 5,10,15,20) untuk uji filter periode
+            $periode = ($i % 5 === 0) ? $periodeLama : $periodeAktif;
+
+            $siswa = User::create([
+                'name'          => 'Siswa ' . $namaList[$i - 1],
+                'email'         => 'siswa' . $i . '@siswa.com',
+                'password'      => Hash::make('password123'),
+                'role'          => 'siswa_pkl',
+                'nisn'          => '005123' . str_pad($i, 4, '0', STR_PAD_LEFT),
+                'jenis_kelamin' => $i % 2 === 0 ? 'P' : 'L',
+                'no_hp'         => '0812' . str_pad($i, 8, '0', STR_PAD_LEFT),
+                'status_pkl'    => 'aktif',
+                'kelas'         => $kelas,
+                'jurusan'       => $jurusanMap[$kelas],
+                'perusahaan_id' => $ind['pt']->id,
+                'instruktur_id' => $ind['ins']->id,
+                'guru_id'       => $guru->id,
+                'periode_id'    => $periode->id,
+            ]);
+
+            // ---- JURNAL (3 entri, status bervariasi) ----
+            for ($j = 1; $j <= 3; $j++) {
+                $st = $statusJurnal[($j - 1) % 3];
+                Jurnal::create([
+                    'siswa_id'            => $siswa->id,
+                    'hari_tanggal'        => now()->subDays($j)->toDateString(),
+                    'unit_kerja'          => 'Divisi ' . $j,
+                    'deskripsi_pekerjaan' => "Mengerjakan tugas harian ke-$j untuk {$siswa->name}.",
+                    'dokumentasi'         => null,
+                    'catatan_instruktur'  => $st === 'disetujui' ? 'Kerja bagus.' : ($st === 'revisi' ? 'Mohon diperbaiki.' : null),
+                    'status_persetujuan'  => $st,
+                    'disetujui_oleh'      => $st === 'pending' ? null : $ind['ins']->id,
+                ]);
+            }
+
+            // ---- CATATAN KEGIATAN (3 entri) ----
+            for ($c = 1; $c <= 3; $c++) {
+                CatatanKegiatan::create([
+                    'user_id'              => $siswa->id,
+                    'nama_pekerjaan'       => "Proyek ke-$c",
+                    'perencanaan_kegiatan' => "Rencana kegiatan ke-$c.",
+                    'pelaksanaan_kegiatan' => "Pelaksanaan & hasil kegiatan ke-$c.",
+                    'catatan_instruktur'   => $c === 1 ? 'Sudah sesuai target.' : null,
+                    'is_approved'          => $c === 1, // 1 disetujui, sisanya menunggu
+                ]);
+            }
+
+            // ---- OBSERVASI (3 entri, dibuat oleh guru pembimbing) ----
+            for ($o = 1; $o <= 3; $o++) {
+                Observasi::create([
+                    'user_id'          => $siswa->id,
+                    'guru_id'          => $guru->id,
+                    'hari_tanggal'     => now()->subDays($o * 2)->toDateString(),
+                    'pekerjaan_projek' => "Observasi projek ke-$o",
+                    'permasalahan'     => "Permasalahan yang ditemukan pada observasi ke-$o.",
+                    'solusi'           => "Solusi yang disarankan untuk observasi ke-$o.",
+                    'is_approved'      => $o === 1, // 1 disetujui, sisanya menunggu
+                ]);
+            }
+
+            // ---- ABSENSI (5 entri, status & jam bervariasi) ----
+            foreach ($statusAbsen as $idx => $stAbs) {
+                Absensi::create([
+                    'siswa_id'      => $siswa->id,
+                    'instruktur_id' => $ind['ins']->id,
+                    'tanggal'       => now()->subDays($idx)->toDateString(),
+                    'status'        => $stAbs,
+                    'jam_masuk'     => $stAbs === 'Hadir' ? '07:30:00' : null,
+                    'jam_pulang'    => $stAbs === 'Hadir' ? '16:00:00' : null,
+                ]);
+            }
+
+            // ---- NILAI (2/3 lengkap, 1/3 baru dinilai instruktur saja) ----
+            $soft = rand(3, 5);
+            $hard = rand(3, 5);
+            $peng = rand(3, 5);
+            $kwu  = rand(3, 5);
+            $rata = round(($soft + $hard + $peng + $kwu) / 4, 2);
+
+            $lengkap      = ($i % 3 !== 0); // sebagian belum dinilai guru -> nilai_akhir null
+            $nilaiGuru    = $lengkap ? rand(75, 95) : null;
+            $nilaiLaporan = $lengkap ? rand(75, 95) : null;
+
+            $nilaiAkhir = null;
+            if ($lengkap) {
+                $instruktur100 = ($rata / 5) * 100;
+                $nilaiAkhir = round(
+                    ($instruktur100 * 0.50) + ($nilaiGuru * 0.20) + ($nilaiLaporan * 0.30),
+                    2
+                );
+            }
+
+            Nilai::create([
+                'user_id'                 => $siswa->id,
+                'instruktur_id'           => $ind['ins']->id,
+                'guru_id'                 => $lengkap ? $guru->id : null,
+                'soft_skill'              => $soft,
+                'hard_skill'              => $hard,
+                'pengembangan_hard_skill' => $peng,
+                'kewirausahaan'           => $kwu,
+                'rata_rata'               => $rata,
+                'catatan_rekomendasi'     => 'Direkomendasikan untuk pengembangan lebih lanjut.',
+                'nilai_guru'              => $nilaiGuru,
+                'nilai_laporan'           => $nilaiLaporan,
+                'catatan_guru'            => $lengkap ? 'Laporan disusun dengan baik.' : null,
+                'nilai_akhir'             => $nilaiAkhir,
+            ]);
+
+            // ---- DOKUMEN (1 baris per siswa) ----
+            // NB: nilai kolom = path contoh (file fisik belum ada). Cukup untuk uji tampilan/tabel.
+            Dokumen::create([
+                'siswa_id'         => $siswa->id,
+                'surat_tugas'      => null, // surat tugas bersifat global (diunggah admin)
+                'surat_penerimaan' => 'dokumen/contoh_surat_penerimaan.pdf',
+                'laporan_akhir'    => $lengkap ? 'dokumen/contoh_laporan_akhir.pdf' : null,
+            ]);
+        }
     }
 }

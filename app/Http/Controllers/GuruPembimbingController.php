@@ -14,17 +14,19 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class GuruPembimbingController extends Controller
 {
-    /** Validasi akun guru (dipakai store & update). */
-    private function validateData(Request $request, ?User $guru = null): array
-    {
-        return $request->validate([
-            'name'     => ['required', 'string', 'max:100'],
-            'email'    => ['required', 'email', 'max:150', Rule::unique('users', 'email')->ignore($guru?->id)],
-            'nip'      => ['nullable', 'string', 'max:30'],
-            'no_hp'    => ['nullable', 'string', 'max:20'],
-            'password' => [$guru ? 'nullable' : 'required', 'string', 'min:6', 'confirmed'],
-        ]);
-    }
+   /** Validasi akun guru (dipakai store & update). */
+private function validateData(Request $request, ?User $guru = null): array
+{
+    return $request->validate([
+        'name'     => ['required', 'string', 'max:100'],
+        // Email opsional & boleh sama (tidak lagi unik)
+        'email'    => ['nullable', 'email', 'max:150'],
+        // NIP = identitas login guru: wajib & unik
+        'nip'      => ['required', 'string', 'max:30', Rule::unique('users', 'nip')->ignore($guru?->id)],
+        'no_hp'    => ['nullable', 'string', 'max:20'],
+        'password' => [$guru ? 'nullable' : 'required', 'string', 'min:6', 'confirmed'],
+    ]);
+}
 
     public function index(Request $request)
     {
