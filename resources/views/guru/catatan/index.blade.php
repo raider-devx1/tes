@@ -1,14 +1,14 @@
 <x-app-layout>
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Pantau Catatan Kegiatan Siswa') }}
+            Catatan Kegiatan Siswa Bimbingan
         </h2>
     </x-slot>
 
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
-                
+
                 <div class="overflow-x-auto">
                     <table class="w-full text-sm text-left text-gray-500 border">
                         <thead class="text-xs text-gray-700 uppercase bg-gray-50">
@@ -25,7 +25,7 @@
                         <tbody>
                             @forelse ($catatan as $item)
                                 <tr class="bg-white border-b hover:bg-gray-50">
-                                    <td class="px-4 py-3 border font-medium text-gray-900">{{ $item->user->name }}</td>
+                                    <td class="px-4 py-3 border font-medium text-gray-900">{{ $item->user->name ?? '-' }}</td>
                                     <td class="px-4 py-3 border">{{ $item->nama_pekerjaan }}</td>
                                     <td class="px-4 py-3 border">{{ $item->perencanaan_kegiatan }}</td>
                                     <td class="px-4 py-3 border">{{ $item->pelaksanaan_kegiatan }}</td>
@@ -38,16 +38,21 @@
                                         @endif
                                     </td>
                                     <td class="px-4 py-3 border text-center">
-    <a href="<?php echo e(route('cetak.catatan', $item->user_id)); ?>" target="_blank" class="bg-red-600 hover:bg-red-700 text-white text-xs py-1 px-2 rounded">PDF</a>
-</td>
+                                        <a href="{{ route('cetak.catatan', $item->user_id) }}" target="_blank" class="bg-red-600 hover:bg-red-700 text-white text-xs py-1 px-2 rounded transition">PDF</a>
+                                    </td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="7" class="px-4 py-4 text-center">Belum ada catatan kegiatan dari siswa bimbingan.</td>
+                                    <td colspan="7" class="px-4 py-4 text-center text-gray-400 italic">Belum ada catatan kegiatan dari siswa bimbingan.</td>
                                 </tr>
                             @endforelse
                         </tbody>
                     </table>
+                </div>
+
+                {{-- Pagination --}}
+                <div class="mt-4">
+                    {!! $catatan->links() !!}
                 </div>
 
             </div>

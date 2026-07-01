@@ -1,22 +1,24 @@
 <x-app-layout>
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Jurnal Kegiatan Harian PKL') }}
+            Jurnal Kegiatan Harian
         </h2>
     </x-slot>
 
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
-                
+
                 <div class="flex justify-between items-center mb-4">
                     <h3 class="text-lg font-bold">Riwayat Jurnal Saya</h3>
-                    <a href="{{ route('siswa.jurnal.create') }}" class="bg-blue-600 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded">
-                        + Tambah Jurnal
-                    </a>
-                    <a href="<?php echo e(route('cetak.jurnal')); ?>" target="_blank" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">
-    Cetak PDF
-</a>
+                    <div class="flex gap-2">
+                        <a href="{{ route('siswa.jurnal.create') }}" class="bg-blue-600 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded">
+                            + Tambah Jurnal
+                        </a>
+                        <a href="{{ route('cetak.jurnal') }}" target="_blank" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">
+                            Cetak PDF
+                        </a>
+                    </div>
                 </div>
 
                 @if(session('success'))
@@ -45,9 +47,10 @@
                         <tbody>
                             @forelse($jurnals as $jurnal)
                             <tr class="hover:bg-gray-50">
-                                <td class="border p-3">{{ \Carbon\Carbon::parse($jurnal->hari_tanggal)->format('d M Y') }}</td>
+                                <td class="border p-3">{{ \Carbon\Carbon::parse($jurnal->hari_tanggal)->translatedFormat('d M Y') }}</td>
                                 <td class="border p-3">{{ $jurnal->unit_kerja }}</td>
-                                <td class="border p-3 text-sm">{{ $jurnal->deskripsi_pekerjaan }}
+                                <td class="border p-3 text-sm">
+                                    {{ $jurnal->deskripsi_pekerjaan }}
                                     @if($jurnal->catatan_instruktur)
                                         <div class="mt-2 p-2 bg-yellow-50 text-xs italic border-l-2 border-yellow-400">
                                             <strong>Catatan Instruktur:</strong> {{ $jurnal->catatan_instruktur }}
@@ -56,7 +59,7 @@
                                 </td>
                                 <td class="border p-3 text-center">
                                     @if($jurnal->dokumentasi)
-                                        <a href="{{ asset('storage/' . $jurnal->dokumentasi) }}" target="_blank" class="text-blue-500 underline text-sm">Lihat Foto</a>
+                                        <a href="{{ asset('storage/'.$jurnal->dokumentasi) }}" target="_blank" class="text-blue-500 underline text-sm">Lihat Foto</a>
                                     @else
                                         <span class="text-gray-400 text-sm">Tidak ada</span>
                                     @endif
@@ -89,6 +92,11 @@
                             @endforelse
                         </tbody>
                     </table>
+                </div>
+
+                {{-- Pagination --}}
+                <div class="mt-4">
+                    {!! $jurnals->links() !!}
                 </div>
 
             </div>

@@ -9,11 +9,12 @@ use Illuminate\Support\Facades\Auth;
 class CatatanController extends Controller
 {
     // ====== ROLE: SISWA PKL (mengisi catatan) ======
-    public function indexSiswa()
-    {
-        $catatan = CatatanKegiatan::where('user_id', Auth::id())->latest()->get();
-        return view('siswa.catatan.index', compact('catatan'));
-    }
+   public function indexSiswa()
+{
+    $catatan = CatatanKegiatan::where('user_id', Auth::id())
+        ->latest()->paginate(15)->withQueryString();
+    return view('siswa.catatan.index', compact('catatan'));
+}
 
     public function createSiswa()
     {
@@ -39,26 +40,22 @@ class CatatanController extends Controller
     }
 
     // ====== ROLE: GURU PEMBIMBING (memantau catatan) ======
-    public function indexGuru()
-    {
-        $guru_id = Auth::id();
-        $catatan = CatatanKegiatan::whereHas('user', function ($q) use ($guru_id) {
-            $q->where('guru_id', $guru_id);
-        })->with('user')->latest()->get();
-
-        return view('guru.catatan.index', compact('catatan'));
-    }
+   public function indexGuru()
+{
+    $guru_id = Auth::id();
+    $catatan = CatatanKegiatan::whereHas('user', fn ($q) => $q->where('guru_id', $guru_id))
+        ->with('user')->latest()->paginate(15)->withQueryString();
+    return view('guru.catatan.index', compact('catatan'));
+}
 
     // ====== ROLE: INSTRUKTUR INDUSTRI (menyetujui catatan) ======
-    public function indexInstruktur()
-    {
-        $instruktur_id = Auth::id();
-        $catatan = CatatanKegiatan::whereHas('user', function ($q) use ($instruktur_id) {
-            $q->where('instruktur_id', $instruktur_id);
-        })->with('user')->latest()->get();
-
-        return view('instruktur.catatan.index', compact('catatan'));
-    }
+   public function indexInstruktur()
+{
+    $instruktur_id = Auth::id();
+    $catatan = CatatanKegiatan::whereHas('user', fn ($q) => $q->where('instruktur_id', $instruktur_id))
+        ->with('user')->latest()->paginate(15)->withQueryString();
+    return view('instruktur.catatan.index', compact('catatan'));
+}
 
     public function approveInstruktur(Request $request, $id)
     {

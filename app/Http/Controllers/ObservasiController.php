@@ -16,15 +16,12 @@ class ObservasiController extends Controller
     */
 
     /** Daftar seluruh observasi yang dibuat guru ini. */
-    public function indexGuru()
-    {
-        $observasi = Observasi::where('guru_id', Auth::id())
-            ->with('user')
-            ->latest()
-            ->get();
-
-        return view('guru.observasi.index', compact('observasi'));
-    }
+   public function indexGuru()
+{
+    $observasi = Observasi::where('guru_id', Auth::id())
+        ->with('user')->latest()->paginate(15)->withQueryString();
+    return view('guru.observasi.index', compact('observasi'));
+}
 
     /** Form tambah observasi (hanya siswa bimbingan guru ini yang bisa dipilih). */
     public function createGuru()
@@ -73,15 +70,13 @@ class ObservasiController extends Controller
     |--------------------------------------------------------------------------
     */
 
-    public function indexSiswa()
-    {
-        $observasi = Observasi::where('user_id', Auth::id())
-            ->with('guru')
-            ->latest()
-            ->get();
+   public function indexSiswa()
+{
+    $observasi = Observasi::where('user_id', Auth::id())
+        ->with('guru')->latest()->paginate(15)->withQueryString();
+    return view('siswa.observasi.index', compact('observasi'));
+}
 
-        return view('siswa.observasi.index', compact('observasi'));
-    }
 
     /*
     |--------------------------------------------------------------------------
@@ -89,19 +84,13 @@ class ObservasiController extends Controller
     |--------------------------------------------------------------------------
     */
 
-    public function indexInstruktur()
-    {
-        $instruktur_id = Auth::id();
-
-        $observasi = Observasi::whereHas('user', function ($q) use ($instruktur_id) {
-                $q->where('instruktur_id', $instruktur_id);
-            })
-            ->with(['user', 'guru'])
-            ->latest()
-            ->get();
-
-        return view('instruktur.observasi.index', compact('observasi'));
-    }
+   public function indexInstruktur()
+{
+    $instruktur_id = Auth::id();
+    $observasi = Observasi::whereHas('user', fn ($q) => $q->where('instruktur_id', $instruktur_id))
+        ->with(['user', 'guru'])->latest()->paginate(15)->withQueryString();
+    return view('instruktur.observasi.index', compact('observasi'));
+}
 
     public function approveInstruktur($id)
     {

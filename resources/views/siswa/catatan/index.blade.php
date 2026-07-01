@@ -1,7 +1,7 @@
 <x-app-layout>
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Catatan Kegiatan PKL') }}
+            Catatan Kegiatan
         </h2>
     </x-slot>
 
@@ -9,7 +9,7 @@
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 text-gray-900">
-                    
+
                     <div class="flex justify-between items-center mb-6">
                         <a href="{{ route('siswa.catatan.create') }}" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
                             + Tambah Catatan
@@ -40,7 +40,7 @@
                             <tbody>
                                 @forelse ($catatan as $item)
                                     <tr class="bg-white border-b hover:bg-gray-50">
-                                        <td class="px-4 py-3 border">{{ $item->created_at->format('d/m/Y') }}</td>
+                                        <td class="px-4 py-3 border whitespace-nowrap">{{ \Carbon\Carbon::parse($item->created_at)->translatedFormat('d M Y') }}</td>
                                         <td class="px-4 py-3 border font-medium text-gray-900">{{ $item->nama_pekerjaan }}</td>
                                         <td class="px-4 py-3 border">{{ $item->perencanaan_kegiatan }}</td>
                                         <td class="px-4 py-3 border">{{ $item->pelaksanaan_kegiatan }}</td>
@@ -55,12 +55,18 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="6" class="px-4 py-4 text-center">Belum ada catatan kegiatan.</td>
+                                        <td colspan="6" class="px-4 py-4 text-center text-gray-400 italic">Belum ada catatan kegiatan.</td>
                                     </tr>
                                 @endforelse
                             </tbody>
                         </table>
                     </div>
+
+                    {{-- Pagination --}}
+                    <div class="mt-4">
+                        {!! $catatan->links() !!}
+                    </div>
+
                 </div>
             </div>
         </div>

@@ -1,14 +1,14 @@
 <x-app-layout>
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Validasi Jurnal Kegiatan Siswa') }}
+            Persetujuan Jurnal Siswa
         </h2>
     </x-slot>
 
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
-                
+
                 @if(session('success'))
                     <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4">
                         {{ session('success') }}
@@ -29,18 +29,18 @@
                         </thead>
                         <tbody>
                             @forelse($jurnals as $jurnal)
-                            <tr class="hover:bg-gray-50 {{ $jurnal->status_persetujuan == 'pending' ? 'bg-yellow-50' : '' }}">
+                            <tr class="hover:bg-gray-50 {{ $jurnal->status_persetujuan == 'pending' ? 'bg-yellow-50/60' : '' }}">
                                 <td class="border p-3 font-bold">{{ $jurnal->siswa->name }}</td>
                                 <td class="border p-3 text-sm">
-                                    {{ \Carbon\Carbon::parse($jurnal->hari_tanggal)->format('d M Y') }}<br>
+                                    {{ \Carbon\Carbon::parse($jurnal->hari_tanggal)->translatedFormat('d M Y') }} <br>
                                     <span class="text-gray-500">{{ $jurnal->unit_kerja }}</span>
                                 </td>
                                 <td class="border p-3 text-sm">{{ $jurnal->deskripsi_pekerjaan }}</td>
                                 <td class="border p-3 text-center">
                                     @if($jurnal->dokumentasi)
-                                        <a href="{{ asset('storage/' . $jurnal->dokumentasi) }}" target="_blank" class="text-blue-500 underline text-sm">Lihat</a>
+                                        <a href="{{ asset('storage/'.$jurnal->dokumentasi) }}" target="_blank" class="text-blue-500 underline text-sm">Lihat</a>
                                     @else
-                                        -
+                                        <span class="text-gray-400">-</span>
                                     @endif
                                 </td>
                                 <td class="border p-3">
@@ -53,12 +53,12 @@
                                             <option value="revisi" {{ $jurnal->status_persetujuan == 'revisi' ? 'selected' : '' }}>Revisi</option>
                                         </select>
                                         <textarea name="catatan_instruktur" rows="2" placeholder="Catatan/Feedback..." class="border-gray-300 rounded text-sm w-full">{{ $jurnal->catatan_instruktur }}</textarea>
-                                        <button type="submit" class="bg-blue-600 hover:bg-blue-800 text-white font-bold py-1 px-2 rounded text-sm">Simpan</button>
+                                        <button type="submit" class="bg-blue-600 hover:bg-blue-800 text-white font-bold py-1 px-2 rounded text-sm transition">Simpan</button>
                                     </form>
                                 </td>
                                 <td class="border p-3 text-center">
-    <a href="<?php echo e(route('cetak.jurnal', $jurnal->siswa_id)); ?>" target="_blank" class="bg-red-600 hover:bg-red-700 text-white text-xs py-1 px-2 rounded">PDF</a>
-</td>
+                                    <a href="{{ route('cetak.jurnal', $jurnal->siswa_id) }}" target="_blank" class="bg-red-600 hover:bg-red-700 text-white text-xs py-1 px-2 rounded transition">PDF</a>
+                                </td>
                             </tr>
                             @empty
                             <tr>
@@ -67,6 +67,11 @@
                             @endforelse
                         </tbody>
                     </table>
+                </div>
+
+                {{-- Pagination --}}
+                <div class="mt-4">
+                    {!! $jurnals->links() !!}
                 </div>
 
             </div>

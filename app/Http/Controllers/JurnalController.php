@@ -10,14 +10,15 @@ use Illuminate\Support\Facades\Storage;
 
 class JurnalController extends Controller
 {
-    // ====== ROLE: SISWA PKL (mengisi jurnal harian) ======
-    public function indexSiswa()
-    {
-        $jurnals = Jurnal::where('siswa_id', Auth::id())
-                         ->orderBy('hari_tanggal', 'desc')
-                         ->get();
-        return view('siswa.jurnal.index', compact('jurnals'));
-    }
+    // SISWA
+public function indexSiswa()
+{
+    $jurnals = Jurnal::where('siswa_id', Auth::id())
+                     ->orderBy('hari_tanggal', 'desc')
+                     ->paginate(15)
+                     ->withQueryString();
+    return view('siswa.jurnal.index', compact('jurnals'));
+}
 
     public function createSiswa()
     {
@@ -66,13 +67,17 @@ class JurnalController extends Controller
         return redirect()->route('siswa.jurnal.index')->with('success', 'Jurnal harian berhasil dihapus!');
     }
 
-    // ====== ROLE: INSTRUKTUR INDUSTRI (persetujuan jurnal) ======
-    public function indexInstruktur()
-    {
-        $siswaIds = User::where('instruktur_id', Auth::id())->pluck('id');
-        $jurnals = Jurnal::whereIn('siswa_id', $siswaIds)->orderBy('hari_tanggal', 'desc')->get();
-        return view('instruktur.jurnal.index', compact('jurnals'));
-    }
+    // INSTRUKTUR
+public function indexInstruktur()
+{
+    $siswaIds = User::where('instruktur_id', Auth::id())->pluck('id');
+    $jurnals = Jurnal::whereIn('siswa_id', $siswaIds)
+                     ->with('siswa')
+                     ->orderBy('hari_tanggal', 'desc')
+                     ->paginate(15)
+                     ->withQueryString();
+    return view('instruktur.jurnal.index', compact('jurnals'));
+}
 
     public function updateInstruktur(Request $request, $id)
     {
