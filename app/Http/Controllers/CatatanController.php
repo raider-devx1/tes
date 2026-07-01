@@ -40,11 +40,31 @@ class CatatanController extends Controller
     }
 
     // ====== ROLE: GURU PEMBIMBING (memantau catatan) ======
-   public function indexGuru()
+public function indexGuru(Request $request)
 {
     $guru_id = Auth::id();
-    $catatan = CatatanKegiatan::whereHas('user', fn ($q) => $q->where('guru_id', $guru_id))
-        ->with('user')->latest()->paginate(15)->withQueryString();
+
+    $catatan = CatatanKegiatan::with('user')
+        ->whereHas('user', function ($u) use ($guru_id, $request) {
+            $u->where('guru_id', $guru_id);
+
+            // Filter pencarian: Nama / NISN siswa
+            if ($request->filled('q')) {
+                $q = $request->q;
+                $u->where(function ($sub) use ($q) {
+                    $sub->where('name', 'like', "%{$q}%")
+                        ->orWhere('nisn', 'like', "%{$q}%");
+                });
+            }
+        })
+        // Filter dropdown: Status persetujuan
+        ->when($request->filled('status'), function ($query) use ($request) {
+            $query->where('is_approved', $request->status === 'disetujui');
+        })
+        ->latest()
+        ->paginate(15)
+        ->withQueryString();
+
     return view('guru.catatan.index', compact('catatan'));
 }
 
