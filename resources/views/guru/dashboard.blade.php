@@ -23,6 +23,18 @@
                             jurnal mereka, mengecek riwayat absensi industri, serta menginput Lembar Observasi
                             Kunjungan.</p>
                     </a>
+
+                    <a href="{{ route('guru.monitoring.jurnal') }}"
+    class="block p-6 bg-white rounded-lg border border-gray-200 shadow-md hover:bg-gray-100 transition duration-200">
+    <h5 class="mb-2 text-2xl font-bold tracking-tight text-gray-900">📓 Jurnal Siswa</h5>
+    <p class="font-normal text-gray-700">Pantau seluruh jurnal harian siswa bimbingan beserta status persetujuannya (disetujui / menunggu / revisi).</p>
+</a>
+
+<a href="{{ route('guru.monitoring.absensi') }}"
+    class="block p-6 bg-white rounded-lg border border-gray-200 shadow-md hover:bg-gray-100 transition duration-200">
+    <h5 class="mb-2 text-2xl font-bold tracking-tight text-gray-900">🗓️ Absensi Siswa</h5>
+    <p class="font-normal text-gray-700">Lihat rekap kehadiran siswa bimbingan di industri: Hadir, Izin, Sakit, dan Alpha.</p>
+</a>
                     <!-- Card Catatan Kegiatan Siswa -->
                     <a href="{{ route('guru.catatan.index') }}"
                         class="block p-6 bg-white rounded-lg border border-gray-200 shadow-md hover:bg-gray-100">

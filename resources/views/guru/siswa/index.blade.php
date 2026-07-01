@@ -81,18 +81,30 @@
                                             <span class="block text-xs text-gray-400">{{ $siswa->periode->tahun_ajaran }}</span>
                                         @endif
                                     </td>
-                                    <td class="border p-3">
-                                        <div class="flex flex-wrap justify-center gap-2">
-                                            <a href="{{ route('guru.monitoring.jurnal', ['siswa_id' => $siswa->id]) }}"
-                                               class="bg-blue-500 hover:bg-blue-700 text-white text-xs py-1 px-3 rounded shadow transition text-center">
-                                                Jurnal
-                                            </a>
-                                            <a href="{{ route('guru.monitoring.absensi', ['siswa_id' => $siswa->id]) }}"
-                                               class="bg-green-500 hover:bg-green-700 text-white text-xs py-1 px-3 rounded shadow transition text-center">
-                                                Absensi
-                                            </a>
-                                        </div>
-                                    </td>
+                                   <td class="border p-3">
+    <div class="flex flex-wrap justify-center gap-2">
+        <a href="{{ route('guru.catatan.index', ['q' => $siswa->nisn]) }}"
+           class="bg-purple-500 hover:bg-purple-700 text-white text-xs py-1 px-3 rounded shadow transition text-center">
+            Catatan
+        </a>
+        <a href="{{ route('guru.observasi.index', ['q' => $siswa->nisn]) }}"
+           class="bg-amber-500 hover:bg-amber-700 text-white text-xs py-1 px-3 rounded shadow transition text-center">
+            Observasi
+        </a>
+        <a href="{{ route('guru.nilai.index', ['q' => $siswa->nisn]) }}"
+           class="bg-indigo-500 hover:bg-indigo-700 text-white text-xs py-1 px-3 rounded shadow transition text-center">
+            Rekap Nilai
+        </a>
+        <a href="{{ route('guru.monitoring.jurnal', ['siswa_id' => $siswa->id]) }}"
+           class="bg-blue-500 hover:bg-blue-700 text-white text-xs py-1 px-3 rounded shadow transition text-center">
+            Jurnal
+        </a>
+        <a href="{{ route('guru.monitoring.absensi', ['siswa_id' => $siswa->id]) }}"
+           class="bg-green-500 hover:bg-green-700 text-white text-xs py-1 px-3 rounded shadow transition text-center">
+            Absensi
+        </a>
+    </div>
+</td>
                                 </tr>
                             @empty
                                 <tr>
