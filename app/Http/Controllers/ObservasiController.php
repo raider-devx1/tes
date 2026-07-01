@@ -15,12 +15,24 @@ class ObservasiController extends Controller
     |--------------------------------------------------------------------------
     */
 
-    /** Daftar seluruh observasi yang dibuat guru ini. */
-   public function indexGuru()
+   /** Daftar seluruh observasi yang dibuat guru ini. */
+public function indexGuru(Request $request)
 {
+    $q      = trim($request->get('q', ''));
+    $status = $request->get('status'); // '1' = disetujui, '0' = menunggu
+
     $observasi = Observasi::where('guru_id', Auth::id())
-        ->with('user')->latest()->paginate(15)->withQueryString();
-    return view('guru.observasi.index', compact('observasi'));
+        ->with('user')
+        ->when($q, fn ($query) => $query->whereHas('user', fn ($u) =>
+            $u->where('name', 'like', "%{$q}%")
+              ->orWhere('nisn', 'like', "%{$q}%")))
+        ->when($status !== null && $status !== '', fn ($query) =>
+            $query->where('is_approved', $status === '1'))
+        ->latest()
+        ->paginate(15)
+        ->withQueryString();
+
+    return view('guru.observasi.index', compact('observasi', 'q', 'status'));
 }
 
     /** Form tambah observasi (hanya siswa bimbingan guru ini yang bisa dipilih). */

@@ -124,16 +124,17 @@ public function adminIndex(Request $request)
     */
 
     /** Daftar dokumen siswa bimbingan untuk dilihat/diunduh guru. */
-    public function guruIndex(Request $request)
-    {
-        $q = trim($request->get('q', ''));
+public function guruIndex(Request $request)
+{
+    $q      = trim($request->get('q', ''));
+    $status = $request->get('status'); // lengkap | sebagian | belum
 
-        $siswa = $this->querySiswa($q)
-            ->where('guru_id', Auth::id())   // hanya bimbingannya
-            ->paginate(15)->withQueryString();
+    $siswa = $this->querySiswa($q, null, null, $status)
+        ->where('guru_id', Auth::id())   // hanya bimbingannya
+        ->paginate(15)->withQueryString();
 
-        return view('guru.dokumen.index', compact('siswa', 'q'));
-    }
+    return view('guru.dokumen.index', compact('siswa', 'q', 'status'));
+}
 
     /*
     |--------------------------------------------------------------------------

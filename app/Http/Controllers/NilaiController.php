@@ -89,17 +89,33 @@ class NilaiController extends Controller
         return view('siswa.nilai.index', compact('nilai'));
     }
 
-    /* ===================== GURU PEMBIMBING ===================== */
-    public function indexGuru()
-    {
-        // Tampilkan SEMUA siswa bimbingan agar guru bisa input nilai guru & laporan
-        $siswa = User::where('role', 'siswa_pkl')
-            ->where('guru_id', Auth::id())
-            ->with('nilai')
-            ->get();
+   /* ===================== GURU PEMBIMBING ===================== */
+public function indexGuru(Request $request)
+{
+    $q      = trim($request->get('q', ''));
+    $status = $request->get('status'); // 'sudah' | 'belum'
 
-        return view('guru.nilai.index', compact('siswa'));
-    }
+    // Basis query = siswa bimbingan guru ini
+    $siswa = User::where('role', 'siswa_pkl')
+        ->where('guru_id', Auth::id())
+        ->with('nilai')
+        ->when($q, fn ($query) => $query->where(fn ($u) =>
+            $u->where('name', 'like', "%{$q}%")
+              ->orWhere('nisn', 'like', "%{$q}%")))
+        // Sudah dinilai = punya baris nilai DAN nilai_akhir terisi
+        ->when($status === 'sudah', fn ($query) =>
+            $query->whereHas('nilai', fn ($n) => $n->whereNotNull('nilai_akhir')))
+        // Belum dinilai = tidak punya baris nilai, ATAU nilai_akhir masih kosong
+        ->when($status === 'belum', fn ($query) =>
+            $query->where(fn ($u) =>
+                $u->whereDoesntHave('nilai')
+                  ->orWhereHas('nilai', fn ($n) => $n->whereNull('nilai_akhir'))))
+        ->orderBy('name')
+        ->paginate(15)
+        ->withQueryString();
+
+    return view('guru.nilai.index', compact('siswa', 'q', 'status'));
+}
 
     public function storeGuru(Request $request)
     {
