@@ -67,15 +67,29 @@ public function indexSiswa()
         return redirect()->route('siswa.jurnal.index')->with('success', 'Jurnal harian berhasil dihapus!');
     }
 
-    // INSTRUKTUR
-public function indexInstruktur()
+    
+// INSTRUKTUR
+public function indexInstruktur(Request $request)
 {
     $siswaIds = User::where('instruktur_id', Auth::id())->pluck('id');
+
     $jurnals = Jurnal::whereIn('siswa_id', $siswaIds)
-                     ->with('siswa')
-                     ->orderBy('hari_tanggal', 'desc')
-                     ->paginate(15)
-                     ->withQueryString();
+        ->with('siswa')
+        // Filter pencarian: Nama / NISN siswa
+        ->when($request->filled('q'), function ($query) use ($request) {
+            $q = $request->q;
+            $query->whereHas('siswa', function ($s) use ($q) {
+                $s->where('name', 'like', "%{$q}%")
+                  ->orWhere('nisn', 'like', "%{$q}%");
+            });
+        })
+        // Filter dropdown: status persetujuan (pending | disetujui | revisi)
+        ->when($request->filled('status'), fn ($query) =>
+            $query->where('status_persetujuan', $request->status))
+        ->orderBy('hari_tanggal', 'desc')
+        ->paginate(15)
+        ->withQueryString();
+
     return view('instruktur.jurnal.index', compact('jurnals'));
 }
 

@@ -40,14 +40,42 @@ public function indexSiswa(Request $request)
     return view('siswa.absensi.index', compact('absensis', 'rekap', 'bulan'));
 }
 
-    // ====== ROLE: INSTRUKTUR INDUSTRI (mengisi absensi) ======
-    public function indexInstruktur(Request $request)
-    {
-        $tanggal = $request->tanggal ?? date('Y-m-d');
-        $siswas = User::where('role', 'siswa_pkl')->where('instruktur_id', Auth::id())->get();
-        $absensis = Absensi::where('instruktur_id', Auth::id())->where('tanggal', $tanggal)->get()->keyBy('siswa_id');
-        return view('instruktur.absensi.index', compact('siswas', 'tanggal', 'absensis'));
+   // ====== ROLE: INSTRUKTUR INDUSTRI (mengisi absensi) ======
+public function indexInstruktur(Request $request)
+{
+    $tanggal = $request->tanggal ?: date('Y-m-d');
+
+    $query = User::where('role', 'siswa_pkl')
+        ->where('instruktur_id', Auth::id());
+
+    // Filter pencarian: Nama / NISN
+    if ($request->filled('q')) {
+        $q = $request->q;
+        $query->where(function ($sub) use ($q) {
+            $sub->where('name', 'like', "%{$q}%")
+                ->orWhere('nisn', 'like', "%{$q}%");
+        });
     }
+
+    // Filter dropdown: status kehadiran pada tanggal terpilih
+    if ($request->filled('status')) {
+        $siswaIdsByStatus = Absensi::where('instruktur_id', Auth::id())
+            ->where('tanggal', $tanggal)
+            ->where('status', $request->status)
+            ->pluck('siswa_id');
+        $query->whereIn('id', $siswaIdsByStatus);
+    }
+
+    $siswas = $query->orderBy('name')->paginate(15)->withQueryString();
+
+    // Data absensi tanggal terpilih (untuk prefill dropdown & jam)
+    $absensis = Absensi::where('instruktur_id', Auth::id())
+        ->where('tanggal', $tanggal)
+        ->get()
+        ->keyBy('siswa_id');
+
+    return view('instruktur.absensi.index', compact('siswas', 'tanggal', 'absensis'));
+}
 
     public function storeInstruktur(Request $request)
     {

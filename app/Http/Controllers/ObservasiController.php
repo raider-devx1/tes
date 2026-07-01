@@ -96,11 +96,31 @@ public function indexGuru(Request $request)
     |--------------------------------------------------------------------------
     */
 
-   public function indexInstruktur()
+   public function indexInstruktur(Request $request)
 {
     $instruktur_id = Auth::id();
-    $observasi = Observasi::whereHas('user', fn ($q) => $q->where('instruktur_id', $instruktur_id))
-        ->with(['user', 'guru'])->latest()->paginate(15)->withQueryString();
+
+    $observasi = Observasi::whereHas('user', function ($u) use ($instruktur_id, $request) {
+            $u->where('instruktur_id', $instruktur_id);
+
+            // Filter pencarian: Nama / NISN siswa
+            if ($request->filled('q')) {
+                $q = $request->q;
+                $u->where(function ($sub) use ($q) {
+                    $sub->where('name', 'like', "%{$q}%")
+                        ->orWhere('nisn', 'like', "%{$q}%");
+                });
+            }
+        })
+        ->with(['user', 'guru'])
+        // Filter dropdown: status (disetujui | belum)
+        ->when($request->filled('status'), function ($query) use ($request) {
+            $query->where('is_approved', $request->status === 'disetujui');
+        })
+        ->latest()
+        ->paginate(15)
+        ->withQueryString();
+
     return view('instruktur.observasi.index', compact('observasi'));
 }
 

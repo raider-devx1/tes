@@ -69,11 +69,32 @@ public function indexGuru(Request $request)
 }
 
     // ====== ROLE: INSTRUKTUR INDUSTRI (menyetujui catatan) ======
-   public function indexInstruktur()
+   // ====== ROLE: INSTRUKTUR INDUSTRI (menyetujui catatan) ======
+public function indexInstruktur(Request $request)
 {
     $instruktur_id = Auth::id();
-    $catatan = CatatanKegiatan::whereHas('user', fn ($q) => $q->where('instruktur_id', $instruktur_id))
-        ->with('user')->latest()->paginate(15)->withQueryString();
+
+    $catatan = CatatanKegiatan::with('user')
+        ->whereHas('user', function ($u) use ($instruktur_id, $request) {
+            $u->where('instruktur_id', $instruktur_id);
+
+            // Filter pencarian: Nama / NISN siswa
+            if ($request->filled('q')) {
+                $q = $request->q;
+                $u->where(function ($sub) use ($q) {
+                    $sub->where('name', 'like', "%{$q}%")
+                        ->orWhere('nisn', 'like', "%{$q}%");
+                });
+            }
+        })
+        // Filter dropdown: status (disetujui | belum)
+        ->when($request->filled('status'), function ($query) use ($request) {
+            $query->where('is_approved', $request->status === 'disetujui');
+        })
+        ->latest()
+        ->paginate(15)
+        ->withQueryString();
+
     return view('instruktur.catatan.index', compact('catatan'));
 }
 

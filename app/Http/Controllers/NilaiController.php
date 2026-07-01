@@ -31,16 +31,33 @@ class NilaiController extends Controller
         );
     }
 
-    /* ===================== INSTRUKTUR INDUSTRI ===================== */
-    public function indexInstruktur()
-    {
-        $siswa = User::where('role', 'siswa_pkl')
-            ->where('instruktur_id', Auth::id())
-            ->with('nilai')
-            ->get();
+   /* ===================== INSTRUKTUR INDUSTRI ===================== */
+public function indexInstruktur(Request $request)
+{
+    $q      = trim($request->get('q', ''));
+    $status = $request->get('status'); // 'sudah' | 'belum'
 
-        return view('instruktur.nilai.index', compact('siswa'));
-    }
+    $siswa = User::where('role', 'siswa_pkl')
+        ->where('instruktur_id', Auth::id())
+        ->with('nilai')
+        // Filter pencarian: Nama / NISN
+        ->when($q, fn ($query) => $query->where(fn ($u) =>
+            $u->where('name', 'like', "%{$q}%")
+              ->orWhere('nisn', 'like', "%{$q}%")))
+        // Sudah dinilai (oleh instruktur) = punya baris nilai DAN rata_rata terisi
+        ->when($status === 'sudah', fn ($query) =>
+            $query->whereHas('nilai', fn ($n) => $n->whereNotNull('rata_rata')))
+        // Belum dinilai = tidak punya baris nilai, ATAU rata_rata masih kosong
+        ->when($status === 'belum', fn ($query) =>
+            $query->where(fn ($u) =>
+                $u->whereDoesntHave('nilai')
+                  ->orWhereHas('nilai', fn ($n) => $n->whereNull('rata_rata'))))
+        ->orderBy('name')
+        ->paginate(15)
+        ->withQueryString();
+
+    return view('instruktur.nilai.index', compact('siswa', 'q', 'status'));
+}
 
     public function createInstruktur(Request $request)
     {
