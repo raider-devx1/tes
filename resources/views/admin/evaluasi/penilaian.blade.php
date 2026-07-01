@@ -50,6 +50,7 @@
                 <table class="w-full text-sm">
                     <thead class="bg-blue-50 text-gray-600 text-left">
                         <tr>
+                            <th class="px-4 py-3 w-12 text-center">No</th>
                             <th class="px-4 py-3">Siswa</th>
                             <th class="px-4 py-3">Kelas</th>
                             <th class="px-4 py-3">Jurusan</th>
@@ -75,6 +76,9 @@
                                     : ($akhir >= 60 ? 'bg-amber-50 text-amber-700' : 'bg-red-50 text-red-600')));
                             @endphp
                             <tr class="hover:bg-blue-50/40">
+                                <td class="px-4 py-3 text-center text-gray-500">
+    {{  $siswa->firstItem() + $loop->index }}
+</td>
                                 <td class="px-4 py-3 font-medium text-gray-800">
                                     {{ $s->name }}
                                     <div class="text-xs text-gray-400">NISN: {{ $s->nisn ?? '-' }}</div>
@@ -97,7 +101,7 @@
                                 </td>
                             </tr>
                         @empty
-                            <tr><td colspan="11" class="px-4 py-8 text-center text-gray-400">Tidak ada siswa PKL.</td></tr>
+                            <tr><td colspan="12" class="px-4 py-8 text-center text-gray-400">Tidak ada siswa PKL.</td></tr>
                         @endforelse
                     </tbody>
                 </table>

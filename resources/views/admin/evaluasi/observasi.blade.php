@@ -50,6 +50,7 @@
                 <table class="w-full text-sm">
                     <thead class="bg-blue-50 text-gray-600 text-left">
                         <tr>
+                            <th class="px-4 py-3 w-12 text-center">No</th>
                             <th class="px-4 py-3">Tanggal</th>
                             <th class="px-4 py-3">Siswa</th>
                             <th class="px-4 py-3">Kelas</th>
@@ -62,6 +63,9 @@
                     <tbody class="divide-y divide-gray-100">
                         @forelse($observasi as $o)
                             <tr class="hover:bg-blue-50/40">
+                                <td class="px-4 py-3 text-center text-gray-500">
+    {{ $observasi->firstItem() + $loop->index }}
+</td>
                                 <td class="px-4 py-3 whitespace-nowrap">{{ \Carbon\Carbon::parse($o->hari_tanggal)->translatedFormat('d M Y') }}</td>
                                 <td class="px-4 py-3 font-medium text-gray-800">{{ $o->user->name ?? '-' }}</td>
                                 <td class="px-4 py-3">{{ $o->user->kelas ?? '-' }}</td>
@@ -77,7 +81,7 @@
                                 </td>
                             </tr>
                         @empty
-                            <tr><td colspan="7" class="px-4 py-8 text-center text-gray-400">Tidak ada data observasi.</td></tr>
+                            <tr><td colspan="8" class="px-4 py-8 text-center text-gray-400">Tidak ada data observasi.</td></tr>
                         @endforelse
                     </tbody>
                 </table>
