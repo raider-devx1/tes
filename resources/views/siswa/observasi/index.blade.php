@@ -50,6 +50,11 @@
                             </tbody>
                         </table>
                     </div>
+
+                    {{-- Pagination --}}
+    <div class="mt-4">
+        {!! $observasi->links() !!}
+    </div>
                 </div>
             </div>
         </div>
