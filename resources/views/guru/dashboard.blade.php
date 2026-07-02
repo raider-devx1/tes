@@ -6,21 +6,35 @@
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
 
-            {{-- ===== HERO BAND GELAP + STATISTIK ===== --}}
+            {{-- ===== HERO ===== --}}
             <div class="rounded-3xl bg-[#0a0b0d] p-8 md:p-12 text-white">
                 <p class="text-sm font-medium text-[#a8acb3]">Ruang Guru Pembimbing</p>
                 <h3 class="mt-2 text-3xl md:text-4xl font-normal tracking-tight">Selamat Datang, {{ auth()->user()->name }}!</h3>
                 <p class="mt-3 max-w-xl text-[#a8acb3]">Pusat monitoring dan observasi kegiatan siswa bimbingan Anda.</p>
 
-                <div class="mt-8 w-full md:w-1/3">
-                    <div class="rounded-2xl bg-[#16181c] p-6">
-                        <p class="text-xs font-semibold uppercase tracking-wide text-[#a8acb3]">Jumlah Siswa Bimbingan</p>
-                        <p class="mt-2 text-4xl font-normal tracking-tight text-white">{{ $siswaBimbingan }}</p>
-                    </div>
+                
+            </div>
+
+            {{-- ===== KARTU STATUS SISWA BIMBINGAN ===== --}}
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="rounded-2xl border border-[#dee1e6] bg-white p-6">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-[#7c828a]">Siswa Aktif</p>
+                    <p class="mt-2 text-4xl font-bold text-[#05b169]">{{ $siswaAktif }}</p>
+                    <p class="mt-1 text-sm text-[#5b616e]">Sedang menjalani PKL.</p>
+                </div>
+                <div class="rounded-2xl border border-[#dee1e6] bg-white p-6">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-[#7c828a]">Siswa Belum</p>
+                    <p class="mt-2 text-4xl font-bold text-[#f4b000]">{{ $siswaBelum }}</p>
+                    <p class="mt-1 text-sm text-[#5b616e]">Belum memulai PKL.</p>
+                </div>
+                <div class="rounded-2xl border border-[#dee1e6] bg-white p-6">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-[#7c828a]">Siswa Selesai</p>
+                    <p class="mt-2 text-4xl font-bold text-[#0052ff]">{{ $siswaSelesai }}</p>
+                    <p class="mt-1 text-sm text-[#5b616e]">Telah menyelesaikan PKL.</p>
                 </div>
             </div>
 
-            {{-- ===== KARTU NAVIGASI ===== --}}
+            {{-- ===== MENU NAVIGASI ===== --}}
             <div class="grid grid-cols-1 gap-4">
 
                 <a href="{{ route('guru.siswa.index') }}"

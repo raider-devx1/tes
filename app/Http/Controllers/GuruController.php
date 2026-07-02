@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Auth;
 
 class GuruController extends Controller
 {
-    // Daftar siswa bimbingan
+    
    // Daftar siswa bimbingan (tabel lengkap + filter + pagination)
 public function index(Request $request)
 {
@@ -34,6 +34,11 @@ public function index(Request $request)
     // Filter dropdown: Periode PKL
     if ($request->filled('periode_id')) {
         $query->where('periode_id', $request->periode_id);
+    }
+
+    // Filter dropdown: Status PKL (belum | aktif | selesai)
+    if ($request->filled('status')) {
+        $query->where('status_pkl', $request->status);
     }
 
     $siswas = $query->orderBy('name')->paginate(15)->withQueryString();

@@ -23,16 +23,27 @@
                                    class="w-full rounded-full border-[#dee1e6] bg-[#f7f7f7] px-5 py-2.5 text-sm text-[#0a0b0d] placeholder-[#a8acb3] focus:border-[#0052ff] focus:ring-[#0052ff]">
                         </div>
 
-                        <div class="w-full md:w-64">
+                        <div class="w-full md:w-56">
                             <label class="block text-xs font-semibold uppercase tracking-wide text-[#7c828a] mb-1">Periode PKL</label>
                             <select name="periode_id"
                                     class="w-full rounded-xl border-[#dee1e6] bg-white px-3 py-2.5 text-sm text-[#0a0b0d] focus:border-[#0052ff] focus:ring-[#0052ff]">
                                 <option value="">-- Semua Periode --</option>
                                 @foreach($periodes as $periode)
                                     <option value="{{ $periode->id }}" @selected(request('periode_id') == $periode->id)>
-                                        {{ $periode->nama }} {{ $periode->tahun_ajaran ? '('.$periode->tahun_ajaran.')' : '' }}
+                                        {{ $periode->nama }} — {{ $periode->tahun_ajaran }}
                                     </option>
                                 @endforeach
+                            </select>
+                        </div>
+
+                        <div class="w-full md:w-48">
+                            <label class="block text-xs font-semibold uppercase tracking-wide text-[#7c828a] mb-1">Status PKL</label>
+                            <select name="status"
+                                    class="w-full rounded-xl border-[#dee1e6] bg-white px-3 py-2.5 text-sm text-[#0a0b0d] focus:border-[#0052ff] focus:ring-[#0052ff]">
+                                <option value="">-- Semua Status --</option>
+                                <option value="belum" @selected(request('status') === 'belum')>Belum</option>
+                                <option value="aktif" @selected(request('status') === 'aktif')>Aktif</option>
+                                <option value="selesai" @selected(request('status') === 'selesai')>Selesai</option>
                             </select>
                         </div>
 
@@ -49,7 +60,7 @@
                     </div>
                 </form>
 
-                {{-- ===== TABEL DAFTAR SISWA ===== --}}
+                {{-- ===== TABEL SISWA ===== --}}
                 <div class="overflow-x-auto rounded-2xl border border-[#eef0f3]">
                     <table class="w-full text-left text-sm">
                         <thead>
@@ -62,6 +73,7 @@
                                 <th class="px-3 py-3 font-semibold">Nama Instruktur</th>
                                 <th class="px-3 py-3 font-semibold">Tempat Industri</th>
                                 <th class="px-3 py-3 font-semibold">Periode PKL</th>
+                                <th class="px-3 py-3 text-center font-semibold">Status</th>
                                 <th class="px-3 py-3 text-center font-semibold">Aksi Monitoring</th>
                             </tr>
                         </thead>
@@ -70,15 +82,25 @@
                                 <tr class="align-top transition hover:bg-[#f7f7f7]">
                                     <td class="px-3 py-3 text-center text-[#7c828a]">{{ $siswas->firstItem() + $loop->index }}</td>
                                     <td class="px-3 py-3 font-semibold text-[#0a0b0d]">{{ $siswa->name }}</td>
-                                    <td class="px-3 py-3 whitespace-nowrap text-[#5b616e]">{{ $siswa->nisn ?? '-' }}</td>
-                                    <td class="px-3 py-3 text-[#5b616e]">{{ $siswa->kelas ?? '-' }}</td>
-                                    <td class="px-3 py-3 text-[#5b616e]">{{ $siswa->jurusan ?? '-' }}</td>
-                                    <td class="px-3 py-3 text-[#5b616e]">{{ optional($siswa->instruktur)->name ?? '-' }}</td>
-                                    <td class="px-3 py-3 text-[#5b616e]">{{ optional($siswa->perusahaan)->nama_perusahaan ?? '-' }}</td>
+                                    <td class="px-3 py-3 whitespace-nowrap text-[#5b616e]">{{ $siswa->nisn }}</td>
+                                    <td class="px-3 py-3 text-[#5b616e]">{{ $siswa->kelas }}</td>
+                                    <td class="px-3 py-3 text-[#5b616e]">{{ $siswa->jurusan }}</td>
+                                    <td class="px-3 py-3 text-[#5b616e]">{{ $siswa->instruktur->name ?? '-' }}</td>
+                                    <td class="px-3 py-3 text-[#5b616e]">{{ $siswa->perusahaan->nama_perusahaan ?? '-' }}</td>
                                     <td class="px-3 py-3 text-[#5b616e]">
-                                        {{ optional($siswa->periode)->nama ?? '-' }}
+                                        {{ $siswa->periode->nama ?? '-' }}
                                         @if($siswa->periode && $siswa->periode->tahun_ajaran)
                                             <span class="block text-xs text-[#a8acb3]">{{ $siswa->periode->tahun_ajaran }}</span>
+                                        @endif
+                                    </td>
+                                    <td class="px-3 py-3 text-center">
+                                        @php $sp = $siswa->status_pkl ?? 'belum'; @endphp
+                                        @if($sp === 'aktif')
+                                            <span class="inline-flex items-center rounded-full bg-[#05b169]/10 px-3 py-1 text-xs font-semibold text-[#05b169]">Aktif</span>
+                                        @elseif($sp === 'selesai')
+                                            <span class="inline-flex items-center rounded-full bg-[#0052ff]/10 px-3 py-1 text-xs font-semibold text-[#0052ff]">Selesai</span>
+                                        @else
+                                            <span class="inline-flex items-center rounded-full bg-[#f4b000]/10 px-3 py-1 text-xs font-semibold text-[#f4b000]">Belum</span>
                                         @endif
                                     </td>
                                     <td class="px-3 py-3">
@@ -89,16 +111,16 @@
                                                class="rounded-full bg-[#eef0f3] px-3 py-1.5 text-xs font-semibold text-[#0a0b0d] transition hover:bg-[#dee1e6]">Observasi</a>
                                             <a href="{{ route('guru.nilai.index', ['q' => $siswa->nisn]) }}"
                                                class="rounded-full bg-[#eef0f3] px-3 py-1.5 text-xs font-semibold text-[#0a0b0d] transition hover:bg-[#dee1e6]">Rekap Nilai</a>
-                                            <a href="{{ route('guru.monitoring.jurnal', ['siswa_id' => $siswa->id]) }}"
+                                            <a href="{{ route('guru.monitoring.jurnal', ['q' => $siswa->nisn]) }}"
                                                class="rounded-full bg-[#eef0f3] px-3 py-1.5 text-xs font-semibold text-[#0a0b0d] transition hover:bg-[#dee1e6]">Jurnal</a>
-                                            <a href="{{ route('guru.monitoring.absensi', ['siswa_id' => $siswa->id]) }}"
+                                            <a href="{{ route('guru.monitoring.absensi', ['q' => $siswa->nisn]) }}"
                                                class="rounded-full bg-[#0052ff] px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-[#003ecc]">Absensi</a>
                                         </div>
                                     </td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="9" class="px-4 py-8 text-center text-[#a8acb3] italic">
+                                    <td colspan="10" class="px-4 py-8 text-center text-[#a8acb3] italic">
                                         Tidak ada siswa yang cocok dengan pencarian / belum ada siswa bimbingan.
                                     </td>
                                 </tr>

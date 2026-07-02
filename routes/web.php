@@ -136,10 +136,29 @@ Route::post('/dokumen/surat-tugas',[DokumenController::class, 'uploadSuratTugas'
     // 2. GURU PEMBIMBING
     // ============================================================
     Route::middleware(['role:guru_pembimbing'])->prefix('guru')->name('guru.')->group(function () {
-        Route::get('/dashboard', function () {
-            $siswaBimbingan = User::where('role', 'siswa_pkl')->where('guru_id', Auth::id())->count();
-            return view('guru.dashboard', compact('siswaBimbingan'));
-        })->name('dashboard');
+
+
+Route::get('/dashboard', function () {
+    $guruId = Auth::id();
+
+    // Mengambil semua data statistik bimbingan dalam 1 kali query ke database
+    $stats = User::where('role', 'siswa_pkl')
+        ->where('guru_id', $guruId)
+        ->selectRaw("
+            COUNT(*) as bimbingan,
+            SUM(CASE WHEN status_pkl = 'aktif' THEN 1 ELSE 0 END) as aktif,
+            SUM(CASE WHEN status_pkl = 'belum' THEN 1 ELSE 0 END) as belum,
+            SUM(CASE WHEN status_pkl = 'selesai' THEN 1 ELSE 0 END) as selesai
+        ")
+        ->first();
+
+    return view('guru.dashboard', [
+        'siswaBimbingan' => $stats->bimbingan ?? 0,
+        'siswaAktif'     => $stats->aktif ?? 0,
+        'siswaBelum'     => $stats->belum ?? 0,
+        'siswaSelesai'   => $stats->selesai ?? 0,
+    ]);
+})->name('dashboard');
 
         Route::get('/siswa', [GuruController::class, 'index'])->name('siswa.index');
         Route::get('/siswa/{id}/detail', [GuruController::class, 'detailSiswa'])->name('siswa.detail');
