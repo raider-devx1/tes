@@ -1,100 +1,134 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            Jurnal Kegiatan Harian
-        </h2>
+        <div class="flex items-center justify-between gap-4">
+            <h2 class="text-xl font-semibold tracking-tight text-[#0a0b0d]">Jurnal Kegiatan Harian</h2>
+            <a href="{{ route('siswa.dashboard') }}"
+               class="inline-flex items-center gap-1 rounded-full bg-[#eef0f3] px-4 py-2 text-sm font-semibold text-[#0a0b0d] transition hover:bg-[#dee1e6]">
+                &larr; Kembali ke Dashboard
+            </a>
+        </div>
     </x-slot>
 
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
+            <div class="rounded-3xl border border-[#dee1e6] bg-white p-6 md:p-8">
 
-                <div class="flex justify-between items-center mb-4">
-                    <h3 class="text-lg font-bold">Riwayat Jurnal Saya</h3>
+                <div class="flex flex-wrap justify-between items-center gap-3 mb-6">
+                    <h3 class="text-lg font-semibold tracking-tight text-[#0a0b0d]">Riwayat Jurnal Saya</h3>
                     <div class="flex gap-2">
-                        <a href="{{ route('siswa.jurnal.create') }}" class="bg-blue-600 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded">
+                        <a href="{{ route('siswa.jurnal.create') }}"
+                           class="inline-flex items-center rounded-full bg-[#0052ff] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#003ecc]">
                             + Tambah Jurnal
                         </a>
-                        <a href="{{ route('cetak.jurnal') }}" target="_blank" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">
+                        <a href="{{ route('cetak.jurnal') }}" target="_blank"
+                           class="inline-flex items-center rounded-full bg-[#eef0f3] px-5 py-2.5 text-sm font-semibold text-[#0a0b0d] transition hover:bg-[#dee1e6]">
                             Cetak PDF
                         </a>
                     </div>
                 </div>
 
                 @if(session('success'))
-                    <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4">
+                    <div class="mb-4 rounded-2xl border border-[#05b169]/30 bg-[#05b169]/10 px-4 py-3 text-sm font-medium text-[#05b169]">
                         {{ session('success') }}
                     </div>
                 @endif
                 @if(session('error'))
-                    <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4">
+                    <div class="mb-4 rounded-2xl border border-[#cf202f]/30 bg-[#cf202f]/10 px-4 py-3 text-sm font-medium text-[#cf202f]">
                         {{ session('error') }}
                     </div>
                 @endif
 
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left border-collapse border border-gray-200">
+                {{-- ===== FORM FILTER ===== --}}
+                <form method="GET" action="{{ route('siswa.jurnal.index') }}" class="mb-6 flex flex-wrap gap-3 items-end">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wide text-[#7c828a] mb-1">Tanggal</label>
+                        <input type="date" name="tanggal" value="{{ request('tanggal') }}"
+                               class="rounded-xl border-[#dee1e6] bg-white px-3 py-2.5 text-sm text-[#0a0b0d] focus:border-[#0052ff] focus:ring-[#0052ff]">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wide text-[#7c828a] mb-1">Status</label>
+                        <select name="status"
+                                class="rounded-xl border-[#dee1e6] bg-white px-3 py-2.5 text-sm text-[#0a0b0d] focus:border-[#0052ff] focus:ring-[#0052ff]">
+                            <option value="">Semua Status</option>
+                            <option value="pending" @selected(request('status') === 'pending')>Menunggu</option>
+                            <option value="disetujui" @selected(request('status') === 'disetujui')>Disetujui</option>
+                            <option value="revisi" @selected(request('status') === 'revisi')>Revisi</option>
+                        </select>
+                    </div>
+                    <button type="submit"
+                            class="inline-flex items-center rounded-full bg-[#0052ff] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#003ecc]">Filter</button>
+                    <a href="{{ route('siswa.jurnal.index') }}"
+                       class="inline-flex items-center rounded-full bg-[#eef0f3] px-5 py-2.5 text-sm font-semibold text-[#0a0b0d] transition hover:bg-[#dee1e6]">Reset</a>
+                </form>
+
+                {{-- ===== TABEL JURNAL ===== --}}
+                <div class="overflow-x-auto rounded-2xl border border-[#eef0f3]">
+                    <table class="w-full text-left text-sm">
                         <thead>
-                            <tr class="bg-gray-100">
-                                <th class="border p-3">Tanggal</th>
-                                <th class="border p-3">Unit Kerja</th>
-                                <th class="border p-3 w-1/3">Deskripsi Pekerjaan</th>
-                                <th class="border p-3">Foto</th>
-                                <th class="border p-3 text-center">Status</th>
-                                <th class="border p-3 text-center">Aksi</th>
+                            <tr class="bg-[#f7f7f7] text-xs uppercase tracking-wide text-[#7c828a]">
+                                <th class="px-4 py-3 text-center w-12 font-semibold">No</th>
+                                <th class="px-4 py-3 font-semibold">Tanggal</th>
+                                <th class="px-4 py-3 font-semibold">Unit Kerja</th>
+                                <th class="px-4 py-3 font-semibold w-1/3">Deskripsi Pekerjaan</th>
+                                <th class="px-4 py-3 font-semibold">Foto</th>
+                                <th class="px-4 py-3 text-center font-semibold">Status</th>
+                                <th class="px-4 py-3 text-center font-semibold">Aksi</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody class="divide-y divide-[#eef0f3]">
                             @forelse($jurnals as $jurnal)
-                            <tr class="hover:bg-gray-50">
-                                <td class="border p-3">{{ \Carbon\Carbon::parse($jurnal->hari_tanggal)->translatedFormat('d M Y') }}</td>
-                                <td class="border p-3">{{ $jurnal->unit_kerja }}</td>
-                                <td class="border p-3 text-sm">
+                            <tr class="align-top transition hover:bg-[#f7f7f7]">
+                                <td class="px-4 py-3 text-center text-[#7c828a]">{{ $jurnals->firstItem() + $loop->index }}</td>
+                                <td class="px-4 py-3 whitespace-nowrap text-[#5b616e]">
+                                    {{ \Carbon\Carbon::parse($jurnal->hari_tanggal)->translatedFormat('d M Y') }}
+                                </td>
+                                <td class="px-4 py-3 text-[#5b616e]">{{ $jurnal->unit_kerja }}</td>
+                                <td class="px-4 py-3 text-[#5b616e]">
                                     {{ $jurnal->deskripsi_pekerjaan }}
                                     @if($jurnal->catatan_instruktur)
-                                        <div class="mt-2 p-2 bg-yellow-50 text-xs italic border-l-2 border-yellow-400">
-                                            <strong>Catatan Instruktur:</strong> {{ $jurnal->catatan_instruktur }}
+                                        <div class="mt-2 rounded-lg border-l-2 border-[#f4b000] bg-[#f4b000]/5 p-2 text-xs italic text-[#5b616e]">
+                                            <strong class="text-[#0a0b0d]">Catatan Instruktur:</strong> {{ $jurnal->catatan_instruktur }}
                                         </div>
                                     @endif
                                 </td>
-                                <td class="border p-3 text-center">
+                                <td class="px-4 py-3 text-center">
                                     @if($jurnal->dokumentasi)
-                                        <a href="{{ asset('storage/'.$jurnal->dokumentasi) }}" target="_blank" class="text-blue-500 underline text-sm">Lihat Foto</a>
+                                        <a href="{{ asset('storage/'.$jurnal->dokumentasi) }}" target="_blank" class="text-sm font-semibold text-[#0052ff] hover:underline">Lihat Foto</a>
                                     @else
-                                        <span class="text-gray-400 text-sm">Tidak ada</span>
+                                        <span class="text-sm text-[#a8acb3]">Tidak ada</span>
                                     @endif
                                 </td>
-                                <td class="border p-3 text-center">
+                                <td class="px-4 py-3 text-center">
                                     @if($jurnal->status_persetujuan == 'pending')
-                                        <span class="bg-yellow-200 text-yellow-800 py-1 px-2 rounded text-xs font-bold">Menunggu</span>
+                                        <span class="inline-flex items-center rounded-full bg-[#f4b000]/10 px-3 py-1 text-xs font-semibold text-[#f4b000]">Menunggu</span>
                                     @elseif($jurnal->status_persetujuan == 'disetujui')
-                                        <span class="bg-green-200 text-green-800 py-1 px-2 rounded text-xs font-bold">Disetujui</span>
+                                        <span class="inline-flex items-center rounded-full bg-[#05b169]/10 px-3 py-1 text-xs font-semibold text-[#05b169]">Disetujui</span>
                                     @else
-                                        <span class="bg-red-200 text-red-800 py-1 px-2 rounded text-xs font-bold">Revisi</span>
+                                        <span class="inline-flex items-center rounded-full bg-[#cf202f]/10 px-3 py-1 text-xs font-semibold text-[#cf202f]">Revisi</span>
                                     @endif
                                 </td>
-                                <td class="border p-3 text-center">
+                                <td class="px-4 py-3 text-center">
                                     @if($jurnal->status_persetujuan == 'pending')
                                         <form action="{{ route('siswa.jurnal.destroy', $jurnal->id) }}" method="POST" onsubmit="return confirm('Hapus jurnal ini?');">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="submit" class="bg-red-500 hover:bg-red-700 text-white text-xs py-1 px-2 rounded">Hapus</button>
+                                            <button type="submit" class="inline-flex items-center rounded-full bg-[#cf202f]/10 px-3 py-1.5 text-xs font-semibold text-[#cf202f] transition hover:bg-[#cf202f]/20">Hapus</button>
                                         </form>
                                     @else
-                                        <span class="text-gray-400 text-xs">-</span>
+                                        <span class="text-xs text-[#a8acb3]">-</span>
                                     @endif
                                 </td>
                             </tr>
                             @empty
                             <tr>
-                                <td colspan="6" class="border p-4 text-center text-gray-500">Belum ada jurnal yang diisi.</td>
+                                <td colspan="7" class="px-4 py-8 text-center text-[#a8acb3] italic">Belum ada jurnal yang diisi.</td>
                             </tr>
                             @endforelse
                         </tbody>
                     </table>
                 </div>
 
-                {{-- Pagination --}}
+                {{-- ===== PAGINATION ===== --}}
                 <div class="mt-4">
                     {!! $jurnals->links() !!}
                 </div>

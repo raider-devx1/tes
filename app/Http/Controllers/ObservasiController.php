@@ -82,10 +82,16 @@ public function indexGuru(Request $request)
     |--------------------------------------------------------------------------
     */
 
-   public function indexSiswa()
+  public function indexSiswa(Request $request)
 {
     $observasi = Observasi::where('user_id', Auth::id())
-        ->with('guru')->latest()->paginate(15)->withQueryString();
+        ->with('guru')
+        ->when($request->filled('status'), fn ($q) => $q->where('is_approved', $request->status === 'disetujui'))
+        ->when($request->filled('tanggal'), fn ($q) => $q->whereDate('hari_tanggal', $request->tanggal))
+        ->latest()
+        ->paginate(15)
+        ->withQueryString();
+
     return view('siswa.observasi.index', compact('observasi'));
 }
 

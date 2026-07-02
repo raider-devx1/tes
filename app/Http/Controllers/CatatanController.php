@@ -9,10 +9,15 @@ use Illuminate\Support\Facades\Auth;
 class CatatanController extends Controller
 {
     // ====== ROLE: SISWA PKL (mengisi catatan) ======
-   public function indexSiswa()
+  public function indexSiswa(Request $request)
 {
     $catatan = CatatanKegiatan::where('user_id', Auth::id())
-        ->latest()->paginate(15)->withQueryString();
+        ->when($request->filled('status'), fn ($q) => $q->where('is_approved', $request->status === 'disetujui'))
+        ->when($request->filled('tanggal'), fn ($q) => $q->whereDate('created_at', $request->tanggal))
+        ->latest()
+        ->paginate(15)
+        ->withQueryString();
+
     return view('siswa.catatan.index', compact('catatan'));
 }
 

@@ -11,12 +11,16 @@ use Illuminate\Support\Facades\Storage;
 class JurnalController extends Controller
 {
     // SISWA
-public function indexSiswa()
+
+public function indexSiswa(Request $request)
 {
     $jurnals = Jurnal::where('siswa_id', Auth::id())
-                     ->orderBy('hari_tanggal', 'desc')
-                     ->paginate(15)
-                     ->withQueryString();
+        ->when($request->filled('status'), fn ($q) => $q->where('status_persetujuan', $request->status))
+        ->when($request->filled('tanggal'), fn ($q) => $q->whereDate('hari_tanggal', $request->tanggal))
+        ->orderBy('hari_tanggal', 'desc')
+        ->paginate(15)
+        ->withQueryString();
+
     return view('siswa.jurnal.index', compact('jurnals'));
 }
 
