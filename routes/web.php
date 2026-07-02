@@ -132,6 +132,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/dokumen', [DokumenController::class, 'adminIndex'])->name('dokumen.index');
         Route::get('/dokumen/surat-tugas', [DokumenController::class, 'suratTugasIndex'])->name('dokumen.surat-tugas.index');
         Route::post('/dokumen/surat-tugas', [DokumenController::class, 'uploadSuratTugas'])->name('dokumen.surat-tugas'); // ← global, tanpa {siswa}
+          Route::get('/dokumen/surat-tugas/download', [DokumenController::class, 'downloadSuratTugas'])->name('dokumen.surat-tugas.download');
 
     });
 

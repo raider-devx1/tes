@@ -22,7 +22,7 @@ class Dokumen extends Model
             'label'    => 'Surat Tugas PKL',
             'upload'   => ['admin'],
             'lihat'    => ['admin', 'guru_pembimbing', 'siswa_pkl'],
-            'download' => ['siswa_pkl', 'guru_pembimbing'],
+            'download' => ['admin', 'siswa_pkl', 'guru_pembimbing'],
         ],
         'surat_penerimaan' => [
             'label'    => 'Surat Penerimaan Industri',
