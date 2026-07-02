@@ -46,33 +46,25 @@ class UserSeeder extends Seeder
 
         /* ============================================================
          | 1. PERUSAHAAN / INDUSTRI
+         |    Field sesuai DB: nama_perusahaan, alamat, telepon, pembimbing_industri
          ============================================================ */
         $pt1 = Perusahaan::create([
             'nama_perusahaan'     => 'PT Semen Tonasa',
-            'bidang_usaha'        => 'Manufaktur',
             'alamat'              => 'Kabupaten Pangkep',
             'telepon'             => '0410123456',
-            'email'               => 'hrd@sementonasa.co.id',
             'pembimbing_industri' => 'Pak Anton',
-            'kuota'               => 10,
         ]);
         $pt2 = Perusahaan::create([
             'nama_perusahaan'     => 'PT Telkom Indonesia',
-            'bidang_usaha'        => 'Telekomunikasi',
             'alamat'              => 'Kabupaten Majene',
             'telepon'             => '0422123456',
-            'email'               => 'magang@telkom.co.id',
             'pembimbing_industri' => 'Mbak Rina',
-            'kuota'               => 10,
         ]);
         $pt3 = Perusahaan::create([
             'nama_perusahaan'     => 'Dinas Kominfo',
-            'bidang_usaha'        => 'Pemerintahan',
             'alamat'              => 'Provinsi Sulawesi Barat',
             'telepon'             => '0426123456',
-            'email'               => 'kominfo@sulbarprov.go.id',
             'pembimbing_industri' => 'Pak Joko',
-            'kuota'               => 10,
         ]);
 
         /* ============================================================

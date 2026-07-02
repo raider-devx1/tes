@@ -1,9 +1,37 @@
 <x-app-layout title="Penilaian PKL">
-    <div class="max-w-7xl mx-auto space-y-6">
+   <div>
+    <h2 class="text-2xl font-bold text-gray-800">Penilaian PKL</h2>
+    <p class="text-sm text-gray-500">Rekap nilai seluruh siswa PKL — termasuk yang belum dinilai (hanya-baca).</p>
+</div>
+
+{{-- ===== KARTU RINGKASAN ===== --}}
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+    <div class="bg-white rounded-xl border border-blue-100 p-5 flex items-center gap-4">
+    
         <div>
-            <h2 class="text-2xl font-bold text-gray-800">Penilaian PKL</h2>
-            <p class="text-sm text-gray-500">Rekap nilai seluruh siswa PKL — termasuk yang belum dinilai (hanya-baca).</p>
+            <p class="text-sm text-gray-500">Total Siswa</p>
+            <p class="text-2xl font-bold text-gray-800">{{ $totalSiswa }}</p>
         </div>
+    </div>
+
+    <div class="bg-white rounded-xl border border-blue-100 p-5 flex items-center gap-4">
+        
+        <div>
+            <p class="text-sm text-gray-500">Sudah Dinilai</p>
+            <p class="text-2xl font-bold text-gray-800">{{ $sudahDinilai }}</p>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-xl border border-blue-100 p-5 flex items-center gap-4">
+       
+        <div>
+            <p class="text-sm text-gray-500">Belum Dinilai</p>
+            <p class="text-2xl font-bold text-gray-800">{{ $belumLengkap }}</p>
+        </div>
+    </div>
+</div>
+
+
 
         {{-- FILTER --}}
         <form method="GET" class="bg-white rounded-xl border border-blue-100 p-4 grid grid-cols-1 md:grid-cols-5 gap-3 items-end">

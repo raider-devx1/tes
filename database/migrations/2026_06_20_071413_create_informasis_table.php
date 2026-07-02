@@ -11,11 +11,12 @@ return new class extends Migration
         Schema::create('informasis', function (Blueprint $table) {
             $table->id();
             $table->string('judul');
-            // umum | panduan_laporan | panduan_presentasi
-            $table->string('kategori')->default('umum');
             $table->text('konten');
-            $table->integer('urutan')->default(0); // untuk pengurutan tampilan
+            $table->string('file')->nullable();      // path lampiran (WAJIB ada — dipakai controller)
+            $table->integer('urutan')->default(0);   // untuk pengurutan tampilan
             $table->timestamps();
+
+            // DIHAPUS (tidak dipakai lagi): kategori
         });
     }
 

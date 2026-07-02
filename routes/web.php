@@ -4,20 +4,20 @@ use App\Http\Controllers\AbsensiController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\CatatanController;
 use App\Http\Controllers\CetakPdfController;
+use App\Http\Controllers\DokumenController;
+use App\Http\Controllers\EvaluasiController;
 use App\Http\Controllers\GuruController;
+use App\Http\Controllers\GuruPembimbingController;
 use App\Http\Controllers\InformasiController;
+use App\Http\Controllers\InstrukturController;
 use App\Http\Controllers\JurnalController;
+use App\Http\Controllers\MonitoringController;
 use App\Http\Controllers\NilaiController;
 use App\Http\Controllers\ObservasiController;
 use App\Http\Controllers\PeriodePklController;
-use App\Http\Controllers\GuruPembimbingController;
-use App\Http\Controllers\InstrukturController;
-use App\Http\Controllers\SiswaController;
-use App\Http\Controllers\MonitoringController;
-use App\Http\Controllers\EvaluasiController;
-use App\Http\Controllers\DokumenController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RiwayatController;
+use App\Http\Controllers\SiswaController;
 use App\Models\Jurnal;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
@@ -63,15 +63,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/cetak/observasi/{siswa_id?}', [CetakPdfController::class, 'cetakObservasi'])->name('cetak.observasi');
     Route::get('/cetak/nilai/{siswa_id?}', [CetakPdfController::class, 'cetakNilai'])->name('cetak.nilai');
 
-   // Surat Tugas (global)
-    Route::get('/dokumen/surat-tugas/lihat',    [DokumenController::class, 'lihatSuratTugas'])->name('dokumen.surat-tugas.lihat');
+    // Surat Tugas (global)
+    Route::get('/dokumen/surat-tugas/lihat', [DokumenController::class, 'lihatSuratTugas'])->name('dokumen.surat-tugas.lihat');
     Route::get('/dokumen/surat-tugas/download', [DokumenController::class, 'downloadSuratTugas'])->name('dokumen.surat-tugas.download');
 
     // Dokumen per-siswa (surat_penerimaan & laporan_akhir)
-    Route::get('/dokumen/{siswa}/{jenis}/lihat',    [DokumenController::class, 'lihat'])->name('dokumen.lihat');
+    Route::get('/dokumen/{siswa}/{jenis}/lihat', [DokumenController::class, 'lihat'])->name('dokumen.lihat');
     Route::get('/dokumen/{siswa}/{jenis}/download', [DokumenController::class, 'download'])->name('dokumen.download');
 
-    
     // ============================================================
     // 1. ADMIN
     // ============================================================
@@ -79,14 +78,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
 
         // ---- PENGATURAN: RIWAYAT AKTIVITAS ----
-Route::get('/riwayat', [RiwayatController::class, 'index'])->name('riwayat.index');
+        Route::get('/riwayat', [RiwayatController::class, 'index'])->name('riwayat.index');
 
 // ---- NOTIFIKASI SISTEM ----
-Route::get('/notifikasi', [AdminController::class, 'notifikasi'])->name('notifikasi.index');
+        Route::get('/notifikasi', [AdminController::class, 'notifikasi'])->name('notifikasi.index');
 
 // ---- BULK: ubah status PKL semua siswa dalam satu periode ----
-Route::post('/periode/update-status-siswa', [PeriodePklController::class, 'updateStatusSiswa'])
-    ->name('periode.update-status-siswa');
+        Route::post('/periode/update-status-siswa', [PeriodePklController::class, 'updateStatusSiswa'])
+            ->name('periode.update-status-siswa');
 
         // ---- KELOLA INFORMASI PKL ----
         Route::get('/informasi', [InformasiController::class, 'adminIndex'])->name('informasi.index');
@@ -97,45 +96,42 @@ Route::post('/periode/update-status-siswa', [PeriodePklController::class, 'updat
         Route::delete('/informasi/{informasi}', [InformasiController::class, 'destroy'])->name('informasi.destroy');
 
         // ---- IMPORT / EXPORT SISWA ----
-Route::get('/siswa/export/excel', [SiswaController::class, 'exportExcel'])->name('siswa.export.excel');
-Route::get('/siswa/export/pdf', [SiswaController::class, 'exportPdf'])->name('siswa.export.pdf');
-Route::get('/siswa/template', [SiswaController::class, 'template'])->name('siswa.template');
-Route::post('/siswa/import', [SiswaController::class, 'import'])->name('siswa.import');
+        Route::get('/siswa/export/excel', [SiswaController::class, 'exportExcel'])->name('siswa.export.excel');
+        Route::get('/siswa/export/pdf', [SiswaController::class, 'exportPdf'])->name('siswa.export.pdf');
+        Route::get('/siswa/template', [SiswaController::class, 'template'])->name('siswa.template');
+        Route::post('/siswa/import', [SiswaController::class, 'import'])->name('siswa.import');
 
-      
         // ---- MASTER DATA: PERIODE PKL ----
         Route::resource('periode', PeriodePklController::class)->except(['show']);
         Route::put('/periode/{periode}/aktifkan', [PeriodePklController::class, 'aktifkan'])
             ->name('periode.aktifkan');
 
-
 // ---- IMPORT / EXPORT GURU ----
-Route::get('/guru/export/excel', [GuruPembimbingController::class, 'exportExcel'])->name('guru.export.excel');
-Route::get('/guru/export/pdf',   [GuruPembimbingController::class, 'exportPdf'])->name('guru.export.pdf');
-Route::get('/guru/template',     [GuruPembimbingController::class, 'template'])->name('guru.template');
-Route::post('/guru/import',      [GuruPembimbingController::class, 'import'])->name('guru.import');
-       
+        Route::get('/guru/export/excel', [GuruPembimbingController::class, 'exportExcel'])->name('guru.export.excel');
+        Route::get('/guru/export/pdf', [GuruPembimbingController::class, 'exportPdf'])->name('guru.export.pdf');
+        Route::get('/guru/template', [GuruPembimbingController::class, 'template'])->name('guru.template');
+        Route::post('/guru/import', [GuruPembimbingController::class, 'import'])->name('guru.import');
+
         // ---- MASTER DATA: AKUN GURU PEMBIMBING ----
-Route::resource('guru', GuruPembimbingController::class)->except(['show']);
+        Route::resource('guru', GuruPembimbingController::class)->except(['show']);
 // ---- MASTER DATA: AKUN INSTRUKTUR INDUSTRI ----
-Route::resource('instruktur', InstrukturController::class)->except(['show']);
+        Route::resource('instruktur', InstrukturController::class)->except(['show']);
 // ---- MASTER DATA: DATA SISWA PKL ----
-Route::resource('siswa', SiswaController::class)->except(['show']);
+        Route::resource('siswa', SiswaController::class)->except(['show']);
 
 // ---- MONITORING (read-only) ----
-Route::get('/monitoring/jurnal', [MonitoringController::class, 'jurnal'])->name('monitoring.jurnal');
-Route::get('/monitoring/catatan', [MonitoringController::class, 'catatan'])->name('monitoring.catatan');
-Route::get('/monitoring/absensi', [MonitoringController::class, 'absensi'])->name('monitoring.absensi');
+        Route::get('/monitoring/jurnal', [MonitoringController::class, 'jurnal'])->name('monitoring.jurnal');
+        Route::get('/monitoring/catatan', [MonitoringController::class, 'catatan'])->name('monitoring.catatan');
+        Route::get('/monitoring/absensi', [MonitoringController::class, 'absensi'])->name('monitoring.absensi');
 
 // ---- EVALUASI & NILAI (read-only) ----
-Route::get('/evaluasi/observasi', [EvaluasiController::class, 'observasi'])->name('evaluasi.observasi');
-Route::get('/evaluasi/penilaian', [EvaluasiController::class, 'penilaian'])->name('evaluasi.penilaian');
-Route::get('/evaluasi/rekap', [EvaluasiController::class, 'rekap'])->name('evaluasi.rekap');
+        Route::get('/evaluasi/observasi', [EvaluasiController::class, 'observasi'])->name('evaluasi.observasi');
+        Route::get('/evaluasi/penilaian', [EvaluasiController::class, 'penilaian'])->name('evaluasi.penilaian');
 
 // ---- MONITORING DOKUMEN ----
-Route::get('/dokumen',             [DokumenController::class, 'adminIndex'])->name('dokumen.index');
-Route::get('/dokumen/surat-tugas', [DokumenController::class, 'suratTugasIndex'])->name('dokumen.surat-tugas.index');
-Route::post('/dokumen/surat-tugas',[DokumenController::class, 'uploadSuratTugas'])->name('dokumen.surat-tugas'); // ← global, tanpa {siswa}
+        Route::get('/dokumen', [DokumenController::class, 'adminIndex'])->name('dokumen.index');
+        Route::get('/dokumen/surat-tugas', [DokumenController::class, 'suratTugasIndex'])->name('dokumen.surat-tugas.index');
+        Route::post('/dokumen/surat-tugas', [DokumenController::class, 'uploadSuratTugas'])->name('dokumen.surat-tugas'); // ← global, tanpa {siswa}
 
     });
 
@@ -144,40 +140,39 @@ Route::post('/dokumen/surat-tugas',[DokumenController::class, 'uploadSuratTugas'
     // ============================================================
     Route::middleware(['role:guru_pembimbing'])->prefix('guru')->name('guru.')->group(function () {
 
+        Route::get('/dashboard', function () {
+            $guruId = Auth::id();
 
-Route::get('/dashboard', function () {
-    $guruId = Auth::id();
-
-    // Mengambil semua data statistik bimbingan dalam 1 kali query ke database
-    $stats = User::where('role', 'siswa_pkl')
-        ->where('guru_id', $guruId)
-        ->selectRaw("
+            // Mengambil semua data statistik bimbingan dalam 1 kali query ke database
+            $stats = User::where('role', 'siswa_pkl')
+                ->where('guru_id', $guruId)
+                ->selectRaw("
             COUNT(*) as bimbingan,
             SUM(CASE WHEN status_pkl = 'aktif' THEN 1 ELSE 0 END) as aktif,
             SUM(CASE WHEN status_pkl = 'belum' THEN 1 ELSE 0 END) as belum,
             SUM(CASE WHEN status_pkl = 'selesai' THEN 1 ELSE 0 END) as selesai
         ")
-        ->first();
+                ->first();
 
-    return view('guru.dashboard', [
-        'siswaBimbingan' => $stats->bimbingan ?? 0,
-        'siswaAktif'     => $stats->aktif ?? 0,
-        'siswaBelum'     => $stats->belum ?? 0,
-        'siswaSelesai'   => $stats->selesai ?? 0,
-    ]);
-})->name('dashboard');
+            return view('guru.dashboard', [
+                'siswaBimbingan' => $stats->bimbingan ?? 0,
+                'siswaAktif'     => $stats->aktif ?? 0,
+                'siswaBelum'     => $stats->belum ?? 0,
+                'siswaSelesai'   => $stats->selesai ?? 0,
+            ]);
+        })->name('dashboard');
 
         Route::get('/siswa', [GuruController::class, 'index'])->name('siswa.index');
         Route::get('/siswa/{id}/detail', [GuruController::class, 'detailSiswa'])->name('siswa.detail');
 
         // ---- MONITORING (dipisah: Jurnal & Absensi) ----
-    Route::get('/monitoring/jurnal',  [GuruController::class, 'monitoringJurnal'])->name('monitoring.jurnal');
-    Route::get('/monitoring/absensi', [GuruController::class, 'monitoringAbsensi'])->name('monitoring.absensi');
+        Route::get('/monitoring/jurnal', [GuruController::class, 'monitoringJurnal'])->name('monitoring.jurnal');
+        Route::get('/monitoring/absensi', [GuruController::class, 'monitoringAbsensi'])->name('monitoring.absensi');
 
-       // Observasi (dikelola ObservasiController, bukan GuruController lagi)
-        Route::get('/observasi',         [ObservasiController::class, 'indexGuru'])->name('observasi.index');
-        Route::get('/observasi/create',  [ObservasiController::class, 'createGuru'])->name('observasi.create');
-        Route::post('/observasi',        [ObservasiController::class, 'storeGuru'])->name('observasi.store');
+        // Observasi (dikelola ObservasiController, bukan GuruController lagi)
+        Route::get('/observasi', [ObservasiController::class, 'indexGuru'])->name('observasi.index');
+        Route::get('/observasi/create', [ObservasiController::class, 'createGuru'])->name('observasi.create');
+        Route::post('/observasi', [ObservasiController::class, 'storeGuru'])->name('observasi.store');
 
         Route::get('/catatan', [CatatanController::class, 'indexGuru'])->name('catatan.index');
         // sebelumnya: Route::get('/nilai', [NilaiController::class, 'indexGuru'])->name('nilai.index');
@@ -185,7 +180,7 @@ Route::get('/dashboard', function () {
         Route::post('/nilai', [NilaiController::class, 'storeGuru'])->name('nilai.store');
 
         Route::get('/dokumen', [DokumenController::class, 'guruIndex'])->name('dokumen.index');
-        
+
     });
 
     // ============================================================
@@ -198,7 +193,6 @@ Route::get('/dashboard', function () {
             return view('siswa.dashboard', compact('jumlahJurnal', 'jurnalDisetujui'));
         })->name('dashboard');
 
-        
         Route::get('/jurnal', [JurnalController::class, 'indexSiswa'])->name('jurnal.index');
         Route::get('/jurnal/tambah', [JurnalController::class, 'createSiswa'])->name('jurnal.create');
         Route::post('/jurnal', [JurnalController::class, 'storeSiswa'])->name('jurnal.store');
@@ -211,8 +205,8 @@ Route::get('/dashboard', function () {
         Route::get('/observasi', [ObservasiController::class, 'indexSiswa'])->name('observasi.index');
         Route::get('/nilai', [NilaiController::class, 'indexSiswa'])->name('nilai.index');
 
-        Route::get('/dokumen',  [DokumenController::class, 'siswaIndex'])->name('dokumen.index');
-    Route::post('/dokumen', [DokumenController::class, 'siswaStore'])->name('dokumen.store');
+        Route::get('/dokumen', [DokumenController::class, 'siswaIndex'])->name('dokumen.index');
+        Route::post('/dokumen', [DokumenController::class, 'siswaStore'])->name('dokumen.store');
 
         // Lihat rekap kehadiran sendiri
         Route::get('/absensi', [AbsensiController::class, 'indexSiswa'])->name('absensi.index');
@@ -224,34 +218,33 @@ Route::get('/dashboard', function () {
     // ============================================================
     Route::middleware(['role:instruktur_industri'])->prefix('instruktur')->name('instruktur.')->group(function () {
 
+        Route::get('/dashboard', function () {
+            $instrukturId = Auth::id();
 
-Route::get('/dashboard', function () {
-    $instrukturId = Auth::id();
-
-    // Mengambil statistik siswa dan jumlah jurnal pending dalam 1 query terpadu
-    $stats = User::where('role', 'siswa_pkl')
-        ->where('instruktur_id', $instrukturId)
-        ->leftJoin('jurnals', function ($join) {
-            $join->on('users.id', '=', 'jurnals.siswa_id')
-                 ->where('jurnals.status_persetujuan', '=', 'pending');
-        })
-        ->selectRaw("
+            // Mengambil statistik siswa dan jumlah jurnal pending dalam 1 query terpadu
+            $stats = User::where('role', 'siswa_pkl')
+                ->where('instruktur_id', $instrukturId)
+                ->leftJoin('jurnals', function ($join) {
+                    $join->on('users.id', '=', 'jurnals.siswa_id')
+                        ->where('jurnals.status_persetujuan', '=', 'pending');
+                })
+                ->selectRaw("
             COUNT(DISTINCT users.id) as bimbingan,
             COUNT(DISTINCT CASE WHEN users.status_pkl = 'aktif' THEN users.id END) as aktif,
             COUNT(DISTINCT CASE WHEN users.status_pkl = 'belum' THEN users.id END) as belum,
             COUNT(DISTINCT CASE WHEN users.status_pkl = 'selesai' THEN users.id END) as selesai,
             COUNT(jurnals.id) as pending
         ")
-        ->first();
+                ->first();
 
-    return view('instruktur.dashboard', [
-        'siswaBimbingan' => $stats->bimbingan ?? 0,
-        'siswaAktif'     => $stats->aktif ?? 0,
-        'siswaBelum'     => $stats->belum ?? 0,
-        'siswaSelesai'   => $stats->selesai ?? 0,
-        'jurnalPending'  => $stats->pending ?? 0,
-    ]);
-})->name('dashboard');
+            return view('instruktur.dashboard', [
+                'siswaBimbingan' => $stats->bimbingan ?? 0,
+                'siswaAktif'     => $stats->aktif ?? 0,
+                'siswaBelum'     => $stats->belum ?? 0,
+                'siswaSelesai'   => $stats->selesai ?? 0,
+                'jurnalPending'  => $stats->pending ?? 0,
+            ]);
+        })->name('dashboard');
 
         Route::get('/siswa', [InstrukturController::class, 'monitoringSiswa'])->name('siswa.index');
 
