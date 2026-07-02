@@ -162,6 +162,11 @@ public function monitoringSiswa(Request $request)
         });
     }
 
+    // Filter dropdown: Status PKL (belum | aktif | selesai)
+    if ($request->filled('status')) {
+        $query->where('status_pkl', $request->status);
+    }
+
     $siswas = $query->orderBy('name')->paginate(15)->withQueryString();
 
     return view('instruktur.siswa.index', compact('siswas'));

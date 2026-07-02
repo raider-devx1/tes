@@ -216,12 +216,35 @@ Route::get('/dashboard', function () {
     // 4. INSTRUKTUR INDUSTRI
     // ============================================================
     Route::middleware(['role:instruktur_industri'])->prefix('instruktur')->name('instruktur.')->group(function () {
-        Route::get('/dashboard', function () {
-            $siswaBimbingan = User::where('role', 'siswa_pkl')->where('instruktur_id', Auth::id())->count();
-            $siswaIds       = User::where('instruktur_id', Auth::id())->pluck('id');
-            $jurnalPending  = Jurnal::whereIn('siswa_id', $siswaIds)->where('status_persetujuan', 'pending')->count();
-            return view('instruktur.dashboard', compact('siswaBimbingan', 'jurnalPending'));
-        })->name('dashboard');
+
+
+Route::get('/dashboard', function () {
+    $instrukturId = Auth::id();
+
+    // Mengambil statistik siswa dan jumlah jurnal pending dalam 1 query terpadu
+    $stats = User::where('role', 'siswa_pkl')
+        ->where('instruktur_id', $instrukturId)
+        ->leftJoin('jurnals', function ($join) {
+            $join->on('users.id', '=', 'jurnals.siswa_id')
+                 ->where('jurnals.status_persetujuan', '=', 'pending');
+        })
+        ->selectRaw("
+            COUNT(DISTINCT users.id) as bimbingan,
+            COUNT(DISTINCT CASE WHEN users.status_pkl = 'aktif' THEN users.id END) as aktif,
+            COUNT(DISTINCT CASE WHEN users.status_pkl = 'belum' THEN users.id END) as belum,
+            COUNT(DISTINCT CASE WHEN users.status_pkl = 'selesai' THEN users.id END) as selesai,
+            COUNT(jurnals.id) as pending
+        ")
+        ->first();
+
+    return view('instruktur.dashboard', [
+        'siswaBimbingan' => $stats->bimbingan ?? 0,
+        'siswaAktif'     => $stats->aktif ?? 0,
+        'siswaBelum'     => $stats->belum ?? 0,
+        'siswaSelesai'   => $stats->selesai ?? 0,
+        'jurnalPending'  => $stats->pending ?? 0,
+    ]);
+})->name('dashboard');
 
         Route::get('/siswa', [InstrukturController::class, 'monitoringSiswa'])->name('siswa.index');
 
