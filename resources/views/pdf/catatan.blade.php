@@ -73,7 +73,7 @@
 
     <div class="ttd">
         <div class="ttd-kanan">
-            ......................, ...................... {{ date('Y') }} 
+            Majene, {{ $tanggal_cetak }}
             <br><br>
             Instruktur,
             <div class="nama-ttd">{{ $nama_instruktur }}</div>

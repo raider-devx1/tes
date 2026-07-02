@@ -1,19 +1,20 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <meta charset="utf-8">
     <title>Lembar Observasi PKL</title>
     <style>
-        body { font-family: 'Helvetica', Arial, sans-serif; font-size: 11pt; margin: 20px; }
+        body { font-family: 'Helvetica', Arial, sans-serif; font-size: 11pt; margin: 20px; color: #000; }
         .header-title { text-align: center; font-weight: bold; font-size: 13pt; margin-bottom: 25px; text-transform: uppercase; }
         .info-table { margin-bottom: 15px; width: 100%; }
         .info-table td { padding: 3px 0; vertical-align: top; }
         .info-table td:nth-child(1) { width: 200px; }
         .info-table td:nth-child(2) { width: 15px; }
-        
+
         .data-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
         .data-table th, .data-table td { border: 1px solid black; padding: 8px; vertical-align: top; }
         .data-table th { text-align: center; font-weight: bold; font-size: 10pt; background-color: #f9f9f9; text-transform: uppercase; }
-        
+
         .text-center { text-align: center !important; }
         .paraf-col { width: 80px; }
         .sign-text { font-family: 'Courier New', Courier, monospace; font-size: 9pt; font-style: italic; color: #333; }
@@ -70,8 +71,8 @@
             @forelse($observasi as $index => $item)
             <tr>
                 <td class="text-center">{{ $index + 1 }}</td>
-                <td>{{ nl2br(e($item->permasalahan)) }}</td>
-                <td>{{ nl2br(e($item->solusi)) }}</td>
+                <td>{!! nl2br(e($item->permasalahan)) !!}</td>
+                <td>{!! nl2br(e($item->solusi)) !!}</td>
                 <td class="text-center sign-text">
                     {!! $item->is_approved ? 'Disetujui<br>Instruktur' : '' !!}
                 </td>
@@ -84,11 +85,11 @@
                 <td colspan="5" class="text-center">Belum ada data observasi.</td>
             </tr>
             @endforelse
-            
-            <!-- Generate baris kosong tambahan agar mirip format form kosong -->
+
+            {{-- ===== GENERATE BARIS KOSONG TAMBAHAN ===== --}}
             @for ($i = count($observasi); $i < 6; $i++)
             <tr>
-                <td class="text-center">{{ count($observasi) == 0 && $i == 0 ? '1' : '' }}</td>
+                <td class="text-center">{{ $i + 1 }}</td>
                 <td><br><br><br></td>
                 <td></td>
                 <td></td>

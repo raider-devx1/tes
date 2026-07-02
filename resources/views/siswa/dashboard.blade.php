@@ -29,27 +29,33 @@
                 <a href="{{ route('siswa.jurnal.index') }}"
                    class="group block rounded-2xl border border-[#dee1e6] bg-white p-6 transition hover:border-[#0052ff] hover:bg-[#f7f7f7]">
                     <h5 class="text-lg font-semibold tracking-tight text-[#0a0b0d] group-hover:text-[#0052ff]">Jurnal Kegiatan Harian</h5>
-                    <p class="mt-2 text-sm text-[#5b616e]">Buka lini masa aktivitas harian Anda di sini dan lihat feedback dari instruktur.</p>
+                    <p class="mt-2 text-sm text-[#5b616e]">Isi jurnal aktivitas harian Anda di sini dan lihat feedback dari instruktur.</p>
                 </a>
-                
+
+                <a href="{{ route('siswa.absensi.index') }}"
+                   class="group block rounded-2xl border border-[#dee1e6] bg-white p-6 transition hover:border-[#0052ff] hover:bg-[#f7f7f7]">
+                    <h5 class="text-lg font-semibold tracking-tight text-[#0a0b0d] group-hover:text-[#0052ff]">Absensi Kehadiran</h5>
+                    <p class="mt-2 text-sm text-[#5b616e]">Lihat rekap kehadiran Anda (Hadir, Izin, Sakit, Alpha) selama PKL.</p>
+                </a>
+
                 <a href="{{ route('siswa.dokumen.index') }}"
                    class="group block rounded-2xl border border-[#dee1e6] bg-white p-6 transition hover:border-[#0052ff] hover:bg-[#f7f7f7]">
                     <h5 class="text-lg font-semibold tracking-tight text-[#0a0b0d] group-hover:text-[#0052ff]">Dokumen &amp; Penilaian Akhir</h5>
                     <p class="mt-2 text-sm text-[#5b616e]">Unggah laporan akhir PKL Anda dan lihat rekap nilai dari industri.</p>
                 </a>
-                
+
                 <a href="{{ route('siswa.catatan.index') }}"
                    class="group block rounded-2xl border border-[#dee1e6] bg-white p-6 transition hover:border-[#0052ff] hover:bg-[#f7f7f7]">
                     <h5 class="text-lg font-semibold tracking-tight text-[#0a0b0d] group-hover:text-[#0052ff]">Catatan Kegiatan</h5>
                     <p class="mt-2 text-sm text-[#5b616e]">Isi refleksi, perencanaan, dan pelaksanaan kegiatan harian.</p>
                 </a>
-                
+
                 <a href="{{ route('siswa.observasi.index') }}"
                    class="group block rounded-2xl border border-[#dee1e6] bg-white p-6 transition hover:border-[#0052ff] hover:bg-[#f7f7f7]">
                     <h5 class="text-lg font-semibold tracking-tight text-[#0a0b0d] group-hover:text-[#0052ff]">Lembar Observasi PKL</h5>
                     <p class="mt-2 text-sm text-[#5b616e]">Lihat hasil observasi dan monitoring dari Guru Pembimbing.</p>
                 </a>
-                
+
                 <a href="{{ route('siswa.nilai.index') }}"
                    class="group block rounded-2xl border border-[#dee1e6] bg-white p-6 transition hover:border-[#0052ff] hover:bg-[#f7f7f7]">
                     <h5 class="text-lg font-semibold tracking-tight text-[#0a0b0d] group-hover:text-[#0052ff]">Lihat Nilai PKL</h5>

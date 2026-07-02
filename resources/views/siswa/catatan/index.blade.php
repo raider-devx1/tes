@@ -1,13 +1,6 @@
 <x-app-layout>
     <x-slot name="header">
-        <div class="flex items-center justify-between gap-4">
-             <h2 class="text-xl font-semibold tracking-tight text-[#0a0b0d]">Catatan Kegiatan</h2>
-           
-            <a href="{{ route('siswa.dashboard') }}"
-               class="inline-flex items-center gap-1 rounded-full bg-[#eef0f3] px-4 py-2 text-sm font-semibold text-[#0a0b0d] transition hover:bg-[#dee1e6]">
-                &larr; Kembali ke Dashboard
-            </a>
-        </div>
+        <h2 class="text-xl font-semibold tracking-tight text-[#0a0b0d]">Catatan Kegiatan</h2>
     </x-slot>
 
     <div class="py-12">
@@ -21,7 +14,7 @@
                     </a>
                     <a href="{{ route('cetak.catatan') }}" target="_blank"
                        class="inline-flex items-center rounded-full bg-[#eef0f3] px-5 py-2.5 text-sm font-semibold text-[#0a0b0d] transition hover:bg-[#dee1e6]">
-                        Cetak PDF
+                        Cetak Semua (PDF)
                     </a>
                 </div>
 
@@ -60,9 +53,9 @@
                             <tr class="bg-[#f7f7f7] text-xs uppercase tracking-wide text-[#7c828a]">
                                 <th class="px-4 py-3 text-center w-12 font-semibold">No</th>
                                 <th class="px-4 py-3 font-semibold">Tanggal</th>
-                                <th class="px-4 py-3 font-semibold">Pekerjaan</th>
+                                <th class="px-4 py-3 font-semibold">Nama Pekerjaan</th>
                                 <th class="px-4 py-3 font-semibold">Perencanaan</th>
-                                <th class="px-4 py-3 font-semibold">Hasil/Pelaksanaan</th>
+                                <th class="px-4 py-3 font-semibold">Pelaksanaan / Hasil</th>
                                 <th class="px-4 py-3 font-semibold">Catatan Instruktur</th>
                                 <th class="px-4 py-3 text-center font-semibold">Status</th>
                                 <th class="px-4 py-3 text-center font-semibold">Cetak</th>
@@ -73,7 +66,7 @@
                                 <tr class="align-top transition hover:bg-[#f7f7f7]">
                                     <td class="px-4 py-3 text-center text-[#7c828a]">{{ $catatan->firstItem() + $loop->index }}</td>
                                     <td class="px-4 py-3 whitespace-nowrap text-[#5b616e]">
-                                        {{ \Carbon\Carbon::parse($item->hari_tanggal)->translatedFormat('d M Y') }}
+                                        {{ \Carbon\Carbon::parse($item->hari_tanggal ?? $item->created_at)->translatedFormat('d M Y') }}
                                     </td>
                                     <td class="px-4 py-3 font-semibold text-[#0a0b0d]">{{ $item->nama_pekerjaan }}</td>
                                     <td class="px-4 py-3 text-[#5b616e]">{{ $item->perencanaan_kegiatan }}</td>
@@ -87,15 +80,13 @@
                                         @endif
                                     </td>
                                     <td class="px-4 py-3 text-center">
-                                        <a href="{{ route('cetak.catatan', $item->user_id) }}" target="_blank"
+                                        <a href="{{ route('cetak.catatan', ['catatan_id' => $item->id]) }}" target="_blank"
                                            class="inline-flex items-center rounded-full bg-[#eef0f3] px-3 py-1.5 text-xs font-semibold text-[#0a0b0d] transition hover:bg-[#dee1e6]">PDF</a>
                                     </td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="9" class="px-4 py-8 text-center text-[#a8acb3] italic">
-                                        Tidak ada catatan kegiatan yang ditemukan.
-                                    </td>
+                                    <td colspan="8" class="px-4 py-8 text-center text-[#a8acb3] italic">Belum ada catatan kegiatan.</td>
                                 </tr>
                             @endforelse
                         </tbody>

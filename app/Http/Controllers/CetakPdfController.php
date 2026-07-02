@@ -58,46 +58,64 @@ class CetakPdfController extends Controller
     }
 
     // ====== 2. CATATAN (FK: user_id) ======
-    public function cetakCatatan($siswa_id = null)
-    {
-        $siswa = $this->resolveSiswa($siswa_id);
-        $catatan = CatatanKegiatan::where('user_id', $siswa->id)
-            ->where('is_approved', true)
-            ->get();
+public function cetakCatatan($siswa_id = null)
+{
+    $siswa = $this->resolveSiswa($siswa_id);
 
-        $data = [
-            'nama_siswa'      => $siswa->name,
-            'kelas'           => $siswa->kelas ?? 'Belum Diatur',
-            // FIX: kolom yang benar adalah nama_perusahaan
-            'dunia_kerja'     => $siswa->perusahaan->nama_perusahaan ?? 'Belum Diatur',
-            'nama_instruktur' => $siswa->instruktur->name ?? 'Belum Diatur',
-            'nama_guru'       => $siswa->guru->name ?? 'Belum Diatur',
-            'catatan'         => $catatan,
-        ];
+    $query = CatatanKegiatan::where('user_id', $siswa->id);
 
-        $pdf = Pdf::loadView('pdf.catatan', $data)->setPaper('a4', 'portrait');
-        return $pdf->stream('Catatan_Kegiatan_PKL_'.$siswa->name.'.pdf');
+    // Jika ada catatan_id → cetak SATU data (baris yang dipilih) saja
+    if (request()->filled('catatan_id')) {
+        $query->where('id', request('catatan_id'));
+    } else {
+        // Tanpa catatan_id → cetak semua yang sudah disetujui
+        $query->where('is_approved', true);
     }
 
+    $catatan = $query->orderBy('created_at', 'asc')->get();
+
+    $data = [
+        'nama_siswa'      => $siswa->name,
+        'kelas'           => $siswa->kelas ?? 'Belum Diatur',
+        'dunia_kerja'     => $siswa->perusahaan->nama_perusahaan ?? 'Belum Diatur',
+        'nama_instruktur' => $siswa->instruktur->name ?? 'Belum Diatur',
+        'nama_guru'       => $siswa->guru->name ?? 'Belum Diatur',
+        'tanggal_cetak'   => Carbon::now()->locale('id')->translatedFormat('d F Y'), // cth: 2 Juli 2026
+        'catatan'         => $catatan,
+    ];
+
+    $pdf = Pdf::loadView('pdf.catatan', $data)->setPaper('a4', 'portrait');
+    return $pdf->stream('Catatan_Kegiatan_PKL_'.$siswa->name.'.pdf');
+}
+
+   
     // ====== 3. OBSERVASI (FK: user_id) ======
-    public function cetakObservasi($siswa_id = null)
-    {
-        $siswa = $this->resolveSiswa($siswa_id);
-        $observasi = Observasi::where('user_id', $siswa->id)->orderBy('hari_tanggal', 'asc')->get();
+public function cetakObservasi($siswa_id = null)
+{
+    $siswa = $this->resolveSiswa($siswa_id);
 
-        $data = [
-            'nama_siswa'       => $siswa->name,
-            'kelas'            => $siswa->kelas ?? 'Belum Diatur',
-            'dunia_kerja'      => $siswa->perusahaan->nama_perusahaan ?? 'Belum Diatur',
-            'nama_instruktur'  => $siswa->instruktur->name ?? 'Belum Diatur',
-            'nama_guru'        => $siswa->guru->name ?? 'Belum Diatur',
-            'pekerjaan_projek' => $observasi->first()?->pekerjaan_projek ?? '-',
-            'observasi'        => $observasi,
-        ];
+    $query = Observasi::where('user_id', $siswa->id);
 
-        $pdf = Pdf::loadView('pdf.observasi', $data)->setPaper('a4', 'portrait');
-        return $pdf->stream('Lembar_Observasi_PKL_'.$siswa->name.'.pdf');
+    // Jika ada observasi_id → cetak SATU data (baris yang dipilih) saja
+    if (request()->filled('observasi_id')) {
+        $query->where('id', request('observasi_id'));
     }
+
+    $observasi = $query->orderBy('hari_tanggal', 'asc')->get();
+
+    $data = [
+        'nama_siswa'       => $siswa->name,
+        'kelas'            => $siswa->kelas ?? 'Belum Diatur',
+        'dunia_kerja'      => $siswa->perusahaan->nama_perusahaan ?? 'Belum Diatur',
+        'nama_instruktur'  => $siswa->instruktur->name ?? 'Belum Diatur',
+        'nama_guru'        => $siswa->guru->name ?? 'Belum Diatur',
+        'pekerjaan_projek' => $observasi->first()?->pekerjaan_projek ?? '-',
+        'observasi'        => $observasi,
+    ];
+
+    $pdf = Pdf::loadView('pdf.observasi', $data)->setPaper('a4', 'portrait');
+    return $pdf->stream('Lembar_Observasi_PKL_'.$siswa->name.'.pdf');
+}
 
     // ====== 4. NILAI (FK: user_id) ======
     public function cetakNilai($siswa_id = null)

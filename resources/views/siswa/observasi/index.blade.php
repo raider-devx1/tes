@@ -1,13 +1,6 @@
 <x-app-layout>
     <x-slot name="header">
-        <div class="flex items-center justify-between gap-4">
-             <h2 class="text-xl font-semibold tracking-tight text-[#0a0b0d]">Lembar Observasi PKL</h2>
-           
-            <a href="{{ route('siswa.dashboard') }}"
-               class="inline-flex items-center gap-1 rounded-full bg-[#eef0f3] px-4 py-2 text-sm font-semibold text-[#0a0b0d] transition hover:bg-[#dee1e6]">
-                &larr; Kembali ke Dashboard
-            </a>
-        </div>
+        <h2 class="text-xl font-semibold tracking-tight text-[#0a0b0d]">Lembar Observasi PKL</h2>
     </x-slot>
 
     <div class="py-12">
@@ -17,7 +10,7 @@
                 <div class="flex justify-end mb-6">
                     <a href="{{ route('cetak.observasi') }}" target="_blank"
                        class="inline-flex items-center rounded-full bg-[#eef0f3] px-5 py-2.5 text-sm font-semibold text-[#0a0b0d] transition hover:bg-[#dee1e6]">
-                        Cetak PDF
+                        Cetak Semua (PDF)
                     </a>
                 </div>
 
@@ -54,6 +47,7 @@
                                 <th class="px-4 py-3 font-semibold">Permasalahan</th>
                                 <th class="px-4 py-3 font-semibold">Solusi Pemecahan</th>
                                 <th class="px-4 py-3 text-center font-semibold">Status Instruktur</th>
+                                <th class="px-4 py-3 text-center font-semibold">Cetak</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-[#eef0f3]">
@@ -73,10 +67,14 @@
                                             <span class="inline-flex items-center rounded-full bg-[#f4b000]/10 px-3 py-1 text-xs font-semibold text-[#f4b000]">Menunggu</span>
                                         @endif
                                     </td>
+                                    <td class="px-4 py-3 text-center">
+                                        <a href="{{ route('cetak.observasi', ['observasi_id' => $item->id]) }}" target="_blank"
+                                           class="inline-flex items-center rounded-full bg-[#eef0f3] px-3 py-1.5 text-xs font-semibold text-[#0a0b0d] transition hover:bg-[#dee1e6]">PDF</a>
+                                    </td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="6" class="px-4 py-8 text-center text-[#a8acb3] italic">Belum ada observasi dari guru pembimbing.</td>
+                                    <td colspan="7" class="px-4 py-8 text-center text-[#a8acb3] italic">Belum ada observasi dari guru pembimbing.</td>
                                 </tr>
                             @endforelse
                         </tbody>
