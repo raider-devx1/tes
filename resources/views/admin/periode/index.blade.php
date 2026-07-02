@@ -11,6 +11,60 @@
         </a>
     </div>
 
+    {{-- ===== FLASH MESSAGE ===== --}}
+    @if(session('success'))
+        <div class="mb-4 rounded-lg bg-green-50 text-green-700 px-4 py-3 text-sm">{{ session('success') }}</div>
+    @endif
+    @if(session('error'))
+        <div class="mb-4 rounded-lg bg-red-50 text-red-600 px-4 py-3 text-sm">{{ session('error') }}</div>
+    @endif
+
+    {{-- ===== CARD: ATUR STATUS SISWA PER PERIODE ===== --}}
+    <div class="bg-white rounded-2xl shadow-sm border border-blue-100 p-5 mb-6">
+        <h3 class="text-base font-semibold text-gray-800 mb-1">Atur Status Siswa per Periode</h3>
+        <p class="text-sm text-gray-500 mb-4">
+            Pilih periode, lalu ubah status PKL <strong>seluruh siswa</strong> pada periode tersebut sekaligus
+            (belum / aktif / selesai). Berguna, misalnya, untuk menandai semua siswa periode lama menjadi "selesai".
+        </p>
+
+        <form method="POST" action="{{ route('admin.periode.update-status-siswa') }}"
+              onsubmit="return confirm('Ubah status SEMUA siswa pada periode yang dipilih? Tindakan ini berlaku untuk seluruh siswa periode tersebut.');">
+            @csrf
+            <div class="flex flex-col md:flex-row gap-3 md:items-end">
+                <div class="flex-1">
+                    <label class="block text-xs font-medium text-gray-500 mb-1">Periode PKL</label>
+                    <select name="periode_id" required
+                            class="w-full rounded-lg border-blue-100 focus:border-[#2563EB] focus:ring-[#2563EB] text-sm">
+                        <option value="">-- Pilih Periode --</option>
+                        @foreach($semuaPeriode as $item)
+                            <option value="{{ $item->id }}">
+                                {{ $item->nama }} — {{ $item->tahun_ajaran }} {{ $item->is_active ? '(Aktif)' : '' }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div class="w-full md:w-56">
+                    <label class="block text-xs font-medium text-gray-500 mb-1">Ubah Status Menjadi</label>
+                    <select name="status_pkl" required
+                            class="w-full rounded-lg border-blue-100 focus:border-[#2563EB] focus:ring-[#2563EB] text-sm">
+                        <option value="belum">Belum</option>
+                        <option value="aktif">Aktif</option>
+                        <option value="selesai">Selesai</option>
+                    </select>
+                </div>
+
+                <div>
+                    <button type="submit"
+                            class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#2563EB] text-white text-sm font-medium hover:bg-blue-700">
+                        Terapkan ke Semua Siswa
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    {{-- ===== TABEL DATA PERIODE ===== --}}
     <div class="bg-white rounded-2xl shadow-sm border border-blue-100 p-5">
 
         <form method="GET" class="mb-4 flex gap-2">
@@ -39,12 +93,16 @@
                     @forelse($periode as $p)
                         <tr class="border-b border-blue-50 hover:bg-blue-50/40">
                             <td class="py-3 px-3 text-center text-gray-500">
-    {{ $periode->firstItem() + $loop->index }}
-</td>
+                                {{ $periode->firstItem() + $loop->index }}
+                            </td>
                             <td class="py-3 px-3 font-medium text-gray-800">{{ $p->nama }}</td>
                             <td class="py-3 px-3 text-gray-600">{{ $p->tahun_ajaran }}</td>
-                            <td class="py-3 px-3 text-gray-600">{{ $p->tanggal_mulai?->format('d M Y') }}</td>
-                            <td class="py-3 px-3 text-gray-600">{{ $p->tanggal_selesai?->format('d M Y') }}</td>
+                            <td class="py-3 px-3 text-gray-600">
+                                {{ \Carbon\Carbon::parse($p->tanggal_mulai)->translatedFormat('d M Y') }}
+                            </td>
+                            <td class="py-3 px-3 text-gray-600">
+                                {{ \Carbon\Carbon::parse($p->tanggal_selesai)->translatedFormat('d M Y') }}
+                            </td>
                             <td class="py-3 px-3">
                                 @if($p->is_active)
                                     <span class="text-xs px-2 py-1 rounded-full bg-[#2563EB] text-white">Aktif</span>
@@ -55,28 +113,32 @@
                             <td class="py-3 px-3">
                                 <div class="flex items-center justify-end gap-2">
                                     @unless($p->is_active)
-                                        <form method="POST" action="{{ route('admin.periode.aktifkan', $p) }}">
-                                            @csrf @method('PUT')
+                                        <form method="POST" action="{{ route('admin.periode.aktifkan', $p->id) }}">
+                                            @csrf 
+                                            @method('PUT')
                                             <button class="text-xs px-3 py-1.5 rounded-lg bg-green-50 text-green-600 hover:bg-green-100">Aktifkan</button>
                                         </form>
                                     @endunless
-                                    <a href="{{ route('admin.periode.edit', $p) }}" class="text-xs px-3 py-1.5 rounded-lg bg-blue-50 text-[#2563EB] hover:bg-blue-100">Edit</a>
-                                    <form method="POST" action="{{ route('admin.periode.destroy', $p) }}" onsubmit="return confirm('Hapus periode ini?')">
-                                        @csrf @method('DELETE')
+                                    <a href="{{ route('admin.periode.edit', $p->id) }}" class="text-xs px-3 py-1.5 rounded-lg bg-blue-50 text-[#2563EB] hover:bg-blue-100">Edit</a>
+                                    <form method="POST" action="{{ route('admin.periode.destroy', $p->id) }}" onsubmit="return confirm('Hapus periode ini?')">
+                                        @csrf 
+                                        @method('DELETE')
                                         <button class="text-xs px-3 py-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100">Hapus</button>
                                     </form>
                                 </div>
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="7" class="py-8 text-center text-gray-400">Belum ada data periode.</td></tr>
+                        <tr>
+                            <td colspan="7" class="py-8 text-center text-gray-400">Belum ada data periode.</td>
+                        </tr>
                     @endforelse
                 </tbody>
             </table>
         </div>
 
         <div class="mt-4">
-             {{ $periode->links() }}
+             {!! $periode->links() !!}
         </div>
     </div>
 

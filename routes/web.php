@@ -81,6 +81,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         // ---- PENGATURAN: RIWAYAT AKTIVITAS ----
 Route::get('/riwayat', [RiwayatController::class, 'index'])->name('riwayat.index');
 
+// ---- BULK: ubah status PKL semua siswa dalam satu periode ----
+Route::post('/periode/update-status-siswa', [PeriodePklController::class, 'updateStatusSiswa'])
+    ->name('periode.update-status-siswa');
+
         // ---- KELOLA INFORMASI PKL ----
         Route::get('/informasi', [InformasiController::class, 'adminIndex'])->name('informasi.index');
         Route::get('/informasi/create', [InformasiController::class, 'create'])->name('informasi.create');

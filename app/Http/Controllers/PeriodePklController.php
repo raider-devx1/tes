@@ -24,22 +24,27 @@ class PeriodePklController extends Controller
         ]);
     }
 
-    public function index(Request $request)
-    {
-        $q = trim($request->get('q', ''));
+   public function index(Request $request)
+{
+    $q = trim($request->get('q', ''));
 
-        $periode = PeriodePkl::query()
-            ->when($q, function ($query) use ($q) {
-                $query->where('nama', 'like', "%{$q}%")
-                      ->orWhere('tahun_ajaran', 'like', "%{$q}%");
-            })
-            ->orderByDesc('is_active')
-            ->orderByDesc('tanggal_mulai')
-            ->paginate(10)
-            ->withQueryString();
+    $periode = PeriodePkl::query()
+        ->when($q, function ($query) use ($q) {
+            $query->where('nama', 'like', "%{$q}%")
+                  ->orWhere('tahun_ajaran', 'like', "%{$q}%");
+        })
+        ->orderByDesc('is_active')
+        ->orderByDesc('tanggal_mulai')
+        ->paginate(10)
+        ->withQueryString();
 
-        return view('admin.periode.index', compact('periode', 'q'));
-    }
+    // Untuk dropdown "Atur Status Siswa per Periode" (tanpa pagination)
+    $semuaPeriode = PeriodePkl::orderByDesc('is_active')
+        ->orderByDesc('tanggal_mulai')
+        ->get();
+
+    return view('admin.periode.index', compact('periode', 'q', 'semuaPeriode'));
+}
 
     public function create()
     {
@@ -80,4 +85,30 @@ class PeriodePklController extends Controller
         $periode->update(['is_active' => true]);
         return back()->with('success', "Periode \"{$periode->nama}\" kini menjadi periode aktif.");
     }
+
+    /** Ubah status_pkl SEMUA siswa dalam satu periode sekaligus. */
+public function updateStatusSiswa(Request $request)
+{
+    $request->validate([
+        'periode_id' => ['required'],
+        'status_pkl' => ['required', 'in:belum,aktif,selesai'],
+    ], [
+        'periode_id.required' => 'Silakan pilih periode terlebih dahulu.',
+        'status_pkl.in'       => 'Status harus salah satu dari: belum, aktif, atau selesai.',
+    ]);
+
+    $periode = PeriodePkl::findOrFail($request->periode_id);
+
+    $jumlah = \App\Models\User::where('role', 'siswa_pkl')
+        ->where('periode_id', $periode->id)
+        ->update(['status_pkl' => $request->status_pkl]);
+
+    if ($jumlah === 0) {
+        return back()->with('error', "Tidak ada siswa terdaftar pada periode \"{$periode->nama}\".");
+    }
+
+    return back()->with('success', "Status {$jumlah} siswa pada periode \"{$periode->nama}\" berhasil diubah menjadi \"{$request->status_pkl}\".");
+}
+
+
 }
