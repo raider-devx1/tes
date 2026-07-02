@@ -4,26 +4,19 @@ namespace App\Http\Controllers;
 
 use App\Models\Informasi;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class InformasiController extends Controller
 {
-    // Daftar kategori + label tampilan (dipakai form & view)
-    public static array $kategoriLabels = [
-        'umum'               => 'Informasi Umum',
-        'panduan_laporan'    => 'Panduan Penyusunan Laporan',
-        'panduan_presentasi' => 'Panduan Presentasi',
-    ];
-
     /* ===========================================================
      |  SEMUA ROLE: melihat informasi & panduan PKL
      * =========================================================== */
     public function index()
     {
-        $informasiGroup = Informasi::orderBy('urutan')->get()->groupBy('kategori');
+        $informasi = Informasi::orderBy('urutan')->orderByDesc('created_at')->get();
 
         return view('informasi.index', [
-            'informasiGroup' => $informasiGroup,
-            'kategoriLabels' => self::$kategoriLabels,
+            'informasi' => $informasi,
         ]);
     }
 
@@ -32,32 +25,37 @@ class InformasiController extends Controller
      * =========================================================== */
     public function adminIndex()
     {
-        $informasi = Informasi::orderBy('kategori')->orderBy('urutan')->get();
+        $informasi = Informasi::orderBy('urutan')->orderByDesc('created_at')->get();
 
         return view('admin.informasi.index', [
-            'informasi'      => $informasi,
-            'kategoriLabels' => self::$kategoriLabels,
+            'informasi' => $informasi,
         ]);
     }
 
     public function create()
     {
-        return view('admin.informasi.create', [
-            'kategoriLabels' => self::$kategoriLabels,
-        ]);
+        return view('admin.informasi.create');
     }
 
     public function store(Request $request)
     {
-        $data = $request->validate([
-            'judul'    => 'required|string|max:255',
-            'kategori' => 'required|in:' . implode(',', array_keys(self::$kategoriLabels)),
-            'konten'   => 'required|string',
-            'urutan'   => 'nullable|integer|min:0',
+        $validated = $request->validate([
+            'judul'  => 'required|string|max:255',
+            'konten' => 'required|string',
+            'urutan' => 'nullable|integer|min:0',
+            'file'   => 'nullable|file|max:10240|mimes:pdf,doc,docx,ppt,pptx,xls,xlsx,zip,rar,jpg,jpeg,png',
         ]);
-        $data['urutan'] = $data['urutan'] ?? 0;
 
-        Informasi::create($data);
+        $informasi = new Informasi();
+        $informasi->judul  = $validated['judul'];
+        $informasi->konten = $validated['konten'];
+        $informasi->urutan = $validated['urutan'] ?? 0;
+
+        if ($request->hasFile('file')) {
+            $informasi->file = $request->file('file')->store('informasi', 'public');
+        }
+
+        $informasi->save();
 
         return redirect()->route('admin.informasi.index')
             ->with('success', 'Informasi berhasil ditambahkan.');
@@ -66,22 +64,31 @@ class InformasiController extends Controller
     public function edit(Informasi $informasi)
     {
         return view('admin.informasi.edit', [
-            'informasi'      => $informasi,
-            'kategoriLabels' => self::$kategoriLabels,
+            'informasi' => $informasi,
         ]);
     }
 
     public function update(Request $request, Informasi $informasi)
     {
-        $data = $request->validate([
-            'judul'    => 'required|string|max:255',
-            'kategori' => 'required|in:' . implode(',', array_keys(self::$kategoriLabels)),
-            'konten'   => 'required|string',
-            'urutan'   => 'nullable|integer|min:0',
+        $validated = $request->validate([
+            'judul'  => 'required|string|max:255',
+            'konten' => 'required|string',
+            'urutan' => 'nullable|integer|min:0',
+            'file'   => 'nullable|file|max:10240|mimes:pdf,doc,docx,ppt,pptx,xls,xlsx,zip,rar,jpg,jpeg,png',
         ]);
-        $data['urutan'] = $data['urutan'] ?? 0;
 
-        $informasi->update($data);
+        $informasi->judul  = $validated['judul'];
+        $informasi->konten = $validated['konten'];
+        $informasi->urutan = $validated['urutan'] ?? 0;
+
+        if ($request->hasFile('file')) {
+            if ($informasi->file) {
+                Storage::disk('public')->delete($informasi->file);
+            }
+            $informasi->file = $request->file('file')->store('informasi', 'public');
+        }
+
+        $informasi->save();
 
         return redirect()->route('admin.informasi.index')
             ->with('success', 'Informasi berhasil diperbarui.');
@@ -89,6 +96,10 @@ class InformasiController extends Controller
 
     public function destroy(Informasi $informasi)
     {
+        if ($informasi->file) {
+            Storage::disk('public')->delete($informasi->file);
+        }
+
         $informasi->delete();
 
         return redirect()->route('admin.informasi.index')

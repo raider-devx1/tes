@@ -6,47 +6,46 @@
     </x-slot>
 
     <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
+        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+                <div class="p-6 text-gray-900 space-y-6">
 
-            @forelse ($informasiGroup as $kategori => $items)
-                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                    <div class="p-6 text-gray-900">
-                        <h3 class="text-lg font-bold text-blue-700 mb-4 border-b pb-2">
-                            {{ ucfirst($kategori) }}
-                        </h3>
+                    @forelse ($informasi as $info)
+                        <div class="border-l-4 border-blue-500 pl-4">
+                            <h4 class="font-semibold text-gray-800 text-base">
+                                {{ $info->judul }}
+                            </h4>
+                            <div class="konten-html text-gray-600 text-sm mt-2 leading-relaxed">
+                                {!! $info->konten !!}
+                            </div>
 
-                        <div class="space-y-6">
-                            @foreach ($items as $info)
-                                <div class="border-l-4 border-blue-500 pl-4">
-                                    <h4 class="font-semibold text-gray-800 text-base">
-                                        {{ $info->judul }}
-                                    </h4>
-                                    <div class="konten-html text-gray-600 text-sm mt-2 leading-relaxed">
-                                        {!! $info->konten !!}
-                                    </div>
+                            @if(!empty($info->file))
+                                <div class="mt-3">
+                                    <a href="{{ asset('storage/' . $info->file) }}" download
+                                       class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-50 text-[#2563EB] text-sm font-medium hover:bg-blue-100">
+                                        <span>⬇️</span> Unduh Lampiran
+                                    </a>
                                 </div>
-                            @endforeach
+                            @endif
                         </div>
-                    </div>
-                </div>
-            @empty
-                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                    <div class="p-6 text-center text-gray-500">
-                        Belum ada informasi yang tersedia.
-                    </div>
-                </div>
-            @endforelse
+                    @empty
+                        <div class="p-6 text-center text-gray-500">
+                            Belum ada informasi yang tersedia.
+                        </div>
+                    @endforelse
 
+                </div>
+            </div>
         </div>
     </div>
 
-    {{-- Styling agar output rich-text (Quill) tampil benar tanpa plugin typography --}}
     @push('styles')
     <style>
         .konten-html h1 { font-size: 1.5rem; font-weight: 700; margin: .75rem 0 .5rem; color: #1f2937; }
         .konten-html h2 { font-size: 1.25rem; font-weight: 700; margin: .75rem 0 .5rem; color: #1f2937; }
         .konten-html h3 { font-size: 1.1rem; font-weight: 600; margin: .5rem 0; color: #1f2937; }
         .konten-html p { margin: .5rem 0; }
+        .konten-html w { margin: .5rem 0; }
         .konten-html ul { list-style: disc; padding-left: 1.5rem; margin: .5rem 0; }
         .konten-html ol { list-style: decimal; padding-left: 1.5rem; margin: .5rem 0; }
         .konten-html li { margin: .25rem 0; }

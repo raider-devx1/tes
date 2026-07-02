@@ -29,8 +29,8 @@
                                 <tr>
                                     <th class="px-4 py-3 border text-center">Urutan</th>
                                     <th class="px-4 py-3 border">Judul</th>
-                                    <th class="px-4 py-3 border">Kategori</th>
                                     <th class="px-4 py-3 border">Konten</th>
+                                    <th class="px-4 py-3 border text-center">Lampiran</th>
                                     <th class="px-4 py-3 border text-center">Aksi</th>
                                 </tr>
                             </thead>
@@ -39,12 +39,19 @@
                                     <tr class="bg-white border-b hover:bg-gray-50">
                                         <td class="px-4 py-3 border text-center">{{ $item->urutan }}</td>
                                         <td class="px-4 py-3 border font-medium text-gray-900">{{ $item->judul }}</td>
-                                        <td class="px-4 py-3 border">{{ $kategoriLabels[$item->kategori] ?? $item->kategori }}</td>
-                                        <td class="px-4 py-3 border">{{ \Illuminate\Support\Str::limit($item->konten, 80) }}</td>
+                                        <td class="px-4 py-3 border">{!! \Illuminate\Support\Str::limit(strip_tags($item->konten), 80) !!}</td>
+                                        <td class="px-4 py-3 border text-center">
+                                            @if(!empty($item->file))
+                                                <a href="{{ asset('storage/' . $item->file) }}" target="_blank" class="text-blue-600 hover:underline">Lihat</a>
+                                            </td>
+                                            @else
+                                                <span class="text-gray-400">—</span>
+                                            @endif
+                                        </td>
                                         <td class="px-4 py-3 border text-center whitespace-nowrap">
-                                            <a href="{{ route('admin.informasi.edit', $item->id) }}"
+                                            <a href="{{ route('admin.informasi.edit', $item) }}"
                                                class="text-blue-600 hover:underline">Edit</a>
-                                            <form action="{{ route('admin.informasi.destroy', $item->id) }}"
+                                            <form action="{{ route('admin.informasi.destroy', $item) }}"
                                                   method="POST" class="inline"
                                                   onsubmit="return confirm('Hapus informasi ini?')">
                                                 @csrf
