@@ -1,98 +1,115 @@
 <x-app-layout title="Monitoring Jurnal">
-    <div class="max-w-7xl mx-auto space-y-6 py-8 sm:px-6 lg:px-8">
-        <div>
-            <h2 class="text-2xl font-bold text-gray-800">Monitoring Jurnal Siswa</h2>
-            <p class="text-sm text-gray-500">Pantau jurnal kegiatan siswa bimbingan Anda (hanya-baca).</p>
+    <div class="max-w-7xl mx-auto space-y-6 py-12 sm:px-6 lg:px-8">
+
+        <div class="flex items-start justify-between gap-4">
+            <div>
+                <h2 class="text-2xl font-semibold tracking-tight text-[#0a0b0d]">Monitoring Jurnal Siswa</h2>
+                <p class="text-sm text-[#5b616e] mt-1">Pantau jurnal kegiatan siswa bimbingan Anda (hanya-baca).</p>
+            </div>
+            <button type="button" onclick="history.back()"
+                    class="inline-flex items-center gap-1 rounded-full bg-[#eef0f3] px-4 py-2 text-sm font-semibold text-[#0a0b0d] transition hover:bg-[#dee1e6] shrink-0">
+                &larr; Kembali
+            </button>
         </div>
 
-        {{-- Rekap --}}
+        {{-- ===== KARTU STATISTIK ===== --}}
         <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <div class="bg-white rounded-xl border border-blue-100 p-4">
-                <p class="text-xs text-gray-500">Total Jurnal</p>
-                <p class="text-2xl font-bold text-gray-700">{{ $rekap['total'] ?? 0 }}</p>
+            <div class="rounded-2xl border border-[#dee1e6] bg-white p-5">
+                <p class="text-xs font-semibold uppercase tracking-wide text-[#7c828a]">Total Jurnal</p>
+                <p class="mt-1 text-2xl font-bold text-[#0a0b0d]">{{ $rekap['total'] }}</p>
             </div>
-            <div class="bg-white rounded-xl border border-blue-100 p-4">
-                <p class="text-xs text-gray-500">Disetujui</p>
-                <p class="text-2xl font-bold text-green-600">{{ $rekap['disetujui'] ?? 0 }}</p>
+            <div class="rounded-2xl border border-[#dee1e6] bg-white p-5">
+                <p class="text-xs font-semibold uppercase tracking-wide text-[#7c828a]">Disetujui</p>
+                <p class="mt-1 text-2xl font-bold text-[#05b169]">{{ $rekap['disetujui'] }}</p>
             </div>
-            <div class="bg-white rounded-xl border border-blue-100 p-4">
-                <p class="text-xs text-gray-500">Pending</p>
-                <p class="text-2xl font-bold text-amber-500">{{ $rekap['pending'] ?? 0 }}</p>
+            <div class="rounded-2xl border border-[#dee1e6] bg-white p-5">
+                <p class="text-xs font-semibold uppercase tracking-wide text-[#7c828a]">Pending</p>
+                <p class="mt-1 text-2xl font-bold text-[#f4b000]">{{ $rekap['pending'] }}</p>
             </div>
-            <div class="bg-white rounded-xl border border-blue-100 p-4">
-                <p class="text-xs text-gray-500">Revisi</p>
-                <p class="text-2xl font-bold text-red-500">{{ $rekap['revisi'] ?? 0 }}</p>
+            <div class="rounded-2xl border border-[#dee1e6] bg-white p-5">
+                <p class="text-xs font-semibold uppercase tracking-wide text-[#7c828a]">Revisi</p>
+                <p class="mt-1 text-2xl font-bold text-[#cf202f]">{{ $rekap['revisi'] }}</p>
             </div>
         </div>
 
-        {{-- Filter --}}
-        <form method="GET" class="bg-white rounded-xl border border-blue-100 p-4 flex flex-wrap gap-3 items-end">
-            <div class="flex-1 min-w-[180px]">
-                <label class="block text-xs text-gray-500 mb-1">Siswa</label>
-                <select name="siswa_id" class="w-full rounded-lg border-gray-200 text-sm">
-                    <option value="">Semua Siswa</option>
-                    @foreach ($siswas as $s)
-                        <option value="{{ $s->id }}" {{ request('siswa_id') == $s->id ? 'selected' : '' }}>{{ $s->name }}</option>
-                    @endforeach
-                </select>
+        {{-- ===== KARTU FILTER ===== --}}
+        <form method="GET" action="{{ route('guru.monitoring.jurnal') }}" class="rounded-2xl border border-[#dee1e6] bg-white p-5 flex flex-wrap gap-3 items-end">
+            <div class="flex-1 min-w-[220px]">
+                <label class="block text-xs font-semibold uppercase tracking-wide text-[#7c828a] mb-1">Cari (Nama / NISN)</label>
+                <input type="text" name="q" value="{{ request('q') }}" placeholder="Ketik nama atau NISN siswa..."
+                       class="w-full rounded-full border-[#dee1e6] bg-[#f7f7f7] px-5 py-2.5 text-sm text-[#0a0b0d] placeholder-[#a8acb3] focus:border-[#0052ff] focus:ring-[#0052ff]">
             </div>
             <div>
-                <label class="block text-xs text-gray-500 mb-1">Status</label>
-                <select name="status" class="rounded-lg border-gray-200 text-sm">
+                <label class="block text-xs font-semibold uppercase tracking-wide text-[#7c828a] mb-1">Status</label>
+                <select name="status" class="rounded-xl border-[#dee1e6] bg-white px-3 py-2.5 text-sm text-[#0a0b0d] focus:border-[#0052ff] focus:ring-[#0052ff]">
                     <option value="">Semua</option>
-                    <option value="disetujui" {{ request('status') === 'disetujui' ? 'selected' : '' }}>Disetujui</option>
-                    <option value="pending" {{ request('status') === 'pending' ? 'selected' : '' }}>Pending</option>
-                    <option value="revisi" {{ request('status') === 'revisi' ? 'selected' : '' }}>Revisi</option>
+                    <option value="disetujui" @selected(request('status') === 'disetujui')>Disetujui</option>
+                    <option value="pending" @selected(request('status') === 'pending')>Pending</option>
+                    <option value="revisi" @selected(request('status') === 'revisi')>Revisi</option>
                 </select>
             </div>
-            <button type="submit" class="px-4 py-2 rounded-lg bg-[#2563EB] text-white text-sm font-medium hover:bg-blue-700">Filter</button>
-            <a href="{{ route('guru.monitoring.jurnal') }}" class="px-4 py-2 rounded-lg text-gray-500 text-sm hover:bg-gray-50">Reset</a>
+            <button type="submit"
+                    class="inline-flex items-center rounded-full bg-[#0052ff] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#003ecc]">Filter</button>
+            <a href="{{ route('guru.monitoring.jurnal') }}"
+               class="inline-flex items-center rounded-full bg-[#eef0f3] px-5 py-2.5 text-sm font-semibold text-[#0a0b0d] transition hover:bg-[#dee1e6]">Reset</a>
         </form>
 
-        {{-- Tabel --}}
-        <div class="bg-white rounded-xl border border-blue-100 overflow-hidden">
+        {{-- ===== KARTU TABEL ===== --}}
+        <div class="rounded-2xl border border-[#dee1e6] bg-white overflow-hidden">
             <div class="overflow-x-auto">
-                <table class="w-full text-sm">
-                    <thead class="bg-blue-50 text-gray-600 text-left">
-                        <tr>
-                            <th class="px-4 py-3">Tanggal</th>
-                            <th class="px-4 py-3">Siswa</th>
-                            <th class="px-4 py-3">Unit Kerja</th>
-                            <th class="px-4 py-3">Deskripsi</th>
-                            <th class="px-4 py-3 text-center">Status</th>
-                            <th class="px-4 py-3 text-center">Cetak</th>
+                <table class="w-full text-sm text-left">
+                    <thead>
+                        <tr class="bg-[#f7f7f7] text-xs uppercase tracking-wide text-[#7c828a]">
+                            <th class="px-4 py-3 text-center w-12 font-semibold">No</th>
+                            <th class="px-4 py-3 font-semibold">Tanggal</th>
+                            <th class="px-4 py-3 font-semibold">Nama</th>
+                            <th class="px-4 py-3 font-semibold">NISN</th>
+                            <th class="px-4 py-3 font-semibold">Unit Kerja</th>
+                            <th class="px-4 py-3 font-semibold">Deskripsi</th>
+                            <th class="px-4 py-3 text-center font-semibold">Status</th>
+                            <th class="px-4 py-3 text-center font-semibold">Cetak</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-gray-100">
+                    <tbody class="divide-y divide-[#eef0f3]">
                         @forelse ($jurnals as $j)
                             @php
                                 $badge = match($j->status_persetujuan) {
-                                    'disetujui' => 'bg-green-50 text-green-700',
-                                    'pending'   => 'bg-amber-50 text-amber-700',
-                                    'revisi'    => 'bg-red-50 text-red-600',
-                                    default     => 'bg-gray-50 text-gray-600',
+                                    'disetujui' => 'bg-[#05b169]/10 text-[#05b169]',
+                                    'pending'   => 'bg-[#f4b000]/10 text-[#f4b000]',
+                                    'revisi'    => 'bg-[#cf202f]/10 text-[#cf202f]',
+                                    default     => 'bg-[#eef0f3] text-[#5b616e]',
                                 };
                             @endphp
-                            <tr class="hover:bg-blue-50/40">
-                                <td class="px-4 py-3 whitespace-nowrap">{{ \Carbon\Carbon::parse($j->hari_tanggal)->format('d M Y') }}</td>
-                                <td class="px-4 py-3 font-medium text-gray-800">{{ $j->siswa->name ?? '-' }}</td>
-                                <td class="px-4 py-3">{{ $j->unit_kerja ?? '-' }}</td>
-                                <td class="px-4 py-3 text-gray-500">{{ \Illuminate\Support\Str::limit($j->deskripsi_pekerjaan, 60) }}</td>
+                            <tr class="align-top transition hover:bg-[#f7f7f7]">
+                                <td class="px-4 py-3 text-center text-[#7c828a]">{{ $jurnals->firstItem() + $loop->index }}</td>
+                                <td class="px-4 py-3 whitespace-nowrap text-[#5b616e]">
+                                    {{ \Carbon\Carbon::parse($j->hari_tanggal)->translatedFormat('d M Y') }}
+                                </td>
+                                <td class="px-4 py-3 font-semibold text-[#0a0b0d]">{{ $j->siswa->name }}</td>
+                                <td class="px-4 py-3 whitespace-nowrap text-[#5b616e]">{{ $j->siswa->nisn ?? '-' }}</td>
+                               <td class="px-4 py-3 text-[#5b616e]">
+    {{ $j->unit_kerja ?? '-' }}
+</td>
+                                <td class="px-4 py-3 text-[#5b616e]">{{ $j->deskripsi_pekerjaan }}</td>
                                 <td class="px-4 py-3 text-center">
-                                    <span class="inline-block px-2.5 py-1 rounded-full text-xs font-medium {{ $badge }}">{{ ucfirst($j->status_persetujuan) }}</span>
+                                    <span class="inline-block rounded-full px-2.5 py-1 text-xs font-semibold {{ $badge }}">{{ ucfirst($j->status_persetujuan) }}</span>
                                 </td>
                                 <td class="px-4 py-3 text-center">
-                                    <a href="{{ route('cetak.jurnal', $j->siswa_id) }}" target="_blank" class="text-blue-600 hover:underline text-xs">PDF</a>
+                                    <a href="{{ route('cetak.jurnal', $j->id) }}" target="_blank"
+                                       class="inline-flex items-center rounded-full bg-[#eef0f3] px-3 py-1.5 text-xs font-semibold text-[#0a0b0d] transition hover:bg-[#dee1e6]">PDF</a>
                                 </td>
                             </tr>
                         @empty
-                            <tr><td colspan="6" class="px-4 py-8 text-center text-gray-400">Tidak ada data jurnal.</td></tr>
+                            <tr>
+                                <td colspan="8" class="px-4 py-8 text-center text-[#a8acb3] italic">Tidak ada data jurnal.</td>
+                            </tr>
                         @endforelse
                     </tbody>
                 </table>
             </div>
         </div>
 
+        {{-- ===== PAGINATION ===== --}}
         <div>
             {!! $jurnals->links() !!}
         </div>

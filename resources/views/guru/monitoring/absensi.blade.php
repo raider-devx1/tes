@@ -1,100 +1,115 @@
 <x-app-layout title="Monitoring Absensi">
-    <div class="max-w-7xl mx-auto space-y-6 py-8 sm:px-6 lg:px-8">
-        <div>
-            <h2 class="text-2xl font-bold text-gray-800">Monitoring Absensi Siswa</h2>
-            <p class="text-sm text-gray-500">Pantau kehadiran siswa bimbingan Anda (hanya-baca).</p>
+    <div class="max-w-7xl mx-auto space-y-6 py-12 sm:px-6 lg:px-8">
+
+        <div class="flex items-start justify-between gap-4">
+            <div>
+                <h2 class="text-2xl font-semibold tracking-tight text-[#0a0b0d]">Monitoring Absensi Siswa</h2>
+                <p class="text-sm text-[#5b616e] mt-1">Pantau kehadiran siswa bimbingan Anda (hanya-baca).</p>
+            </div>
+            <button type="button" onclick="history.back()"
+                    class="inline-flex items-center gap-1 rounded-full bg-[#eef0f3] px-4 py-2 text-sm font-semibold text-[#0a0b0d] transition hover:bg-[#dee1e6] shrink-0">
+                &larr; Kembali
+            </button>
         </div>
 
-        {{-- Rekap --}}
+        {{-- ===== KARTU STATISTIK ===== --}}
         <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <div class="bg-white rounded-xl border border-blue-100 p-4">
-                <p class="text-xs text-gray-500">Hadir</p>
-                <p class="text-2xl font-bold text-green-600">{{ $rekap['Hadir'] ?? 0 }}</p>
+            <div class="rounded-2xl border border-[#dee1e6] bg-white p-5">
+                <p class="text-xs font-semibold uppercase tracking-wide text-[#7c828a]">Hadir</p>
+                <p class="mt-1 text-2xl font-bold text-[#05b169]">{{ $rekap['Hadir'] }}</p>
             </div>
-            <div class="bg-white rounded-xl border border-blue-100 p-4">
-                <p class="text-xs text-gray-500">Izin</p>
-                <p class="text-2xl font-bold text-blue-600">{{ $rekap['Izin'] ?? 0 }}</p>
+            <div class="rounded-2xl border border-[#dee1e6] bg-white p-5">
+                <p class="text-xs font-semibold uppercase tracking-wide text-[#7c828a]">Izin</p>
+                <p class="mt-1 text-2xl font-bold text-[#0052ff]">{{ $rekap['Izin'] }}</p>
             </div>
-            <div class="bg-white rounded-xl border border-blue-100 p-4">
-                <p class="text-xs text-gray-500">Sakit</p>
-                <p class="text-2xl font-bold text-amber-500">{{ $rekap['Sakit'] ?? 0 }}</p>
+            <div class="rounded-2xl border border-[#dee1e6] bg-white p-5">
+                <p class="text-xs font-semibold uppercase tracking-wide text-[#7c828a]">Sakit</p>
+                <p class="mt-1 text-2xl font-bold text-[#f4b000]">{{ $rekap['Sakit'] }}</p>
             </div>
-            <div class="bg-white rounded-xl border border-blue-100 p-4">
-                <p class="text-xs text-gray-500">Alpha</p>
-                <p class="text-2xl font-bold text-red-500">{{ $rekap['Alpha'] ?? 0 }}</p>
+            <div class="rounded-2xl border border-[#dee1e6] bg-white p-5">
+                <p class="text-xs font-semibold uppercase tracking-wide text-[#7c828a]">Alpha</p>
+                <p class="mt-1 text-2xl font-bold text-[#cf202f]">{{ $rekap['Alpha'] }}</p>
             </div>
         </div>
 
-        {{-- Filter --}}
-        <form method="GET" class="bg-white rounded-xl border border-blue-100 p-4 flex flex-wrap gap-3 items-end">
-            <div class="flex-1 min-w-[180px]">
-                <label class="block text-xs text-gray-500 mb-1">Siswa</label>
-                <select name="siswa_id" class="w-full rounded-lg border-gray-200 text-sm">
-                    <option value="">Semua Siswa</option>
-                    @foreach ($siswas as $s)
-                        <option value="{{ $s->id }}" {{ request('siswa_id') == $s->id ? 'selected' : '' }}>{{ $s->name }}</option>
-                    @endforeach
-                </select>
+        {{-- ===== KARTU FILTER ===== --}}
+        <form method="GET" action="{{ route('guru.monitoring.absensi') }}" class="rounded-2xl border border-[#dee1e6] bg-white p-5 flex flex-wrap gap-3 items-end">
+            <div class="flex-1 min-w-[220px]">
+                <label class="block text-xs font-semibold uppercase tracking-wide text-[#7c828a] mb-1">Cari (Nama / NISN)</label>
+                <input type="text" name="q" value="{{ request('q') }}" placeholder="Ketik nama atau NISN siswa..."
+                       class="w-full rounded-full border-[#dee1e6] bg-[#f7f7f7] px-5 py-2.5 text-sm text-[#0a0b0d] placeholder-[#a8acb3] focus:border-[#0052ff] focus:ring-[#0052ff]">
             </div>
             <div>
-                <label class="block text-xs text-gray-500 mb-1">Status</label>
-                <select name="status" class="rounded-lg border-gray-200 text-sm">
+                <label class="block text-xs font-semibold uppercase tracking-wide text-[#7c828a] mb-1">Status</label>
+                <select name="status" class="rounded-xl border-[#dee1e6] bg-white px-3 py-2.5 text-sm text-[#0a0b0d] focus:border-[#0052ff] focus:ring-[#0052ff]">
                     <option value="">Semua</option>
-                    <option value="Hadir" {{ request('status') === 'Hadir' ? 'selected' : '' }}>Hadir</option>
-                    <option value="Izin" {{ request('status') === 'Izin' ? 'selected' : '' }}>Izin</option>
-                    <option value="Sakit" {{ request('status') === 'Sakit' ? 'selected' : '' }}>Sakit</option>
-                    <option value="Alpha" {{ request('status') === 'Alpha' ? 'selected' : '' }}>Alpha</option>
+                    <option value="Hadir" @selected(request('status') === 'Hadir')>Hadir</option>
+                    <option value="Izin" @selected(request('status') === 'Izin')>Izin</option>
+                    <option value="Sakit" @selected(request('status') === 'Sakit')>Sakit</option>
+                    <option value="Alpha" @selected(request('status') === 'Alpha')>Alpha</option>
                 </select>
             </div>
             <div>
-                <label class="block text-xs text-gray-500 mb-1">Tanggal</label>
-                <input type="date" name="tanggal" value="{{ request('tanggal') }}" class="rounded-lg border-gray-200 text-sm">
+                <label class="block text-xs font-semibold uppercase tracking-wide text-[#7c828a] mb-1">Tanggal</label>
+                <input type="date" name="tanggal" value="{{ request('tanggal') }}"
+                       class="rounded-xl border-[#dee1e6] bg-white px-3 py-2.5 text-sm text-[#0a0b0d] focus:border-[#0052ff] focus:ring-[#0052ff]">
             </div>
-            <button type="submit" class="px-4 py-2 rounded-lg bg-[#2563EB] text-white text-sm font-medium hover:bg-blue-700">Filter</button>
-            <a href="{{ route('guru.monitoring.absensi') }}" class="px-4 py-2 rounded-lg text-gray-500 text-sm hover:bg-gray-50">Reset</a>
+            <button type="submit"
+                    class="inline-flex items-center rounded-full bg-[#0052ff] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#003ecc]">Filter</button>
+            <a href="{{ route('guru.monitoring.absensi') }}"
+               class="inline-flex items-center rounded-full bg-[#eef0f3] px-5 py-2.5 text-sm font-semibold text-[#0a0b0d] transition hover:bg-[#dee1e6]">Reset</a>
         </form>
 
-        {{-- Tabel --}}
-        <div class="bg-white rounded-xl border border-blue-100 overflow-hidden">
+        {{-- ===== KARTU TABEL ===== --}}
+        <div class="rounded-2xl border border-[#dee1e6] bg-white overflow-hidden">
             <div class="overflow-x-auto">
-                <table class="w-full text-sm">
-                    <thead class="bg-blue-50 text-gray-600 text-left">
-                        <tr>
-                            <th class="px-4 py-3">Tanggal</th>
-                            <th class="px-4 py-3">Siswa</th>
-                            <th class="px-4 py-3 text-center">Status</th>
-                            <th class="px-4 py-3 text-center">Jam Masuk</th>
-                            <th class="px-4 py-3 text-center">Jam Pulang</th>
+                <table class="w-full text-sm text-left">
+                    <thead>
+                        <tr class="bg-[#f7f7f7] text-xs uppercase tracking-wide text-[#7c828a]">
+                            <th class="px-4 py-3 text-center w-12 font-semibold">No</th>
+                            <th class="px-4 py-3 font-semibold">Tanggal</th>
+                            <th class="px-4 py-3 font-semibold">Nama</th>
+                            <th class="px-4 py-3 font-semibold">NISN</th>
+                            <th class="px-4 py-3 text-center font-semibold">Status</th>
+                            <th class="px-4 py-3 text-center font-semibold">Jam Masuk</th>
+                            <th class="px-4 py-3 text-center font-semibold">Jam Pulang</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-gray-100">
+                    <tbody class="divide-y divide-[#eef0f3]">
                         @forelse ($absensi as $a)
                             @php
                                 $badge = match($a->status) {
-                                    'Hadir' => 'bg-green-50 text-green-700',
-                                    'Izin'  => 'bg-blue-50 text-blue-700',
-                                    'Sakit' => 'bg-amber-50 text-amber-700',
-                                    'Alpha' => 'bg-red-50 text-red-600',
-                                    default => 'bg-gray-50 text-gray-600',
+                                    'Hadir' => 'bg-[#05b169]/10 text-[#05b169]',
+                                    'Izin'  => 'bg-[#0052ff]/10 text-[#0052ff]',
+                                    'Sakit' => 'bg-[#f4b000]/10 text-[#f4b000]',
+                                    'Alpha' => 'bg-[#cf202f]/10 text-[#cf202f]',
+                                    default => 'bg-[#eef0f3] text-[#5b616e]',
                                 };
                             @endphp
-                            <tr class="hover:bg-blue-50/40">
-                                <td class="px-4 py-3 whitespace-nowrap">{{ \Carbon\Carbon::parse($a->tanggal)->format('d M Y') }}</td>
-                                <td class="px-4 py-3 font-medium text-gray-800">{{ $a->siswa->name ?? '-' }}</td>
-                                <td class="px-4 py-3 text-center">
-                                    <span class="inline-block px-2.5 py-1 rounded-full text-xs font-medium {{ $badge }}">{{ $a->status }}</span>
+                            <tr class="align-top transition hover:bg-[#f7f7f7]">
+                                <td class="px-4 py-3 text-center text-[#7c828a]">{{ $absensi->firstItem() + $loop->index }}</td>
+                                <td class="px-4 py-3 whitespace-nowrap text-[#5b616e]">
+                                    {{ \Carbon\Carbon::parse($a->tanggal)->translatedFormat('d M Y') }}
                                 </td>
-                                <td class="px-4 py-3 text-center">{{ $a->jam_masuk ?? '-' }}</td>
-                                <td class="px-4 py-3 text-center">{{ $a->jam_pulang ?? '-' }}</td>
+                                <td class="px-4 py-3 font-semibold text-[#0a0b0d]">{{ $a->siswa->name }}</td>
+                                <td class="px-4 py-3 whitespace-nowrap text-[#5b616e]">{{ $a->siswa->nisn ?? '-' }}</td>
+                                <td class="px-4 py-3 text-center">
+                                    <span class="inline-block rounded-full px-2.5 py-1 text-xs font-semibold {{ $badge }}">{{ $a->status }}</span>
+                                </td>
+                                <td class="px-4 py-3 text-center text-[#5b616e]">{{ $a->jam_masuk ?? '-' }}</td>
+                                <td class="px-4 py-3 text-center text-[#5b616e]">{{ $a->jam_pulang ?? '-' }}</td>
                             </tr>
                         @empty
-                            <tr><td colspan="5" class="px-4 py-8 text-center text-gray-400">Tidak ada data absensi.</td></tr>
+                            <tr>
+                                <td colspan="7" class="px-4 py-8 text-center text-[#a8acb3] italic">Tidak ada data absensi.</td>
+                            </tr>
                         @endforelse
                     </tbody>
                 </table>
             </div>
         </div>
 
+        {{-- ===== PAGINATION ===== --}}
         <div>
             {!! $absensi->links() !!}
         </div>
