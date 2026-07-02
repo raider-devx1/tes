@@ -53,24 +53,83 @@ class AdminController extends Controller
             'Kemandirian'  => round((float) Nilai::avg('kewirausahaan'), 2),
         ];
 
-        // Notifikasi langsung dibangun di controller
-        $notifikasi = $this->buildNotifikasi();
-
         return view('admin.dashboard', compact(
-            'stats', 'kehadiran', 'jurnalStatus', 'perJurusan', 'nilaiRata', 'notifikasi'
+            'stats', 'kehadiran', 'jurnalStatus', 'perJurusan', 'nilaiRata'
         ));
     }
 
     /**
-     * Bangun daftar notifikasi otomatis sistem.
-     * Bisa dipanggil dari controller admin lain yang butuh badge notifikasi.
+     * Halaman Notifikasi Sistem (tabel).
+     * Kolom: nama, nisn, nip, email + keterangan notifikasi.
+     */
+    public function notifikasi()
+    {
+        $rows  = [];
+        $batas = now()->subDays(3)->toDateString();
+
+        // 1) Siswa belum mengisi jurnal (>= 3 hari)
+        $siswas = User::where('role', 'siswa_pkl')->orderBy('name')->get();
+        foreach ($siswas as $s) {
+            $last = Jurnal::where('siswa_id', $s->id)->max('hari_tanggal');
+            if (is_null($last) || $last < $batas) {
+                $rows[] = [
+                    'nama'       => $s->name,
+                    'nisn'       => $s->nisn ?? '-',
+                    'nip'        => '-',
+                    'email'      => $s->email,
+                    'keterangan' => 'Siswa belum mengisi jurnal (≥ 3 hari).',
+                    'kategori'   => 'danger',
+                ];
+            }
+        }
+
+        // 2) Jurnal siswa belum disetujui instruktur (status pending)
+        $pendingPerSiswa = Jurnal::where('status_persetujuan', 'pending')
+            ->select('siswa_id', DB::raw('COUNT(*) as total'))
+            ->groupBy('siswa_id')
+            ->pluck('total', 'siswa_id');
+
+        if ($pendingPerSiswa->isNotEmpty()) {
+            $siswaPending = User::whereIn('id', $pendingPerSiswa->keys())->orderBy('name')->get();
+            foreach ($siswaPending as $s) {
+                $rows[] = [
+                    'nama'       => $s->name,
+                    'nisn'       => $s->nisn ?? '-',
+                    'nip'        => '-',
+                    'email'      => $s->email,
+                    'keterangan' => 'Jurnal belum disetujui instruktur (' . $pendingPerSiswa[$s->id] . ' jurnal).',
+                    'kategori'   => 'warning',
+                ];
+            }
+        }
+
+        // 3) Guru belum melakukan observasi
+        $gurus = User::where('role', 'guru_pembimbing')->orderBy('name')->get();
+        foreach ($gurus as $g) {
+            if (Observasi::where('guru_id', $g->id)->count() === 0) {
+                $rows[] = [
+                    'nama'       => $g->name,
+                    'nisn'       => '-',
+                    'nip'        => $g->nip ?? '-',
+                    'email'      => $g->email,
+                    'keterangan' => 'Guru belum melakukan observasi.',
+                    'kategori'   => 'warning',
+                ];
+            }
+        }
+
+        return view('admin.notifikasi.index', ['notifikasi' => $rows]);
+    }
+
+    /**
+     * (Opsional) Ringkasan notifikasi untuk badge — masih dipertahankan
+     * bila ingin dipakai di tempat lain.
      */
     public function buildNotifikasi(): array
     {
         $notif = [];
         $batas = now()->subDays(3)->toDateString();
 
-        // 1. Siswa belum isi jurnal >= 3 hari
         $siswas = User::where('role', 'siswa_pkl')->get();
         foreach ($siswas as $s) {
             $last = Jurnal::where('siswa_id', $s->id)->max('hari_tanggal');
@@ -79,13 +138,11 @@ class AdminController extends Controller
             }
         }
 
-        // 2. Instruktur belum menyetujui jurnal
         $pending = Jurnal::where('status_persetujuan', 'pending')->count();
         if ($pending > 0) {
             $notif[] = ['type' => 'warning', 'icon' => '⏳', 'text' => "$pending jurnal menunggu persetujuan instruktur."];
         }
 
-        // 3. Guru belum melakukan observasi
         $gurus = User::where('role', 'guru_pembimbing')->get();
         foreach ($gurus as $g) {
             if (Observasi::where('guru_id', $g->id)->count() === 0) {
@@ -93,18 +150,6 @@ class AdminController extends Controller
             }
         }
 
-        // 4. Dokumen wajib belum diunggah
-        $totalSiswa    = $siswas->count();
-        $siswaPunyaDok = Dokumen::distinct('siswa_id')->count('siswa_id');
-        $belumDok      = max(0, $totalSiswa - $siswaPunyaDok);
-        if ($belumDok > 0) {
-            $notif[] = ['type' => 'danger', 'icon' => '📁', 'text' => "$belumDok siswa belum mengunggah dokumen wajib."];
-        }
-
         return array_slice($notif, 0, 15);
     }
-
-   
-
-    
 }

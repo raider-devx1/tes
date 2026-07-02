@@ -81,6 +81,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         // ---- PENGATURAN: RIWAYAT AKTIVITAS ----
 Route::get('/riwayat', [RiwayatController::class, 'index'])->name('riwayat.index');
 
+// ---- NOTIFIKASI SISTEM ----
+Route::get('/notifikasi', [AdminController::class, 'notifikasi'])->name('notifikasi.index');
+
 // ---- BULK: ubah status PKL semua siswa dalam satu periode ----
 Route::post('/periode/update-status-siswa', [PeriodePklController::class, 'updateStatusSiswa'])
     ->name('periode.update-status-siswa');

@@ -46,6 +46,12 @@
                 <span>📊</span> Dashboard
             </a>
 
+            {{-- ===== NOTIFIKASI SISTEM ===== --}}
+<a href="{{ route('admin.notifikasi.index') }}"
+   class="flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium {{ request()->routeIs('admin.notifikasi.*') ? 'bg-blue-50 text-[#2563EB]' : 'text-gray-700 hover:bg-blue-50' }}">
+    <span>🔔</span> Notifikasi Sistem
+</a>
+
             {{-- Master Data --}}
           <div x-data="{ open: {{ request()->routeIs('admin.siswa.*', 'admin.guru.*', 'admin.instruktur.*', 'admin.periode.*') ? 'true' : 'false' }} }">
     <button @click="open = !open" class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-gray-700 hover:bg-blue-50">
