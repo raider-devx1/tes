@@ -64,8 +64,10 @@ class AdminController extends Controller
      * Kolom: nama, nisn, nip, email + keterangan notifikasi.
      */
    /**
+/**
  * Halaman Notifikasi Sistem: kartu ringkasan realtime + tabel
- * (nama, nisn, nip, email) dengan pencarian & pagination 15/hal.
+ * (nama, nisn, nip, email, keterangan) dengan pencarian & pagination 15/hal.
+ * NISN terisi untuk siswa (NIP kosong); NIP terisi untuk guru (NISN kosong).
  */
 public function notifikasi(Request $request)
 {
@@ -110,7 +112,7 @@ public function notifikasi(Request $request)
         }
     }
 
-    // 3) Guru belum melakukan observasi
+    // 3) Guru belum melakukan observasi (tampil atas nama guru itu sendiri)
     $gurus = User::where('role', 'guru_pembimbing')->orderBy('name')->get();
     foreach ($gurus as $g) {
         if (Observasi::where('guru_id', $g->id)->count() === 0) {

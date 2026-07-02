@@ -60,9 +60,7 @@
                             <td class="py-3 px-3 text-gray-600">{{ $n['email'] }}</td>
                             <td class="py-3 px-3">
                                 @php 
-                                    $warna = ($n['kategori'] ?? 'warning') === 'danger' 
-                                        ? 'bg-red-50 text-red-600' 
-                                        : 'bg-amber-50 text-amber-600'; 
+                                    $warna = ($n['kategori'] ?? 'warning') === 'danger' ? 'bg-red-50 text-red-600' : 'bg-amber-50 text-amber-600'; 
                                 @endphp
                                 <span class="inline-block px-2.5 py-1 rounded-full text-xs font-medium {{ $warna }}">
                                     {{ $n['keterangan'] }}
@@ -89,7 +87,6 @@
     @push('scripts')
     <script>
         // Auto-refresh ringan agar notifikasi mendekati realtime (tiap 60 detik).
-        // Pencarian & halaman aktif tetap dipertahankan karena reload memakai URL saat ini.
         setTimeout(function () { window.location.reload(); }, 60000);
     </script>
     @endpush
