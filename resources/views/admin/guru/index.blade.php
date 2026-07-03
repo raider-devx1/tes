@@ -82,9 +82,11 @@
                             <td class="py-3 px-3">
                                 <div class="flex items-center justify-end gap-2">
                                     <a href="{{ route('admin.guru.edit', $g) }}" class="text-xs px-3 py-1.5 rounded-lg bg-blue-50 text-[#2563EB] hover:bg-blue-100">Edit</a>
-                                    <form method="POST" action="{{ route('admin.guru.destroy', $g) }}" onsubmit="return confirm('Hapus akun guru ini?')">
-                                        @csrf 
-                                        @method('DELETE')
+                                    <form method="POST" action="{{ route('admin.guru.destroy', $g) }}"
+      data-confirm="Hapus akun guru ini?"
+      data-confirm-yes="Ya, hapus">
+    @csrf
+    @method('DELETE')
                                         <button type="submit" class="text-xs px-3 py-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100">Hapus</button>
                                     </form>
                                 </div>

@@ -16,10 +16,11 @@ $isAdmin = auth()->check() && auth()->user()->role === 'admin';
     <link href="https://fonts.bunny.net/css?family=figtree:400,500,600,700&display=swap" rel="stylesheet" />
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
-
+    
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
     @if($isAdmin)
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     @endif
 </head>
 
@@ -290,26 +291,6 @@ $isAdmin = auth()->check() && auth()->user()->role === 'admin';
 
             {{-- CONTENT --}}
             <main class="flex-1 p-6">
-                @if(session('success'))
-                <script>
-                document.addEventListener('DOMContentLoaded', () => Swal.fire({
-                    icon: 'success',
-                    title: 'Berhasil',
-                    text: @json(session('success')),
-                    timer: 2200,
-                    showConfirmButton: false
-                }));
-                </script>
-                @endif
-                @if(session('error'))
-                <script>
-                document.addEventListener('DOMContentLoaded', () => Swal.fire({
-                    icon: 'error',
-                    title: 'Gagal',
-                    text: @json(session('error'))
-                }));
-                </script>
-                @endif
 
                 {{ $slot }}
             </main>
@@ -356,6 +337,49 @@ $isAdmin = auth()->check() && auth()->user()->role === 'admin';
     @endif
 
     @stack('scripts')
+
+    {{-- SweetAlert global: flash message + konfirmasi form --}}
+    <script>
+        // 1) Flash message (berlaku untuk semua role)
+        @if(session('success'))
+        document.addEventListener('DOMContentLoaded', () => Swal.fire({
+            icon: 'success', title: 'Berhasil',
+            text: @json(session('success')),
+            timer: 2200, timerProgressBar: true, showConfirmButton: false
+        }));
+        @endif
+        @if(session('error'))
+        document.addEventListener('DOMContentLoaded', () => Swal.fire({
+            icon: 'error', title: 'Gagal',
+            text: @json(session('error'))
+        }));
+        @endif
+
+        // 2) Konfirmasi untuk SETIAP <form data-confirm="...">
+        document.addEventListener('submit', function (e) {
+            const form = e.target;
+            if (!(form instanceof HTMLFormElement) || !form.hasAttribute('data-confirm')) return;
+            if (form.dataset.confirmed === 'true') return; // sudah dikonfirmasi
+
+            e.preventDefault();
+            Swal.fire({
+                title: form.getAttribute('data-confirm') || 'Apakah Anda yakin?',
+                text: form.getAttribute('data-confirm-text') || '',
+                icon: form.getAttribute('data-confirm-icon') || 'warning',
+                showCancelButton: true,
+                confirmButtonText: form.getAttribute('data-confirm-yes') || 'Ya, lanjutkan',
+                cancelButtonText: 'Batal',
+                confirmButtonColor: '#cf202f',
+                cancelButtonColor: '#6b7280',
+                reverseButtons: true,
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    form.dataset.confirmed = 'true';
+                    form.submit(); // submit tanpa memicu event lagi
+                }
+            });
+        }, true);
+    </script>
 </body>
 
 </html>

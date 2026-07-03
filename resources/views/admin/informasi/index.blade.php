@@ -51,13 +51,16 @@
                                         <td class="px-4 py-3 border text-center whitespace-nowrap">
                                             <a href="{{ route('admin.informasi.edit', $item) }}"
                                                class="text-blue-600 hover:underline">Edit</a>
-                                            <form action="{{ route('admin.informasi.destroy', $item) }}"
-                                                  method="POST" class="inline"
-                                                  onsubmit="return confirm('Hapus informasi ini?')">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="text-red-600 hover:underline ml-2">Hapus</button>
-                                            </form>
+                                           <form action="{{ route('admin.informasi.destroy', $item) }}" method="POST" class="inline"
+      data-confirm="Hapus informasi ini?"
+      data-confirm-text="Data informasi beserta lampirannya akan dihapus permanen."
+      data-confirm-yes="Ya, hapus">
+    @csrf
+    @method('DELETE')
+
+    <!-- Tombol submit untuk trigger form, contoh: -->
+    <button type="submit" class="text-red-600 hover:underline ml-2">Hapus</button>
+</form>
                                         </td>
                                     </tr>
                                 @empty

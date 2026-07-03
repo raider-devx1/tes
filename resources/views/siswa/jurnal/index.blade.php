@@ -109,11 +109,16 @@
                                 </td>
                                 <td class="px-4 py-3 text-center">
                                     @if($jurnal->status_persetujuan == 'pending')
-                                        <form action="{{ route('siswa.jurnal.destroy', $jurnal->id) }}" method="POST" onsubmit="return confirm('Hapus jurnal ini?');">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="inline-flex items-center rounded-full bg-[#cf202f]/10 px-3 py-1.5 text-xs font-semibold text-[#cf202f] transition hover:bg-[#cf202f]/20">Hapus</button>
-                                        </form>
+                                       <form action="{{ route('siswa.jurnal.destroy', $jurnal->id) }}" method="POST"
+      data-confirm="Hapus jurnal ini?"
+      data-confirm-text="Jurnal yang dihapus tidak dapat dikembalikan."
+      data-confirm-yes="Ya, hapus">
+    @csrf
+    @method('DELETE')
+    
+    <!-- Tambahkan tombol hapus di sini, contoh: -->
+     <button type="submit" class="text-red-600 hover:underline ml-2">Hapus</button>
+</form>
                                     @else
                                         <span class="text-xs text-[#a8acb3]">-</span>
                                     @endif

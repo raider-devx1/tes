@@ -123,10 +123,12 @@
                                                class="inline-flex items-center rounded-full bg-[#0052ff]/10 px-3 py-1.5 text-xs font-semibold text-[#0052ff] transition hover:bg-[#0052ff]/20">
                                                 Edit
                                             </a>
-                                            <form action="{{ route('guru.observasi.destroy', $obs->id) }}" method="POST"
-                                                  onsubmit="return confirm('Yakin ingin menghapus observasi ini beserta seluruh poinnya?');">
-                                                @csrf
-                                                @method('DELETE')
+                                           <form action="{{ route('guru.observasi.destroy', $obs->id) }}" method="POST"
+      data-confirm="Hapus observasi ini?"
+      data-confirm-text="Seluruh poin permasalahan & solusi pada observasi ini akan ikut terhapus."
+      data-confirm-yes="Ya, hapus">
+    @csrf
+    @method('DELETE')
                                                 <button type="submit"
                                                         class="inline-flex items-center rounded-full bg-[#e11d48]/10 px-3 py-1.5 text-xs font-semibold text-[#e11d48] transition hover:bg-[#e11d48]/20">
                                                     Hapus

@@ -27,8 +27,11 @@
             (belum / aktif / selesai). Berguna, misalnya, untuk menandai semua siswa periode lama menjadi "selesai".
         </p>
 
-        <form method="POST" action="{{ route('admin.periode.update-status-siswa') }}"
-              onsubmit="return confirm('Ubah status SEMUA siswa pada periode yang dipilih? Tindakan ini berlaku untuk seluruh siswa periode tersebut.');">
+       <form method="POST" action="{{ route('admin.periode.update-status-siswa') }}"
+      data-confirm="Ubah status SEMUA siswa pada periode ini?"
+      data-confirm-text="Tindakan ini berlaku untuk seluruh siswa pada periode yang dipilih."
+      data-confirm-icon="question"
+      data-confirm-yes="Ya, terapkan">
             @csrf
             <div class="flex flex-col md:flex-row gap-3 md:items-end">
                 <div class="flex-1">
@@ -120,9 +123,11 @@
                                         </form>
                                     @endunless
                                     <a href="{{ route('admin.periode.edit', $p->id) }}" class="text-xs px-3 py-1.5 rounded-lg bg-blue-50 text-[#2563EB] hover:bg-blue-100">Edit</a>
-                                    <form method="POST" action="{{ route('admin.periode.destroy', $p->id) }}" onsubmit="return confirm('Hapus periode ini?')">
-                                        @csrf 
-                                        @method('DELETE')
+                                    <form method="POST" action="{{ route('admin.periode.destroy', $p) }}"
+      data-confirm="Hapus periode ini?"
+      data-confirm-yes="Ya, hapus">
+    @csrf
+    @method('DELETE')
                                         <button class="text-xs px-3 py-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100">Hapus</button>
                                     </form>
                                 </div>
