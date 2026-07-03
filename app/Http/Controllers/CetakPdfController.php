@@ -66,13 +66,41 @@ public function cetakJurnal($siswa_id = null)
     $siswa = $this->resolveSiswa($siswa_id);
     $siswa->loadMissing(['perusahaan', 'instruktur', 'guru']);
 
-    // Cetak per orang = daftar berisi 1 siswa (seluruh jurnalnya)
-    $lembar     = [ $this->buildJurnalLembar($siswa) ];
+    // Query jurnal milik siswa ini saja (aman, tidak bisa lintas siswa)
+    $query = Jurnal::where('siswa_id', $siswa->id);
+
+    // Prioritas 1: cetak SATU entri jurnal persis di baris yang diklik
+    // (tanggal jurnal = tanggal yang dibuat/diisi siswa, bukan hari ini)
+    if (request()->filled('jurnal_id')) {
+        $query->where('id', request('jurnal_id'));
+    }
+    // Prioritas 2 (opsional): cetak semua jurnal pada satu tanggal tertentu
+    elseif (request()->filled('tanggal')) {
+        $query->whereDate('hari_tanggal', request('tanggal'));
+    }
+    // Tanpa filter (mis. tombol cetak milik siswa sendiri) → semua jurnalnya
+
+    $jurnals = $query->orderBy('hari_tanggal', 'asc')->get();
+
+    // Kalau difilter (per entri / per tanggal) tapi kosong → pesan jelas
+    abort_if(
+        (request()->filled('jurnal_id') || request()->filled('tanggal')) && $jurnals->isEmpty(),
+        404,
+        'Jurnal tidak ditemukan untuk dicetak.'
+    );
+
+    // Cetak per orang = daftar berisi 1 siswa
+    $lembar     = [ ['siswa' => $siswa, 'jurnals' => $jurnals] ];
     $pengaturan = $this->getPengaturan();
 
     $pdf = Pdf::loadView('pdf.jurnal', compact('lembar', 'pengaturan'))
               ->setPaper('a4', 'portrait');
-    return $pdf->stream('Jurnal_PKL_'.$siswa->name.'.pdf');
+
+    $suffix = request('jurnal_id')
+        ? '_'.request('jurnal_id')
+        : (request('tanggal') ? '_'.request('tanggal') : '');
+
+    return $pdf->stream('Jurnal_PKL_'.$siswa->name.$suffix.'.pdf');
 }
 
 // ====== 1b. JURNAL - CETAK SEMUA (semua siswa bimbingan, 1 siswa 1 halaman) ======

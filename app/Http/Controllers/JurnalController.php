@@ -91,6 +91,8 @@ public function indexInstruktur(Request $request)
         })
         ->when($request->filled('status'), fn ($query) =>
             $query->where('status_persetujuan', $request->status))
+        ->when($request->filled('tanggal'), fn ($query) =>          // ⬅️ filter tanggal
+            $query->whereDate('hari_tanggal', $request->tanggal))
         ->orderBy('hari_tanggal', 'desc')
         ->paginate(15)
         ->withQueryString();
