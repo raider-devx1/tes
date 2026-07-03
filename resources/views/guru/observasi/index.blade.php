@@ -78,36 +78,45 @@
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-[#eef0f3]">
-                            @forelse ($observasi as $obs)
-                                <tr class="align-top transition hover:bg-[#f7f7f7]">
-                                    <td class="px-4 py-3 text-center text-[#7c828a]">{{ $observasi->firstItem() + $loop->index }}</td>
-                                    <td class="px-4 py-3 whitespace-nowrap text-[#5b616e]">
-                                        {{ \Carbon\Carbon::parse($obs->hari_tanggal)->translatedFormat('d M Y') }}
-                                    </td>
-                                    <td class="px-4 py-3 font-semibold text-[#0a0b0d]">{{ $obs->user->name }}</td>
-                                    <td class="px-4 py-3 whitespace-nowrap text-[#5b616e]">{{ $obs->user->nisn ?? '-' }}</td>
-                                    <td class="px-4 py-3 text-[#5b616e]">{{ $obs->pekerjaan_projek }}</td>
-                                    <td class="px-4 py-3 text-[#5b616e]">{{ $obs->permasalahan }}</td>
-                                    <td class="px-4 py-3 text-center">
-                                        @if ($obs->is_approved)
-                                            <span class="inline-flex items-center rounded-full bg-[#05b169]/10 px-3 py-1 text-xs font-semibold text-[#05b169]">Disetujui</span>
-                                        @else
-                                            <span class="inline-flex items-center rounded-full bg-[#f4b000]/10 px-3 py-1 text-xs font-semibold text-[#f4b000]">Menunggu</span>
-                                        @endif
-                                    </td>
-                                    <td class="px-4 py-3 text-center">
-                                        <a href="{{ route('cetak.observasi', $obs->user_id) }}" target="_blank"
-                                           class="inline-flex items-center rounded-full bg-[#eef0f3] px-3 py-1.5 text-xs font-semibold text-[#0a0b0d] transition hover:bg-[#dee1e6]">PDF</a>
-                                    </td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="8" class="px-4 py-8 text-center text-[#a8acb3] italic">
-                                        Belum ada data observasi.
-                                    </td>
-                                </tr>
-                            @endforelse
-                        </tbody>
+    @forelse ($observasi as $obs)
+        <tr class="align-top transition hover:bg-[#f7f7f7]">
+            <td class="px-4 py-3 text-center text-[#7c828a]">{{ $observasi->firstItem() + $loop->index }}</td>
+            <td class="px-4 py-3 whitespace-nowrap text-[#5b616e]">
+                {{ \Carbon\Carbon::parse($obs->hari_tanggal)->translatedFormat('d M Y') }}
+            </td>
+            <td class="px-4 py-3 font-semibold text-[#0a0b0d]">{{ $obs->user->name }}</td>
+            <td class="px-4 py-3 whitespace-nowrap text-[#5b616e]">{{ $obs->user->nisn ?? '-' }}</td>
+            <td class="px-4 py-3 text-[#5b616e]">{{ $obs->pekerjaan_projek }}</td>
+            <td class="px-4 py-3 text-[#5b616e]">
+                <span class="inline-flex items-center rounded-full bg-[#eef0f3] px-2.5 py-0.5 text-xs font-semibold text-[#0a0b0d]">
+                    {{ $obs->items->count() }} poin
+                </span>
+                @if ($obs->items->count())
+                    <div class="mt-1 text-xs text-[#7c828a]">
+                        {{ \Illuminate\Support\Str::limit($obs->items->first()->permasalahan, 60) }} 
+                    </div>
+                @endif
+            </td>
+            <td class="px-4 py-3 text-center">
+                @if ($obs->is_approved)
+                    <span class="inline-flex items-center rounded-full bg-[#05b169]/10 px-3 py-1 text-xs font-semibold text-[#05b169]">Disetujui</span>
+                @else
+                    <span class="inline-flex items-center rounded-full bg-[#f4b000]/10 px-3 py-1 text-xs font-semibold text-[#f4b000]">Menunggu</span>
+                @endif
+            </td>
+            <td class="px-4 py-3 text-center">
+                <a href="{{ route('cetak.observasi', $obs->user_id) }}" target="_blank"
+                   class="inline-flex items-center rounded-full bg-[#eef0f3] px-3 py-1.5 text-xs font-semibold text-[#0a0b0d] transition hover:bg-[#dee1e6]">PDF</a>
+            </td>
+        </tr>
+    @empty
+        <tr>
+            <td colspan="8" class="px-4 py-8 text-center text-[#a8acb3] italic">
+                Belum ada data observasi.
+            </td>
+        </tr>
+    @endforelse
+</tbody>
                     </table>
                 </div>
 

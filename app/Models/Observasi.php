@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Collection;
 
 class Observasi extends Model
 {
@@ -14,8 +15,6 @@ class Observasi extends Model
         'guru_id',
         'hari_tanggal',
         'pekerjaan_projek',
-        'permasalahan',
-        'solusi',
         'is_approved',
     ];
 
@@ -34,5 +33,17 @@ class Observasi extends Model
     public function guru()
     {
         return $this->belongsTo(User::class, 'guru_id');
+    }
+
+    // Banyak poin permasalahan & solusi
+    public function items()
+    {
+        return $this->hasMany(ObservasiItem::class, 'observasi_id');
+    }
+
+    /** Daftar poin observasi (semua data berasal dari observasi_items). */
+    public function getPoinAttribute(): Collection
+    {
+        return $this->items;
     }
 }

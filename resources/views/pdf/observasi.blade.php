@@ -68,7 +68,7 @@
             </tr>
         </thead>
         <tbody>
-            @forelse($observasi as $index => $item)
+            @forelse($rows as $index => $item)
             <tr>
                 <td class="text-center">{{ $index + 1 }}</td>
                 <td>{!! nl2br(e($item->permasalahan)) !!}</td>
@@ -86,16 +86,18 @@
             </tr>
             @endforelse
 
-            {{-- ===== GENERATE BARIS KOSONG TAMBAHAN ===== --}}
-            @for ($i = count($observasi); $i < 6; $i++)
-            <tr>
-                <td class="text-center">{{ $i + 1 }}</td>
-                <td><br><br><br></td>
-                <td></td>
-                <td></td>
-                <td></td>
-            </tr>
-            @endfor
+            {{-- Baris kosong pelengkap agar tabel tetap rapi (minimal total 6 baris terisi/kosong) --}}
+            @if(count($rows) < 6)
+                @for ($i = count($rows); $i < 6; $i++)
+                <tr>
+                    <td class="text-center">{{ $i + 1 }}</td>
+                    <td><br><br><br></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                </tr>
+                @endfor
+            @endif
         </tbody>
     </table>
 

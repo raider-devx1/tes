@@ -12,10 +12,8 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade'); // Siswa yang diobservasi
             $table->foreignId('guru_id')->constrained('users')->onDelete('cascade'); // Guru pembimbing
-            $table->date('hari_tanggal'); // Hari / tanggal monitoring
-            $table->string('pekerjaan_projek')->nullable(); // Ditambahkan untuk header PDF
-            $table->text('permasalahan'); // Permasalahan
-            $table->text('solusi'); // Solusi pemecahan masalah
+            $table->date('hari_tanggal');                 // Hari / tanggal monitoring
+            $table->string('pekerjaan_projek')->nullable(); // Header PDF
             $table->boolean('is_approved')->default(false); // Persetujuan Instruktur Industri
             $table->timestamps();
         });

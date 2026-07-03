@@ -90,18 +90,31 @@ public function cetakCatatan($siswa_id = null)
 
    
     // ====== 3. OBSERVASI (FK: user_id) ======
+// ====== 3. OBSERVASI (FK: user_id) ======
 public function cetakObservasi($siswa_id = null)
 {
     $siswa = $this->resolveSiswa($siswa_id);
 
-    $query = Observasi::where('user_id', $siswa->id);
+    $query = Observasi::where('user_id', $siswa->id)->with('items');
 
-    // Jika ada observasi_id → cetak SATU data (baris yang dipilih) saja
+    // Jika ada observasi_id → cetak SATU observasi (beserta semua poinnya)
     if (request()->filled('observasi_id')) {
         $query->where('id', request('observasi_id'));
     }
 
     $observasi = $query->orderBy('hari_tanggal', 'asc')->get();
+
+    // Gabungkan semua poin (permasalahan & solusi) jadi satu daftar berurutan
+    $rows = collect();
+    foreach ($observasi as $obs) {
+        foreach ($obs->items as $poin) {
+            $rows->push((object) [
+                'permasalahan' => $poin->permasalahan,
+                'solusi'       => $poin->solusi,
+                'is_approved'  => $obs->is_approved,
+            ]);
+        }
+    }
 
     $data = [
         'nama_siswa'       => $siswa->name,
@@ -110,7 +123,7 @@ public function cetakObservasi($siswa_id = null)
         'nama_instruktur'  => $siswa->instruktur->name ?? 'Belum Diatur',
         'nama_guru'        => $siswa->guru->name ?? 'Belum Diatur',
         'pekerjaan_projek' => $observasi->first()?->pekerjaan_projek ?? '-',
-        'observasi'        => $observasi,
+        'rows'             => $rows,
     ];
 
     $pdf = Pdf::loadView('pdf.observasi', $data)->setPaper('a4', 'portrait');

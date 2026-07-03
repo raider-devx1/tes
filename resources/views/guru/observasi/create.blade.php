@@ -16,7 +16,12 @@
         @endif
 
         <form action="{{ route('guru.observasi.store') }}" method="POST"
-              class="bg-white rounded-xl shadow-sm border p-6 space-y-4">
+              class="bg-white rounded-xl shadow-sm border p-6 space-y-4"
+              x-data="{
+                  items: {{ \Illuminate\Support\Js::from(old('items', [['permasalahan' => '', 'solusi' => '']])) }},
+                  addItem() { this.items.push({ permasalahan: '', solusi: '' }) },
+                  removeItem(i) { if (this.items.length > 1) this.items.splice(i, 1) },
+              }">
             @csrf
 
             <div>
@@ -34,7 +39,7 @@
 
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Hari / Tanggal</label>
-                <input type="date" name="hari_tanggal" value="{{ old('hari_tanggal', date('Y-m-d')) }}" required
+                <input type="date" name="hari_tanggal" value="{{ old('hari_tanggal') }}" required
                        class="w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500">
             </div>
 
@@ -45,16 +50,45 @@
                        placeholder="Contoh: Maintenance jaringan kantor">
             </div>
 
+            {{-- ===== DAFTAR POIN PERMASALAHAN & SOLUSI (DINAMIS) ===== --}}
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Permasalahan</label>
-                <textarea name="permasalahan" rows="3" required
-                          class="w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500">{{ old('permasalahan') }}</textarea>
-            </div>
+                <div class="flex items-center justify-between mb-2">
+                    <label class="block text-sm font-medium text-gray-700">Permasalahan &amp; Solusi</label>
+                    <button type="button" @click="addItem()"
+                            class="inline-flex items-center gap-1 px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-xs font-medium rounded-lg">
+                        + Tambah Poin
+                    </button>
+                </div>
 
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Solusi</label>
-                <textarea name="solusi" rows="3" required
-                          class="w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500">{{ old('solusi') }}</textarea>
+                <div class="space-y-4">
+                    <template x-for="(item, index) in items" :key="index">
+                        <div class="rounded-lg border border-gray-200 p-4">
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="text-sm font-semibold text-gray-600">
+                                    Poin <span x-text="index + 1"></span>
+                                </span>
+                                <button type="button" @click="removeItem(index)" x-show="items.length > 1"
+                                        class="text-xs font-medium text-red-500 hover:text-red-700">
+                                    Hapus
+                                </button>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Permasalahan</label>
+                                <textarea :name="`items[${index}][permasalahan]`" rows="3" required
+                                          x-model="item.permasalahan"
+                                          class="w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500"></textarea>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Solusi</label>
+                                <textarea :name="`items[${index}][solusi]`" rows="3" required
+                                          x-model="item.solusi"
+                                          class="w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500"></textarea>
+                            </div>
+                        </div>
+                    </template>
+                </div>
             </div>
 
             <div class="pt-2">

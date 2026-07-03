@@ -199,18 +199,24 @@ class UserSeeder extends Seeder
                 ]);
             }
 
-            // ---- OBSERVASI (3 entri, dibuat oleh guru pembimbing) ----
-            for ($o = 1; $o <= 3; $o++) {
-                Observasi::create([
-                    'user_id'          => $siswa->id,
-                    'guru_id'          => $guru->id,
-                    'hari_tanggal'     => now()->subDays($o * 2)->toDateString(),
-                    'pekerjaan_projek' => "Observasi projek ke-$o",
-                    'permasalahan'     => "Permasalahan yang ditemukan pada observasi ke-$o.",
-                    'solusi'           => "Solusi yang disarankan untuk observasi ke-$o.",
-                    'is_approved'      => $o === 1, // 1 disetujui, sisanya menunggu
-                ]);
-            }
+           // ---- OBSERVASI (3 entri; tiap observasi punya beberapa poin masalah & solusi) ----
+for ($o = 1; $o <= 3; $o++) {
+    $observasi = Observasi::create([
+        'user_id'          => $siswa->id,
+        'guru_id'          => $guru->id,
+        'hari_tanggal'     => now()->subDays($o * 2)->toDateString(),
+        'pekerjaan_projek' => "Observasi projek ke-$o",
+        'is_approved'      => $o === 1, // 1 disetujui, sisanya menunggu
+    ]);
+
+    // Jumlah poin bervariasi (observasi ke-1 = 1 poin, ke-2 = 2 poin, ke-3 = 3 poin)
+    for ($p = 1; $p <= $o; $p++) {
+        $observasi->items()->create([
+            'permasalahan' => "Permasalahan poin ke-$p pada observasi ke-$o untuk {$siswa->name}.",
+            'solusi'       => "Solusi poin ke-$p untuk observasi ke-$o.",
+        ]);
+    }
+}
 
             // ---- ABSENSI (5 entri, status & jam bervariasi) ----
             foreach ($statusAbsen as $idx => $stAbs) {
