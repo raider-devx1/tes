@@ -97,6 +97,7 @@
         @endforeach
     </ol>
 </td>
+
                                     <td class="px-4 py-3 text-center">
                                         @if($item->is_approved)
                                             <span class="inline-flex items-center rounded-full bg-[#05b169]/10 px-3 py-1 text-xs font-semibold text-[#05b169]">Disetujui</span>
