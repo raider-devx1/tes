@@ -27,11 +27,6 @@
                     <p class="mt-2 text-4xl font-bold text-[#f4b000]">{{ $siswaBelum }}</p>
                     <p class="mt-1 text-sm text-[#5b616e]">Belum memulai PKL.</p>
                 </div>
-                <div class="rounded-2xl border border-[#dee1e6] bg-white p-6">
-                    <p class="text-xs font-semibold uppercase tracking-wide text-[#7c828a]">Siswa Selesai</p>
-                    <p class="mt-2 text-4xl font-bold text-[#0052ff]">{{ $siswaSelesai }}</p>
-                    <p class="mt-1 text-sm text-[#5b616e]">Telah menyelesaikan PKL.</p>
-                </div>
             </div>
 
             {{-- ===== MENU NAVIGASI ===== --}}
