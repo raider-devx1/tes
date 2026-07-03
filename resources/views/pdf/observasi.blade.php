@@ -18,88 +18,65 @@
         .text-center { text-align: center !important; }
         .paraf-col { width: 80px; }
         .sign-text { font-family: 'Courier New', Courier, monospace; font-size: 9pt; font-style: italic; color: #333; }
+
+        /* Tiap observasi 1 halaman; tanpa halaman kosong di depan */
+        .lembar { page-break-after: always; }
+        .lembar:last-child { page-break-after: auto; }
     </style>
 </head>
 <body>
 
-    <div class="header-title">LEMBAR OBSERVASI PKL</div>
+@forelse($lembar as $data)
+    @php extract($data); @endphp
 
-    <table class="info-table" border="0">
-        <tr>
-            <td>Nama Murid</td>
-            <td>:</td>
-            <td>{{ $nama_siswa }}</td>
-        </tr>
-        <tr>
-            <td>Kelas</td>
-            <td>:</td>
-            <td>{{ $kelas }}</td>
-        </tr>
-        <tr>
-            <td>Dunia Kerja Tempat PKL</td>
-            <td>:</td>
-            <td>{{ $dunia_kerja }}</td>
-        </tr>
-        <tr>
-            <td>Nama Instruktur</td>
-            <td>:</td>
-            <td>{{ $nama_instruktur }}</td>
-        </tr>
-        <tr>
-            <td>Nama Guru Mapel</td>
-            <td>:</td>
-            <td>{{ $nama_guru }}</td>
-        </tr>
-        <tr>
-            <td>Pekerjaan / Projek</td>
-            <td>:</td>
-            <td>{{ $pekerjaan_projek }}</td>
-        </tr>
-    </table>
+    <div class="lembar">
+        <div class="header-title">LEMBAR OBSERVASI PKL</div>
 
-    <table class="data-table">
-        <thead>
-            <tr>
-                <th width="5%">NO</th>
-                <th width="35%">PERMASALAHAN</th>
-                <th width="35%">SOLUSI PEMECAHAN<br>MASALAH</th>
-                <th class="paraf-col">PARAF<br>INST.</th>
-                <th class="paraf-col">PARAF<br>PEMB.</th>
-            </tr>
-        </thead>
-        <tbody>
-            @forelse($rows as $index => $item)
-            <tr>
-                <td class="text-center">{{ $index + 1 }}</td>
-                <td>{!! nl2br(e($item->permasalahan)) !!}</td>
-                <td>{!! nl2br(e($item->solusi)) !!}</td>
-                <td class="text-center sign-text">
-                    {!! $item->is_approved ? 'Disetujui<br>Instruktur' : '' !!}
-                </td>
-                <td class="text-center sign-text">
-                    Disetujui<br>Pembimbing
-                </td>
-            </tr>
-            @empty
-            <tr>
-                <td colspan="5" class="text-center">Belum ada data observasi.</td>
-            </tr>
-            @endforelse
+        <table class="info-table" border="0">
+            <tr><td>Nama Murid</td><td>:</td><td> {{ $nama_siswa }} </td></tr>
+            <tr><td>Kelas</td><td>:</td><td> {{ $kelas }} </td></tr>
+            <tr><td>Dunia Kerja Tempat PKL</td><td>:</td><td> {{ $dunia_kerja }} </td></tr>
+            <tr><td>Nama Instruktur</td><td>:</td><td> {{ $nama_instruktur }} </td></tr>
+            <tr><td>Nama Guru Mapel</td><td>:</td><td> {{ $nama_guru }} </td></tr>
+            <tr><td>Pekerjaan / Projek</td><td>:</td><td> {{ $pekerjaan_projek }} </td></tr>
+        </table>
 
-            {{-- Baris kosong pelengkap agar tabel tetap rapi (minimal total 6 baris terisi/kosong) --}}
-            @if(count($rows) < 6)
-                @for ($i = count($rows); $i < 6; $i++)
+        <table class="data-table">
+            <thead>
                 <tr>
-                    <td class="text-center">{{ $i + 1 }}</td>
-                    <td><br><br><br></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
+                    <th width="5%">NO</th>
+                    <th width="35%">PERMASALAHAN</th>
+                    <th width="35%">SOLUSI PEMECAHAN<br>MASALAH</th>
+                    <th class="paraf-col">PARAF<br>INST.</th>
+                    <th class="paraf-col">PARAF<br>PEMB.</th>
                 </tr>
-                @endfor
-            @endif
-        </tbody>
-    </table>
+            </thead>
+            <tbody>
+                @forelse($rows as $index => $item)
+                <tr>
+                    <td class="text-center"> {{ $index + 1 }} </td>
+                    <td>{!! nl2br(e($item->permasalahan)) !!}</td>
+                    <td>{!! nl2br(e($item->solusi)) !!}</td>
+                    <td class="text-center sign-text">
+                        {!! $item->is_approved ? 'Disetujui<br>Instruktur' : '' !!}
+                    </td>
+                    <td class="text-center sign-text">
+                        Disetujui<br>Pembimbing
+                    </td>
+                </tr>
+                @empty
+                <tr>
+                    <td colspan="5" class="text-center">Belum ada data observasi.</td>
+                </tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
+
+@empty
+    <div class="header-title">LEMBAR OBSERVASI PKL</div>
+    <p class="text-center">Belum ada data observasi.</p>
+@endforelse
 
 </body>
 </html>

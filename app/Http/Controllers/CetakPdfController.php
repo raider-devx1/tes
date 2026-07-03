@@ -121,45 +121,82 @@ public function cetakCatatanSemua()
 }
 
    
-    // ====== 3. OBSERVASI (FK: user_id) ======
-// ====== 3. OBSERVASI (FK: user_id) ======
+   // ====== 3. OBSERVASI (FK: user_id) ======
+/** Bangun data 1 lembar observasi (identitas siswa + daftar poin). */
+private function buildObservasiLembar(Observasi $obs): array
+{
+    $siswa = $obs->user;
+
+    $rows = collect();
+    foreach ($obs->items as $poin) {
+        $rows->push((object) [
+            'permasalahan' => $poin->permasalahan,
+            'solusi'       => $poin->solusi,
+            'is_approved'  => $obs->is_approved,
+        ]);
+    }
+
+    return [
+        'nama_siswa'       => $siswa->name ?? '-',
+        'kelas'            => $siswa->kelas ?? 'Belum Diatur',
+        'dunia_kerja'      => $siswa->perusahaan->nama_perusahaan ?? 'Belum Diatur',
+        'nama_instruktur'  => $siswa->instruktur->name ?? 'Belum Diatur',
+        'nama_guru'        => $siswa->guru->name ?? 'Belum Diatur',
+        'pekerjaan_projek' => $obs->pekerjaan_projek ?? '-',
+        'rows'             => $rows,
+    ];
+}
+
 public function cetakObservasi($siswa_id = null)
 {
     $siswa = $this->resolveSiswa($siswa_id);
 
-    $query = Observasi::where('user_id', $siswa->id)->with('items');
+    $query = Observasi::with(['items', 'user.perusahaan', 'user.instruktur', 'user.guru'])
+        ->where('user_id', $siswa->id);
 
-    // Jika ada observasi_id → cetak SATU observasi (beserta semua poinnya)
+    // Jika ada observasi_id → cetak SATU observasi saja
     if (request()->filled('observasi_id')) {
         $query->where('id', request('observasi_id'));
     }
 
     $observasi = $query->orderBy('hari_tanggal', 'asc')->get();
 
-    // Gabungkan semua poin (permasalahan & solusi) jadi satu daftar berurutan
-    $rows = collect();
-    foreach ($observasi as $obs) {
-        foreach ($obs->items as $poin) {
-            $rows->push((object) [
-                'permasalahan' => $poin->permasalahan,
-                'solusi'       => $poin->solusi,
-                'is_approved'  => $obs->is_approved,
-            ]);
-        }
+    // Tiap observasi = 1 lembar (1 halaman)
+    $lembar = $observasi->map(fn ($obs) => $this->buildObservasiLembar($obs))->all();
+
+    $pdf = Pdf::loadView('pdf.observasi', ['lembar' => $lembar])->setPaper('a4', 'portrait');
+    return $pdf->stream('Lembar_Observasi_PKL_'.$siswa->name.'.pdf');
+}
+
+// ====== 3b. OBSERVASI - CETAK SEMUA (semua siswa bimbingan, 1 observasi 1 halaman) ======
+public function cetakObservasiSemua()
+{
+    $user = auth()->user();
+
+    if (!in_array($user->role, ['instruktur_industri', 'guru_pembimbing', 'admin'])) {
+        abort(403, 'Akses ditolak.');
     }
 
-    $data = [
-        'nama_siswa'       => $siswa->name,
-        'kelas'            => $siswa->kelas ?? 'Belum Diatur',
-        'dunia_kerja'      => $siswa->perusahaan->nama_perusahaan ?? 'Belum Diatur',
-        'nama_instruktur'  => $siswa->instruktur->name ?? 'Belum Diatur',
-        'nama_guru'        => $siswa->guru->name ?? 'Belum Diatur',
-        'pekerjaan_projek' => $observasi->first()?->pekerjaan_projek ?? '-',
-        'rows'             => $rows,
-    ];
+    $observasi = Observasi::with(['items', 'user.perusahaan', 'user.instruktur', 'user.guru'])
+        ->whereHas('user', function ($u) use ($user) {
+            $u->where('role', 'siswa_pkl')->where('status_pkl', 'aktif');
 
-    $pdf = Pdf::loadView('pdf.observasi', $data)->setPaper('a4', 'portrait');
-    return $pdf->stream('Lembar_Observasi_PKL_'.$siswa->name.'.pdf');
+            if ($user->role === 'instruktur_industri') {
+                $u->where('instruktur_id', $user->id);
+            } elseif ($user->role === 'guru_pembimbing') {
+                $u->where('guru_id', $user->id);
+            }
+        })
+        ->orderBy('user_id')
+        ->orderBy('hari_tanggal', 'asc')
+        ->get();
+
+    abort_if($observasi->isEmpty(), 404, 'Belum ada observasi yang bisa dicetak.');
+
+    $lembar = $observasi->map(fn ($obs) => $this->buildObservasiLembar($obs))->all();
+
+    $pdf = Pdf::loadView('pdf.observasi', ['lembar' => $lembar])->setPaper('a4', 'portrait');
+    return $pdf->stream('Lembar_Observasi_PKL_Semua.pdf');
 }
 
    // ====== 4. NILAI (FK: user_id) ======

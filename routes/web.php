@@ -62,6 +62,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/cetak/catatan/{siswa_id?}', [CetakPdfController::class, 'cetakCatatan'])->name('cetak.catatan');
 Route::get('/cetak/catatan-semua', [CetakPdfController::class, 'cetakCatatanSemua'])->name('cetak.catatan.semua');
     Route::get('/cetak/observasi/{siswa_id?}', [CetakPdfController::class, 'cetakObservasi'])->name('cetak.observasi');
+Route::get('/cetak/observasi-semua', [CetakPdfController::class, 'cetakObservasiSemua'])->name('cetak.observasi.semua');
     Route::get('/cetak/nilai/{siswa_id?}', [CetakPdfController::class, 'cetakNilai'])->name('cetak.nilai');
 Route::get('/cetak/nilai-semua', [CetakPdfController::class, 'cetakNilaiSemua'])->name('cetak.nilai.semua');
 
