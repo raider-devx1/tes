@@ -46,7 +46,8 @@ public function indexInstruktur(Request $request)
     $tanggal = $request->tanggal ?: date('Y-m-d');
 
     $query = User::where('role', 'siswa_pkl')
-        ->where('instruktur_id', Auth::id());
+        ->where('instruktur_id', Auth::id())
+        ->where('status_pkl', 'aktif'); // hanya siswa aktif
 
     // Filter pencarian: Nama / NISN
     if ($request->filled('q')) {
@@ -68,7 +69,6 @@ public function indexInstruktur(Request $request)
 
     $siswas = $query->orderBy('name')->paginate(15)->withQueryString();
 
-    // Data absensi tanggal terpilih (untuk prefill dropdown & jam)
     $absensis = Absensi::where('instruktur_id', Auth::id())
         ->where('tanggal', $tanggal)
         ->get()

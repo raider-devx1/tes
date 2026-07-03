@@ -57,35 +57,67 @@ class CetakPdfController extends Controller
         return $pdf->stream('Jurnal_PKL_'.$siswa->name.'.pdf');
     }
 
-    // ====== 2. CATATAN (FK: user_id) ======
+   
+// ====== 2. CATATAN (FK: user_id) ======
 public function cetakCatatan($siswa_id = null)
 {
     $siswa = $this->resolveSiswa($siswa_id);
 
-    $query = CatatanKegiatan::where('user_id', $siswa->id);
+    $query = CatatanKegiatan::with(['user.perusahaan', 'user.instruktur', 'user.guru'])
+        ->where('user_id', $siswa->id);
 
     // Jika ada catatan_id → cetak SATU data (baris yang dipilih) saja
     if (request()->filled('catatan_id')) {
         $query->where('id', request('catatan_id'));
     } else {
-        // Tanpa catatan_id → cetak semua yang sudah disetujui
+        // Tanpa catatan_id → cetak semua yang sudah disetujui (milik siswa ini)
         $query->where('is_approved', true);
     }
 
     $catatan = $query->orderBy('created_at', 'asc')->get();
 
     $data = [
-        'nama_siswa'      => $siswa->name,
-        'kelas'           => $siswa->kelas ?? 'Belum Diatur',
-        'dunia_kerja'     => $siswa->perusahaan->nama_perusahaan ?? 'Belum Diatur',
-        'nama_instruktur' => $siswa->instruktur->name ?? 'Belum Diatur',
-        'nama_guru'       => $siswa->guru->name ?? 'Belum Diatur',
-        'tanggal_cetak'   => Carbon::now()->locale('id')->translatedFormat('d F Y'), // cth: 2 Juli 2026
-        'catatan'         => $catatan,
+        'tanggal_cetak' => Carbon::now()->locale('id')->translatedFormat('d F Y'),
+        'catatan'       => $catatan,
     ];
 
     $pdf = Pdf::loadView('pdf.catatan', $data)->setPaper('a4', 'portrait');
     return $pdf->stream('Catatan_Kegiatan_PKL_'.$siswa->name.'.pdf');
+}
+
+// ====== 2b. CATATAN - CETAK SEMUA (semua siswa bimbingan, 1 catatan 1 halaman) ======
+public function cetakCatatanSemua()
+{
+    $user = auth()->user();
+
+    if (!in_array($user->role, ['instruktur_industri', 'guru_pembimbing', 'admin'])) {
+        abort(403, 'Akses ditolak.');
+    }
+
+    $catatan = CatatanKegiatan::with(['user.perusahaan', 'user.instruktur', 'user.guru'])
+        ->where('is_approved', true)
+        ->whereHas('user', function ($u) use ($user) {
+            $u->where('role', 'siswa_pkl')->where('status_pkl', 'aktif');
+
+            if ($user->role === 'instruktur_industri') {
+                $u->where('instruktur_id', $user->id);
+            } elseif ($user->role === 'guru_pembimbing') {
+                $u->where('guru_id', $user->id);
+            }
+        })
+        ->orderBy('user_id')
+        ->orderBy('created_at', 'asc')
+        ->get();
+
+    abort_if($catatan->isEmpty(), 404, 'Belum ada catatan yang disetujui untuk dicetak.');
+
+    $data = [
+        'tanggal_cetak' => Carbon::now()->locale('id')->translatedFormat('d F Y'),
+        'catatan'       => $catatan,
+    ];
+
+    $pdf = Pdf::loadView('pdf.catatan', $data)->setPaper('a4', 'portrait');
+    return $pdf->stream('Catatan_Kegiatan_PKL_Semua.pdf');
 }
 
    
@@ -191,15 +223,15 @@ public function cetakNilaiSemua()
 {
     $user = auth()->user();
 
-    $query = User::where('role', 'siswa_pkl');
+   $query = User::where('role', 'siswa_pkl');
 
-    if ($user->role === 'instruktur_industri') {
-        $query->where('instruktur_id', $user->id);
-    } elseif ($user->role === 'guru_pembimbing') {
-        $query->where('guru_id', $user->id);
-    } elseif ($user->role !== 'admin') {
-        abort(403, 'Akses ditolak.');
-    }
+if ($user->role === 'instruktur_industri') {
+    $query->where('instruktur_id', $user->id)->where('status_pkl', 'aktif');
+} elseif ($user->role === 'guru_pembimbing') {
+    $query->where('guru_id', $user->id)->where('status_pkl', 'aktif');
+} elseif ($user->role !== 'admin') {
+    abort(403, 'Akses ditolak.');
+}
 
     $siswas = $query->orderBy('name')->get();
 

@@ -17,6 +17,7 @@ public function index(Request $request)
 {
     $query = User::where('role', 'siswa_pkl')
         ->where('guru_id', Auth::id())
+        ->where('status_pkl', 'aktif') // hanya siswa yang sedang aktif PKL
         ->with(['instruktur', 'perusahaan', 'periode']);
 
     // Filter pencarian teks: nama, NISN, kelas, jurusan, nama instruktur
@@ -36,40 +37,37 @@ public function index(Request $request)
         $query->where('periode_id', $request->periode_id);
     }
 
-    // Filter dropdown: Status PKL (belum | aktif | selesai)
-    if ($request->filled('status')) {
-        $query->where('status_pkl', $request->status);
-    }
+    // Catatan: filter dropdown "Status PKL" tidak dipakai lagi — daftar dikunci hanya 'aktif'.
 
     $siswas = $query->orderBy('name')->paginate(15)->withQueryString();
 
-    // Opsi dropdown periode
     $periodes = PeriodePkl::orderByDesc('tahun_ajaran')->orderBy('nama')->get();
 
     return view('guru.siswa.index', compact('siswas', 'periodes'));
 }
 
     // (Opsional) detail 1 siswa — boleh tetap dipakai atau dihapus
-    public function detailSiswa($id)
-    {
-        $siswa = User::findOrFail($id);
-        if ($siswa->guru_id !== Auth::id()) {
-            abort(403, 'Akses Ditolak: Bukan siswa bimbingan Anda.');
-        }
-        $jurnals  = Jurnal::where('siswa_id', $id)->orderBy('hari_tanggal', 'desc')->get();
-        $absensis = Absensi::where('siswa_id', $id)->orderBy('tanggal', 'desc')->get();
-        return view('guru.siswa.detail', compact('siswa', 'jurnals', 'absensis'));
+   public function detailSiswa($id)
+{
+    $siswa = User::findOrFail($id);
+    if ($siswa->guru_id !== Auth::id() || $siswa->status_pkl !== 'aktif') {
+        abort(403, 'Akses Ditolak: Bukan siswa bimbingan aktif Anda.');
     }
+    $jurnals  = Jurnal::where('siswa_id', $id)->orderBy('hari_tanggal', 'desc')->get();
+    $absensis = Absensi::where('siswa_id', $id)->orderBy('tanggal', 'desc')->get();
+    return view('guru.siswa.detail', compact('siswa', 'jurnals', 'absensis'));
+}
 
     /*
     |--------------------------------------------------------------------------
     | MONITORING 1: LIHAT JURNAL (hanya-baca, semua siswa bimbingan)
     |--------------------------------------------------------------------------
     */
-   public function monitoringJurnal(Request $request)
+  public function monitoringJurnal(Request $request)
 {
     $siswaIds = User::where('role', 'siswa_pkl')
         ->where('guru_id', Auth::id())
+        ->where('status_pkl', 'aktif')
         ->pluck('id');
 
     $jurnals = Jurnal::with('siswa')
@@ -93,7 +91,7 @@ public function index(Request $request)
         'revisi'    => Jurnal::whereIn('siswa_id', $siswaIds)->where('status_persetujuan', 'revisi')->count(),
     ];
 
-    $siswas = User::where('role', 'siswa_pkl')->where('guru_id', Auth::id())->orderBy('name')->get();
+    $siswas = User::where('role', 'siswa_pkl')->where('guru_id', Auth::id())->where('status_pkl', 'aktif')->orderBy('name')->get();
 
     return view('guru.monitoring.jurnal', compact('jurnals', 'rekap', 'siswas'));
 }
@@ -104,10 +102,11 @@ public function index(Request $request)
     | MONITORING 2: ABSENSI (hanya-baca, semua siswa bimbingan)
     |--------------------------------------------------------------------------
     */
-   public function monitoringAbsensi(Request $request)
+  public function monitoringAbsensi(Request $request)
 {
     $siswaIds = User::where('role', 'siswa_pkl')
         ->where('guru_id', Auth::id())
+        ->where('status_pkl', 'aktif')
         ->pluck('id');
 
     $absensi = Absensi::with('siswa')
@@ -132,7 +131,7 @@ public function index(Request $request)
         'Alpha' => Absensi::whereIn('siswa_id', $siswaIds)->where('status', 'Alpha')->count(),
     ];
 
-    $siswas = User::where('role', 'siswa_pkl')->where('guru_id', Auth::id())->orderBy('name')->get();
+    $siswas = User::where('role', 'siswa_pkl')->where('guru_id', Auth::id())->where('status_pkl', 'aktif')->orderBy('name')->get();
 
     return view('guru.monitoring.absensi', compact('absensi', 'rekap', 'siswas'));
 }

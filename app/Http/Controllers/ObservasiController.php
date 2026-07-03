@@ -17,24 +17,25 @@ class ObservasiController extends Controller
     */
 
     /** Daftar seluruh observasi yang dibuat guru ini. */
-    public function indexGuru(Request $request)
-    {
-        $q      = trim($request->get('q', ''));
-        $status = $request->get('status'); // '1' = disetujui, '0' = menunggu
+   public function indexGuru(Request $request)
+{
+    $q      = trim($request->get('q', ''));
+    $status = $request->get('status'); // '1' = disetujui, '0' = menunggu
 
-        $observasi = Observasi::where('guru_id', Auth::id())
-            ->with(['user', 'items'])
-            ->when($q, fn ($query) => $query->whereHas('user', fn ($u) =>
-                $u->where('name', 'like', "%{$q}%")
-                  ->orWhere('nisn', 'like', "%{$q}%")))
-            ->when($status !== null && $status !== '', fn ($query) =>
-                $query->where('is_approved', $status === '1'))
-            ->latest()
-            ->paginate(15)
-            ->withQueryString();
+    $observasi = Observasi::where('guru_id', Auth::id())
+        ->whereHas('user', fn ($u) => $u->where('status_pkl', 'aktif'))
+        ->with(['user', 'items'])
+        ->when($q, fn ($query) => $query->whereHas('user', fn ($u) =>
+            $u->where('name', 'like', "%{$q}%")
+              ->orWhere('nisn', 'like', "%{$q}%")))
+        ->when($status !== null && $status !== '', fn ($query) =>
+            $query->where('is_approved', $status === '1'))
+        ->latest()
+        ->paginate(15)
+        ->withQueryString();
 
-        return view('guru.observasi.index', compact('observasi', 'q', 'status'));
-    }
+    return view('guru.observasi.index', compact('observasi', 'q', 'status'));
+}
 
     /** Form tambah observasi (hanya siswa bimbingan guru ini yang bisa dipilih). */
     public function createGuru()
@@ -189,31 +190,32 @@ public function destroyGuru($id)
     |--------------------------------------------------------------------------
     */
 
-    public function indexInstruktur(Request $request)
-    {
-        $instruktur_id = Auth::id();
+   public function indexInstruktur(Request $request)
+{
+    $instruktur_id = Auth::id();
 
-        $observasi = Observasi::whereHas('user', function ($u) use ($instruktur_id, $request) {
-                $u->where('instruktur_id', $instruktur_id);
+    $observasi = Observasi::whereHas('user', function ($u) use ($instruktur_id, $request) {
+            $u->where('instruktur_id', $instruktur_id)
+                ->where('status_pkl', 'aktif');
 
-                if ($request->filled('q')) {
-                    $q = $request->q;
-                    $u->where(function ($sub) use ($q) {
-                        $sub->where('name', 'like', "%{$q}%")
-                            ->orWhere('nisn', 'like', "%{$q}%");
-                    });
-                }
-            })
-            ->with(['user', 'guru', 'items'])
-            ->when($request->filled('status'), function ($query) use ($request) {
-                $query->where('is_approved', $request->status === 'disetujui');
-            })
-            ->latest()
-            ->paginate(15)
-            ->withQueryString();
+            if ($request->filled('q')) {
+                $q = $request->q;
+                $u->where(function ($sub) use ($q) {
+                    $sub->where('name', 'like', "%{$q}%")
+                        ->orWhere('nisn', 'like', "%{$q}%");
+                });
+            }
+        })
+        ->with(['user', 'guru', 'items'])
+        ->when($request->filled('status'), function ($query) use ($request) {
+            $query->where('is_approved', $request->status === 'disetujui');
+        })
+        ->latest()
+        ->paginate(15)
+        ->withQueryString();
 
-        return view('instruktur.observasi.index', compact('observasi'));
-    }
+    return view('instruktur.observasi.index', compact('observasi'));
+}
 
        public function approveInstruktur($id)
     {

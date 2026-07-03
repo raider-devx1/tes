@@ -51,9 +51,9 @@ public function indexGuru(Request $request)
 
     $catatan = CatatanKegiatan::with('user')
         ->whereHas('user', function ($u) use ($guru_id, $request) {
-            $u->where('guru_id', $guru_id);
+            $u->where('guru_id', $guru_id)
+                ->where('status_pkl', 'aktif');
 
-            // Filter pencarian: Nama / NISN siswa
             if ($request->filled('q')) {
                 $q = $request->q;
                 $u->where(function ($sub) use ($q) {
@@ -62,7 +62,6 @@ public function indexGuru(Request $request)
                 });
             }
         })
-        // Filter dropdown: Status persetujuan
         ->when($request->filled('status'), function ($query) use ($request) {
             $query->where('is_approved', $request->status === 'disetujui');
         })
@@ -81,9 +80,9 @@ public function indexInstruktur(Request $request)
 
     $catatan = CatatanKegiatan::with('user')
         ->whereHas('user', function ($u) use ($instruktur_id, $request) {
-            $u->where('instruktur_id', $instruktur_id);
+            $u->where('instruktur_id', $instruktur_id)
+                ->where('status_pkl', 'aktif');
 
-            // Filter pencarian: Nama / NISN siswa
             if ($request->filled('q')) {
                 $q = $request->q;
                 $u->where(function ($sub) use ($q) {
@@ -92,7 +91,6 @@ public function indexInstruktur(Request $request)
                 });
             }
         })
-        // Filter dropdown: status (disetujui | belum)
         ->when($request->filled('status'), function ($query) use ($request) {
             $query->where('is_approved', $request->status === 'disetujui');
         })

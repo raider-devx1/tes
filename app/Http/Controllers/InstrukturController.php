@@ -149,9 +149,10 @@ public function monitoringSiswa(Request $request)
 {
     $query = User::where('role', 'siswa_pkl')
         ->where('instruktur_id', Auth::id())
+        ->where('status_pkl', 'aktif') // hanya siswa yang sedang aktif PKL
         ->with(['guru', 'perusahaan']);
 
-    // Filter pencarian teks: nama, NISN, kelas, jurusan
+    // Filter pencarian teks
     if ($request->filled('q')) {
         $q = $request->q;
         $query->where(function ($sub) use ($q) {
@@ -162,10 +163,7 @@ public function monitoringSiswa(Request $request)
         });
     }
 
-    // Filter dropdown: Status PKL (belum | aktif | selesai)
-    if ($request->filled('status')) {
-        $query->where('status_pkl', $request->status);
-    }
+    // Catatan: filter "Status PKL" tidak dipakai lagi — daftar dikunci hanya 'aktif'.
 
     $siswas = $query->orderBy('name')->paginate(15)->withQueryString();
 

@@ -35,19 +35,17 @@ class NilaiController extends Controller
 public function indexInstruktur(Request $request)
 {
     $q      = trim($request->get('q', ''));
-    $status = $request->get('status'); // 'sudah' | 'belum'
+    $status = $request->get('status'); // 'sudah' | 'belum' (status penilaian, bukan status_pkl)
 
     $siswa = User::where('role', 'siswa_pkl')
         ->where('instruktur_id', Auth::id())
+        ->where('status_pkl', 'aktif')
         ->with('nilai')
-        // Filter pencarian: Nama / NISN
         ->when($q, fn ($query) => $query->where(fn ($u) =>
             $u->where('name', 'like', "%{$q}%")
               ->orWhere('nisn', 'like', "%{$q}%")))
-        // Sudah dinilai (oleh instruktur) = punya baris nilai DAN rata_rata terisi
         ->when($status === 'sudah', fn ($query) =>
             $query->whereHas('nilai', fn ($n) => $n->whereNotNull('rata_rata')))
-        // Belum dinilai = tidak punya baris nilai, ATAU rata_rata masih kosong
         ->when($status === 'belum', fn ($query) =>
             $query->where(fn ($u) =>
                 $u->whereDoesntHave('nilai')
@@ -110,19 +108,17 @@ public function indexInstruktur(Request $request)
 public function indexGuru(Request $request)
 {
     $q      = trim($request->get('q', ''));
-    $status = $request->get('status'); // 'sudah' | 'belum'
+    $status = $request->get('status'); // 'sudah' | 'belum' (status penilaian)
 
-    // Basis query = siswa bimbingan guru ini
     $siswa = User::where('role', 'siswa_pkl')
         ->where('guru_id', Auth::id())
+        ->where('status_pkl', 'aktif')
         ->with('nilai')
         ->when($q, fn ($query) => $query->where(fn ($u) =>
             $u->where('name', 'like', "%{$q}%")
               ->orWhere('nisn', 'like', "%{$q}%")))
-        // Sudah dinilai = punya baris nilai DAN nilai_akhir terisi
         ->when($status === 'sudah', fn ($query) =>
             $query->whereHas('nilai', fn ($n) => $n->whereNotNull('nilai_akhir')))
-        // Belum dinilai = tidak punya baris nilai, ATAU nilai_akhir masih kosong
         ->when($status === 'belum', fn ($query) =>
             $query->where(fn ($u) =>
                 $u->whereDoesntHave('nilai')

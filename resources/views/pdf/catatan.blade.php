@@ -30,28 +30,28 @@
         <tr>
             <td width="200">Nama Peserta Didik</td>
             <td width="10">:</td>
-            <td>{{ $nama_siswa }}</td>
+            <td> {{ $item->user->name ?? '-' }} </td>
         </tr>
         <tr>
             <td>Dunia Kerja Tempat PKL</td>
             <td>:</td>
-            <td>{{ $dunia_kerja }}</td>
+            <td> {{ $item->user->perusahaan->nama_perusahaan ?? 'Belum Diatur' }} </td>
         </tr>
         <tr>
             <td>Nama Instruktur</td>
             <td>:</td>
-            <td>{{ $nama_instruktur }}</td>
+            <td> {{ $item->user->instruktur->name ?? 'Belum Diatur' }} </td>
         </tr>
         <tr>
             <td>Nama Guru Pembimbing</td>
             <td>:</td>
-            <td>{{ $nama_guru }}</td>
+            <td> {{ $item->user->guru->name ?? 'Belum Diatur' }} </td>
         </tr>
     </table>
 
     <div class="section">
         <div class="label">A. Nama Pekerjaan</div>
-        <div class="box">{{ $item->nama_pekerjaan }}</div>
+        <div class="box"> {{ $item->nama_pekerjaan }} </div>
     </div>
 
     <div class="section">
@@ -73,10 +73,10 @@
 
     <div class="ttd">
         <div class="ttd-kanan">
-            Majene, {{ $tanggal_cetak }}
+            Majene,  {{ $tanggal_cetak }} 
             <br><br>
             Instruktur,
-            <div class="nama-ttd">{{ $nama_instruktur }}</div>
+            <div class="nama-ttd"> {{ $item->user->instruktur->name ?? 'Belum Diatur' }} </div>
         </div>
     </div>
     <div style="clear:both;"></div>

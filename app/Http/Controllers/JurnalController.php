@@ -75,11 +75,13 @@ public function indexSiswa(Request $request)
 // INSTRUKTUR
 public function indexInstruktur(Request $request)
 {
-    $siswaIds = User::where('instruktur_id', Auth::id())->pluck('id');
+    $siswaIds = User::where('role', 'siswa_pkl')
+        ->where('instruktur_id', Auth::id())
+        ->where('status_pkl', 'aktif')
+        ->pluck('id');
 
     $jurnals = Jurnal::whereIn('siswa_id', $siswaIds)
         ->with('siswa')
-        // Filter pencarian: Nama / NISN siswa
         ->when($request->filled('q'), function ($query) use ($request) {
             $q = $request->q;
             $query->whereHas('siswa', function ($s) use ($q) {
@@ -87,7 +89,6 @@ public function indexInstruktur(Request $request)
                   ->orWhere('nisn', 'like', "%{$q}%");
             });
         })
-        // Filter dropdown: status persetujuan (pending | disetujui | revisi)
         ->when($request->filled('status'), fn ($query) =>
             $query->where('status_persetujuan', $request->status))
         ->orderBy('hari_tanggal', 'desc')

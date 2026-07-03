@@ -23,7 +23,7 @@
                     </div>
                 @endif
 
-                <!-- Filter -->
+                <!-- Filter + Cetak Semua -->
                 <form method="GET" action="{{ route('instruktur.catatan.index') }}" class="mb-6">
                     <div class="flex flex-col md:flex-row gap-3 md:items-end">
                         <div class="flex-1">
@@ -56,6 +56,17 @@
                     </div>
                 </form>
 
+                <!-- Tombol Cetak Semua PDF (di atas tabel) -->
+                <div class="mb-4 flex justify-end">
+                    <a href="{{ route('cetak.catatan.semua') }}" target="_blank"
+                       class="inline-flex items-center gap-2 rounded-full bg-[#e11d48] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#be123c]">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2M6 14h12v8H6v-8z"/>
+                        </svg>
+                        Cetak Semua PDF
+                    </a>
+                </div>
+
                 <!-- Tabel -->
                 <div class="overflow-x-auto rounded-2xl border border-[#eef0f3]">
                     <table class="w-full text-left text-sm">
@@ -64,10 +75,12 @@
                                 <th class="px-4 py-3 text-center w-12 font-semibold">No</th>
                                 <th class="px-4 py-3 font-semibold">Nama Siswa</th>
                                 <th class="px-4 py-3 font-semibold">NISN</th>
-                                <th class="px-4 py-3 w-1/6 font-semibold">Pekerjaan</th>
-                                <th class="px-4 py-3 w-1/5 font-semibold">Perencanaan</th>
-                                <th class="px-4 py-3 w-1/5 font-semibold">Hasil</th>
-                                <th class="px-4 py-3 w-64 text-center font-semibold">Status & Aksi</th>
+                                <th class="px-4 py-3 font-semibold">Pekerjaan</th>
+                                <th class="px-4 py-3 font-semibold">Perencanaan</th>
+                                <th class="px-4 py-3 font-semibold">Hasil</th>
+                                <th class="px-4 py-3 w-32 text-center font-semibold">Status</th>
+                                <th class="px-4 py-3 w-56 font-semibold">Catatan</th>
+                                <th class="px-4 py-3 w-44 text-center font-semibold">Aksi</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-[#eef0f3]">
@@ -80,22 +93,27 @@
                                     <td class="px-4 py-3 text-[#5b616e]"> {{ $item->perencanaan_kegiatan }} </td>
                                     <td class="px-4 py-3 text-[#5b616e]"> {{ $item->pelaksanaan_kegiatan }} </td>
 
+                                    <!-- Kolom STATUS -->
+                                    <td class="px-4 py-3 text-center">
+                                        @if($item->is_approved)
+                                            <span class="inline-block rounded-full bg-[#05b169]/10 px-3 py-1 text-xs font-semibold text-[#05b169]">Telah Disetujui</span>
+                                        @else
+                                            <span class="inline-block rounded-full bg-[#f4b000]/10 px-3 py-1 text-xs font-semibold text-[#b98900]">Menunggu</span>
+                                        @endif
+                                    </td>
+
+                                    <!-- Kolom CATATAN -->
+                                    <td class="px-4 py-3 text-[#5b616e]">
+                                        @if($item->catatan_instruktur)
+                                             {{ $item->catatan_instruktur }} 
+                                        @else
+                                            <span class="italic text-[#a8acb3]">Belum ada catatan</span>
+                                        @endif
+                                    </td>
+
+                                    <!-- Kolom AKSI -->
                                     <td class="px-4 py-3">
                                         <div class="flex flex-col items-stretch gap-2" x-data="{ openCatatan: false }">
-
-                                            <!-- Status -->
-                                            @if($item->is_approved)
-                                                <div class="rounded-full bg-[#05b169]/10 px-3 py-1 text-center text-xs font-semibold text-[#05b169]">Telah Disetujui</div>
-                                            @else
-                                                <div class="rounded-full bg-[#f4b000]/10 px-3 py-1 text-center text-xs font-semibold text-[#f4b000]">Menunggu</div>
-                                            @endif
-
-                                            <!-- Preview catatan instruktur (jika ada) -->
-                                            @if($item->catatan_instruktur)
-                                                <p class="rounded-xl bg-[#f7f7f7] px-3 py-2 text-xs text-[#5b616e]">
-                                                    <strong class="text-[#0a0b0d]">Catatan:</strong> {{ $item->catatan_instruktur }}
-                                                </p>
-                                            @endif
 
                                             <!-- Setujui / Batalkan -->
                                             @if($item->is_approved)
@@ -127,11 +145,11 @@
                                             <!-- Tambah / Edit Catatan (buka modal) -->
                                             <button type="button" @click="openCatatan = true"
                                                     class="w-full inline-flex items-center justify-center rounded-full bg-[#0052ff]/10 px-3 py-1.5 text-xs font-semibold text-[#0052ff] transition hover:bg-[#0052ff]/20">
-                                                {{ $item->catatan_instruktur ? 'Edit Catatan' : 'Tambah Catatan' }}
+                                                {{ $item->catatan_instruktur ? 'Edit Catatan' : 'Tambah Catatan' }} 
                                             </button>
 
-                                            <!-- Cetak PDF -->
-                                            <a href="{{ route('cetak.catatan', $item->user_id) }}" target="_blank"
+                                            <!-- Cetak PDF (hanya SATU catatan ini) -->
+                                            <a href="{{ route('cetak.catatan', ['siswa_id' => $item->user_id, 'catatan_id' => $item->id]) }}" target="_blank"
                                                class="w-full inline-flex items-center justify-center rounded-full bg-[#eef0f3] px-3 py-1.5 text-xs font-semibold text-[#0a0b0d] transition hover:bg-[#dee1e6]">
                                                 Cetak PDF
                                             </a>
@@ -142,8 +160,7 @@
                                                  class="fixed inset-0 z-50 flex items-center justify-center p-4">
                                                 <div class="absolute inset-0 bg-black/40" @click="openCatatan = false"></div>
 
-                                                <div class="relative w-full max-w-lg rounded-3xl bg-white p-6 shadow-xl text-left"
-                                                     @click.stop>
+                                                <div class="relative w-full max-w-lg rounded-3xl bg-white p-6 shadow-xl text-left" @click.stop>
                                                     <h3 class="text-lg font-semibold text-[#0a0b0d]">Catatan Instruktur</h3>
                                                     <p class="mt-0.5 mb-4 text-xs text-[#7c828a]">
                                                         Untuk: <strong class="text-[#0a0b0d]"> {{ $item->user->name ?? '-' }} </strong>
@@ -176,7 +193,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="7" class="px-4 py-8 text-center text-[#a8acb3] italic">Belum ada catatan dari siswa.</td>
+                                    <td colspan="9" class="px-4 py-8 text-center text-[#a8acb3] italic">Belum ada catatan dari siswa.</td>
                                 </tr>
                             @endforelse
                         </tbody>
