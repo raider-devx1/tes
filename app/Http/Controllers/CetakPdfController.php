@@ -45,17 +45,80 @@ class CetakPdfController extends Controller
         return Pengaturan::pluck('nilai', 'kunci')->toArray();
     }
 
-    // ====== 1. JURNAL (FK: siswa_id) ======
-    public function cetakJurnal($siswa_id = null)
-    {
-        $siswa = $this->resolveSiswa($siswa_id);
-        $jurnals = Jurnal::where('siswa_id', $siswa->id)->orderBy('hari_tanggal', 'asc')->get();
-        $pengaturan = $this->getPengaturan();
+   // ====== 1. JURNAL (FK: siswa_id) ======
+/** Bangun data 1 lembar jurnal (identitas siswa + daftar jurnal, opsional per tanggal). */
+private function buildJurnalLembar(User $siswa, ?string $tanggal = null): array
+{
+    $query = Jurnal::where('siswa_id', $siswa->id);
 
-        $pdf = Pdf::loadView('pdf.jurnal', compact('siswa', 'jurnals', 'pengaturan'))
-                  ->setPaper('a4', 'portrait');
-        return $pdf->stream('Jurnal_PKL_'.$siswa->name.'.pdf');
+    if ($tanggal) {
+        $query->whereDate('hari_tanggal', $tanggal);
     }
+
+    return [
+        'siswa'   => $siswa,
+        'jurnals' => $query->orderBy('hari_tanggal', 'asc')->get(),
+    ];
+}
+
+public function cetakJurnal($siswa_id = null)
+{
+    $siswa = $this->resolveSiswa($siswa_id);
+    $siswa->loadMissing(['perusahaan', 'instruktur', 'guru']);
+
+    // Cetak per orang = daftar berisi 1 siswa (seluruh jurnalnya)
+    $lembar     = [ $this->buildJurnalLembar($siswa) ];
+    $pengaturan = $this->getPengaturan();
+
+    $pdf = Pdf::loadView('pdf.jurnal', compact('lembar', 'pengaturan'))
+              ->setPaper('a4', 'portrait');
+    return $pdf->stream('Jurnal_PKL_'.$siswa->name.'.pdf');
+}
+
+// ====== 1b. JURNAL - CETAK SEMUA (semua siswa bimbingan, 1 siswa 1 halaman) ======
+public function cetakJurnalSemua()
+{
+    $user = auth()->user();
+
+    if (!in_array($user->role, ['instruktur_industri', 'guru_pembimbing', 'admin'])) {
+        abort(403, 'Akses ditolak.');
+    }
+
+    // Default: hanya jurnal HARI INI. Jika ada filter tanggal → pakai tanggal itu.
+    $tanggal = request()->filled('tanggal')
+        ? request('tanggal')
+        : Carbon::today()->toDateString();
+
+    $query = User::where('role', 'siswa_pkl')
+        ->where('status_pkl', 'aktif')
+        ->with(['perusahaan', 'instruktur', 'guru']);
+
+    if ($user->role === 'instruktur_industri') {
+        $query->where('instruktur_id', $user->id);
+    } elseif ($user->role === 'guru_pembimbing') {
+        $query->where('guru_id', $user->id);
+    }
+
+    $siswas = $query->orderBy('name')->get();
+
+    // Hanya sertakan siswa yang punya jurnal pada tanggal tsb (1 siswa = 1 halaman)
+    $lembar = [];
+    foreach ($siswas as $siswa) {
+        $data = $this->buildJurnalLembar($siswa, $tanggal);
+        if ($data['jurnals']->isNotEmpty()) {
+            $lembar[] = $data;
+        }
+    }
+
+    abort_if(empty($lembar), 404, 'Tidak ada jurnal pada tanggal tersebut untuk dicetak.');
+
+    $pengaturan = $this->getPengaturan();
+
+    $pdf = Pdf::loadView('pdf.jurnal', compact('lembar', 'pengaturan'))
+              ->setPaper('a4', 'portrait');
+
+    return $pdf->stream('Jurnal_PKL_Semua_'.$tanggal.'.pdf');
+}
 
    
 // ====== 2. CATATAN (FK: user_id) ======

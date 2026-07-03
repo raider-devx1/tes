@@ -63,7 +63,7 @@ public function index(Request $request)
     | MONITORING 1: LIHAT JURNAL (hanya-baca, semua siswa bimbingan)
     |--------------------------------------------------------------------------
     */
-  public function monitoringJurnal(Request $request)
+   public function monitoringJurnal(Request $request)
 {
     $siswaIds = User::where('role', 'siswa_pkl')
         ->where('guru_id', Auth::id())
@@ -80,6 +80,7 @@ public function index(Request $request)
             });
         })
         ->when($request->filled('status'), fn ($query) => $query->where('status_persetujuan', $request->status))
+        ->when($request->filled('tanggal'), fn ($query) => $query->whereDate('hari_tanggal', $request->tanggal))
         ->orderByDesc('hari_tanggal')
         ->paginate(15)
         ->withQueryString();

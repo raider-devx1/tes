@@ -58,7 +58,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // ---- CETAK PDF (semua role: siswa/guru/instruktur/admin) ----
     // siswa: tanpa param (otomatis dirinya). guru/instruktur/admin: sertakan id siswa.
-    Route::get('/cetak/jurnal/{siswa_id?}', [CetakPdfController::class, 'cetakJurnal'])->name('cetak.jurnal');
+   Route::get('/cetak/jurnal/{siswa_id?}', [CetakPdfController::class, 'cetakJurnal'])->name('cetak.jurnal');
+Route::get('/cetak/jurnal-semua', [CetakPdfController::class, 'cetakJurnalSemua'])->name('cetak.jurnal.semua');
     Route::get('/cetak/catatan/{siswa_id?}', [CetakPdfController::class, 'cetakCatatan'])->name('cetak.catatan');
 Route::get('/cetak/catatan-semua', [CetakPdfController::class, 'cetakCatatanSemua'])->name('cetak.catatan.semua');
     Route::get('/cetak/observasi/{siswa_id?}', [CetakPdfController::class, 'cetakObservasi'])->name('cetak.observasi');
