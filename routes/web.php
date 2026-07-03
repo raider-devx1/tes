@@ -62,6 +62,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/cetak/catatan/{siswa_id?}', [CetakPdfController::class, 'cetakCatatan'])->name('cetak.catatan');
     Route::get('/cetak/observasi/{siswa_id?}', [CetakPdfController::class, 'cetakObservasi'])->name('cetak.observasi');
     Route::get('/cetak/nilai/{siswa_id?}', [CetakPdfController::class, 'cetakNilai'])->name('cetak.nilai');
+Route::get('/cetak/nilai-semua', [CetakPdfController::class, 'cetakNilaiSemua'])->name('cetak.nilai.semua');
 
     // Surat Tugas (global)
     Route::get('/dokumen/surat-tugas/lihat', [DokumenController::class, 'lihatSuratTugas'])->name('dokumen.surat-tugas.lihat');
@@ -258,11 +259,14 @@ Route::delete('/observasi/{id}', [ObservasiController::class, 'destroyGuru'])->n
         Route::get('/absensi', [AbsensiController::class, 'indexInstruktur'])->name('absensi.index');
         Route::post('/absensi', [AbsensiController::class, 'storeInstruktur'])->name('absensi.store');
 
-        Route::get('/catatan', [CatatanController::class, 'indexInstruktur'])->name('catatan.index');
-        Route::put('/catatan/{id}/approve', [CatatanController::class, 'approveInstruktur'])->name('catatan.approve');
+       Route::get('/catatan', [CatatanController::class, 'indexInstruktur'])->name('catatan.index');
+Route::put('/catatan/{id}/approve', [CatatanController::class, 'approveInstruktur'])->name('catatan.approve');
+Route::put('/catatan/{id}/batal', [CatatanController::class, 'batalApproveInstruktur'])->name('catatan.batal');
+Route::put('/catatan/{id}/komentar', [CatatanController::class, 'komentarInstruktur'])->name('catatan.komentar');
 
-        Route::get('/observasi', [ObservasiController::class, 'indexInstruktur'])->name('observasi.index');
-        Route::put('/observasi/{id}/approve', [ObservasiController::class, 'approveInstruktur'])->name('observasi.approve');
+       Route::get('/observasi', [ObservasiController::class, 'indexInstruktur'])->name('observasi.index');
+Route::put('/observasi/{id}/approve', [ObservasiController::class, 'approveInstruktur'])->name('observasi.approve');
+Route::put('/observasi/{id}/batal', [ObservasiController::class, 'batalApproveInstruktur'])->name('observasi.batal');
 
         Route::get('/nilai', [NilaiController::class, 'indexInstruktur'])->name('nilai.index');
         Route::get('/nilai/create', [NilaiController::class, 'createInstruktur'])->name('nilai.create');

@@ -215,7 +215,7 @@ public function destroyGuru($id)
         return view('instruktur.observasi.index', compact('observasi'));
     }
 
-    public function approveInstruktur($id)
+       public function approveInstruktur($id)
     {
         $observasi = Observasi::findOrFail($id);
 
@@ -225,4 +225,17 @@ public function destroyGuru($id)
 
         return redirect()->back()->with('success', 'Observasi berhasil disetujui.');
     }
+
+    /** Batalkan persetujuan (kembali ke status menunggu). */
+    public function batalApproveInstruktur($id)
+    {
+        $observasi = Observasi::findOrFail($id);
+
+        abort_unless($observasi->user->instruktur_id === Auth::id(), 403, 'Akses ditolak.');
+
+        $observasi->update(['is_approved' => false]);
+
+        return redirect()->back()->with('success', 'Persetujuan observasi berhasil dibatalkan.');
+    }
+
 }

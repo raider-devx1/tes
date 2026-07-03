@@ -103,19 +103,46 @@ public function indexInstruktur(Request $request)
     return view('instruktur.catatan.index', compact('catatan'));
 }
 
-    public function approveInstruktur(Request $request, $id)
+        /** Setujui catatan (tanpa perlu mengisi catatan instruktur). */
+    public function approveInstruktur($id)
     {
         $catatan = CatatanKegiatan::findOrFail($id);
 
-        $request->validate([
-            'catatan_instruktur' => 'nullable|string',
-        ]);
+        abort_unless($catatan->user->instruktur_id === Auth::id(), 403, 'Akses ditolak.');
 
-        $catatan->update([
-            'catatan_instruktur' => $request->catatan_instruktur,
-            'is_approved' => true,
-        ]);
+        $catatan->update(['is_approved' => true]);
 
-        return redirect()->back()->with('success', 'Catatan berhasil disetujui dan diberi tanggapan.');
+        return redirect()->back()->with('success', 'Catatan berhasil disetujui.');
     }
+
+    /** Batalkan persetujuan catatan (kembali ke status menunggu). */
+    public function batalApproveInstruktur($id)
+    {
+        $catatan = CatatanKegiatan::findOrFail($id);
+
+        abort_unless($catatan->user->instruktur_id === Auth::id(), 403, 'Akses ditolak.');
+
+        $catatan->update(['is_approved' => false]);
+
+        return redirect()->back()->with('success', 'Persetujuan catatan berhasil dibatalkan.');
+    }
+
+    /** Simpan / perbarui catatan instruktur (via pop-up form). */
+    public function komentarInstruktur(Request $request, $id)
+    {
+        $catatan = CatatanKegiatan::findOrFail($id);
+
+        abort_unless($catatan->user->instruktur_id === Auth::id(), 403, 'Akses ditolak.');
+
+        $validated = $request->validate([
+            'catatan_instruktur' => 'required|string',
+        ], [
+            'catatan_instruktur.required' => 'Catatan instruktur wajib diisi.',
+        ]);
+
+        $catatan->update(['catatan_instruktur' => $validated['catatan_instruktur']]);
+
+        return redirect()->back()->with('success', 'Catatan instruktur berhasil disimpan.');
+    }
+
 }

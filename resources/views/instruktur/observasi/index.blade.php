@@ -21,7 +21,7 @@
                     </div>
                 @endif
 
-                {{-- ===== FORM FILTER ===== --}}
+                <!-- Filter -->
                 <form method="GET" action="{{ route('instruktur.observasi.index') }}" class="mb-6">
                     <div class="flex flex-col md:flex-row gap-3 md:items-end">
                         <div class="flex-1">
@@ -54,7 +54,7 @@
                     </div>
                 </form>
 
-                {{-- ===== TABEL OBSERVASI ===== --}}
+                <!-- Tabel -->
                 <div class="overflow-x-auto rounded-2xl border border-[#eef0f3]">
                     <table class="w-full text-left text-sm">
                         <thead>
@@ -65,64 +65,99 @@
                                 <th class="px-4 py-3 font-semibold">NISN</th>
                                 <th class="px-4 py-3 font-semibold">Permasalahan</th>
                                 <th class="px-4 py-3 font-semibold">Solusi Pemecahan</th>
+                                <th class="px-4 py-3 text-center font-semibold">Status</th>
                                 <th class="px-4 py-3 text-center font-semibold">Aksi</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-[#eef0f3]">
                             @forelse ($observasi as $item)
+                                @php $poinPertama = $item->items->first(); @endphp
                                 <tr class="align-top transition hover:bg-[#f7f7f7]">
                                     <td class="px-4 py-3 text-center text-[#7c828a]">
                                         {{ $observasi->firstItem() + $loop->index }}
                                     </td>
                                     <td class="px-4 py-3 whitespace-nowrap text-[#5b616e]">
-                                        {{ \Carbon\Carbon::parse($item->hari_tanggal)->translatedFormat('d M Y') }}
+                                        {{ \Carbon\Carbon::parse($item->hari_tanggal)->format('d M Y') }}
                                     </td>
                                     <td class="px-4 py-3 font-semibold text-[#0a0b0d]">
-                                        {{ $item->user->name }}
+                                        {{ $item->user->name ?? '-' }}
                                     </td>
                                     <td class="px-4 py-3 whitespace-nowrap text-[#5b616e]">
                                         {{ $item->user->nisn ?? '-' }}
                                     </td>
-                                   <td class="px-4 py-3 text-[#5b616e]">
-    <ol class="list-decimal list-inside space-y-1">
-        @foreach($item->items as $poin)
-            <li>{{ $poin->permasalahan }}</li>
-        @endforeach
-    </ol>
-</td>
-<td class="px-4 py-3 text-[#5b616e]">
-    <ol class="list-decimal list-inside space-y-1">
-        @foreach($item->items as $poin)
-            <li>{{ $poin->solusi }}</li>
-        @endforeach
-    </ol>
-</td>
+
+                                    <!-- Kolom Permasalahan -->
+                                    <td class="px-4 py-3 text-[#5b616e]">
+                                        @if($item->items->count() > 1)
+                                            <span class="mb-1 inline-flex items-center rounded-full bg-[#eef0f3] px-2.5 py-0.5 text-[11px] font-semibold text-[#0a0b0d]">
+                                                {{ $item->items->count() }} Opsi
+                                            </span>
+                                        @endif
+                                        <div>{{ $poinPertama?->permasalahan ?? '-' }}</div>
+                                    </td>
+
+                                    <!-- Kolom Solusi -->
+                                    <td class="px-4 py-3 text-[#5b616e]">
+                                        @if($item->items->count() > 1)
+                                            <span class="mb-1 inline-flex items-center rounded-full bg-[#eef0f3] px-2.5 py-0.5 text-[11px] font-semibold text-[#0a0b0d]">
+                                                {{ $item->items->count() }} Opsi
+                                            </span>
+                                        @endif
+                                        <div>{{ $poinPertama?->solusi ?? '-' }}</div>
+                                    </td>
 
                                     <td class="px-4 py-3 text-center">
                                         @if($item->is_approved)
                                             <span class="inline-flex items-center rounded-full bg-[#05b169]/10 px-3 py-1 text-xs font-semibold text-[#05b169]">Disetujui</span>
                                         @else
-                                            <form action="{{ route('instruktur.observasi.approve', $item->id) }}" method="POST" class="inline">
-                                                @csrf
-                                                @method('PUT')
-                                                <button type="submit"
-                                                        class="inline-flex items-center rounded-full bg-[#0052ff] px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-[#003ecc]">
-                                                    Setujui
-                                                </button>
-                                            </form>
+                                            <span class="inline-flex items-center rounded-full bg-[#f4b000]/10 px-3 py-1 text-xs font-semibold text-[#f4b000]">Menunggu</span>
                                         @endif
+                                    </td>
+                                    <td class="px-4 py-3 text-center">
+                                        <div class="flex flex-col items-stretch gap-2 min-w-[9rem]">
+                                            @if($item->is_approved)
+                                                <form action="{{ route('instruktur.observasi.batal', $item->id) }}" method="POST"
+                                                      data-confirm="Batalkan persetujuan observasi ini?"
+                                                      data-confirm-text="Observasi akan kembali berstatus menunggu."
+                                                      data-confirm-yes="Ya, batalkan">
+                                                    @csrf
+                                                    @method('PUT')
+                                                    <button type="submit"
+                                                            class="w-full inline-flex items-center justify-center rounded-full bg-[#f4b000]/10 px-3 py-1.5 text-xs font-semibold text-[#b98900] transition hover:bg-[#f4b000]/20">
+                                                        Batalkan Persetujuan
+                                                    </button>
+                                                </form>
+                                            @else
+                                                <form action="{{ route('instruktur.observasi.approve', $item->id) }}" method="POST"
+                                                      data-confirm="Setujui observasi ini?"
+                                                      data-confirm-icon="question"
+                                                      data-confirm-yes="Ya, setujui">
+                                                    @csrf
+                                                    @method('PUT')
+                                                    <button type="submit"
+                                                            class="w-full inline-flex items-center justify-center rounded-full bg-[#0052ff] px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-[#003ecc]">
+                                                        Setujui
+                                                    </button>
+                                                </form>
+                                            @endif
+
+                                            <a href="{{ route('cetak.observasi', $item->user_id) }}" target="_blank"
+                                               class="w-full inline-flex items-center justify-center rounded-full bg-[#eef0f3] px-3 py-1.5 text-xs font-semibold text-[#0a0b0d] transition hover:bg-[#dee1e6]">
+                                                Lihat PDF
+                                            </a>
+                                        </div>
                                     </td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="7" class="px-4 py-8 text-center text-[#a8acb3] italic">Belum ada observasi untuk disetujui.</td>
+                                    <td colspan="8" class="px-4 py-8 text-center text-[#a8acb3] italic">Belum ada observasi untuk disetujui.</td>
                                 </tr>
                             @endforelse
                         </tbody>
                     </table>
                 </div>
 
-                {{-- ===== PAGINATION ===== --}}
+                <!-- Pagination -->
                 <div class="mt-4">
                     {!! $observasi->links() !!}
                 </div>

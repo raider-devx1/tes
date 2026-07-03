@@ -130,48 +130,92 @@ public function cetakObservasi($siswa_id = null)
     return $pdf->stream('Lembar_Observasi_PKL_'.$siswa->name.'.pdf');
 }
 
-    // ====== 4. NILAI (FK: user_id) ======
-    public function cetakNilai($siswa_id = null)
-    {
-        $siswa = $this->resolveSiswa($siswa_id);
-        $nilai = Nilai::where('user_id', $siswa->id)->first();
+   // ====== 4. NILAI (FK: user_id) ======
+/** Bangun paket data untuk 1 lembar nilai siswa (dipakai cetak satuan & cetak semua). */
+private function buildNilaiData(User $siswa): ?array
+{
+    $nilai = Nilai::where('user_id', $siswa->id)->first();
 
-        if (!$nilai) {
-            return redirect()->back()->with('error', 'Cetak gagal, nilai siswa belum diinput oleh instruktur industri.');
-        }
-
-        // Rekap kehadiran otomatis dari tabel absensi
-        $kehadiran = [
-            'sakit' => Absensi::where('siswa_id', $siswa->id)->where('status', 'Sakit')->count(),
-            'izin'  => Absensi::where('siswa_id', $siswa->id)->where('status', 'Izin')->count(),
-            'alpha' => Absensi::where('siswa_id', $siswa->id)->where('status', 'Alpha')->count(),
-        ];
-
-        // Tanggal observasi terakhir (jika ada)
-        $tanggalObservasi = optional(
-            Observasi::where('user_id', $siswa->id)->orderBy('hari_tanggal', 'desc')->first()
-        )->hari_tanggal;
-
-        $pengaturan  = $this->getPengaturan();
-        $tahunAjaran = optional(PeriodePkl::aktif())->tahun_ajaran ?? '2025/2026';
-
-       $data = [
-    'nama_sekolah'      => $pengaturan['nama_sekolah'] ?? 'UPTD SMKN 1 MAJENE',
-    'tahun_ajaran'      => $tahunAjaran,
-    'nama_siswa'        => $siswa->name,
-    'kelas'             => $siswa->kelas ?? 'Belum Diatur',
-    'program_keahlian'  => $siswa->jurusan ?? 'Belum Diatur',
-    'dunia_kerja'       => $siswa->perusahaan->nama_perusahaan ?? 'Belum Diatur',
-    'tanggal_observasi' => $tanggalObservasi,
-    'nama_instruktur'   => $siswa->instruktur->name ?? 'Belum Diatur',
-    'nama_guru'         => $siswa->guru->name ?? 'Belum Diatur',
-    'nip_guru'          => $siswa->guru->nip ?? '-',                       // ← NIP guru pembimbing
-    'tanggal_cetak'     => Carbon::now()->locale('id')->translatedFormat('d F Y'), // ← cth: 21 Juni 2026
-    'nilai'             => $nilai,
-    'kehadiran'         => $kehadiran,
-];
-
-        $pdf = Pdf::loadView('pdf.nilai', $data)->setPaper('a4', 'portrait');
-        return $pdf->stream('Daftar_Nilai_PKL_'.$siswa->name.'.pdf');
+    if (!$nilai) {
+        return null;
     }
+
+    // Rekap kehadiran otomatis dari tabel absensi
+    $kehadiran = [
+        'sakit' => Absensi::where('siswa_id', $siswa->id)->where('status', 'Sakit')->count(),
+        'izin'  => Absensi::where('siswa_id', $siswa->id)->where('status', 'Izin')->count(),
+        'alpha' => Absensi::where('siswa_id', $siswa->id)->where('status', 'Alpha')->count(),
+    ];
+
+    // Tanggal observasi terakhir (jika ada)
+    $tanggalObservasi = optional(
+        Observasi::where('user_id', $siswa->id)->orderBy('hari_tanggal', 'desc')->first()
+    )->hari_tanggal;
+
+    $pengaturan  = $this->getPengaturan();
+    $tahunAjaran = optional(PeriodePkl::aktif())->tahun_ajaran ?? '2025/2026';
+
+    return [
+        'nama_sekolah'      => $pengaturan['nama_sekolah'] ?? 'UPTD SMKN 1 MAJENE',
+        'tahun_ajaran'      => $tahunAjaran,
+        'nama_siswa'        => $siswa->name,
+        'kelas'             => $siswa->kelas ?? 'Belum Diatur',
+        'program_keahlian'  => $siswa->jurusan ?? 'Belum Diatur',
+        'dunia_kerja'       => $siswa->perusahaan->nama_perusahaan ?? 'Belum Diatur',
+        'tanggal_observasi' => $tanggalObservasi,
+        'nama_instruktur'   => $siswa->instruktur->name ?? 'Belum Diatur',
+        'nama_guru'         => $siswa->guru->name ?? 'Belum Diatur',
+        'nip_guru'          => $siswa->guru->nip ?? '-',
+        'tanggal_cetak'     => Carbon::now()->locale('id')->translatedFormat('d F Y'),
+        'nilai'             => $nilai,
+        'kehadiran'         => $kehadiran,
+    ];
+}
+
+public function cetakNilai($siswa_id = null)
+{
+    $siswa = $this->resolveSiswa($siswa_id);
+    $data  = $this->buildNilaiData($siswa);
+
+    if (!$data) {
+        return redirect()->back()->with('error', 'Cetak gagal, nilai siswa belum diinput oleh instruktur industri.');
+    }
+
+    // Cetak satuan = daftar berisi 1 siswa
+    $pdf = Pdf::loadView('pdf.nilai', ['lembar' => [$data]])->setPaper('a4', 'portrait');
+    return $pdf->stream('Daftar_Nilai_PKL_'.$siswa->name.'.pdf');
+}
+
+// ====== 4b. NILAI - CETAK SEMUA (template per-siswa, 1 siswa 1 halaman) ======
+public function cetakNilaiSemua()
+{
+    $user = auth()->user();
+
+    $query = User::where('role', 'siswa_pkl');
+
+    if ($user->role === 'instruktur_industri') {
+        $query->where('instruktur_id', $user->id);
+    } elseif ($user->role === 'guru_pembimbing') {
+        $query->where('guru_id', $user->id);
+    } elseif ($user->role !== 'admin') {
+        abort(403, 'Akses ditolak.');
+    }
+
+    $siswas = $query->orderBy('name')->get();
+
+    $lembar = [];
+    foreach ($siswas as $siswa) {
+        $data = $this->buildNilaiData($siswa);
+        if ($data && $data['nilai']->rata_rata !== null) {
+            $lembar[] = $data;
+        }
+    }
+
+    abort_if(empty($lembar), 404, 'Belum ada nilai siswa yang bisa dicetak.');
+
+    // Cetak semua = daftar berisi banyak siswa, tetap pakai template pdf.nilai
+    $pdf = Pdf::loadView('pdf.nilai', ['lembar' => $lembar])->setPaper('a4', 'portrait');
+    return $pdf->stream('Daftar_Nilai_PKL_Semua.pdf');
+}
+
 }
