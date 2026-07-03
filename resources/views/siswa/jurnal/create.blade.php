@@ -18,11 +18,13 @@
                         @error('hari_tanggal') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
                     </div>
 
-                    <div class="mb-4">
-                        <label class="block text-gray-700 font-bold mb-2">Unit Kerja / Pekerjaan</label>
-                        <input type="text" name="unit_kerja" placeholder="Contoh: Divisi Jaringan / Pemasangan Kabel LAN" class="w-full border-gray-300 rounded shadow-sm" required>
-                        @error('unit_kerja') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
-                    </div>
+                   <div class="mb-4">
+    <label class="block text-gray-700 font-bold mb-2">Unit Kerja / Pekerjaan</label>
+    <textarea name="unit_kerja" rows="4"
+              placeholder="Contoh: Divisi Jaringan — memasang & konfigurasi kabel LAN, testing koneksi antar ruangan..."
+              class="w-full border-gray-300 rounded shadow-sm" required>{{ old('unit_kerja') }}</textarea>
+    @error('unit_kerja') <span class="text-red-500 text-sm"> {{ $message }} </span> @enderror
+</div>
 
                    
 

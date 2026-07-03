@@ -82,7 +82,7 @@
                                 <td class="px-4 py-3 whitespace-nowrap text-[#5b616e]">
                                     {{ \Carbon\Carbon::parse($jurnal->hari_tanggal)->translatedFormat('d M Y') }}
                                 </td>
-                                <td class="px-4 py-3 text-[#5b616e]">{{ $jurnal->unit_kerja }}</td>
+                                <td class="px-4 py-3 text-[#5b616e]">{!! nl2br(e($jurnal->unit_kerja)) !!}</td>
                                <td class="px-4 py-3 text-[#5b616e]">
     @if($jurnal->catatan_instruktur)
         <div class="rounded-lg border-l-2 border-[#f4b000] bg-[#f4b000]/5 p-2 text-xs italic text-[#5b616e]">

@@ -33,7 +33,7 @@ public function indexSiswa(Request $request)
     {
         $request->validate([
             'hari_tanggal' => 'required|date',
-            'unit_kerja' => 'required|string|max:255',
+            'unit_kerja' => 'required|string',
             'dokumentasi' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
         ]);
 

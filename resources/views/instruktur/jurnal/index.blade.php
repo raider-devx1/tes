@@ -108,89 +108,103 @@
                     </div>
                 </form>
 
-                <!-- ====== TABEL ====== -->
-                <div class="overflow-x-auto rounded-2xl border border-[#eef0f3]">
-                    <table class="w-full text-left text-sm">
-                        <thead>
-                            <tr class="bg-[#f7f7f7] text-xs uppercase tracking-wide text-[#7c828a]">
-                                <th class="px-4 py-3 text-center w-12 font-semibold">No</th>
-                                <th class="px-4 py-3 font-semibold">Nama Siswa</th>
-                                <th class="px-4 py-3 font-semibold">NISN</th>
-                                <th class="px-4 py-3 font-semibold">Tanggal &amp; Unit Kerja</th>
-                               
-                                <th class="px-4 py-3 text-center font-semibold">Foto</th>
-                                <th class="px-4 py-3 text-center font-semibold">Status</th>
-                                <th class="px-4 py-3 text-center font-semibold">Tindakan Persetujuan</th>
-                                <th class="px-4 py-3 text-center font-semibold">Cetak</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-[#eef0f3]">
-                            @forelse($jurnals as $jurnal)
-                            @php
-                                $statusMap = [
-                                    'pending'   => ['label' => 'Menunggu',  'class' => 'bg-amber-100 text-amber-700'],
-                                    'disetujui' => ['label' => 'Disetujui', 'class' => 'bg-emerald-100 text-emerald-700'],
-                                    'revisi'    => ['label' => 'Revisi',    'class' => 'bg-rose-100 text-rose-700'],
-                                ];
-                                $st = $statusMap[$jurnal->status_persetujuan] ?? $statusMap['pending'];
-                                $sudahDivalidasi = !is_null($jurnal->disetujui_oleh);
-                            @endphp
-                            <tr class="align-top transition hover:bg-[#f7f7f7]">
-                                <td class="px-4 py-3 text-center text-[#7c828a]"> {{ $loop->iteration + ($jurnals->firstItem() - 1) }} </td>
-                                <td class="px-4 py-3 font-semibold text-[#0a0b0d]"> {{ $jurnal->siswa->name ?? '-' }} </td>
-                                <td class="px-4 py-3 whitespace-nowrap text-[#5b616e]"> {{ $jurnal->siswa->nisn ?? '-' }} </td>
-                                <td class="px-4 py-3 text-[#5b616e]">
-                                     {{ \Carbon\Carbon::parse($jurnal->hari_tanggal)->translatedFormat('d M Y') }}  <br>
-                                    <span class="text-xs text-[#a8acb3]"> {{ $jurnal->unit_kerja }} </span>
-                                </td>
-                                <td class="px-4 py-3 text-[#5b616e]"> {{ $jurnal->deskripsi_pekerjaan }} </td>
-                                <td class="px-4 py-3 text-center">
-                                    @if($jurnal->dokumentasi)
-                                        <a href="{{ asset('storage/'.$jurnal->dokumentasi) }}" target="_blank"
-                                           class="text-sm font-semibold text-[#0052ff] hover:text-[#003ecc]">Lihat</a>
-                                    @else
-                                        <span class="text-[#a8acb3]">-</span>
-                                    @endif
-                                </td>
+               <!-- ====== TABEL ====== -->
+<div class="overflow-x-auto rounded-2xl border border-[#eef0f3]">
+    <table class="w-full text-left text-sm">
+        <thead>
+            <tr class="bg-[#f7f7f7] text-xs uppercase tracking-wide text-[#7c828a]">
+                <th class="px-4 py-3 text-center w-12 font-semibold">No</th>
+                <th class="px-4 py-3 font-semibold">Nama Siswa</th>
+                <th class="px-4 py-3 font-semibold">NISN</th>
+                <th class="px-4 py-3 font-semibold">Tanggal</th>
+                <th class="px-4 py-3 font-semibold w-1/4">Unit Kerja/Pekerjaan</th>
+                <th class="px-4 py-3 font-semibold w-1/4">Catatan Instruktur</th>
+                <th class="px-4 py-3 text-center font-semibold">Foto</th>
+                <th class="px-4 py-3 text-center font-semibold">Status</th>
+                <th class="px-4 py-3 text-center font-semibold">Tindakan Persetujuan</th>
+                <th class="px-4 py-3 text-center font-semibold">Cetak</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-[#eef0f3]">
+            @forelse($jurnals as $jurnal)
+            @php
+                $statusMap = [
+                    'pending'   => ['label' => 'Menunggu',  'class' => 'bg-amber-100 text-amber-700'],
+                    'disetujui' => ['label' => 'Disetujui', 'class' => 'bg-emerald-100 text-emerald-700'],
+                    'revisi'    => ['label' => 'Revisi',    'class' => 'bg-rose-100 text-rose-700'],
+                ];
+                $st = $statusMap[$jurnal->status_persetujuan] ?? $statusMap['pending'];
+                $sudahDivalidasi = !is_null($jurnal->disetujui_oleh);
+                $tglJurnal = \Carbon\Carbon::parse($jurnal->hari_tanggal)->format('d M Y');
+            @endphp
+            <tr class="align-top transition hover:bg-[#f7f7f7]">
+                <td class="px-4 py-3 text-center text-[#7c828a]"> {{ $jurnals->firstItem() + $loop->index }} </td>
+                <td class="px-4 py-3 font-semibold text-[#0a0b0d]"> {{ $jurnal->siswa->name ?? '-' }} </td>
+                <td class="px-4 py-3 whitespace-nowrap text-[#5b616e]"> {{ $jurnal->siswa->nisn ?? '-' }} </td>
 
-                                <!-- ====== KOLOM STATUS ====== -->
-                                <td class="px-4 py-3 text-center">
-                                    <span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold {{ $st['class'] }}">
-                                         {{ $st['label'] }} 
-                                    </span>
-                                </td>
+                <!-- ====== KOLOM TANGGAL (terpisah) ====== -->
+                <td class="px-4 py-3 whitespace-nowrap text-[#5b616e]"> {{ $tglJurnal }} </td>
 
-                                <!-- ====== TINDAKAN: SATU TOMBOL VALIDASI JURNAL ====== -->
-                                <td class="px-4 py-3 text-center">
-                                    <button type="button"
-                                            @click="openModal({
-                                                action: '{{ route('instruktur.jurnal.update', $jurnal->id) }}',
-                                                status: '{{ $jurnal->status_persetujuan }}',
-                                                catatan: @js($jurnal->catatan_instruktur),
-                                                siswa: @js($jurnal->siswa->name ?? '-'),
-                                                tanggal: '{{ \Carbon\Carbon::parse($jurnal->hari_tanggal)->translatedFormat('d M Y') }}'
-                                            })"
-                                            class="inline-flex items-center justify-center rounded-full px-4 py-1.5 text-xs font-semibold text-white transition {{ $sudahDivalidasi ? 'bg-[#0a0b0d] hover:bg-black' : 'bg-[#0052ff] hover:bg-[#003ecc]' }}">
-                                         {{ $sudahDivalidasi ? 'Perbarui' : 'Validasi Jurnal' }} 
-                                    </button>
-                                </td>
+                <!-- ====== KOLOM UNIT KERJA/PEKERJAAN (terpisah) ====== -->
+                <td class="px-4 py-3 text-[#5b616e]">{!! nl2br(e($jurnal->unit_kerja)) !!}</td>
 
-                                <!-- ====== CETAK PER-ORANGAN ====== -->
-                                <td class="px-4 py-3 text-center">
-                                    <a href="{{ route('cetak.jurnal', ['siswa_id' => $jurnal->siswa_id, 'jurnal_id' => $jurnal->id]) }}"
-                                       target="_blank"
-                                       class="inline-flex items-center rounded-full bg-[#eef0f3] px-3 py-1.5 text-xs font-semibold text-[#0a0b0d] transition hover:bg-[#dee1e6]">PDF</a>
-                                </td>
-                            </tr>
-                            @empty
-                            <tr>
-                                <td colspan="8" class="px-4 py-8 text-center text-[#a8acb3] italic">Belum ada jurnal dari siswa bimbingan Anda.</td>
-                            </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
+                <!-- ====== KOLOM CATATAN INSTRUKTUR (bersebelahan) ====== -->
+                <td class="px-4 py-3 text-[#5b616e]">
+                    @if($jurnal->catatan_instruktur)
+                        <div class="rounded-lg border-l-2 border-[#f4b000] bg-[#f4b000]/5 p-2 text-xs italic">
+                             {{ $jurnal->catatan_instruktur }} 
+                        </div>
+                    @else
+                        <span class="text-[#a8acb3]">-</span>
+                    @endif
+                </td>
 
+                <td class="px-4 py-3 text-center">
+                    @if($jurnal->dokumentasi)
+                        <a href="{{ asset('storage/'.$jurnal->dokumentasi) }}" target="_blank"
+                           class="text-sm font-semibold text-[#0052ff] hover:text-[#003ecc]">Lihat</a>
+                    @else
+                        <span class="text-[#a8acb3]">-</span>
+                    @endif
+                </td>
+
+                <!-- ====== STATUS ====== -->
+                <td class="px-4 py-3 text-center">
+                    <span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold {{ $st['class'] }}">
+                         {{ $st['label'] }} 
+                    </span>
+                </td>
+
+                <!-- ====== TINDAKAN: TOMBOL VALIDASI JURNAL ====== -->
+                <td class="px-4 py-3 text-center">
+                    <button type="button"
+                            @click="openModal({
+                                action: '{{ route('instruktur.jurnal.update', $jurnal->id) }}',
+                                status: '{{ $jurnal->status_persetujuan }}',
+                                catatan: @js($jurnal->catatan_instruktur),
+                                siswa: @js($jurnal->siswa->name ?? '-'),
+                                tanggal: '{{ $tglJurnal }}'
+                            })"
+                            class="inline-flex items-center justify-center rounded-full px-4 py-1.5 text-xs font-semibold text-white transition {{ $sudahDivalidasi ? 'bg-[#f4b000] hover:bg-[#d99a00]' : 'bg-[#0052ff] hover:bg-[#003ecc]' }}">
+                         {{ $sudahDivalidasi ? 'Perbarui' : 'Validasi Jurnal' }} 
+                    </button>
+                </td>
+
+                <!-- ====== CETAK PER-ORANGAN (entri baris ini saja) ====== -->
+                <td class="px-4 py-3 text-center">
+                    <a href="{{ route('cetak.jurnal', ['siswa_id' => $jurnal->siswa_id, 'jurnal_id' => $jurnal->id]) }}"
+                       target="_blank"
+                       class="inline-flex items-center rounded-full bg-[#eef0f3] px-3 py-1.5 text-xs font-semibold text-[#0a0b0d] transition hover:bg-[#dee1e6]">PDF</a>
+                </td>
+            </tr>
+            @empty
+            <tr>
+                <td colspan="10" class="px-4 py-8 text-center text-[#a8acb3] italic">Belum ada jurnal dari siswa bimbingan Anda.</td>
+            </tr>
+            @endforelse
+        </tbody>
+    </table>
+</div>
                 <!-- ====== PAGINATION ====== -->
                 <div class="mt-4">
                     {!! $jurnals->links() !!}

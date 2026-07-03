@@ -75,6 +75,8 @@
                             <th class="px-4 py-3">Kelas</th>
                             <th class="px-4 py-3">Jurusan</th>
                             <th class="px-4 py-3">Unit Kerja</th>
+<th class="px-4 py-3">Catatan Instruktur</th>
+<th class="px-4 py-3 text-center">Status</th>
                            
                             <th class="px-4 py-3 text-center">Status</th>
                         </tr>
@@ -94,14 +96,15 @@
                                 <td class="px-4 py-3 font-medium text-gray-800">{{ $j->siswa->name ?? '-' }}</td>
                                 <td class="px-4 py-3">{{ $j->siswa->kelas ?? '-' }}</td>
                                 <td class="px-4 py-3">{{ $j->siswa->jurusan ?? '-' }}</td>
-                                <td class="px-4 py-3">{{ $j->unit_kerja ?? '-' }}</td>
+                               <td class="px-4 py-3">{!! nl2br(e($j->unit_kerja)) !!}</td>
+<td class="px-4 py-3 text-gray-600">{{ $j->catatan_instruktur ?: '-' }}</td>
                                 
                                 <td class="px-4 py-3 text-center">
                                     <span class="inline-block px-2.5 py-1 rounded-full text-xs font-medium {{ $badge }}">{{ ucfirst($j->status_persetujuan) }}</span>
                                 </td>
                             </tr>
                         @empty
-                            <tr><td colspan="7" class="px-4 py-8 text-center text-gray-400">Tidak ada data jurnal.</td></tr>
+                            <tr><td colspan="8" class="px-4 py-8 text-center text-gray-400">Tidak ada data jurnal.</td></tr>
                         @endforelse
                     </tbody>
                 </table>
