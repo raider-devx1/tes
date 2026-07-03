@@ -15,8 +15,8 @@
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="rounded-3xl border border-[#dee1e6] bg-white p-6 md:p-8">
 
-                {{-- ===== FORM FILTER ===== --}}
-                <form method="GET" action="{{ route('guru.catatan.index') }}" class="mb-6">
+                <!-- ===== FORM FILTER ===== -->
+                <form method="GET" action="{{ route('guru.catatan.index') }}" class="mb-4">
                     <div class="flex flex-col md:flex-row gap-3 md:items-end">
                         <div class="flex-1">
                             <label class="block text-xs font-semibold uppercase tracking-wide text-[#7c828a] mb-1">
@@ -50,7 +50,18 @@
                     </div>
                 </form>
 
-                {{-- ===== TABEL CATATAN ===== --}}
+                <!-- Tombol Cetak Semua PDF (di atas tabel) -->
+                <div class="mb-4 flex justify-end">
+                    <a href="{{ route('cetak.catatan.semua') }}" target="_blank"
+                       class="inline-flex items-center gap-2 rounded-full bg-[#e11d48] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#be123c]">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2M6 14h12v8H6v-8z"/>
+                        </svg>
+                        Cetak Semua PDF
+                    </a>
+                </div>
+
+                <!-- ===== TABEL CATATAN ===== -->
                 <div class="overflow-x-auto rounded-2xl border border-[#eef0f3]">
                     <table class="w-full text-left text-sm">
                         <thead>
@@ -69,13 +80,13 @@
                         <tbody class="divide-y divide-[#eef0f3]">
                             @forelse ($catatan as $item)
                                 <tr class="align-top transition hover:bg-[#f7f7f7]">
-                                    <td class="px-4 py-3 text-center text-[#7c828a]">{{ $catatan->firstItem() + $loop->index }}</td>
-                                    <td class="px-4 py-3 font-semibold text-[#0a0b0d]">{{ $item->user->name }}</td>
-                                    <td class="px-4 py-3 whitespace-nowrap text-[#5b616e]">{{ $item->user->nisn ?? '-' }}</td>
-                                    <td class="px-4 py-3 text-[#5b616e]">{{ $item->nama_pekerjaan }}</td>
-                                    <td class="px-4 py-3 text-[#5b616e]">{{ $item->perencanaan_kegiatan }}</td>
-                                    <td class="px-4 py-3 text-[#5b616e]">{{ $item->pelaksanaan_kegiatan }}</td>
-                                    <td class="px-4 py-3 text-[#5b616e]">{{ $item->catatan_instruktur ?? '-' }}</td>
+                                    <td class="px-4 py-3 text-center text-[#7c828a]"> {{ $catatan->firstItem() + $loop->index }} </td>
+                                    <td class="px-4 py-3 font-semibold text-[#0a0b0d]"> {{ $item->user->name }} </td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-[#5b616e]"> {{ $item->user->nisn ?? '-' }} </td>
+                                    <td class="px-4 py-3 text-[#5b616e]"> {{ $item->nama_pekerjaan }} </td>
+                                    <td class="px-4 py-3 text-[#5b616e]"> {{ $item->perencanaan_kegiatan }} </td>
+                                    <td class="px-4 py-3 text-[#5b616e]"> {{ $item->pelaksanaan_kegiatan }} </td>
+                                    <td class="px-4 py-3 text-[#5b616e]"> {{ $item->catatan_instruktur ?? 'Belum ada catatan' }} </td>
                                     <td class="px-4 py-3 text-center">
                                         @if($item->is_approved)
                                             <span class="inline-flex items-center rounded-full bg-[#05b169]/10 px-3 py-1 text-xs font-semibold text-[#05b169]">Disetujui</span>
@@ -84,7 +95,8 @@
                                         @endif
                                     </td>
                                     <td class="px-4 py-3 text-center">
-                                        <a href="{{ route('cetak.catatan', $item->user_id) }}" target="_blank"
+                                        <!-- Cetak PDF (hanya SATU catatan ini) -->
+                                        <a href="{{ route('cetak.catatan', ['siswa_id' => $item->user_id, 'catatan_id' => $item->id]) }}" target="_blank"
                                            class="inline-flex items-center rounded-full bg-[#eef0f3] px-3 py-1.5 text-xs font-semibold text-[#0a0b0d] transition hover:bg-[#dee1e6]">PDF</a>
                                     </td>
                                 </tr>
@@ -99,7 +111,7 @@
                     </table>
                 </div>
 
-                {{-- ===== PAGINATION ===== --}}
+                <!-- ===== PAGINATION ===== -->
                 <div class="mt-4">
                     {!! $catatan->links() !!}
                 </div>
