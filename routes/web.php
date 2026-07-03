@@ -171,9 +171,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/monitoring/absensi', [GuruController::class, 'monitoringAbsensi'])->name('monitoring.absensi');
 
         // Observasi (dikelola ObservasiController, bukan GuruController lagi)
-        Route::get('/observasi', [ObservasiController::class, 'indexGuru'])->name('observasi.index');
-        Route::get('/observasi/create', [ObservasiController::class, 'createGuru'])->name('observasi.create');
-        Route::post('/observasi', [ObservasiController::class, 'storeGuru'])->name('observasi.store');
+Route::get('/observasi', [ObservasiController::class, 'indexGuru'])->name('observasi.index');
+Route::get('/observasi/create', [ObservasiController::class, 'createGuru'])->name('observasi.create');
+Route::post('/observasi', [ObservasiController::class, 'storeGuru'])->name('observasi.store');
+Route::get('/observasi/{id}/edit', [ObservasiController::class, 'editGuru'])->name('observasi.edit');
+Route::put('/observasi/{id}', [ObservasiController::class, 'updateGuru'])->name('observasi.update');
+Route::delete('/observasi/{id}', [ObservasiController::class, 'destroyGuru'])->name('observasi.destroy');
 
         Route::get('/catatan', [CatatanController::class, 'indexGuru'])->name('catatan.index');
         // sebelumnya: Route::get('/nilai', [NilaiController::class, 'indexGuru'])->name('nilai.index');

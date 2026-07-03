@@ -89,6 +89,81 @@ class ObservasiController extends Controller
             ->with('success', 'Data observasi berhasil disimpan.');
     }
 
+    /** Form edit observasi (hanya milik guru ini). */
+public function editGuru($id)
+{
+    $observasi = Observasi::where('id', $id)
+        ->where('guru_id', Auth::id())
+        ->with('items')
+        ->firstOrFail();
+
+    $siswas = User::where('role', 'siswa_pkl')
+        ->where('guru_id', Auth::id())
+        ->orderBy('name')
+        ->get();
+
+    return view('guru.observasi.edit', compact('observasi', 'siswas'));
+}
+
+/** Simpan perubahan observasi (poin lama diganti dengan poin baru). */
+public function updateGuru(Request $request, $id)
+{
+    $observasi = Observasi::where('id', $id)
+        ->where('guru_id', Auth::id())
+        ->firstOrFail();
+
+    $validated = $request->validate([
+        'user_id'              => 'required|exists:users,id',
+        'hari_tanggal'         => 'required|date',
+        'pekerjaan_projek'     => 'nullable|string|max:255',
+        'items'                => 'required|array|min:1',
+        'items.*.permasalahan' => 'required|string',
+        'items.*.solusi'       => 'required|string',
+    ], [
+        'items.required'                => 'Minimal harus ada 1 poin permasalahan & solusi.',
+        'items.*.permasalahan.required' => 'Permasalahan pada setiap poin wajib diisi.',
+        'items.*.solusi.required'       => 'Solusi pada setiap poin wajib diisi.',
+    ]);
+
+    // Pastikan siswa yang dipilih benar-benar bimbingan guru ini
+    $siswa = User::where('id', $validated['user_id'])
+        ->where('guru_id', Auth::id())
+        ->firstOrFail();
+
+    DB::transaction(function () use ($observasi, $validated, $siswa) {
+        $observasi->update([
+            'user_id'          => $siswa->id,
+            'hari_tanggal'     => $validated['hari_tanggal'],
+            'pekerjaan_projek' => $validated['pekerjaan_projek'] ?? null,
+        ]);
+
+        // Ganti seluruh poin dengan data terbaru dari form
+        $observasi->items()->delete();
+        foreach ($validated['items'] as $item) {
+            $observasi->items()->create([
+                'permasalahan' => $item['permasalahan'],
+                'solusi'       => $item['solusi'],
+            ]);
+        }
+    });
+
+    return redirect()->route('guru.observasi.index')
+        ->with('success', 'Data observasi berhasil diperbarui.');
+}
+
+/** Hapus observasi beserta seluruh poinnya. */
+public function destroyGuru($id)
+{
+    $observasi = Observasi::where('id', $id)
+        ->where('guru_id', Auth::id())
+        ->firstOrFail();
+
+    $observasi->delete(); // observasi_items ikut terhapus (onDelete cascade)
+
+    return redirect()->route('guru.observasi.index')
+        ->with('success', 'Data observasi berhasil dihapus.');
+}
+
     /*
     |--------------------------------------------------------------------------
     | ROLE: SISWA PKL (melihat observasi)
