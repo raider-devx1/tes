@@ -179,7 +179,6 @@ class UserSeeder extends Seeder
                     'siswa_id'            => $siswa->id,
                     'hari_tanggal'        => now()->subDays($j)->toDateString(),
                     'unit_kerja'          => 'Divisi ' . $j,
-                    'deskripsi_pekerjaan' => "Mengerjakan tugas harian ke-$j untuk {$siswa->name}.",
                     'dokumentasi'         => null,
                     'catatan_instruktur'  => $st === 'disetujui' ? 'Kerja bagus.' : ($st === 'revisi' ? 'Mohon diperbaiki.' : null),
                     'status_persetujuan'  => $st,

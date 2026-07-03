@@ -13,7 +13,6 @@ class Jurnal extends Model
         'siswa_id',
         'hari_tanggal',
         'unit_kerja',
-        'deskripsi_pekerjaan',
         'dokumentasi',
         'catatan_instruktur',
         'status_persetujuan',

@@ -84,7 +84,7 @@
                             <th class="px-4 py-3 font-semibold">Nama</th>
                             <th class="px-4 py-3 font-semibold">NISN</th>
                             <th class="px-4 py-3 font-semibold">Unit Kerja</th>
-                            <th class="px-4 py-3 font-semibold">Deskripsi</th>
+                           
                             <th class="px-4 py-3 text-center font-semibold">Status</th>
                             <th class="px-4 py-3 text-center font-semibold">Cetak</th>
                         </tr>
@@ -105,7 +105,7 @@
                                 <td class="px-4 py-3 font-semibold text-[#0a0b0d]"> {{ $j->siswa->name }} </td>
                                 <td class="px-4 py-3 whitespace-nowrap text-[#5b616e]"> {{ $j->siswa->nisn ?? '-' }} </td>
                                 <td class="px-4 py-3 text-[#5b616e]"> {{ $j->unit_kerja ?? '-' }} </td>
-                                <td class="px-4 py-3 text-[#5b616e]"> {{ $j->deskripsi_pekerjaan }} </td>
+                                
                                 <td class="px-4 py-3 text-center">
                                     <span class="inline-block rounded-full px-2.5 py-1 text-xs font-semibold {{ $badge }}"> {{ ucfirst($j->status_persetujuan) }} </span>
                                 </td>
@@ -117,7 +117,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="8" class="px-4 py-8 text-center text-[#a8acb3] italic">Tidak ada data jurnal.</td>
+                                <td colspan="7" class="px-4 py-8 text-center text-[#a8acb3] italic">Tidak ada data jurnal.</td>
                             </tr>
                         @endforelse
                     </tbody>

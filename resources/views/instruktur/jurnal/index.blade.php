@@ -117,7 +117,7 @@
                                 <th class="px-4 py-3 font-semibold">Nama Siswa</th>
                                 <th class="px-4 py-3 font-semibold">NISN</th>
                                 <th class="px-4 py-3 font-semibold">Tanggal &amp; Unit Kerja</th>
-                                <th class="px-4 py-3 w-1/3 font-semibold">Deskripsi Pekerjaan</th>
+                               
                                 <th class="px-4 py-3 text-center font-semibold">Foto</th>
                                 <th class="px-4 py-3 text-center font-semibold">Status</th>
                                 <th class="px-4 py-3 text-center font-semibold">Tindakan Persetujuan</th>
@@ -184,7 +184,7 @@
                             </tr>
                             @empty
                             <tr>
-                                <td colspan="9" class="px-4 py-8 text-center text-[#a8acb3] italic">Belum ada jurnal dari siswa bimbingan Anda.</td>
+                                <td colspan="8" class="px-4 py-8 text-center text-[#a8acb3] italic">Belum ada jurnal dari siswa bimbingan Anda.</td>
                             </tr>
                             @endforelse
                         </tbody>

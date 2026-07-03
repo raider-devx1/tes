@@ -24,11 +24,7 @@
                         @error('unit_kerja') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
                     </div>
 
-                    <div class="mb-4">
-                        <label class="block text-gray-700 font-bold mb-2">Deskripsi Pekerjaan</label>
-                        <textarea name="deskripsi_pekerjaan" rows="4" placeholder="Ceritakan apa saja yang kamu kerjakan hari ini..." class="w-full border-gray-300 rounded shadow-sm" required></textarea>
-                        @error('deskripsi_pekerjaan') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
-                    </div>
+                   
 
                     <div class="mb-4">
                         <label class="block text-gray-700 font-bold mb-2">Dokumentasi (Foto) <span class="text-gray-400 font-normal text-sm">- Opsional</span></label>

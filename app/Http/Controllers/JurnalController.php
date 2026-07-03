@@ -34,7 +34,6 @@ public function indexSiswa(Request $request)
         $request->validate([
             'hari_tanggal' => 'required|date',
             'unit_kerja' => 'required|string|max:255',
-            'deskripsi_pekerjaan' => 'required|string',
             'dokumentasi' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
         ]);
 
@@ -47,7 +46,6 @@ public function indexSiswa(Request $request)
             'siswa_id' => Auth::id(),
             'hari_tanggal' => $request->hari_tanggal,
             'unit_kerja' => $request->unit_kerja,
-            'deskripsi_pekerjaan' => $request->deskripsi_pekerjaan,
             'dokumentasi' => $path,
             'status_persetujuan' => 'pending',
         ]);

@@ -69,7 +69,7 @@
                                 <th class="px-4 py-3 text-center w-12 font-semibold">No</th>
                                 <th class="px-4 py-3 font-semibold">Tanggal</th>
                                 <th class="px-4 py-3 font-semibold">Unit Kerja</th>
-                                <th class="px-4 py-3 font-semibold w-1/3">Deskripsi Pekerjaan</th>
+                                <th class="px-4 py-3 font-semibold w-1/3">Catatan Instruktur</th>
                                 <th class="px-4 py-3 font-semibold">Foto</th>
                                 <th class="px-4 py-3 text-center font-semibold">Status</th>
                                 <th class="px-4 py-3 text-center font-semibold">Aksi</th>
@@ -83,14 +83,15 @@
                                     {{ \Carbon\Carbon::parse($jurnal->hari_tanggal)->translatedFormat('d M Y') }}
                                 </td>
                                 <td class="px-4 py-3 text-[#5b616e]">{{ $jurnal->unit_kerja }}</td>
-                                <td class="px-4 py-3 text-[#5b616e]">
-                                    {{ $jurnal->deskripsi_pekerjaan }}
-                                    @if($jurnal->catatan_instruktur)
-                                        <div class="mt-2 rounded-lg border-l-2 border-[#f4b000] bg-[#f4b000]/5 p-2 text-xs italic text-[#5b616e]">
-                                            <strong class="text-[#0a0b0d]">Catatan Instruktur:</strong> {{ $jurnal->catatan_instruktur }}
-                                        </div>
-                                    @endif
-                                </td>
+                               <td class="px-4 py-3 text-[#5b616e]">
+    @if($jurnal->catatan_instruktur)
+        <div class="rounded-lg border-l-2 border-[#f4b000] bg-[#f4b000]/5 p-2 text-xs italic text-[#5b616e]">
+            {{ $jurnal->catatan_instruktur }}
+        </div>
+    @else
+        <span class="text-[#a8acb3]">-</span>
+    @endif
+</td>
                                 <td class="px-4 py-3 text-center">
                                     @if($jurnal->dokumentasi)
                                         <a href="{{ asset('storage/'.$jurnal->dokumentasi) }}" target="_blank" class="text-sm font-semibold text-[#0052ff] hover:underline">Lihat Foto</a>

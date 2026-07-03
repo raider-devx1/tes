@@ -16,7 +16,7 @@ return new class extends Migration
             // Kolom-kolom isi formulir berdasarkan dokumen HKI [cite: 30, 31, 32]
             $table->date('hari_tanggal'); 
             $table->string('unit_kerja'); 
-            $table->text('deskripsi_pekerjaan'); 
+           
             $table->string('dokumentasi')->nullable(); // Menyimpan nama file foto jika ada
             
             // Kolom dari sisi instruktur industri [cite: 33, 34]
