@@ -37,13 +37,21 @@ public function index(Request $request)
         $query->where('periode_id', $request->periode_id);
     }
 
-    // Catatan: filter dropdown "Status PKL" tidak dipakai lagi — daftar dikunci hanya 'aktif'.
-
     $siswas = $query->orderBy('name')->paginate(15)->withQueryString();
 
     $periodes = PeriodePkl::orderByDesc('tahun_ajaran')->orderBy('nama')->get();
 
-    return view('guru.siswa.index', compact('siswas', 'periodes'));
+    // Rekap seluruh siswa bimbingan (tidak terpengaruh filter/pagination)
+    $rekapQuery = User::where('role', 'siswa_pkl')->where('guru_id', Auth::id());
+
+    $rekap = [
+        'total'   => (clone $rekapQuery)->count(),
+        'aktif'   => (clone $rekapQuery)->where('status_pkl', 'aktif')->count(),
+        'belum'   => (clone $rekapQuery)->where('status_pkl', 'belum')->count(),
+        'selesai' => (clone $rekapQuery)->where('status_pkl', 'selesai')->count(),
+    ];
+
+    return view('guru.siswa.index', compact('siswas', 'periodes', 'rekap'));
 }
 
     // (Opsional) detail 1 siswa — boleh tetap dipakai atau dihapus
