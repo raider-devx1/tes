@@ -46,6 +46,38 @@
         </div>
     </div>
 
+    <!-- ===== KARTU INFORMASI ===== -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white rounded-2xl shadow-sm border border-blue-100 p-4">
+            <div class="flex items-center justify-between">
+                <p class="text-xs font-medium text-gray-500">Total Guru</p>
+                <span class="w-9 h-9 flex items-center justify-center rounded-lg bg-blue-50 text-[#2563EB]">🧑‍🏫</span>
+            </div>
+            <p class="mt-2 text-2xl font-bold text-gray-800">{{ $rekap['total'] }}</p>
+        </div>
+        <div class="bg-white rounded-2xl shadow-sm border border-blue-100 p-4">
+            <div class="flex items-center justify-between">
+                <p class="text-xs font-medium text-gray-500">Punya Bimbingan</p>
+                <span class="w-9 h-9 flex items-center justify-center rounded-lg bg-green-50 text-green-600">✅</span>
+            </div>
+            <p class="mt-2 text-2xl font-bold text-green-600">{{ $rekap['ada_bimbingan'] }}</p>
+        </div>
+        <div class="bg-white rounded-2xl shadow-sm border border-blue-100 p-4">
+            <div class="flex items-center justify-between">
+                <p class="text-xs font-medium text-gray-500">Tanpa Bimbingan</p>
+                <span class="w-9 h-9 flex items-center justify-center rounded-lg bg-amber-50 text-amber-600">⚠️</span>
+            </div>
+            <p class="mt-2 text-2xl font-bold text-amber-600">{{ $rekap['tanpa_bimbingan'] }}</p>
+        </div>
+        <div class="bg-white rounded-2xl shadow-sm border border-blue-100 p-4">
+            <div class="flex items-center justify-between">
+                <p class="text-xs font-medium text-gray-500">Siswa Dibimbing</p>
+                <span class="w-9 h-9 flex items-center justify-center rounded-lg bg-blue-50 text-[#2563EB]">👥</span>
+            </div>
+            <p class="mt-2 text-2xl font-bold text-[#2563EB]">{{ $rekap['siswa_dibimbing'] }}</p>
+        </div>
+    </div>
+
     <div class="bg-white rounded-2xl shadow-sm border border-blue-100 p-5">
 
         <!-- ===== SEARCH FILTER ===== -->
@@ -74,10 +106,10 @@
                     @forelse($guru as $g)
                         <tr class="border-b border-blue-50 hover:bg-blue-50/40">
                             <td class="py-3 px-3 text-center text-gray-500">
-                                 {{ $guru->firstItem() + $loop->index }} 
+                                {{ $guru->firstItem() + $loop->index }}
                             </td>
                             <td class="py-3 px-3 font-medium text-gray-800">{{ $g->name }}</td>
-                            <td class="py-3 px-3 text-gray-600">{{ $g->nip ?? '-' }}</td>
+                            <td class="py-3 px-3 text-gray-600">{{ $g->nip }}</td>
                             <td class="py-3 px-3 text-gray-600">{{ $g->no_hp ?? '-' }}</td>
                             <td class="py-3 px-3">
                                 <div class="flex items-center justify-end gap-2">

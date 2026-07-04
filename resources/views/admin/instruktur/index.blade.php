@@ -2,7 +2,7 @@
 
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
         <div>
-            <h2 class="text-xl font-bold text-gray-800">Master Data — Instruktur & Industri</h2>
+            <h2 class="text-xl font-bold text-gray-800">Master Data — Instruktur &amp; Industri</h2>
             <p class="text-sm text-gray-500">Kelola akun instruktur sekaligus data industri tempatnya bertugas.</p>
         </div>
         <a href="{{ route('admin.instruktur.create') }}"
@@ -11,8 +11,41 @@
         </a>
     </div>
 
+    <!-- ===== KARTU INFORMASI ===== -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white rounded-2xl shadow-sm border border-blue-100 p-4">
+            <div class="flex items-center justify-between">
+                <p class="text-xs font-medium text-gray-500">Total Instruktur</p>
+                <span class="w-9 h-9 flex items-center justify-center rounded-lg bg-blue-50 text-[#2563EB]">🧑‍💼</span>
+            </div>
+            <p class="mt-2 text-2xl font-bold text-gray-800">{{ $rekap['total'] }}</p>
+        </div>
+        <div class="bg-white rounded-2xl shadow-sm border border-blue-100 p-4">
+            <div class="flex items-center justify-between">
+                <p class="text-xs font-medium text-gray-500">Total Industri</p>
+                <span class="w-9 h-9 flex items-center justify-center rounded-lg bg-blue-50 text-[#2563EB]">🏢</span>
+            </div>
+            <p class="mt-2 text-2xl font-bold text-[#2563EB]">{{ $rekap['industri'] }}</p>
+        </div>
+        <div class="bg-white rounded-2xl shadow-sm border border-blue-100 p-4">
+            <div class="flex items-center justify-between">
+                <p class="text-xs font-medium text-gray-500">Punya Siswa</p>
+                <span class="w-9 h-9 flex items-center justify-center rounded-lg bg-green-50 text-green-600">✅</span>
+            </div>
+            <p class="mt-2 text-2xl font-bold text-green-600">{{ $rekap['ada_siswa'] }}</p>
+        </div>
+        <div class="bg-white rounded-2xl shadow-sm border border-blue-100 p-4">
+            <div class="flex items-center justify-between">
+                <p class="text-xs font-medium text-gray-500">Siswa Dibimbing</p>
+                <span class="w-9 h-9 flex items-center justify-center rounded-lg bg-blue-50 text-[#2563EB]">👥</span>
+            </div>
+            <p class="mt-2 text-2xl font-bold text-gray-800">{{ $rekap['siswa_industri'] }}</p>
+        </div>
+    </div>
+
     <div class="bg-white rounded-2xl shadow-sm border border-blue-100 p-5">
 
+        <!-- ===== SEARCH FILTER ===== -->
         <form method="GET" class="mb-4 flex gap-2">
             <input type="text" name="q" value="{{ $q }}" placeholder="Cari nama / email / jabatan..."
                    class="w-full sm:w-72 rounded-lg border-blue-100 focus:border-[#2563EB] focus:ring-[#2563EB] text-sm">
@@ -22,6 +55,7 @@
             @endif
         </form>
 
+        <!-- ===== TABEL DATA ===== -->
         <div class="overflow-x-auto">
             <table class="w-full text-sm">
                 <thead>
@@ -39,22 +73,22 @@
                     @forelse($instruktur as $it)
                         <tr class="border-b border-blue-50 hover:bg-blue-50/40">
                             <td class="py-3 px-3 text-center text-gray-500">
-    {{ $instruktur->firstItem() + $loop->index }}
-</td>
+                                 {{ $instruktur->firstItem() + $loop->index }} 
+                            </td>
                             <td class="py-3 px-3 font-medium text-gray-800">{{ $it->name }}</td>
                             <td class="py-3 px-3 text-gray-600">{{ $it->email }}</td>
                             <td class="py-3 px-3 text-gray-600">{{ $it->jabatan ?? '-' }}</td>
-                            <td class="py-3 px-3 text-gray-600">{{ $it->perusahaan?->nama_perusahaan ?? '-' }}</td>
+                            <td class="py-3 px-3 text-gray-600">{{ $it->perusahaan->nama_perusahaan ?? '-' }}</td>
                             <td class="py-3 px-3 text-gray-600">{{ $it->no_hp ?? '-' }}</td>
                             <td class="py-3 px-3">
                                 <div class="flex items-center justify-end gap-2">
                                     <a href="{{ route('admin.instruktur.edit', $it) }}" class="text-xs px-3 py-1.5 rounded-lg bg-blue-50 text-[#2563EB] hover:bg-blue-100">Edit</a>
                                     <form method="POST" action="{{ route('admin.instruktur.destroy', $it) }}"
-      data-confirm="Hapus akun instruktur ini?"
-      data-confirm-text="Data industri terkait ikut dibersihkan bila tak lagi terpakai."
-      data-confirm-yes="Ya, hapus">
-    @csrf
-    @method('DELETE')
+                                          data-confirm="Hapus akun instruktur ini?"
+                                          data-confirm-text="Data industri terkait ikut dibersihkan bila tak lagi terkapai."
+                                          data-confirm-yes="Ya, hapus">
+                                        @csrf
+                                        @method('DELETE')
                                         <button type="submit" class="text-xs px-3 py-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100">Hapus</button>
                                     </form>
                                 </div>
@@ -69,7 +103,7 @@
             </table>
         </div>
 
-        {{-- Navigasi Paginasi --}}
+        <!-- ===== PAGINATION ===== -->
         <div class="mt-4">
             {!! $instruktur->links() !!}
         </div>

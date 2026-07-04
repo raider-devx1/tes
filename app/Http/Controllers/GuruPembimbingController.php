@@ -28,7 +28,25 @@ class GuruPembimbingController extends Controller
 
     public function index(Request $request)
     {
-        $q = trim($request->get('q', ''));
+        $q = trim((string) $request->get('q', ''));
+
+        // ---- Kartu informasi ----
+        $totalGuru = User::where('role', 'guru_pembimbing')->count();
+
+        $guruIdsDenganBimbingan = User::where('role', 'siswa_pkl')
+            ->whereNotNull('guru_id')
+            ->distinct()
+            ->pluck('guru_id');
+
+        $guruAdaBimbingan   = $guruIdsDenganBimbingan->count();
+        $totalSiswaDibimbing = User::where('role', 'siswa_pkl')->whereNotNull('guru_id')->count();
+
+        $rekap = [
+            'total'           => $totalGuru,
+            'ada_bimbingan'   => $guruAdaBimbingan,
+            'tanpa_bimbingan' => max($totalGuru - $guruAdaBimbingan, 0),
+            'siswa_dibimbing' => $totalSiswaDibimbing,
+        ];
 
         $guru = User::query()
             ->where('role', 'guru_pembimbing')
@@ -40,7 +58,7 @@ class GuruPembimbingController extends Controller
             ->paginate(10)
             ->withQueryString();
 
-        return view('admin.guru.index', compact('guru', 'q'));
+        return view('admin.guru.index', compact('guru', 'q', 'rekap'));
     }
 
     public function create()
@@ -93,13 +111,13 @@ class GuruPembimbingController extends Controller
 
     public function exportExcel(Request $request)
     {
-        $q = trim($request->get('q', ''));
+        $q = trim((string) $request->get('q', ''));
         return Excel::download(new GuruExport($q), 'data-guru-' . date('Ymd-His') . '.xlsx');
     }
 
     public function exportPdf(Request $request)
     {
-        $q = trim($request->get('q', ''));
+        $q = trim((string) $request->get('q', ''));
 
         $guru = User::query()
             ->where('role', 'guru_pembimbing')

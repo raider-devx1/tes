@@ -51,8 +51,16 @@ class SiswaController extends Controller
 
     public function index(Request $request)
     {
-        $q = trim($request->get('q', ''));
-        $status = $request->get('status', '');
+        $q = trim((string) $request->get('q', ''));
+        $status = (string) $request->get('status', '');
+
+        // ---- Kartu informasi (dihitung menyeluruh, tidak terpengaruh filter) ----
+        $rekap = [
+            'total'   => User::where('role', 'siswa_pkl')->count(),
+            'aktif'   => User::where('role', 'siswa_pkl')->where('status_pkl', 'aktif')->count(),
+            'belum'   => User::where('role', 'siswa_pkl')->where('status_pkl', 'belum')->count(),
+            'selesai' => User::where('role', 'siswa_pkl')->where('status_pkl', 'selesai')->count(),
+        ];
 
         $siswa = User::query()
             ->where('role', 'siswa_pkl')
@@ -66,7 +74,7 @@ class SiswaController extends Controller
             ->paginate(10)
             ->withQueryString();
 
-        return view('admin.siswa.index', compact('siswa', 'q', 'status'));
+        return view('admin.siswa.index', compact('siswa', 'q', 'status', 'rekap'));
     }
 
     public function create()
@@ -136,16 +144,16 @@ class SiswaController extends Controller
 
     public function exportExcel(Request $request)
     {
-        $q = trim($request->get('q', ''));
-        $status = $request->get('status', '');
+        $q = trim((string) $request->get('q', ''));
+        $status = (string) $request->get('status', '');
 
         return Excel::download(new SiswaExport($q, $status), 'data-siswa-' . date('Ymd-His') . '.xlsx');
     }
 
     public function exportPdf(Request $request)
     {
-        $q = trim($request->get('q', ''));
-        $status = $request->get('status', '');
+        $q = trim((string) $request->get('q', ''));
+        $status = (string) $request->get('status', '');
 
         $siswa = User::query()
             ->where('role', 'siswa_pkl')

@@ -32,7 +32,26 @@ class InstrukturController extends Controller
 
     public function index(Request $request)
     {
-        $q = trim($request->get('q', ''));
+        $q = trim((string) $request->get('q', ''));
+
+        // ---- Kartu informasi ----
+        $totalInstruktur = User::where('role', 'instruktur_industri')->count();
+        $totalIndustri   = Perusahaan::count();
+
+        $instrukturIdsAdaSiswa = User::where('role', 'siswa_pkl')
+            ->whereNotNull('instruktur_id')
+            ->distinct()
+            ->pluck('instruktur_id');
+
+        $instrukturAdaSiswa = $instrukturIdsAdaSiswa->count();
+        $totalSiswaIndustri = User::where('role', 'siswa_pkl')->whereNotNull('instruktur_id')->count();
+
+        $rekap = [
+            'total'          => $totalInstruktur,
+            'industri'       => $totalIndustri,
+            'ada_siswa'      => $instrukturAdaSiswa,
+            'siswa_industri' => $totalSiswaIndustri,
+        ];
 
         $instruktur = User::query()
             ->where('role', 'instruktur_industri')
@@ -46,7 +65,7 @@ class InstrukturController extends Controller
             ->paginate(10)
             ->withQueryString();
 
-        return view('admin.instruktur.index', compact('instruktur', 'q'));
+        return view('admin.instruktur.index', compact('instruktur', 'q', 'rekap'));
     }
 
     public function create()
@@ -144,30 +163,29 @@ class InstrukturController extends Controller
         return back()->with('success', 'Akun instruktur industri berhasil dihapus.');
     }
 
-   /** Ruang Monitoring & Daftar Siswa bimbingan industri (instruktur yang login). */
-public function monitoringSiswa(Request $request)
-{
-    $query = User::where('role', 'siswa_pkl')
-        ->where('instruktur_id', Auth::id())
-        ->where('status_pkl', 'aktif') // hanya siswa yang sedang aktif PKL
-        ->with(['guru', 'perusahaan']);
+    /** Ruang Monitoring & Daftar Siswa bimbingan industri (instruktur yang login). */
+    public function monitoringSiswa(Request $request)
+    {
+        $query = User::where('role', 'siswa_pkl')
+            ->where('instruktur_id', Auth::id())
+            ->where('status_pkl', 'aktif') // hanya siswa yang sedang aktif PKL
+            ->with(['guru', 'perusahaan']);
 
-    // Filter pencarian teks
-    if ($request->filled('q')) {
-        $q = $request->q;
-        $query->where(function ($sub) use ($q) {
-            $sub->where('name', 'like', "%{$q}%")
-                ->orWhere('nisn', 'like', "%{$q}%")
-                ->orWhere('kelas', 'like', "%{$q}%")
-                ->orWhere('jurusan', 'like', "%{$q}%");
-        });
+        // Filter pencarian teks
+        if ($request->filled('q')) {
+            $q = $request->q;
+            $query->where(function ($sub) use ($q) {
+                $sub->where('name', 'like', "%{$q}%")
+                    ->orWhere('nisn', 'like', "%{$q}%")
+                    ->orWhere('kelas', 'like', "%{$q}%")
+                    ->orWhere('jurusan', 'like', "%{$q}%");
+            });
+        }
+
+        // Catatan: filter "Status PKL" tidak dipakai lagi — daftar dikunci hanya 'aktif'.
+
+        $siswas = $query->orderBy('name')->paginate(15)->withQueryString();
+
+        return view('instruktur.siswa.index', compact('siswas'));
     }
-
-    // Catatan: filter "Status PKL" tidak dipakai lagi — daftar dikunci hanya 'aktif'.
-
-    $siswas = $query->orderBy('name')->paginate(15)->withQueryString();
-
-    return view('instruktur.siswa.index', compact('siswas'));
-}
-
 }

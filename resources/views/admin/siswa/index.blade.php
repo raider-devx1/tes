@@ -46,9 +46,41 @@
         </div>
     </div>
 
+    <!-- ===== KARTU INFORMASI ===== -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white rounded-2xl shadow-sm border border-blue-100 p-4">
+            <div class="flex items-center justify-between">
+                <p class="text-xs font-medium text-gray-500">Total Siswa</p>
+                <span class="w-9 h-9 flex items-center justify-center rounded-lg bg-blue-50 text-[#2563EB]">👥</span>
+            </div>
+            <p class="mt-2 text-2xl font-bold text-gray-800">{{ $rekap['total'] }}</p>
+        </div>
+        <div class="bg-white rounded-2xl shadow-sm border border-blue-100 p-4">
+            <div class="flex items-center justify-between">
+                <p class="text-xs font-medium text-gray-500">Sedang Aktif PKL</p>
+                <span class="w-9 h-9 flex items-center justify-center rounded-lg bg-green-50 text-green-600">✅</span>
+            </div>
+            <p class="mt-2 text-2xl font-bold text-green-600">{{ $rekap['aktif'] }}</p>
+        </div>
+        <div class="bg-white rounded-2xl shadow-sm border border-blue-100 p-4">
+            <div class="flex items-center justify-between">
+                <p class="text-xs font-medium text-gray-500">Belum PKL</p>
+                <span class="w-9 h-9 flex items-center justify-center rounded-lg bg-amber-50 text-amber-600">⏳</span>
+            </div>
+            <p class="mt-2 text-2xl font-bold text-amber-600">{{ $rekap['belum'] }}</p>
+        </div>
+        <div class="bg-white rounded-2xl shadow-sm border border-blue-100 p-4">
+            <div class="flex items-center justify-between">
+                <p class="text-xs font-medium text-gray-500">Selesai PKL</p>
+                <span class="w-9 h-9 flex items-center justify-center rounded-lg bg-blue-50 text-[#2563EB]">🎓</span>
+            </div>
+            <p class="mt-2 text-2xl font-bold text-[#2563EB]">{{ $rekap['selesai'] }}</p>
+        </div>
+    </div>
+
     <div class="bg-white rounded-2xl shadow-sm border border-blue-100 p-5">
 
-        <!-- ===== SEARCH FILTER ===== -->
+        <!-- ===== SEARCH & FILTER ===== -->
         <form method="GET" class="mb-4 flex flex-wrap gap-2">
             <input type="text" name="q" value="{{ $q }}" placeholder="Cari nama / NISN..."
                 class="w-full sm:w-64 rounded-lg border-blue-100 focus:border-[#2563EB] focus:ring-[#2563EB] text-sm">
@@ -64,7 +96,7 @@
             @endif
         </form>
 
-        <!-- ===== TABLE DATA ===== -->
+        <!-- ===== TABEL DATA ===== -->
         <div class="overflow-x-auto">
             <table class="w-full text-sm">
                 <thead>
