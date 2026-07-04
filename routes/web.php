@@ -51,7 +51,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // ---- PROFILE (Breeze) ----
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
 
     // ---- INFORMASI & PANDUAN PKL (semua role bisa melihat) ----
     Route::get('/informasi', [InformasiController::class, 'index'])->name('informasi.index');
