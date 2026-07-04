@@ -21,6 +21,23 @@
 
     <div class="py-8 md:py-12 bg-white">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            
+            <!-- ===== CARD REKAP INFORMASI ===== -->
+            <div class="mb-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div class="rounded-2xl border-2 border-[#0047d6]/15 bg-white p-5 shadow-sm">
+                    <p class="text-xs font-bold uppercase tracking-wide text-[#5b616e]">Total Observasi</p>
+                    <p class="mt-1 text-3xl font-bold text-black">{{ $rekap['total'] }}</p>
+                </div>
+                <div class="rounded-2xl border-2 border-[#05b169]/30 bg-[#05b169]/5 p-5 shadow-sm">
+                    <p class="text-xs font-bold uppercase tracking-wide text-[#5b616e]">Sudah Disetujui</p>
+                    <p class="mt-1 text-3xl font-bold text-[#05b169]">{{ $rekap['disetujui'] }}</p>
+                </div>
+                <div class="rounded-2xl border-2 border-[#d98200]/30 bg-[#d98200]/5 p-5 shadow-sm">
+                    <p class="text-xs font-bold uppercase tracking-wide text-[#5b616e]">Menunggu Disetujui</p>
+                    <p class="mt-1 text-3xl font-bold text-[#d98200]">{{ $rekap['menunggu'] }}</p>
+                </div>
+            </div>
+
             <div class="rounded-2xl border-2 border-[#0047d6]/15 bg-white p-4 sm:p-6 md:p-8 shadow-sm">
 
                 @if (session('success'))
@@ -29,7 +46,7 @@
                     </div>
                 @endif
 
-                {{-- ===== BANNER UTAMA & CETAK SEMUA PDF ===== --}}
+                <!-- ===== BANNER & CETAK SEMUA PDF ===== -->
                 <div class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                     <div>
                         <h3 class="text-lg font-bold tracking-tight text-black">Lembar Observasi Siswa Bimbingan</h3>
@@ -45,7 +62,7 @@
                     </a>
                 </div>
 
-                {{-- ===== FORM FILTER ===== --}}
+                <!-- ===== FORM FILTER ===== -->
                 <form method="GET" action="{{ route('guru.observasi.index') }}" class="mb-6">
                     <div class="flex flex-col md:flex-row gap-3 md:items-end">
                         <div class="flex-1">
@@ -80,7 +97,7 @@
                     </div>
                 </form>
 
-                {{-- ===== TABEL OBSERVASI ===== --}}
+                <!-- ===== TABEL OBSERVASI ===== -->
                 <div class="overflow-x-auto rounded-xl border-2 border-[#0047d6]/15">
                     <table class="w-full min-w-[1200px] text-left text-sm table-fixed">
                         <thead>
@@ -105,7 +122,7 @@
                                          {{ $observasi->firstItem() + $loop->index }} 
                                     </td>
                                     <td class="px-4 py-3 whitespace-nowrap font-medium text-black">
-                                         {{ \Carbon\Carbon::parse($obs->hari_tanggal)->translatedFormat('d M Y') }} 
+                                         {{ \Carbon\Carbon::parse($obs->hari_tanggal)->format('d M Y') }} 
                                     </td>
                                     <td class="px-4 py-3 font-bold text-black break-words">
                                          {{ $obs->user->name ?? '-' }} 
@@ -117,12 +134,12 @@
                                          {{ $obs->pekerjaan_projek ?? '-' }} 
                                     </td>
 
-                                    {{-- ===== KOLOM PERMASALAHAN CHIPS ACCORDION ===== --}}
+                                    <!-- Kolom Permasalahan -->
                                     <td class="px-4 py-3 text-black break-words">
                                         @if($poin->count())
                                             <div class="flex items-start gap-1.5">
                                                 <span class="font-bold text-[#0047d6]">1.</span>
-                                                <span class="font-medium break-words">{{ $poin->first()->permasalahan ?? '-' }}</span>
+                                                <span class="font-medium break-words">{{ $poin->first()->permasalahan }}</span>
                                             </div>
 
                                             @if($poin->count() > 1)
@@ -149,12 +166,12 @@
                                         @endif
                                     </td>
 
-                                    {{-- ===== KOLOM SOLUSI CHIPS ACCORDION ===== --}}
+                                    <!-- Kolom Solusi Pemecahan -->
                                     <td class="px-4 py-3 text-black break-words">
                                         @if($poin->count())
                                             <div class="flex items-start gap-1.5">
                                                 <span class="font-bold text-[#0047d6]">1.</span>
-                                                <span class="font-medium break-words">{{ $poin->first()->solusi ?? '-' }}</span>
+                                                <span class="font-medium break-words">{{ $poin->first()->solusi }}</span>
                                             </div>
 
                                             @if($poin->count() > 1)
@@ -181,6 +198,7 @@
                                         @endif
                                     </td>
 
+                                    <!-- Status -->
                                     <td class="px-4 py-3 text-center">
                                         @if ($obs->is_approved)
                                             <span class="inline-flex items-center rounded-full bg-[#05b169] px-3 py-1 text-xs font-bold text-white">Disetujui</span>
@@ -189,12 +207,13 @@
                                         @endif
                                     </td>
 
+                                    <!-- Cetak PDF -->
                                     <td class="px-4 py-3 text-center">
                                         <a href="{{ route('cetak.observasi', ['siswa_id' => $obs->user_id, 'observasi_id' => $obs->id]) }}" target="_blank"
                                            class="inline-flex items-center rounded-full bg-[#0047d6] px-3 py-1.5 text-xs font-bold text-white transition hover:bg-[#0038aa]">PDF</a>
                                     </td>
 
-                                    {{-- ===== MANAJEMEN DATA (EDIT / HAPUS) ===== --}}
+                                    <!-- Aksi Edit / Hapus -->
                                     <td class="px-4 py-3 text-center">
                                         <div class="flex items-center justify-center gap-2">
                                             <a href="{{ route('guru.observasi.edit', $obs->id) }}"
@@ -224,7 +243,7 @@
                     </table>
                 </div>
 
-                {{-- ===== PAGINATION ===== --}}
+                <!-- ===== PAGINATION ===== -->
                 <div class="mt-4">
                     {!! $observasi->links() !!}
                 </div>

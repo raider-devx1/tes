@@ -22,6 +22,16 @@ class ObservasiController extends Controller
     $q      = trim($request->get('q', ''));
     $status = $request->get('status'); // '1' = disetujui, '0' = menunggu
 
+    // Rekap seluruh observasi siswa bimbingan guru ini (tidak terpengaruh filter/pagination)
+    $rekapQuery = Observasi::where('guru_id', Auth::id())
+        ->whereHas('user', fn ($u) => $u->where('status_pkl', 'aktif'));
+
+    $rekap = [
+        'total'     => (clone $rekapQuery)->count(),
+        'disetujui' => (clone $rekapQuery)->where('is_approved', true)->count(),
+        'menunggu'  => (clone $rekapQuery)->where('is_approved', false)->count(),
+    ];
+
     $observasi = Observasi::where('guru_id', Auth::id())
         ->whereHas('user', fn ($u) => $u->where('status_pkl', 'aktif'))
         ->with(['user', 'items'])
@@ -34,7 +44,7 @@ class ObservasiController extends Controller
         ->paginate(15)
         ->withQueryString();
 
-    return view('guru.observasi.index', compact('observasi', 'q', 'status'));
+    return view('guru.observasi.index', compact('observasi', 'q', 'status', 'rekap'));
 }
 
     /** Form tambah observasi (hanya siswa bimbingan guru ini yang bisa dipilih). */

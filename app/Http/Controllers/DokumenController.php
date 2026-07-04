@@ -133,7 +133,32 @@ public function guruIndex(Request $request)
         ->where('guru_id', Auth::id())   // hanya bimbingannya
         ->paginate(15)->withQueryString();
 
-    return view('guru.dokumen.index', compact('siswa', 'q', 'status'));
+    // Rekap dokumen seluruh siswa bimbingan (tidak terpengaruh filter/pagination)
+    $rekapQuery = User::where('role', 'siswa_pkl')->where('guru_id', Auth::id());
+
+    $totalSiswa = (clone $rekapQuery)->count();
+
+    $dokumenLengkap = (clone $rekapQuery)
+        ->whereHas('dokumen', fn ($d) =>
+            $d->whereNotNull('laporan_akhir')->whereNotNull('surat_penerimaan'))
+        ->count();
+
+    $dokumenSebagian = (clone $rekapQuery)
+        ->whereHas('dokumen', fn ($d) =>
+            $d->where(fn ($w) => $w->whereNotNull('laporan_akhir')->whereNull('surat_penerimaan'))
+              ->orWhere(fn ($w) => $w->whereNull('laporan_akhir')->whereNotNull('surat_penerimaan')))
+        ->count();
+
+    $dokumenBelum = $totalSiswa - $dokumenLengkap - $dokumenSebagian;
+
+    $rekap = [
+        'total'    => $totalSiswa,
+        'lengkap'  => $dokumenLengkap,
+        'sebagian' => $dokumenSebagian,
+        'belum'    => $dokumenBelum,
+    ];
+
+    return view('guru.dokumen.index', compact('siswa', 'q', 'status', 'rekap'));
 }
 
     /*

@@ -110,6 +110,22 @@ public function indexGuru(Request $request)
     $q      = trim($request->get('q', ''));
     $status = $request->get('status'); // 'sudah' | 'belum' (status penilaian)
 
+    // Rekap seluruh siswa bimbingan guru ini (tidak terpengaruh filter/pagination)
+    $rekapQuery = User::where('role', 'siswa_pkl')
+        ->where('guru_id', Auth::id())
+        ->where('status_pkl', 'aktif');
+
+    $totalSiswa   = (clone $rekapQuery)->count();
+    $sudahDinilai = (clone $rekapQuery)
+        ->whereHas('nilai', fn ($n) => $n->whereNotNull('nilai_akhir'))
+        ->count();
+
+    $rekap = [
+        'total' => $totalSiswa,
+        'sudah' => $sudahDinilai,
+        'belum' => $totalSiswa - $sudahDinilai,
+    ];
+
     $siswa = User::where('role', 'siswa_pkl')
         ->where('guru_id', Auth::id())
         ->where('status_pkl', 'aktif')
@@ -127,7 +143,7 @@ public function indexGuru(Request $request)
         ->paginate(15)
         ->withQueryString();
 
-    return view('guru.nilai.index', compact('siswa', 'q', 'status'));
+    return view('guru.nilai.index', compact('siswa', 'q', 'status', 'rekap'));
 }
 
     public function storeGuru(Request $request)
