@@ -22,7 +22,7 @@
                         </a>
                         <a href="{{ route('cetak.jurnal') }}" target="_blank"
                            class="inline-flex items-center rounded-full bg-[#eef0f3] px-5 py-2.5 text-sm font-semibold text-[#0a0b0d] transition hover:bg-[#dee1e6]">
-                            Cetak PDF
+                            Cetak Semua PDF
                         </a>
                     </div>
                 </div>
@@ -80,41 +80,43 @@
                             <tr class="align-top transition hover:bg-[#f7f7f7]">
                                 <td class="px-4 py-3 text-center text-[#7c828a]">{{ $jurnals->firstItem() + $loop->index }}</td>
                                 <td class="px-4 py-3 whitespace-nowrap text-[#5b616e]">
-                                    {{ \Carbon\Carbon::parse($jurnal->hari_tanggal)->translatedFormat('d M Y') }}
+                                     {{ \Carbon\Carbon::parse($jurnal->hari_tanggal)->translatedFormat('d M Y') }}
                                 </td>
-                             <td class="px-4 py-3 text-[#5b616e]">
-    <ol class="list-decimal list-inside space-y-0.5">
-        @foreach($jurnal->items as $it)
-            {{-- Ditambahkan kurung kurawal ganda agar teks pekerjaan muncul --}}
-            <li>{{ $it->unit_kerja }}</li>
-        @endforeach
-    </ol>
-</td>
-                               <td class="px-4 py-3 text-[#5b616e]">
-    @if($jurnal->catatan_instruktur)
-        <div class="rounded-lg border-l-2 border-[#f4b000] bg-[#f4b000]/5 p-2 text-xs italic text-[#5b616e]">
-            {{ $jurnal->catatan_instruktur }}
-        </div>
-    @else
-        <span class="text-[#a8acb3]">-</span>
-    @endif
-</td>
-                               <td class="px-4 py-3 text-center">
-    @php $fotos = $jurnal->items->whereNotNull('dokumentasi')->values(); @endphp
-    @if($fotos->count())
-        <div class="flex flex-col gap-1">
-            @foreach($fotos as $k => $it)
-                {{-- Membungkus fungsi asset() dan logika penomoran ($k + 1) dengan sintaks Blade --}}
-                <a href="{{ asset('storage/' . $it->dokumentasi) }}" target="_blank"
-                   class="text-sm font-semibold text-[#0052ff] hover:underline">
-                    Foto {{ $k + 1 }}
-                </a>
-            @endforeach
-        </div>
-    @else
-        <span class="text-sm text-[#a8acb3]">Tidak ada</span>
-    @endif
-</td>
+
+                                <td class="px-4 py-3 text-[#5b616e]">
+                                    <ol class="list-decimal list-inside space-y-0.5">
+                                        @foreach($jurnal->items as $it)
+                                            <li>{{ $it->unit_kerja }}</li>
+                                        @endforeach
+                                    </ol>
+                                </td>
+
+                                <td class="px-4 py-3 text-[#5b616e]">
+                                    @if($jurnal->catatan_instruktur)
+                                        <div class="rounded-lg border-l-2 border-[#f4b000] bg-[#f4b000]/5 p-2 text-xs italic text-[#5b616e]">
+                                             {{ $jurnal->catatan_instruktur }}
+                                        </div>
+                                    @else
+                                        <span class="text-[#a8acb3]">-</span>
+                                    @endif
+                                </td>
+
+                                <td class="px-4 py-3 text-center">
+                                    @php $fotos = $jurnal->items->whereNotNull('dokumentasi')->values(); @endphp
+                                    @if($fotos->count())
+                                        <div class="flex flex-col gap-1">
+                                            @foreach($fotos as $k => $it)
+                                                <a href="{{ asset('storage/' . $it->dokumentasi) }}" target="_blank"
+                                                   class="text-sm font-semibold text-[#0052ff] hover:underline">
+                                                    Foto {{ $k + 1 }}
+                                                </a>
+                                            @endforeach
+                                        </div>
+                                    @else
+                                        <span class="text-sm text-[#a8acb3]">Tidak ada</span>
+                                    @endif
+                                </td>
+
                                 <td class="px-4 py-3 text-center">
                                     @if($jurnal->status_persetujuan == 'pending')
                                         <span class="inline-flex items-center rounded-full bg-[#f4b000]/10 px-3 py-1 text-xs font-semibold text-[#f4b000]">Menunggu</span>
@@ -124,21 +126,32 @@
                                         <span class="inline-flex items-center rounded-full bg-[#cf202f]/10 px-3 py-1 text-xs font-semibold text-[#cf202f]">Revisi</span>
                                     @endif
                                 </td>
-                                <td class="px-4 py-3 text-center">
-                                    @if($jurnal->status_persetujuan == 'pending')
-                                       <form action="{{ route('siswa.jurnal.destroy', $jurnal->id) }}" method="POST"
-      data-confirm="Hapus jurnal ini?"
-      data-confirm-text="Jurnal yang dihapus tidak dapat dikembalikan."
-      data-confirm-yes="Ya, hapus">
-    @csrf
-    @method('DELETE')
-    
-    <!-- Tambahkan tombol hapus di sini, contoh: -->
-     <button type="submit" class="text-red-600 hover:underline ml-2">Hapus</button>
-</form>
-                                    @else
-                                        <span class="text-xs text-[#a8acb3]">-</span>
-                                    @endif
+
+                                {{-- ===== KOLOM AKSI: PDF + EDIT + HAPUS ===== --}}
+                                <td class="px-4 py-3">
+                                    <div class="flex items-center justify-center gap-2 whitespace-nowrap">
+                                        <a href="{{ route('cetak.jurnal', ['jurnal_id' => $jurnal->id]) }}" target="_blank"
+                                           class="inline-flex items-center rounded-full bg-[#eef0f3] px-3 py-1.5 text-xs font-semibold text-[#0a0b0d] transition hover:bg-[#dee1e6]">
+                                            PDF
+                                        </a>
+
+                                        @if($jurnal->status_persetujuan == 'pending')
+                                            <a href="{{ route('siswa.jurnal.edit', $jurnal->id) }}"
+                                               class="inline-flex items-center rounded-full bg-[#0052ff]/10 px-3 py-1.5 text-xs font-semibold text-[#0052ff] transition hover:bg-[#0052ff]/20">
+                                                Edit
+                                            </a>
+
+                                            <form action="{{ route('siswa.jurnal.destroy', $jurnal->id) }}" method="POST"
+                                                  onsubmit="return confirm('Hapus jurnal ini? Data tidak dapat dikembalikan.');">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit"
+                                                        class="inline-flex items-center rounded-full bg-[#cf202f]/10 px-3 py-1.5 text-xs font-semibold text-[#cf202f] transition hover:bg-[#cf202f]/20">
+                                                    Hapus
+                                                </button>
+                                            </form>
+                                        @endif
+                                    </div>
                                 </td>
                             </tr>
                             @empty

@@ -201,10 +201,12 @@ Route::delete('/observasi/{id}', [ObservasiController::class, 'destroyGuru'])->n
             return view('siswa.dashboard', compact('jumlahJurnal', 'jurnalDisetujui'));
         })->name('dashboard');
 
-        Route::get('/jurnal', [JurnalController::class, 'indexSiswa'])->name('jurnal.index');
-        Route::get('/jurnal/tambah', [JurnalController::class, 'createSiswa'])->name('jurnal.create');
-        Route::post('/jurnal', [JurnalController::class, 'storeSiswa'])->name('jurnal.store');
-        Route::delete('/jurnal/{id}', [JurnalController::class, 'destroySiswa'])->name('jurnal.destroy');
+       Route::get('/jurnal', [JurnalController::class, 'indexSiswa'])->name('jurnal.index');
+Route::get('/jurnal/tambah', [JurnalController::class, 'createSiswa'])->name('jurnal.create');
+Route::post('/jurnal', [JurnalController::class, 'storeSiswa'])->name('jurnal.store');
+Route::get('/jurnal/{id}/edit', [JurnalController::class, 'editSiswa'])->name('jurnal.edit');   // ⬅️ baru
+Route::put('/jurnal/{id}', [JurnalController::class, 'updateSiswa'])->name('jurnal.update');     // ⬅️ baru
+Route::delete('/jurnal/{id}', [JurnalController::class, 'destroySiswa'])->name('jurnal.destroy');
 
         Route::get('/catatan', [CatatanController::class, 'indexSiswa'])->name('catatan.index');
         Route::get('/catatan/create', [CatatanController::class, 'createSiswa'])->name('catatan.create');

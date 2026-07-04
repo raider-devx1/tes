@@ -54,8 +54,7 @@ class JurnalController extends Controller
             foreach ($request->input('items', []) as $i => $item) {
                 $path = null;
                 if ($request->hasFile("items.$i.dokumentasi")) {
-                    $path = $request->file("items.$i.dokumentasi")
-                        ->store('dokumentasi_jurnal', 'public');
+                    $path = $request->file("items.$i.dokumentasi")->store('dokumentasi_jurnal', 'public');
                 }
 
                 $jurnal->items()->create([
@@ -69,6 +68,86 @@ class JurnalController extends Controller
             ->with('success', 'Jurnal harian berhasil ditambahkan!');
     }
 
+    public function editSiswa($id)
+    {
+        $jurnal = Jurnal::where('id', $id)->where('siswa_id', Auth::id())
+            ->with('items')
+            ->firstOrFail();
+
+        if ($jurnal->status_persetujuan !== 'pending') {
+            return redirect()->route('siswa.jurnal.index')
+                ->with('error', 'Jurnal yang sudah disetujui/direvisi tidak bisa diedit.');
+        }
+
+        return view('siswa.jurnal.edit', compact('jurnal'));
+    }
+
+    public function updateSiswa(Request $request, $id)
+    {
+        $jurnal = Jurnal::where('id', $id)->where('siswa_id', Auth::id())->firstOrFail();
+
+        if ($jurnal->status_persetujuan !== 'pending') {
+            return redirect()->back()->with('error', 'Jurnal yang sudah disetujui/direvisi tidak bisa diedit.');
+        }
+
+        $validated = $request->validate([
+            'hari_tanggal'        => 'required|date',
+            'items'               => 'required|array|min:1',
+            'items.*.unit_kerja'  => 'required|string',
+            'items.*.dokumentasi' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+        ], [
+            'items.required'              => 'Minimal harus ada 1 pekerjaan / unit kerja.',
+            'items.min'                   => 'Minimal harus ada 1 pekerjaan / unit kerja.',
+            'items.*.unit_kerja.required' => 'Unit kerja / pekerjaan wajib diisi pada setiap poin.',
+        ]);
+
+        DB::transaction(function () use ($request, $validated, $jurnal) {
+            $jurnal->update(['hari_tanggal' => $validated['hari_tanggal']]);
+
+            $keptIds = [];
+
+            foreach ($request->input('items', []) as $i => $item) {
+                $existingId  = $item['id'] ?? null;
+                $existingDoc = $item['existing_dokumentasi'] ?? null;
+
+                // Tentukan path foto: pakai yang lama, kecuali ada upload baru
+                $path = $existingDoc;
+                if ($request->hasFile("items.$i.dokumentasi")) {
+                    if ($existingDoc) {
+                        Storage::disk('public')->delete($existingDoc);
+                    }
+                    $path = $request->file("items.$i.dokumentasi")->store('dokumentasi_jurnal', 'public');
+                }
+
+                if ($existingId && ($jItem = $jurnal->items()->find($existingId))) {
+                    $jItem->update([
+                        'unit_kerja'  => $item['unit_kerja'],
+                        'dokumentasi' => $path,
+                    ]);
+                    $keptIds[] = $jItem->id;
+                } else {
+                    $new = $jurnal->items()->create([
+                        'unit_kerja'  => $item['unit_kerja'],
+                        'dokumentasi' => $path,
+                    ]);
+                    $keptIds[] = $new->id;
+                }
+            }
+
+            // Hapus pekerjaan yang dibuang dari form (beserta fotonya)
+            $toDelete = $jurnal->items()->whereNotIn('id', $keptIds)->get();
+            foreach ($toDelete as $del) {
+                if ($del->dokumentasi) {
+                    Storage::disk('public')->delete($del->dokumentasi);
+                }
+                $del->delete();
+            }
+        });
+
+        return redirect()->route('siswa.jurnal.index')
+            ->with('success', 'Jurnal harian berhasil diperbarui!');
+    }
+
     public function destroySiswa($id)
     {
         $jurnal = Jurnal::where('id', $id)->where('siswa_id', Auth::id())->firstOrFail();
@@ -77,7 +156,6 @@ class JurnalController extends Controller
             return redirect()->back()->with('error', 'Jurnal yang sudah disetujui/direvisi tidak bisa dihapus.');
         }
 
-        // hapus foto tiap pekerjaan
         foreach ($jurnal->items as $item) {
             if ($item->dokumentasi) {
                 Storage::disk('public')->delete($item->dokumentasi);
