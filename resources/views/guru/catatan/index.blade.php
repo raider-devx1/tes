@@ -13,6 +13,23 @@
 
     <div class="py-8 md:py-12 bg-white">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            
+            <!-- ===== CARD REKAP (JUMLAH DISETUJUI & MENUNGGU) ===== -->
+            <div class="mb-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div class="rounded-2xl border-2 border-[#0047d6]/15 bg-white p-5 shadow-sm">
+                    <p class="text-xs font-bold uppercase tracking-wide text-[#5b616e]">Total Catatan</p>
+                    <p class="mt-1 text-3xl font-bold text-black">{{ $rekap['total'] }}</p>
+                </div>
+                <div class="rounded-2xl border-2 border-[#05b169]/30 bg-[#05b169]/5 p-5 shadow-sm">
+                    <p class="text-xs font-bold uppercase tracking-wide text-[#5b616e]">Sudah Disetujui</p>
+                    <p class="mt-1 text-3xl font-bold text-[#05b169]">{{ $rekap['disetujui'] }}</p>
+                </div>
+                <div class="rounded-2xl border-2 border-[#d98200]/30 bg-[#d98200]/5 p-5 shadow-sm">
+                    <p class="text-xs font-bold uppercase tracking-wide text-[#5b616e]">Menunggu Disetujui</p>
+                    <p class="mt-1 text-3xl font-bold text-[#d98200]">{{ $rekap['menunggu'] }}</p>
+                </div>
+            </div>
+
             <div class="rounded-2xl border-2 border-[#0047d6]/15 bg-white p-4 sm:p-6 md:p-8 shadow-sm">
 
                 @if (session('success'))
@@ -30,27 +47,11 @@
 
                     <a href="{{ route('cetak.catatan.semua') }}" target="_blank"
                        class="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-[#0047d6] px-6 py-3.5 text-base font-bold text-white shadow-sm transition hover:bg-[#0038aa] focus:outline-none focus:ring-4 focus:ring-[#0047d6]/30">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <svg xmlns="http://www.w3.org/2000/xl" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2M6 14h12v8H6v-8z"/>
                         </svg>
                         Cetak Semua PDF
                     </a>
-                </div>
-
-                <!-- ===== CARD REKAP (JUMLAH DISETUJUI & MENUNGGU) ===== -->
-                <div class="mb-6 grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <div class="rounded-2xl border-2 border-[#0047d6]/15 bg-white p-5 shadow-sm">
-                        <p class="text-xs font-bold uppercase tracking-wide text-[#5b616e]">Total Catatan</p>
-                        <p class="mt-1 text-3xl font-bold text-black">{{ $rekap['total'] }}</p>
-                    </div>
-                    <div class="rounded-2xl border-2 border-[#05b169]/30 bg-[#05b169]/5 p-5 shadow-sm">
-                        <p class="text-xs font-bold uppercase tracking-wide text-[#5b616e]">Sudah Disetujui</p>
-                        <p class="mt-1 text-3xl font-bold text-[#05b169]"> {{ $rekap['disetujui'] }} </p>
-                    </div>
-                    <div class="rounded-2xl border-2 border-[#d98200]/30 bg-[#d98200]/5 p-5 shadow-sm">
-                        <p class="text-xs font-bold uppercase tracking-wide text-[#5b616e]">Menunggu Disetujui</p>
-                        <p class="mt-1 text-3xl font-bold text-[#d98200]">{{ $rekap['menunggu'] }}</p>
-                    </div>
                 </div>
 
                 <!-- ===== FORM FILTER ===== -->
