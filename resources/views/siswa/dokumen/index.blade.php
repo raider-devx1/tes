@@ -56,7 +56,7 @@
                                class="border border-gray-200 p-2 rounded-lg w-full text-sm">
                         @if($dokumen && $dokumen->surat_penerimaan)
                             <a href="{{ route('dokumen.lihat', [auth()->id(), 'surat_penerimaan']) }}" target="_blank"
-                               class="text-[#2563EB] text-sm underline mt-1 inline-block">Lihat file tersimpan</a>
+                               class="mt-2 inline-block text-sm font-bold text-[#0047d6] underline">Lihat file tersimpan</a>
                         @endif
                     </div>
 
@@ -67,10 +67,10 @@
                                class="border border-gray-200 p-2 rounded-lg w-full text-sm">
                         @if($dokumen && $dokumen->laporan_akhir)
                             <a href="{{ route('dokumen.lihat', [auth()->id(), 'laporan_akhir']) }}" target="_blank"
-                               class="text-[#2563EB] text-sm underline mt-1 inline-block">Lihat file tersimpan</a>
+                               class="mt-2 inline-block text-sm font-bold text-[#0047d6] underline">Lihat file tersimpan</a>
                         @endif
                     </div>
-                    
+
                     <button type="submit"
                             class="inline-flex items-center justify-center rounded-xl bg-[#0047d6] px-6 py-3 text-base font-bold text-white shadow-sm transition hover:bg-[#0038aa] focus:outline-none focus:ring-4 focus:ring-[#0047d6]/30">
                         Simpan Dokumen
