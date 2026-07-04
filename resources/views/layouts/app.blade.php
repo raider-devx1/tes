@@ -224,12 +224,10 @@ $isAdmin = auth()->check() && auth()->user()->role === 'admin';
                             class="block px-3 py-2 text-[13px] rounded-lg transition-all {{ request()->routeIs('admin.riwayat.index') ? 'text-blue-600 font-semibold' : 'text-slate-500 hover:text-slate-900' }}">
                             Riwayat Aktivitas
                         </a>
-                        <span class="block px-3 py-2 text-[13px] text-slate-300 cursor-not-allowed select-none flex items-center justify-between">
-                            Manajemen User <span class="text-[10px] px-1.5 py-0.5 rounded-md bg-slate-50 text-slate-400 font-normal">segera</span>
-                        </span>
-                        <span class="block px-3 py-2 text-[13px] text-slate-300 cursor-not-allowed select-none flex items-center justify-between">
-                            Notifikasi <span class="text-[10px] px-1.5 py-0.5 rounded-md bg-slate-50 text-slate-400 font-normal">segera</span>
-                        </span>
+                       <a href="{{ route('admin.akun-admin.index') }}"
+   class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm {{ request()->routeIs('admin.akun-admin.*') ? 'bg-blue-50 text-[#2563EB] font-medium' : 'text-gray-600 hover:bg-blue-50' }}">
+    <span>🛡️</span> Kelola Akun Admin
+</a>
                         <a href="{{ route('profile.edit') }}"
                             class="block px-3 py-2 text-[13px] rounded-lg transition-all {{ request()->routeIs('profile.edit') ? 'text-blue-600 font-semibold' : 'text-slate-500 hover:text-slate-900' }}">
                             Profil Admin

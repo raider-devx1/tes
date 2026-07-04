@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AbsensiController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\AdminAkunController;
 use App\Http\Controllers\CatatanController;
 use App\Http\Controllers\CetakPdfController;
 use App\Http\Controllers\DokumenController;
@@ -83,6 +84,13 @@ Route::get('/cetak/nilai-semua', [CetakPdfController::class, 'cetakNilaiSemua'])
 
         // ---- PENGATURAN: RIWAYAT AKTIVITAS ----
         Route::get('/riwayat', [RiwayatController::class, 'index'])->name('riwayat.index');
+        // ---- PENGATURAN: KELOLA AKUN ADMIN ----
+Route::get('/akun-admin', [AdminAkunController::class, 'index'])->name('akun-admin.index');
+Route::get('/akun-admin/create', [AdminAkunController::class, 'create'])->name('akun-admin.create');
+Route::post('/akun-admin', [AdminAkunController::class, 'store'])->name('akun-admin.store');
+Route::get('/akun-admin/{admin}/edit', [AdminAkunController::class, 'edit'])->name('akun-admin.edit');
+Route::put('/akun-admin/{admin}', [AdminAkunController::class, 'update'])->name('akun-admin.update');
+Route::delete('/akun-admin/{admin}', [AdminAkunController::class, 'destroy'])->name('akun-admin.destroy');
 
 // ---- NOTIFIKASI SISTEM ----
         Route::get('/notifikasi', [AdminController::class, 'notifikasi'])->name('notifikasi.index');

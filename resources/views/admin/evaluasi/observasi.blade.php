@@ -5,6 +5,38 @@
             <p class="text-sm text-gray-500">Pantau hasil observasi guru terhadap siswa PKL (hanya-baca).</p>
         </div>
 
+        {{-- ===== KARTU INFORMASI ===== --}}
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="bg-white rounded-2xl shadow-sm border border-blue-100 p-4">
+        <div class="flex items-center justify-between">
+            <p class="text-xs font-medium text-gray-500">Total Observasi</p>
+            <span class="w-9 h-9 flex items-center justify-center rounded-lg bg-blue-50 text-[#2563EB]">🔍</span>
+        </div>
+        <p class="mt-2 text-2xl font-bold text-gray-800">{{ $rekap['total'] }}</p>
+    </div>
+    <div class="bg-white rounded-2xl shadow-sm border border-blue-100 p-4">
+        <div class="flex items-center justify-between">
+            <p class="text-xs font-medium text-gray-500">Disetujui</p>
+            <span class="w-9 h-9 flex items-center justify-center rounded-lg bg-green-50 text-green-600">✅</span>
+        </div>
+        <p class="mt-2 text-2xl font-bold text-green-600">{{ $rekap['disetujui'] }}</p>
+    </div>
+    <div class="bg-white rounded-2xl shadow-sm border border-blue-100 p-4">
+        <div class="flex items-center justify-between">
+            <p class="text-xs font-medium text-gray-500">Belum Disetujui</p>
+            <span class="w-9 h-9 flex items-center justify-center rounded-lg bg-amber-50 text-amber-600">⏳</span>
+        </div>
+        <p class="mt-2 text-2xl font-bold text-amber-600">{{ $rekap['belum'] }}</p>
+    </div>
+    <div class="bg-white rounded-2xl shadow-sm border border-blue-100 p-4">
+        <div class="flex items-center justify-between">
+            <p class="text-xs font-medium text-gray-500">Guru Terlibat</p>
+            <span class="w-9 h-9 flex items-center justify-center rounded-lg bg-blue-50 text-[#2563EB]">🧑‍🏫</span>
+        </div>
+        <p class="mt-2 text-2xl font-bold text-[#2563EB]">{{ $rekap['guru'] }}</p>
+    </div>
+</div>
+
         {{-- FILTER --}}
         <form method="GET" class="bg-white rounded-xl border border-blue-100 p-4 grid grid-cols-1 md:grid-cols-5 gap-3 items-end">
             <div class="md:col-span-2">

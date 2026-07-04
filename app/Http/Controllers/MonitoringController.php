@@ -52,29 +52,36 @@ class MonitoringController extends Controller
         ));
     }
 
-    public function catatan(Request $request)
-    {
-        $q        = trim($request->get('q', ''));
-        $approved = $request->get('approved', '');
-        $kelas    = $request->get('kelas', '');
-        $jurusan  = $request->get('jurusan', '');
+   public function catatan(Request $request)
+{
+    $q        = trim($request->get('q', ''));
+    $approved = $request->get('approved', '');
+    $kelas    = $request->get('kelas', '');
+    $jurusan  = $request->get('jurusan', '');
 
-        $catatan = CatatanKegiatan::query()
-            ->with('user')
-            ->when($q, fn ($query) => $query->whereHas('user', fn ($u) =>
-                $u->where('name', 'like', "%{$q}%")->orWhere('nisn', 'like', "%{$q}%")))
-            ->when($kelas,   fn ($query) => $query->whereHas('user', fn ($u) => $u->where('kelas', $kelas)))
-            ->when($jurusan, fn ($query) => $query->whereHas('user', fn ($u) => $u->where('jurusan', $jurusan)))
-            ->when($approved !== '', fn ($query) => $query->where('is_approved', $approved === '1'))
-            ->latest()
-            ->paginate(15)
-            ->withQueryString();
+    $catatan = CatatanKegiatan::query()
+        ->with('user')
+        ->when($q, fn ($query) => $query->whereHas('user', fn ($u) =>
+            $u->where('name', 'like', "%{$q}%")->orWhere('nisn', 'like', "%{$q}%")))
+        ->when($kelas,   fn ($query) => $query->whereHas('user', fn ($u) => $u->where('kelas', $kelas)))
+        ->when($jurusan, fn ($query) => $query->whereHas('user', fn ($u) => $u->where('jurusan', $jurusan)))
+        ->when($approved !== '', fn ($query) => $query->where('is_approved', $approved === '1'))
+        ->latest()
+        ->paginate(15)
+        ->withQueryString();
 
-        return view('admin.monitoring.catatan', array_merge(
-            compact('catatan', 'q', 'approved', 'kelas', 'jurusan'),
-            $this->opsiFilter()
-        ));
-    }
+    // ---- Kartu informasi (dihitung menyeluruh, tidak terpengaruh filter) ----
+    $rekap = [
+        'total'     => CatatanKegiatan::count(),
+        'disetujui' => CatatanKegiatan::where('is_approved', true)->count(),
+        'belum'     => CatatanKegiatan::where('is_approved', false)->count(),
+    ];
+
+    return view('admin.monitoring.catatan', array_merge(
+        compact('catatan', 'q', 'approved', 'kelas', 'jurusan', 'rekap'),
+        $this->opsiFilter()
+    ));
+}
 
     public function absensi(Request $request)
     {

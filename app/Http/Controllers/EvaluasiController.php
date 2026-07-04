@@ -9,30 +9,38 @@ use Illuminate\Http\Request;
 
 class EvaluasiController extends Controller
 {
-    public function observasi(Request $request)
-    {
-        $q       = trim($request->get('q', ''));
-        $kelas   = $request->get('kelas');
-        $jurusan = $request->get('jurusan');
-        $status  = $request->get('status'); // '1' = disetujui, '0' = belum
+   public function observasi(Request $request)
+{
+    $q       = trim($request->get('q', ''));
+    $kelas   = $request->get('kelas');
+    $jurusan = $request->get('jurusan');
+    $status  = $request->get('status'); // '1' = disetujui, '0' = belum
 
-        $observasi = Observasi::query()
-            ->with(['user', 'guru'])
-            ->when($q, fn ($query) => $query->whereHas('user', fn ($u) =>
-                $u->where('name', 'like', "%{$q}%")->orWhere('nisn', 'like', "%{$q}%")))
-            ->when($kelas, fn ($query) => $query->whereHas('user', fn ($u) => $u->where('kelas', $kelas)))
-            ->when($jurusan, fn ($query) => $query->whereHas('user', fn ($u) => $u->where('jurusan', $jurusan)))
-            ->when($status !== null && $status !== '', fn ($query) => $query->where('is_approved', $status === '1'))
-            ->orderByDesc('hari_tanggal')
-            ->paginate(15)
-            ->withQueryString();
+    $observasi = Observasi::query()
+        ->with(['user', 'guru'])
+        ->when($q, fn ($query) => $query->whereHas('user', fn ($u) =>
+            $u->where('name', 'like', "%{$q}%")->orWhere('nisn', 'like', "%{$q}%")))
+        ->when($kelas, fn ($query) => $query->whereHas('user', fn ($u) => $u->where('kelas', $kelas)))
+        ->when($jurusan, fn ($query) => $query->whereHas('user', fn ($u) => $u->where('jurusan', $jurusan)))
+        ->when($status !== null && $status !== '', fn ($query) => $query->where('is_approved', $status === '1'))
+        ->orderByDesc('hari_tanggal')
+        ->paginate(15)
+        ->withQueryString();
 
-        [$kelasList, $jurusanList] = $this->opsiFilter();
+    // ---- Kartu informasi (dihitung menyeluruh, tidak terpengaruh filter) ----
+    $rekap = [
+        'total'     => Observasi::count(),
+        'disetujui' => Observasi::where('is_approved', true)->count(),
+        'belum'     => Observasi::where('is_approved', false)->count(),
+        'guru'      => Observasi::distinct('guru_id')->count('guru_id'),
+    ];
 
-        return view('admin.evaluasi.observasi', compact(
-            'observasi', 'q', 'kelas', 'jurusan', 'status', 'kelasList', 'jurusanList'
-        ));
-    }
+    [$kelasList, $jurusanList] = $this->opsiFilter();
+
+    return view('admin.evaluasi.observasi', compact(
+        'observasi', 'q', 'kelas', 'jurusan', 'status', 'kelasList', 'jurusanList', 'rekap'
+    ));
+}
 
     public function penilaian(Request $request)
     {
