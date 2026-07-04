@@ -45,8 +45,8 @@ class CetakPdfController extends Controller
         return Pengaturan::pluck('nilai', 'kunci')->toArray();
     }
 
-  // ====== 1. JURNAL (FK: siswa_id) ======
-/** Bangun data lembar jurnal: 1 jurnal = 1 lembar (1 halaman). */
+ // ====== 1. JURNAL (FK: siswa_id) ======
+/** Bangun data lembar jurnal: 1 siswa = 1 lembar, semua jurnal jadi baris bernomor urut. */
 private function buildJurnalLembar(User $siswa, ?string $tanggal = null): array
 {
     $query = Jurnal::where('siswa_id', $siswa->id)->with('items');
@@ -55,13 +55,13 @@ private function buildJurnalLembar(User $siswa, ?string $tanggal = null): array
         $query->whereDate('hari_tanggal', $tanggal);
     }
 
-    // Tiap jurnal dibungkus koleksi 1 item -> cocok dengan $data['jurnals'] di template,
-    // dan otomatis jadi 1 halaman per jurnal.
-    return $query->orderBy('hari_tanggal', 'asc')->get()
-        ->map(fn ($jurnal) => [
-            'siswa'   => $siswa,
-            'jurnals' => collect([$jurnal]),
-        ])->all();
+    $jurnals = $query->orderBy('hari_tanggal', 'asc')->get();
+
+    // Satu lembar berisi SEMUA jurnal -> tampil sebagai baris bernomor urut (1,2,3,...)
+    return [
+        'siswa'   => $siswa,
+        'jurnals' => $jurnals,
+    ];
 }
 
 public function cetakJurnal($siswa_id = null)
@@ -89,15 +89,15 @@ public function cetakJurnal($siswa_id = null)
         'Jurnal tidak ditemukan untuk dicetak.'
     );
 
-    // 1 jurnal = 1 lembar (1 halaman). Beda tanggal = beda halaman.
-    $lembar = $jurnals->map(fn ($jurnal) => [
+    // Semua jurnal dalam SATU lembar/tabel, bernomor urut (tanggal berikutnya jadi nomor 2, dst.)
+    $lembar = $jurnals->isEmpty() ? [] : [[
         'siswa'   => $siswa,
-        'jurnals' => collect([$jurnal]),
-    ])->all();
+        'jurnals' => $jurnals,
+    ]];
 
     $pengaturan = $this->getPengaturan();
 
-    $pdf = Pdf::loadView('pdf.jurnal', compact('lembar', 'pengaturan')) // ⬅️ tetap pdf.jurnal
+    $pdf = Pdf::loadView('pdf.jurnal', compact('lembar', 'pengaturan'))
               ->setPaper('a4', 'portrait');
 
     $suffix = request('jurnal_id')
