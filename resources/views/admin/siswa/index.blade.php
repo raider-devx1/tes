@@ -6,11 +6,11 @@
             <p class="text-sm text-gray-500">Kelola data peserta PKL beserta pemetaan pembimbing & tempat magang.</p>
         </div>
         <div class="flex flex-wrap items-center gap-2" x-data="{ importOpen: false }">
-            <a href="{{ route('admin.siswa.export.excel', request()->only('q', 'status')) }}"
+            <a href="{{ route('admin.siswa.export.excel', ['q' => $q, 'status' => $status]) }}"
                 class="inline-flex items-center gap-1 px-3 py-2 rounded-lg bg-green-50 text-green-700 text-sm font-medium hover:bg-green-100">
                 ⬇ Excel
             </a>
-            <a href="{{ route('admin.siswa.export.pdf', request()->only('q', 'status')) }}"
+            <a href="{{ route('admin.siswa.export.pdf', ['q' => $q, 'status' => $status]) }}"
                 class="inline-flex items-center gap-1 px-3 py-2 rounded-lg bg-red-50 text-red-600 text-sm font-medium hover:bg-red-100">
                 ⬇ PDF
             </a>
@@ -23,6 +23,7 @@
                 + Tambah Siswa
             </a>
 
+            <!-- ===== MODAL IMPORT DATA ===== -->
             <div x-show="importOpen" x-cloak style="display: none;" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" @click.self="importOpen = false">
                 <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
                     <h3 class="text-lg font-bold text-gray-800 mb-1">Import Data Siswa</h3>
@@ -47,8 +48,9 @@
 
     <div class="bg-white rounded-2xl shadow-sm border border-blue-100 p-5">
 
+        <!-- ===== SEARCH FILTER ===== -->
         <form method="GET" class="mb-4 flex flex-wrap gap-2">
-            <input type="text" name="q" value="{{ $q }}" placeholder="Cari nama / NISN / email..."
+            <input type="text" name="q" value="{{ $q }}" placeholder="Cari nama / NISN..."
                 class="w-full sm:w-64 rounded-lg border-blue-100 focus:border-[#2563EB] focus:ring-[#2563EB] text-sm">
             <select name="status" class="rounded-lg border-blue-100 focus:border-[#2563EB] focus:ring-[#2563EB] text-sm">
                 <option value="">Semua Status</option>
@@ -62,6 +64,7 @@
             @endif
         </form>
 
+        <!-- ===== TABLE DATA ===== -->
         <div class="overflow-x-auto">
             <table class="w-full text-sm">
                 <thead>
@@ -76,19 +79,19 @@
                         <th class="py-3 px-3 text-right">Aksi</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody class="divide-y divide-gray-100">
                     @forelse($siswa as $s)
                         <tr class="border-b border-blue-50 hover:bg-blue-50/40">
                             <td class="py-3 px-3 text-center text-gray-500">
-    {{ $siswa->firstItem() + $loop->index }}
-</td>
+                                {{ $siswa->firstItem() + $loop->index }}
+                            </td>
                             <td class="py-3 px-3">
                                 <div class="flex items-center gap-3">
                                     <img src="{{ $s->foto ? asset('storage/' . $s->foto) : 'https://ui-avatars.com/api/?background=DBEAFE&color=1E3A8A&name=' . urlencode($s->name) }}"
                                          alt="foto" class="w-9 h-9 rounded-full object-cover">
                                     <div>
                                         <div class="font-medium text-gray-800">{{ $s->name }}</div>
-                                        <div class="text-xs text-gray-400">NISN: {{ $s->nisn ?? '-' }}</div>
+                                        <div class="text-xs text-gray-400">NISN: {{ $s->nisn }}</div>
                                     </div>
                                 </div>
                             </td>
@@ -113,11 +116,11 @@
                                 <div class="flex items-center justify-end gap-2">
                                     <a href="{{ route('admin.siswa.edit', $s) }}" class="text-xs px-3 py-1.5 rounded-lg bg-blue-50 text-[#2563EB] hover:bg-blue-100">Edit</a>
                                     <form method="POST" action="{{ route('admin.siswa.destroy', $s) }}"
-      data-confirm="Hapus data siswa ini?"
-      data-confirm-text="Semua data terkait siswa ini akan ikut terhapus."
-      data-confirm-yes="Ya, hapus">
-    @csrf
-    @method('DELETE')
+                                          data-confirm="Hapus data siswa ini?"
+                                          data-confirm-text="Semua data terkait siswa ini akan ikut terhapus."
+                                          data-confirm-yes="Ya, hapus">
+                                        @csrf
+                                        @method('DELETE')
                                         <button class="text-xs px-3 py-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100">Hapus</button>
                                     </form>
                                 </div>
@@ -130,6 +133,7 @@
             </table>
         </div>
 
+        <!-- ===== PAGINATION ===== -->
         <div class="mt-4">
             {!! $siswa->links() !!}
         </div>

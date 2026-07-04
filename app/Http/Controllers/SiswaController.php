@@ -18,27 +18,25 @@ use Illuminate\Validation\Rule;
 class SiswaController extends Controller
 {
     /** Validasi data siswa (dipakai store & update). */
-private function validateData(Request $request, ?User $siswa = null): array
-{
-    return $request->validate([
-        'name'          => ['required', 'string', 'max:100'],
-        // Email opsional & boleh sama (tidak lagi unik)
-        'email'         => ['nullable', 'email', 'max:150'],
-        // NISN = identitas login siswa: wajib & unik
-        'nisn'          => ['required', 'string', 'max:20', Rule::unique('users', 'nisn')->ignore($siswa?->id)],
-        'jenis_kelamin' => ['nullable', Rule::in(['L', 'P'])],
-        'no_hp'         => ['nullable', 'string', 'max:20'],
-        'kelas'         => ['nullable', 'string', 'max:50'],
-        'jurusan'       => ['nullable', 'string', 'max:100'],
-        'status_pkl'    => ['required', Rule::in(['belum', 'aktif', 'selesai'])],
-        'perusahaan_id' => ['nullable', 'exists:perusahaans,id'],
-        'instruktur_id' => ['nullable', 'exists:users,id'],
-        'guru_id'       => ['nullable', 'exists:users,id'],
-        'periode_id'    => ['nullable', 'exists:periode_pkls,id'],
-        'foto'          => ['nullable', 'image', 'mimes:jpeg,jpg,png', 'max:2048'],
-        'password'      => [$siswa ? 'nullable' : 'required', 'string', 'min:6', 'confirmed'],
-    ]);
-}
+    private function validateData(Request $request, ?User $siswa = null): array
+    {
+        return $request->validate([
+            'name'          => ['required', 'string', 'max:100'],
+            // NISN = identitas login siswa: wajib & unik (email tidak dipakai lagi)
+            'nisn'          => ['required', 'string', 'max:20', Rule::unique('users', 'nisn')->ignore($siswa?->id)],
+            'jenis_kelamin' => ['nullable', Rule::in(['L', 'P'])],
+            'no_hp'         => ['nullable', 'string', 'max:20'],
+            'kelas'         => ['nullable', 'string', 'max:50'],
+            'jurusan'       => ['nullable', 'string', 'max:100'],
+            'status_pkl'    => ['required', Rule::in(['belum', 'aktif', 'selesai'])],
+            'perusahaan_id' => ['nullable', 'exists:perusahaans,id'],
+            'instruktur_id' => ['nullable', 'exists:users,id'],
+            'guru_id'       => ['nullable', 'exists:users,id'],
+            'periode_id'    => ['nullable', 'exists:periode_pkls,id'],
+            'foto'          => ['nullable', 'image', 'mimes:jpeg,jpg,png', 'max:2048'],
+            'password'      => [$siswa ? 'nullable' : 'required', 'string', 'min:6', 'confirmed'],
+        ]);
+    }
 
     /** Data untuk semua dropdown form. */
     private function dropdownData(): array
@@ -61,8 +59,7 @@ private function validateData(Request $request, ?User $siswa = null): array
             ->with(['perusahaan', 'guru', 'instruktur', 'periode'])
             ->when($q, function ($query) use ($q) {
                 $query->where('name', 'like', "%{$q}%")
-                      ->orWhere('nisn', 'like', "%{$q}%")
-                      ->orWhere('email', 'like', "%{$q}%");
+                      ->orWhere('nisn', 'like', "%{$q}%");
             })
             ->when($status, fn ($query) => $query->where('status_pkl', $status))
             ->orderBy('name')
@@ -138,59 +135,56 @@ private function validateData(Request $request, ?User $siswa = null): array
     }
 
     public function exportExcel(Request $request)
-{
-    $q = trim($request->get('q', ''));
-    $status = $request->get('status', '');
+    {
+        $q = trim($request->get('q', ''));
+        $status = $request->get('status', '');
 
-    return Excel::download(new SiswaExport($q, $status), 'data-siswa-' . date('Ymd-His') . '.xlsx');
-}
-
-public function exportPdf(Request $request)
-{
-    $q = trim($request->get('q', ''));
-    $status = $request->get('status', '');
-
-    $siswa = User::query()
-        ->where('role', 'siswa_pkl')
-        ->with(['perusahaan', 'guru', 'instruktur', 'periode'])
-        ->when($q, function ($query) use ($q) {
-            $query->where('name', 'like', "%{$q}%")
-                  ->orWhere('nisn', 'like', "%{$q}%")
-                  ->orWhere('email', 'like', "%{$q}%");
-        })
-        ->when($status, fn ($query) => $query->where('status_pkl', $status))
-        ->orderBy('name')
-        ->get();
-
-    $pdf = Pdf::loadView('admin.siswa.pdf', compact('siswa'))->setPaper('a4', 'landscape');
-
-    return $pdf->download('data-siswa-' . date('Ymd-His') . '.pdf');
-}
-
-public function template()
-{
-    return Excel::download(new SiswaTemplateExport, 'template-import-siswa.xlsx');
-}
-
-public function import(Request $request)
-{
-    $request->validate([
-        'file' => ['required', 'file', 'mimes:xlsx,xls,csv'],
-    ]);
-
-    try {
-        Excel::import(new SiswaImport, $request->file('file'));
-    } catch (\Maatwebsite\Excel\Validators\ValidationException $e) {
-        $pesan = collect($e->failures())
-            ->map(fn ($f) => "Baris {$f->row()}: " . implode(', ', $f->errors()))
-            ->take(10)
-            ->implode(' | ');
-
-        return back()->with('error', 'Sebagian data gagal diimpor. ' . $pesan);
+        return Excel::download(new SiswaExport($q, $status), 'data-siswa-' . date('Ymd-His') . '.xlsx');
     }
 
-    return back()->with('success', 'Data siswa berhasil diimpor.');
-}
+    public function exportPdf(Request $request)
+    {
+        $q = trim($request->get('q', ''));
+        $status = $request->get('status', '');
 
+        $siswa = User::query()
+            ->where('role', 'siswa_pkl')
+            ->with(['perusahaan', 'guru', 'instruktur', 'periode'])
+            ->when($q, function ($query) use ($q) {
+                $query->where('name', 'like', "%{$q}%")
+                      ->orWhere('nisn', 'like', "%{$q}%");
+            })
+            ->when($status, fn ($query) => $query->where('status_pkl', $status))
+            ->orderBy('name')
+            ->get();
 
+        $pdf = Pdf::loadView('admin.siswa.pdf', compact('siswa'))->setPaper('a4', 'landscape');
+
+        return $pdf->download('data-siswa-' . date('Ymd-His') . '.pdf');
+    }
+
+    public function template()
+    {
+        return Excel::download(new SiswaTemplateExport, 'template-import-siswa.xlsx');
+    }
+
+    public function import(Request $request)
+    {
+        $request->validate([
+            'file' => ['required', 'file', 'mimes:xlsx,xls,csv'],
+        ]);
+
+        try {
+            Excel::import(new SiswaImport, $request->file('file'));
+        } catch (\Maatwebsite\Excel\Validators\ValidationException $e) {
+            $pesan = collect($e->failures())
+                ->map(fn ($f) => "Baris {$f->row()}: " . implode(', ', $f->errors()))
+                ->take(10)
+                ->implode(' | ');
+
+            return back()->with('error', 'Sebagian data gagal diimpor. ' . $pesan);
+        }
+
+        return back()->with('success', 'Data siswa berhasil diimpor.');
+    }
 }

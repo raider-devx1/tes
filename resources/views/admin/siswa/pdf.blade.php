@@ -17,7 +17,7 @@
 </head>
 <body>
     <h2>Data Siswa PKL</h2>
-    <div class="sub">Dicetak: <?= e(date('d-m-Y H:i')) ?> &middot; Total: <?= e($siswa->count()) ?> siswa</div>
+    <div class="sub">Dicetak: {{ date('d-m-Y H:i') }} &middot; Total: {{ $siswa->count() }} siswa</div>
 
     <table>
         <thead>
@@ -25,7 +25,6 @@
                 <th class="center">No</th>
                 <th>Nama</th>
                 <th>NISN</th>
-                <th>Email</th>
                 <th class="center">JK</th>
                 <th>No. HP</th>
                 <th>Kelas</th>
@@ -40,22 +39,21 @@
         <tbody>
             @forelse($siswa as $i => $s)
                 <tr>
-                    <td class="center"><?= e($i + 1) ?></td>
-                    <td><?= e($s->name) ?></td>
-                    <td><?= e($s->nisn ?? '-') ?></td>
-                    <td><?= e($s->email) ?></td>
-                    <td class="center"><?= e($s->jenis_kelamin ?? '-') ?></td>
-                    <td><?= e($s->no_hp ?? '-') ?></td>
-                    <td><?= e($s->kelas ?? '-') ?></td>
-                    <td><?= e($s->jurusan ?? '-') ?></td>
-                    <td><?= e($s->perusahaan->nama_perusahaan ?? '-') ?></td>
-                    <td><?= e($s->guru->name ?? '-') ?></td>
-                    <td><?= e($s->instruktur->name ?? '-') ?></td>
-                    <td><?= e($s->periode->nama ?? '-') ?></td>
-                    <td class="center"><?= e(ucfirst($s->status_pkl)) ?></td>
+                    <td class="center">{{ $i + 1 }}</td>
+                    <td>{{ $s->name }}</td>
+                    <td>{{ $s->nisn ?? '-' }}</td>
+                    <td class="center">{{ $s->jenis_kelamin ?? '-' }}</td>
+                    <td>{{ $s->no_hp ?? '-' }}</td>
+                    <td>{{ $s->kelas ?? '-' }}</td>
+                    <td>{{ $s->jurusan ?? '-' }}</td>
+                    <td>{{ $s->perusahaan->nama_perusahaan ?? '-' }}</td>
+                    <td>{{ $s->guru->name ?? '-' }}</td>
+                    <td>{{ $s->instruktur->name ?? '-' }}</td>
+                    <td>{{ $s->periode->nama ?? '-' }}</td>
+                    <td class="center">{{ ucfirst($s->status_pkl) }}</td>
                 </tr>
             @empty
-                <tr><td colspan="13" class="center">Belum ada data siswa.</td></tr>
+                <tr><td colspan="12" class="center">Belum ada data siswa.</td></tr>
             @endforelse
         </tbody>
     </table>

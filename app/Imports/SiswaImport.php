@@ -45,7 +45,6 @@ class SiswaImport implements ToModel, WithHeadingRow, WithValidation, SkipsEmpty
 
         return new User([
             'name'          => $row['nama'],
-            'email'         => $row['email'],
             'password'      => Hash::make($row['password'] ?? 'password123'),
             'nisn'          => $row['nisn'] ?? null,
             'jenis_kelamin' => in_array($row['jk'] ?? null, ['L', 'P']) ? $row['jk'] : null,
@@ -65,7 +64,7 @@ class SiswaImport implements ToModel, WithHeadingRow, WithValidation, SkipsEmpty
     {
         return [
             'nama'  => ['required', 'string', 'max:100'],
-            'email' => ['required', 'email', 'max:150', Rule::unique('users', 'email')],
+            'nisn'  => ['required', 'string', 'max:20', Rule::unique('users', 'nisn')],
             'status_pkl' => ['nullable', Rule::in(['belum', 'aktif', 'selesai'])],
             // Opsional, tapi jika diisi WAJIB sudah terdaftar lebih dulu
             'tempat_pkl' => ['nullable', Rule::exists('perusahaans', 'nama_perusahaan')],
@@ -98,8 +97,8 @@ class SiswaImport implements ToModel, WithHeadingRow, WithValidation, SkipsEmpty
     {
         return [
             'nama.required'     => 'Kolom nama wajib diisi.',
-            'email.required'    => 'Kolom email wajib diisi.',
-            'email.unique'      => 'Email :input sudah terdaftar.',
+            'nisn.required'     => 'Kolom NISN wajib diisi.',
+            'nisn.unique'       => 'NISN :input sudah terdaftar.',
             'status_pkl.in'     => 'Status PKL ":input" tidak valid (pakai: belum / aktif / selesai).',
             'tempat_pkl.exists' => 'Tempat PKL ":input" belum terdaftar di Master Data Industri. Tambahkan industrinya dulu.',
             'instruktur.exists' => 'Instruktur ":input" belum terdaftar di Master Data Instruktur. Tambahkan instrukturnya dulu.',

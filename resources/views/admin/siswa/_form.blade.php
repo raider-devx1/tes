@@ -14,47 +14,47 @@
 
 <div class="space-y-5">
 
-    {{-- Identitas Siswa --}}
+    <!-- Identitas Siswa -->
     <div>
         <h3 class="text-sm font-semibold text-gray-700 mb-2">Identitas Siswa</h3>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Nama Lengkap</label>
-                <input type="text" name="name" value="{{ old('name', $s->name ?? '') }}" required
+                <input type="text" name="name" value="{{ old('name', $s?->name) }}" required
                        class="w-full rounded-lg border-blue-100 focus:border-[#2563EB] focus:ring-[#2563EB] text-sm">
             </div>
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">NISN</label>
-                <input type="text" name="nisn" value="{{ old('nisn', $s->nisn ?? '') }}"
+                <label class="block text-sm font-medium text-gray-700 mb-1">NISN <span class="text-gray-400 font-normal">(dipakai untuk login)</span></label>
+                <input type="text" name="nisn" value="{{ old('nisn', $s?->nisn) }}" required
                        class="w-full rounded-lg border-blue-100 focus:border-[#2563EB] focus:ring-[#2563EB] text-sm">
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Jenis Kelamin</label>
                 <select name="jenis_kelamin" class="w-full rounded-lg border-blue-100 focus:border-[#2563EB] focus:ring-[#2563EB] text-sm">
                     <option value="">— Pilih —</option>
-                    <option value="L" {{ old('jenis_kelamin', $s->jenis_kelamin ?? '') === 'L' ? 'selected' : '' }}>Laki-laki</option>
-                    <option value="P" {{ old('jenis_kelamin', $s->jenis_kelamin ?? '') === 'P' ? 'selected' : '' }}>Perempuan</option>
+                    <option value="L" {{ old('jenis_kelamin', $s?->jenis_kelamin) === 'L' ? 'selected' : '' }}>Laki-laki</option>
+                    <option value="P" {{ old('jenis_kelamin', $s?->jenis_kelamin) === 'P' ? 'selected' : '' }}>Perempuan</option>
                 </select>
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">No. HP</label>
-                <input type="text" name="no_hp" value="{{ old('no_hp', $s->no_hp ?? '') }}"
+                <input type="text" name="no_hp" value="{{ old('no_hp', $s?->no_hp) }}"
                        class="w-full rounded-lg border-blue-100 focus:border-[#2563EB] focus:ring-[#2563EB] text-sm">
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Kelas</label>
-                <input type="text" name="kelas" value="{{ old('kelas', $s->kelas ?? '') }}" placeholder="cth: XII RPL 1"
+                <input type="text" name="kelas" value="{{ old('kelas', $s?->kelas) }}" placeholder="cth: XII RPL 1"
                        class="w-full rounded-lg border-blue-100 focus:border-[#2563EB] focus:ring-[#2563EB] text-sm">
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Jurusan</label>
-                <input type="text" name="jurusan" value="{{ old('jurusan', $s->jurusan ?? '') }}" placeholder="cth: Rekayasa Perangkat Lunak"
+                <input type="text" name="jurusan" value="{{ old('jurusan', $s?->jurusan) }}" placeholder="cth: Rekayasa Perangkat Lunak"
                        class="w-full rounded-lg border-blue-100 focus:border-[#2563EB] focus:ring-[#2563EB] text-sm">
             </div>
         </div>
     </div>
 
-    {{-- Avatar / Foto --}}
+    <!-- Foto Siswa -->
     <div>
         <label class="block text-sm font-medium text-gray-700 mb-1">Foto Siswa</label>
         @if($s && $s->foto)
@@ -65,7 +65,7 @@
         <p class="text-xs text-gray-400 mt-1">Format JPG/PNG, maks 2MB. Kosongkan jika tidak ingin mengubah.</p>
     </div>
 
-    {{-- Pemetaan Entitas Hubungan PKL --}}
+    <!-- Pemetaan PKL -->
     <div>
         <h3 class="text-sm font-semibold text-gray-700 mb-2">Pemetaan PKL</h3>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -74,7 +74,7 @@
                 <select name="periode_id" class="w-full rounded-lg border-blue-100 focus:border-[#2563EB] focus:ring-[#2563EB] text-sm">
                     <option value="">— Pilih Periode —</option>
                     @foreach($periodeList as $p)
-                        <option value="{{ $p->id }}" {{ old('periode_id', $s->periode_id ?? '') == $p->id ? 'selected' : '' }}>
+                        <option value="{{ $p->id }}" {{ old('periode_id', $s?->periode_id) == $p->id ? 'selected' : '' }}>
                             {{ $p->nama }}{{ $p->is_active ? ' (Aktif)' : '' }}
                         </option>
                     @endforeach
@@ -83,9 +83,9 @@
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Status PKL</label>
                 <select name="status_pkl" required class="w-full rounded-lg border-blue-100 focus:border-[#2563EB] focus:ring-[#2563EB] text-sm">
-                    <option value="belum" {{ old('status_pkl', $s->status_pkl ?? 'belum') === 'belum' ? 'selected' : '' }}>Belum</option>
-                    <option value="aktif" {{ old('status_pkl', $s->status_pkl ?? '') === 'aktif' ? 'selected' : '' }}>Aktif</option>
-                    <option value="selesai" {{ old('status_pkl', $s->status_pkl ?? '') === 'selesai' ? 'selected' : '' }}>Selesai</option>
+                    <option value="belum" {{ old('status_pkl', $s?->status_pkl) === 'belum' ? 'selected' : '' }}>Belum</option>
+                    <option value="aktif" {{ old('status_pkl', $s?->status_pkl) === 'aktif' ? 'selected' : '' }}>Aktif</option>
+                    <option value="selesai" {{ old('status_pkl', $s?->status_pkl) === 'selesai' ? 'selected' : '' }}>Selesai</option>
                 </select>
             </div>
             <div>
@@ -93,7 +93,7 @@
                 <select name="perusahaan_id" class="w-full rounded-lg border-blue-100 focus:border-[#2563EB] focus:ring-[#2563EB] text-sm">
                     <option value="">— Pilih Perusahaan —</option>
                     @foreach($perusahaanList as $p)
-                        <option value="{{ $p->id }}" {{ old('perusahaan_id', $s->perusahaan_id ?? '') == $p->id ? 'selected' : '' }}>
+                        <option value="{{ $p->id }}" {{ old('perusahaan_id', $s?->perusahaan_id) == $p->id ? 'selected' : '' }}>
                             {{ $p->nama_perusahaan }}
                         </option>
                     @endforeach
@@ -104,7 +104,7 @@
                 <select name="guru_id" class="w-full rounded-lg border-blue-100 focus:border-[#2563EB] focus:ring-[#2563EB] text-sm">
                     <option value="">— Pilih Guru —</option>
                     @foreach($guruList as $g)
-                        <option value="{{ $g->id }}" {{ old('guru_id', $s->guru_id ?? '') == $g->id ? 'selected' : '' }}>
+                        <option value="{{ $g->id }}" {{ old('guru_id', $s?->guru_id) == $g->id ? 'selected' : '' }}>
                             {{ $g->name }}
                         </option>
                     @endforeach
@@ -115,7 +115,7 @@
                 <select name="instruktur_id" class="w-full rounded-lg border-blue-100 focus:border-[#2563EB] focus:ring-[#2563EB] text-sm">
                     <option value="">— Pilih Instruktur —</option>
                     @foreach($instrukturList as $it)
-                        <option value="{{ $it->id }}" {{ old('instruktur_id', $s->instruktur_id ?? '') == $it->id ? 'selected' : '' }}>
+                        <option value="{{ $it->id }}" {{ old('instruktur_id', $s?->instruktur_id) == $it->id ? 'selected' : '' }}>
                             {{ $it->name }}
                         </option>
                     @endforeach
@@ -124,15 +124,10 @@
         </div>
     </div>
 
-    {{-- Kredensial Login --}}
+    <!-- Akun Login -->
     <div>
         <h3 class="text-sm font-semibold text-gray-700 mb-2">Akun Login</h3>
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                <input type="email" name="email" value="{{ old('email', $s->email ?? '') }}" required
-                       class="w-full rounded-lg border-blue-100 focus:border-[#2563EB] focus:ring-[#2563EB] text-sm">
-            </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
                 <input type="password" name="password"

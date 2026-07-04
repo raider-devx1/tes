@@ -65,7 +65,7 @@ class UserSeeder extends Seeder
         ]);
 
         /* ============================================================
-         | 2. ADMIN
+         | 2. ADMIN  (login pakai email)
          ============================================================ */
         User::create([
             'name'     => 'Admin HKI SMKN 1 Majene',
@@ -76,26 +76,26 @@ class UserSeeder extends Seeder
         ]);
 
         /* ============================================================
-         | 3. GURU PEMBIMBING (3 akun)
+         | 3. GURU PEMBIMBING (3 akun) — login pakai NIP (tanpa email)
          ============================================================ */
         $guru1 = User::create([
-            'name' => 'Pak Budi (Guru)', 'email' => 'guru1@smkn1majene.sch.id',
+            'name' => 'Pak Budi (Guru)',
             'password' => Hash::make('password123'), 'role' => 'guru_pembimbing',
             'nip' => '198001012005011001', 'no_hp' => '081211110001',
         ]);
         $guru2 = User::create([
-            'name' => 'Bu Siti (Guru)', 'email' => 'guru2@smkn1majene.sch.id',
+            'name' => 'Bu Siti (Guru)',
             'password' => Hash::make('password123'), 'role' => 'guru_pembimbing',
             'nip' => '198203152006042002', 'no_hp' => '081211110002',
         ]);
         $guru3 = User::create([
-            'name' => 'Pak Andi (Guru)', 'email' => 'guru3@smkn1majene.sch.id',
+            'name' => 'Pak Andi (Guru)',
             'password' => Hash::make('password123'), 'role' => 'guru_pembimbing',
             'nip' => '197905202003121003', 'no_hp' => '081211110003',
         ]);
 
         /* ============================================================
-         | 4. INSTRUKTUR INDUSTRI (3 akun, masing-masing 1 perusahaan)
+         | 4. INSTRUKTUR INDUSTRI (3 akun, masing-masing 1 perusahaan) — login pakai email
          ============================================================ */
         $ins1 = User::create([
             'name' => 'Pak Anton (Semen Tonasa)', 'email' => 'anton@tonasa.com',
@@ -117,7 +117,7 @@ class UserSeeder extends Seeder
         ]);
 
         /* ============================================================
-         | 5. 20 SISWA PKL + SEMUA DATA PENDUKUNG
+         | 5. 20 SISWA PKL + SEMUA DATA PENDUKUNG — login pakai NISN (tanpa email)
          ============================================================ */
         $gurus = [$guru1, $guru2, $guru3];
         $industri = [
@@ -154,7 +154,6 @@ class UserSeeder extends Seeder
 
             $siswa = User::create([
                 'name'          => 'Siswa ' . $namaList[$i - 1],
-                'email'         => 'siswa' . $i . '@siswa.com',
                 'password'      => Hash::make('password123'),
                 'role'          => 'siswa_pkl',
                 'nisn'          => '005123' . str_pad($i, 4, '0', STR_PAD_LEFT),

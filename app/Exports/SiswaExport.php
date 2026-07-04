@@ -29,8 +29,7 @@ class SiswaExport extends StringValueBinder implements FromQuery, WithHeadings, 
             ->with(['perusahaan', 'guru', 'instruktur', 'periode'])
             ->when($this->q, function ($query) {
                 $query->where('name', 'like', "%{$this->q}%")
-                      ->orWhere('nisn', 'like', "%{$this->q}%")
-                      ->orWhere('email', 'like', "%{$this->q}%");
+                      ->orWhere('nisn', 'like', "%{$this->q}%");
             })
             ->when($this->status, fn ($query) => $query->where('status_pkl', $this->status))
             ->orderBy('name');
@@ -39,7 +38,7 @@ class SiswaExport extends StringValueBinder implements FromQuery, WithHeadings, 
     public function headings(): array
     {
         return [
-            'No', 'Nama', 'NISN', 'Email', 'JK', 'No. HP',
+            'No', 'Nama', 'NISN', 'JK', 'No. HP',
             'Kelas', 'Jurusan', 'Tempat PKL',
             'Guru Pembimbing', 'Instruktur', 'Periode', 'Status PKL',
         ];
@@ -54,7 +53,6 @@ class SiswaExport extends StringValueBinder implements FromQuery, WithHeadings, 
             $no,
             $siswa->name,
             $siswa->nisn,
-            $siswa->email,
             $siswa->jenis_kelamin,
             $siswa->no_hp,
             $siswa->kelas,
@@ -69,13 +67,13 @@ class SiswaExport extends StringValueBinder implements FromQuery, WithHeadings, 
 
     /**
      * Paksa kolom NISN & No. HP jadi TEXT agar tidak format ilmiah / 0 depan hilang.
-     * C = NISN, F = No. HP
+     * C = NISN, E = No. HP
      */
     public function columnFormats(): array
     {
         return [
             'C' => NumberFormat::FORMAT_TEXT, // NISN
-            'F' => NumberFormat::FORMAT_TEXT, // No. HP
+            'E' => NumberFormat::FORMAT_TEXT, // No. HP
         ];
     }
 
