@@ -25,7 +25,6 @@ class GuruExport extends StringValueBinder implements FromQuery, WithHeadings, W
             ->where('role', 'guru_pembimbing')
             ->when($this->q, function ($query) {
                 $query->where('name', 'like', "%{$this->q}%")
-                      ->orWhere('email', 'like', "%{$this->q}%")
                       ->orWhere('nip', 'like', "%{$this->q}%");
             })
             ->orderBy('name');
@@ -33,7 +32,7 @@ class GuruExport extends StringValueBinder implements FromQuery, WithHeadings, W
 
     public function headings(): array
     {
-        return ['No', 'Nama', 'NIP', 'Email', 'No. HP'];
+        return ['No', 'Nama', 'NIP', 'No. HP'];
     }
 
     public function map($guru): array
@@ -45,20 +44,19 @@ class GuruExport extends StringValueBinder implements FromQuery, WithHeadings, W
             $no,
             $guru->name,
             $guru->nip ?? '-',
-            $guru->email,
             $guru->no_hp ?? '-',
         ];
     }
 
     /**
      * Paksa kolom NIP & No. HP jadi TEXT agar tidak format ilmiah / 0 depan hilang.
-     * C = NIP, E = No. HP
+     * C = NIP, D = No. HP
      */
     public function columnFormats(): array
     {
         return [
             'C' => NumberFormat::FORMAT_TEXT, // NIP
-            'E' => NumberFormat::FORMAT_TEXT, // No. HP
+            'D' => NumberFormat::FORMAT_TEXT, // No. HP
         ];
     }
 

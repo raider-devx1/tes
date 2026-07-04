@@ -8,9 +8,9 @@
 
         <p class="mt-1 text-sm text-gray-600">
             @if(in_array($role, ['instruktur_industri', 'admin'], true))
-                {{ __("Update your account's profile information and email address.") }}
+                Perbarui informasi nama dan alamat email akun Anda.
             @else
-                {{ __("Update your account's profile name. Email address change is restricted.") }}
+                Perbarui nama akun Anda.
             @endif
         </p>
     </header>
@@ -21,9 +21,9 @@
 
     <form method="post" action="{{ route('profile.update') }}" class="mt-6 space-y-6">
         @csrf
-        @path('patch')
+        @method('patch')
 
-        <!-- Name Field -->
+        <!-- Nama (semua peran) -->
         <div>
             <x-input-label for="name" :value="__('Name')" />
             <x-text-input id="name" name="name" type="text" class="mt-1 block w-full" :value="old('name', $user->name)" required autofocus autocomplete="name" />
@@ -31,7 +31,7 @@
         </div>
 
         @if(in_array($role, ['instruktur_industri', 'admin'], true))
-            <!-- Editable Email Field for Admin and Instructor -->
+            <!-- Email bisa diubah: instruktur & admin -->
             <div>
                 <x-input-label for="email" :value="__('Email')" />
                 <x-text-input id="email" name="email" type="email" class="mt-1 block w-full" :value="old('email', $user->email)" required autocomplete="username" />
@@ -56,7 +56,7 @@
                 @endif
             </div>
         @else
-            <!-- Read-Only Email View for Other Roles -->
+            <!-- Email hanya tampil (tidak bisa diubah): siswa & guru -->
             <div>
                 <x-input-label :value="__('Email')" />
                 <p class="mt-2 text-sm font-semibold text-gray-500 bg-gray-50 px-4 py-2.5 rounded-lg border border-gray-200 block w-full">

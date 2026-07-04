@@ -16,7 +16,6 @@ class GuruImport implements ToModel, WithHeadingRow, WithValidation, SkipsEmptyR
     {
         return new User([
             'name'     => $row['nama'],
-            'email'    => $row['email'],
             'password' => Hash::make($row['password'] ?? 'password123'),
             'nip'      => isset($row['nip'])   ? (string) $row['nip']   : null,
             'no_hp'    => isset($row['no_hp']) ? (string) $row['no_hp'] : null,
@@ -28,8 +27,7 @@ class GuruImport implements ToModel, WithHeadingRow, WithValidation, SkipsEmptyR
     {
         return [
             'nama'  => ['required', 'string', 'max:100'],
-            'email' => ['required', 'email', 'max:150', Rule::unique('users', 'email')],
-            'nip'   => ['nullable', 'string', 'max:30'],
+            'nip'   => ['required', 'string', 'max:30', Rule::unique('users', 'nip')],
             'no_hp' => ['nullable', 'string', 'max:20'],
         ];
     }
@@ -37,10 +35,9 @@ class GuruImport implements ToModel, WithHeadingRow, WithValidation, SkipsEmptyR
     public function customValidationMessages(): array
     {
         return [
-            'nama.required'  => 'Kolom nama wajib diisi.',
-            'email.required' => 'Kolom email wajib diisi.',
-            'email.email'    => 'Format email ":input" tidak valid.',
-            'email.unique'   => 'Email :input sudah terdaftar.',
+            'nama.required' => 'Kolom nama wajib diisi.',
+            'nip.required'  => 'Kolom NIP wajib diisi.',
+            'nip.unique'    => 'NIP :input sudah terdaftar.',
         ];
     }
 }

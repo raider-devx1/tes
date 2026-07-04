@@ -17,7 +17,7 @@
 </head>
 <body>
     <h2>Data Guru Pembimbing</h2>
-    <div class="sub">Dicetak: {{ date('d-m-Y H:i') }} &middot; Total: {{ $guru->count() }} guru</div>
+    <div class="sub">Dicetak: {{ now()->format('d/m/Y H:i') }} &middot; Total: {{ $guru->count() }} guru</div>
 
     <table>
         <thead>
@@ -25,7 +25,6 @@
                 <th class="center">No</th>
                 <th>Nama</th>
                 <th>NIP</th>
-                <th>Email</th>
                 <th>No. HP</th>
             </tr>
         </thead>
@@ -35,11 +34,10 @@
                     <td class="center">{{ $i + 1 }}</td>
                     <td>{{ $g->name }}</td>
                     <td>{{ $g->nip ?? '-' }}</td>
-                    <td>{{ $g->email }}</td>
                     <td>{{ $g->no_hp ?? '-' }}</td>
                 </tr>
             @empty
-                <tr><td colspan="5" class="center">Belum ada data guru.</td></tr>
+                <tr><td colspan="4" class="center">Belum ada data guru.</td></tr>
             @endforelse
         </tbody>
     </table>
