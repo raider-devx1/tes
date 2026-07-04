@@ -12,16 +12,23 @@ class Jurnal extends Model
     protected $fillable = [
         'siswa_id',
         'hari_tanggal',
-        'unit_kerja',
-        'dokumentasi',
         'catatan_instruktur',
         'status_persetujuan',
         'disetujui_oleh',
     ];
 
-    // Relasi balik ke User (Siswa)
+    protected $casts = [
+        'hari_tanggal' => 'date',
+    ];
+
     public function siswa()
     {
         return $this->belongsTo(User::class, 'siswa_id');
+    }
+
+    // Banyak pekerjaan / unit kerja dalam 1 tanggal
+    public function items()
+    {
+        return $this->hasMany(JurnalItem::class, 'jurnal_id');
     }
 }

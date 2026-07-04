@@ -49,7 +49,7 @@ class CetakPdfController extends Controller
 /** Bangun data 1 lembar jurnal (identitas siswa + daftar jurnal, opsional per tanggal). */
 private function buildJurnalLembar(User $siswa, ?string $tanggal = null): array
 {
-    $query = Jurnal::where('siswa_id', $siswa->id);
+    $query = Jurnal::where('siswa_id', $siswa->id)->with('items');
 
     if ($tanggal) {
         $query->whereDate('hari_tanggal', $tanggal);
@@ -67,7 +67,7 @@ public function cetakJurnal($siswa_id = null)
     $siswa->loadMissing(['perusahaan', 'instruktur', 'guru']);
 
     // Query jurnal milik siswa ini saja (aman, tidak bisa lintas siswa)
-    $query = Jurnal::where('siswa_id', $siswa->id);
+    $query = Jurnal::where('siswa_id', $siswa->id)->with('items');
 
     // Prioritas 1: cetak SATU entri jurnal persis di baris yang diklik
     // (tanggal jurnal = tanggal yang dibuat/diisi siswa, bukan hari ini)

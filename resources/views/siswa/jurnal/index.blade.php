@@ -82,7 +82,14 @@
                                 <td class="px-4 py-3 whitespace-nowrap text-[#5b616e]">
                                     {{ \Carbon\Carbon::parse($jurnal->hari_tanggal)->translatedFormat('d M Y') }}
                                 </td>
-                                <td class="px-4 py-3 text-[#5b616e]">{!! nl2br(e($jurnal->unit_kerja)) !!}</td>
+                             <td class="px-4 py-3 text-[#5b616e]">
+    <ol class="list-decimal list-inside space-y-0.5">
+        @foreach($jurnal->items as $it)
+            {{-- Ditambahkan kurung kurawal ganda agar teks pekerjaan muncul --}}
+            <li>{{ $it->unit_kerja }}</li>
+        @endforeach
+    </ol>
+</td>
                                <td class="px-4 py-3 text-[#5b616e]">
     @if($jurnal->catatan_instruktur)
         <div class="rounded-lg border-l-2 border-[#f4b000] bg-[#f4b000]/5 p-2 text-xs italic text-[#5b616e]">
@@ -92,13 +99,22 @@
         <span class="text-[#a8acb3]">-</span>
     @endif
 </td>
-                                <td class="px-4 py-3 text-center">
-                                    @if($jurnal->dokumentasi)
-                                        <a href="{{ asset('storage/'.$jurnal->dokumentasi) }}" target="_blank" class="text-sm font-semibold text-[#0052ff] hover:underline">Lihat Foto</a>
-                                    @else
-                                        <span class="text-sm text-[#a8acb3]">Tidak ada</span>
-                                    @endif
-                                </td>
+                               <td class="px-4 py-3 text-center">
+    @php $fotos = $jurnal->items->whereNotNull('dokumentasi')->values(); @endphp
+    @if($fotos->count())
+        <div class="flex flex-col gap-1">
+            @foreach($fotos as $k => $it)
+                {{-- Membungkus fungsi asset() dan logika penomoran ($k + 1) dengan sintaks Blade --}}
+                <a href="{{ asset('storage/' . $it->dokumentasi) }}" target="_blank"
+                   class="text-sm font-semibold text-[#0052ff] hover:underline">
+                    Foto {{ $k + 1 }}
+                </a>
+            @endforeach
+        </div>
+    @else
+        <span class="text-sm text-[#a8acb3]">Tidak ada</span>
+    @endif
+</td>
                                 <td class="px-4 py-3 text-center">
                                     @if($jurnal->status_persetujuan == 'pending')
                                         <span class="inline-flex items-center rounded-full bg-[#f4b000]/10 px-3 py-1 text-xs font-semibold text-[#f4b000]">Menunggu</span>

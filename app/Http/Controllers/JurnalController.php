@@ -6,23 +6,25 @@ use App\Models\Jurnal;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 class JurnalController extends Controller
 {
-    // SISWA
+    // ============================ SISWA ============================
 
-public function indexSiswa(Request $request)
-{
-    $jurnals = Jurnal::where('siswa_id', Auth::id())
-        ->when($request->filled('status'), fn ($q) => $q->where('status_persetujuan', $request->status))
-        ->when($request->filled('tanggal'), fn ($q) => $q->whereDate('hari_tanggal', $request->tanggal))
-        ->orderBy('hari_tanggal', 'desc')
-        ->paginate(15)
-        ->withQueryString();
+    public function indexSiswa(Request $request)
+    {
+        $jurnals = Jurnal::where('siswa_id', Auth::id())
+            ->with('items')
+            ->when($request->filled('status'), fn ($q) => $q->where('status_persetujuan', $request->status))
+            ->when($request->filled('tanggal'), fn ($q) => $q->whereDate('hari_tanggal', $request->tanggal))
+            ->orderBy('hari_tanggal', 'desc')
+            ->paginate(15)
+            ->withQueryString();
 
-    return view('siswa.jurnal.index', compact('jurnals'));
-}
+        return view('siswa.jurnal.index', compact('jurnals'));
+    }
 
     public function createSiswa()
     {
@@ -31,26 +33,40 @@ public function indexSiswa(Request $request)
 
     public function storeSiswa(Request $request)
     {
-        $request->validate([
-            'hari_tanggal' => 'required|date',
-            'unit_kerja' => 'required|string',
-            'dokumentasi' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+        $validated = $request->validate([
+            'hari_tanggal'        => 'required|date',
+            'items'               => 'required|array|min:1',
+            'items.*.unit_kerja'  => 'required|string',
+            'items.*.dokumentasi' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+        ], [
+            'items.required'              => 'Minimal harus ada 1 pekerjaan / unit kerja.',
+            'items.min'                   => 'Minimal harus ada 1 pekerjaan / unit kerja.',
+            'items.*.unit_kerja.required' => 'Unit kerja / pekerjaan wajib diisi pada setiap poin.',
         ]);
 
-        $path = null;
-        if ($request->hasFile('dokumentasi')) {
-            $path = $request->file('dokumentasi')->store('dokumentasi_jurnal', 'public');
-        }
+        DB::transaction(function () use ($request, $validated) {
+            $jurnal = Jurnal::create([
+                'siswa_id'           => Auth::id(),
+                'hari_tanggal'       => $validated['hari_tanggal'],
+                'status_persetujuan' => 'pending',
+            ]);
 
-        Jurnal::create([
-            'siswa_id' => Auth::id(),
-            'hari_tanggal' => $request->hari_tanggal,
-            'unit_kerja' => $request->unit_kerja,
-            'dokumentasi' => $path,
-            'status_persetujuan' => 'pending',
-        ]);
+            foreach ($request->input('items', []) as $i => $item) {
+                $path = null;
+                if ($request->hasFile("items.$i.dokumentasi")) {
+                    $path = $request->file("items.$i.dokumentasi")
+                        ->store('dokumentasi_jurnal', 'public');
+                }
 
-        return redirect()->route('siswa.jurnal.index')->with('success', 'Jurnal harian berhasil ditambahkan!');
+                $jurnal->items()->create([
+                    'unit_kerja'  => $item['unit_kerja'],
+                    'dokumentasi' => $path,
+                ]);
+            }
+        });
+
+        return redirect()->route('siswa.jurnal.index')
+            ->with('success', 'Jurnal harian berhasil ditambahkan!');
     }
 
     public function destroySiswa($id)
@@ -61,42 +77,47 @@ public function indexSiswa(Request $request)
             return redirect()->back()->with('error', 'Jurnal yang sudah disetujui/direvisi tidak bisa dihapus.');
         }
 
-        if ($jurnal->dokumentasi) {
-            Storage::disk('public')->delete($jurnal->dokumentasi);
+        // hapus foto tiap pekerjaan
+        foreach ($jurnal->items as $item) {
+            if ($item->dokumentasi) {
+                Storage::disk('public')->delete($item->dokumentasi);
+            }
         }
 
-        $jurnal->delete();
-        return redirect()->route('siswa.jurnal.index')->with('success', 'Jurnal harian berhasil dihapus!');
+        $jurnal->delete(); // jurnal_items ikut terhapus (cascade)
+
+        return redirect()->route('siswa.jurnal.index')
+            ->with('success', 'Jurnal harian berhasil dihapus!');
     }
 
-    
-// INSTRUKTUR
-public function indexInstruktur(Request $request)
-{
-    $siswaIds = User::where('role', 'siswa_pkl')
-        ->where('instruktur_id', Auth::id())
-        ->where('status_pkl', 'aktif')
-        ->pluck('id');
+    // ========================== INSTRUKTUR ==========================
 
-    $jurnals = Jurnal::whereIn('siswa_id', $siswaIds)
-        ->with('siswa')
-        ->when($request->filled('q'), function ($query) use ($request) {
-            $q = $request->q;
-            $query->whereHas('siswa', function ($s) use ($q) {
-                $s->where('name', 'like', "%{$q}%")
-                  ->orWhere('nisn', 'like', "%{$q}%");
-            });
-        })
-        ->when($request->filled('status'), fn ($query) =>
-            $query->where('status_persetujuan', $request->status))
-        ->when($request->filled('tanggal'), fn ($query) =>          // ⬅️ filter tanggal
-            $query->whereDate('hari_tanggal', $request->tanggal))
-        ->orderBy('hari_tanggal', 'desc')
-        ->paginate(15)
-        ->withQueryString();
+    public function indexInstruktur(Request $request)
+    {
+        $siswaIds = User::where('role', 'siswa_pkl')
+            ->where('instruktur_id', Auth::id())
+            ->where('status_pkl', 'aktif')
+            ->pluck('id');
 
-    return view('instruktur.jurnal.index', compact('jurnals'));
-}
+        $jurnals = Jurnal::whereIn('siswa_id', $siswaIds)
+            ->with(['siswa', 'items'])
+            ->when($request->filled('q'), function ($query) use ($request) {
+                $q = $request->q;
+                $query->whereHas('siswa', function ($s) use ($q) {
+                    $s->where('name', 'like', "%{$q}%")
+                      ->orWhere('nisn', 'like', "%{$q}%");
+                });
+            })
+            ->when($request->filled('status'), fn ($query) =>
+                $query->where('status_persetujuan', $request->status))
+            ->when($request->filled('tanggal'), fn ($query) =>
+                $query->whereDate('hari_tanggal', $request->tanggal))
+            ->orderBy('hari_tanggal', 'desc')
+            ->paginate(15)
+            ->withQueryString();
+
+        return view('instruktur.jurnal.index', compact('jurnals'));
+    }
 
     public function updateInstruktur(Request $request, $id)
     {
@@ -104,7 +125,7 @@ public function indexInstruktur(Request $request)
         $jurnal->update([
             'status_persetujuan' => $request->status_persetujuan,
             'catatan_instruktur' => $request->catatan_instruktur,
-            'disetujui_oleh' => Auth::id(),
+            'disetujui_oleh'     => Auth::id(),
         ]);
         return redirect()->back()->with('success', 'Status Jurnal diperbarui!');
     }

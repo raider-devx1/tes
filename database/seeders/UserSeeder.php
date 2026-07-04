@@ -23,8 +23,6 @@ class UserSeeder extends Seeder
 
         /* ============================================================
          | 0. PERIODE PKL  (2 periode -> untuk uji filter dropdown periode)
-         |    Catatan: model PeriodePkl otomatis menonaktifkan periode lain
-         |    saat sebuah periode di-set is_active = true.
          ============================================================ */
         $periodeLama = PeriodePkl::create([
             'nama'            => 'PKL Gelombang 0 (Lampau)',
@@ -46,7 +44,6 @@ class UserSeeder extends Seeder
 
         /* ============================================================
          | 1. PERUSAHAAN / INDUSTRI
-         |    Field sesuai DB: nama_perusahaan, alamat, telepon, pembimbing_industri
          ============================================================ */
         $pt1 = Perusahaan::create([
             'nama_perusahaan'     => 'PT Semen Tonasa',
@@ -172,18 +169,25 @@ class UserSeeder extends Seeder
                 'periode_id'    => $periode->id,
             ]);
 
-            // ---- JURNAL (3 entri, status bervariasi) ----
+            // ---- JURNAL (3 entri, tiap entri punya beberapa pekerjaan/unit kerja) ----
             for ($j = 1; $j <= 3; $j++) {
                 $st = $statusJurnal[($j - 1) % 3];
-                Jurnal::create([
-                    'siswa_id'            => $siswa->id,
-                    'hari_tanggal'        => now()->subDays($j)->toDateString(),
-                    'unit_kerja'          => 'Divisi ' . $j,
-                    'dokumentasi'         => null,
-                    'catatan_instruktur'  => $st === 'disetujui' ? 'Kerja bagus.' : ($st === 'revisi' ? 'Mohon diperbaiki.' : null),
-                    'status_persetujuan'  => $st,
-                    'disetujui_oleh'      => $st === 'pending' ? null : $ind['ins']->id,
+
+                $jurnal = Jurnal::create([
+                    'siswa_id'           => $siswa->id,
+                    'hari_tanggal'       => now()->subDays($j)->toDateString(),
+                    'catatan_instruktur' => $st === 'disetujui' ? 'Kerja bagus.' : ($st === 'revisi' ? 'Mohon diperbaiki.' : null),
+                    'status_persetujuan' => $st,
+                    'disetujui_oleh'     => $st === 'pending' ? null : $ind['ins']->id,
                 ]);
+
+                // Jumlah pekerjaan bervariasi (jurnal ke-1 = 1 pekerjaan, ke-2 = 2, ke-3 = 3)
+                for ($k = 1; $k <= $j; $k++) {
+                    $jurnal->items()->create([
+                        'unit_kerja'  => "Pekerjaan ke-$k pada Divisi $j untuk {$siswa->name}.",
+                        'dokumentasi' => null,
+                    ]);
+                }
             }
 
             // ---- CATATAN KEGIATAN (3 entri) ----
@@ -198,24 +202,24 @@ class UserSeeder extends Seeder
                 ]);
             }
 
-           // ---- OBSERVASI (3 entri; tiap observasi punya beberapa poin masalah & solusi) ----
-for ($o = 1; $o <= 3; $o++) {
-    $observasi = Observasi::create([
-        'user_id'          => $siswa->id,
-        'guru_id'          => $guru->id,
-        'hari_tanggal'     => now()->subDays($o * 2)->toDateString(),
-        'pekerjaan_projek' => "Observasi projek ke-$o",
-        'is_approved'      => $o === 1, // 1 disetujui, sisanya menunggu
-    ]);
+            // ---- OBSERVASI (3 entri; tiap observasi punya beberapa poin masalah & solusi) ----
+            for ($o = 1; $o <= 3; $o++) {
+                $observasi = Observasi::create([
+                    'user_id'          => $siswa->id,
+                    'guru_id'          => $guru->id,
+                    'hari_tanggal'     => now()->subDays($o * 2)->toDateString(),
+                    'pekerjaan_projek' => "Observasi projek ke-$o",
+                    'is_approved'      => $o === 1, // 1 disetujui, sisanya menunggu
+                ]);
 
-    // Jumlah poin bervariasi (observasi ke-1 = 1 poin, ke-2 = 2 poin, ke-3 = 3 poin)
-    for ($p = 1; $p <= $o; $p++) {
-        $observasi->items()->create([
-            'permasalahan' => "Permasalahan poin ke-$p pada observasi ke-$o untuk {$siswa->name}.",
-            'solusi'       => "Solusi poin ke-$p untuk observasi ke-$o.",
-        ]);
-    }
-}
+                // Jumlah poin bervariasi (observasi ke-1 = 1 poin, ke-2 = 2 poin, ke-3 = 3 poin)
+                for ($p = 1; $p <= $o; $p++) {
+                    $observasi->items()->create([
+                        'permasalahan' => "Permasalahan poin ke-$p pada observasi ke-$o untuk {$siswa->name}.",
+                        'solusi'       => "Solusi poin ke-$p untuk observasi ke-$o.",
+                    ]);
+                }
+            }
 
             // ---- ABSENSI (5 entri, status & jam bervariasi) ----
             foreach ($statusAbsen as $idx => $stAbs) {
@@ -266,7 +270,6 @@ for ($o = 1; $o <= 3; $o++) {
             ]);
 
             // ---- DOKUMEN (1 baris per siswa) ----
-            // NB: nilai kolom = path contoh (file fisik belum ada). Cukup untuk uji tampilan/tabel.
             Dokumen::create([
                 'siswa_id'         => $siswa->id,
                 'surat_tugas'      => null, // surat tugas bersifat global (diunggah admin)

@@ -96,7 +96,14 @@
                                 <td class="px-4 py-3 font-medium text-gray-800">{{ $j->siswa->name ?? '-' }}</td>
                                 <td class="px-4 py-3">{{ $j->siswa->kelas ?? '-' }}</td>
                                 <td class="px-4 py-3">{{ $j->siswa->jurusan ?? '-' }}</td>
-                               <td class="px-4 py-3">{!! nl2br(e($j->unit_kerja)) !!}</td>
+                             <td class="px-4 py-3">
+    <ol class="list-decimal list-inside space-y-0.5">
+        @foreach($j->items as $it)
+            {{-- Menggunakan {{ }} agar teks unit kerja tercetak dari database --}}
+            <li>{{ $it->unit_kerja }}</li>
+        @endforeach
+    </ol>
+</td>
 <td class="px-4 py-3 text-gray-600">{{ $j->catatan_instruktur ?: '-' }}</td>
                                 
                                 <td class="px-4 py-3 text-center">

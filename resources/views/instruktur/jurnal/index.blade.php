@@ -146,7 +146,14 @@
                 <td class="px-4 py-3 whitespace-nowrap text-[#5b616e]"> {{ $tglJurnal }} </td>
 
                 <!-- ====== KOLOM UNIT KERJA/PEKERJAAN (terpisah) ====== -->
-                <td class="px-4 py-3 text-[#5b616e]">{!! nl2br(e($jurnal->unit_kerja)) !!}</td>
+              <td class="px-4 py-3 text-[#5b616e]">
+    <ol class="list-decimal list-inside space-y-0.5">
+        @foreach($jurnal->items as $it)
+            {{-- Menggunakan kurung kurawal ganda untuk mencetak teks pekerjaan --}}
+            <li>{{ $it->unit_kerja }}</li>
+        @endforeach
+    </ol>
+</td>
 
                 <!-- ====== KOLOM CATATAN INSTRUKTUR (bersebelahan) ====== -->
                 <td class="px-4 py-3 text-[#5b616e]">
@@ -159,14 +166,22 @@
                     @endif
                 </td>
 
-                <td class="px-4 py-3 text-center">
-                    @if($jurnal->dokumentasi)
-                        <a href="{{ asset('storage/'.$jurnal->dokumentasi) }}" target="_blank"
-                           class="text-sm font-semibold text-[#0052ff] hover:text-[#003ecc]">Lihat</a>
-                    @else
-                        <span class="text-[#a8acb3]">-</span>
-                    @endif
-                </td>
+             <td class="px-4 py-3 text-center">
+    @php $fotos = $jurnal->items->whereNotNull('dokumentasi')->values(); @endphp
+    @if($fotos->count())
+        <div class="flex flex-col gap-1">
+            @foreach($fotos as $k => $it)
+                {{-- Membungkus fungsi asset() dan perhitungan index ($k + 1) dengan Blade --}}
+                <a href="{{ asset('storage/' . $it->dokumentasi) }}" target="_blank"
+                   class="text-sm font-semibold text-[#0052ff] hover:text-[#003ecc]">
+                    Foto {{ $k + 1 }}
+                </a>
+            @endforeach
+        </div>
+    @else
+        <span class="text-[#a8acb3]">-</span>
+    @endif
+</td>
 
                 <!-- ====== STATUS ====== -->
                 <td class="px-4 py-3 text-center">

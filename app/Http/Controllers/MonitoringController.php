@@ -29,7 +29,7 @@ class MonitoringController extends Controller
         $jurusan = $request->get('jurusan', '');
 
         $jurnal = Jurnal::query()
-            ->with('siswa')
+            ->with(['siswa', 'items']) // ⬅️ eager-load items agar tidak N+1
             ->when($q, fn ($query) => $query->whereHas('siswa', fn ($s) =>
                 $s->where('name', 'like', "%{$q}%")->orWhere('nisn', 'like', "%{$q}%")))
             ->when($kelas,   fn ($query) => $query->whereHas('siswa', fn ($s) => $s->where('kelas', $kelas)))

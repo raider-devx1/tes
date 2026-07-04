@@ -63,7 +63,18 @@
                 <tr>
                     <td class="text-center"> {{ $index + 1 }} </td>
                     <td> {{ \Carbon\Carbon::parse($row->hari_tanggal)->format('d-m-Y') }} </td>
-                    <td> {{ $row->unit_kerja }} </td>
+                  <td>
+    @if($row->items->count())
+        <ol style="margin:0; padding-left:16px;">
+            @foreach($row->items as $it)
+                {{-- Membungkus variabel dengan {{ }} agar nilainya muncul --}}
+                <li>{{ $it->unit_kerja }}</li>
+            @endforeach
+        </ol>
+    @else
+        -
+    @endif
+</td>
                     <td> {{ $row->catatan_instruktur }} </td>
                     <td></td>
                 </tr>
