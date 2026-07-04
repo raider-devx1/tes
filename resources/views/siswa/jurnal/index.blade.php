@@ -163,32 +163,33 @@
                                     @endif
                                 </td>
 
-                                {{-- ===== AKSI ===== --}}
-                                <td class="px-4 py-3">
-                                    <div class="flex flex-wrap items-center justify-center gap-2">
-                                        <a href="{{ route('cetak.jurnal', ['jurnal_id' => $jurnal->id]) }}" target="_blank"
-                                           class="inline-flex items-center rounded-full bg-[#eef0f3] px-3 py-1.5 text-xs font-semibold text-[#0a0b0d] transition hover:bg-[#dee1e6]">
-                                            PDF
-                                        </a>
+                                <!-- ===== AKSI ===== -->
+<td class="px-4 py-3">
+    <div class="flex flex-wrap items-center justify-center gap-2">
+        {{-- Membungkus route cetak PDF --}}
+        <a href="{{ route('cetak.jurnal', ['jurnal_id' => $jurnal->id]) }}" target="_blank"
+           class="inline-flex items-center rounded-full bg-[#eef0f3] px-3 py-1.5 text-xs font-semibold text-[#0a0b0d] transition hover:bg-[#dee1e6]">
+            PDF
+        </a>
 
-                                        @if($jurnal->status_persetujuan == 'pending')
-                                            <a href="{{ route('siswa.jurnal.edit', $jurnal->id) }}"
-                                               class="inline-flex items-center rounded-full bg-[#0052ff]/10 px-3 py-1.5 text-xs font-semibold text-[#0052ff] transition hover:bg-[#0052ff]/20">
-                                                Edit
-                                            </a>
+        {{-- Membungkus route edit jurnal --}}
+        <a href="{{ route('siswa.jurnal.edit', $jurnal->id) }}"
+           class="inline-flex items-center rounded-full bg-[#0052ff]/10 px-3 py-1.5 text-xs font-semibold text-[#0052ff] transition hover:bg-[#0052ff]/20">
+            Edit
+        </a>
 
-                                            <form action="{{ route('siswa.jurnal.destroy', $jurnal->id) }}" method="POST"
-                                                  onsubmit="return confirm('Hapus jurnal ini? Data tidak dapat dikembalikan.');">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit"
-                                                        class="inline-flex items-center rounded-full bg-[#cf202f]/10 px-3 py-1.5 text-xs font-semibold text-[#cf202f] transition hover:bg-[#cf202f]/20">
-                                                    Hapus
-                                                </button>
-                                            </form>
-                                        @endif
-                                    </div>
-                                </td>
+        {{-- Membungkus route destroy/hapus pada form action --}}
+        <form action="{{ route('siswa.jurnal.destroy', $jurnal->id) }}" method="POST"
+              onsubmit="return confirm('Hapus jurnal ini? Data tidak dapat dikembalikan.');">
+            @csrf
+            @method('DELETE')
+            <button type="submit"
+                    class="inline-flex items-center rounded-full bg-[#cf202f]/10 px-3 py-1.5 text-xs font-semibold text-[#cf202f] transition hover:bg-[#cf202f]/20">
+                Hapus
+            </button>
+        </form>
+    </div>
+</td>
                             </tr>
                             @empty
                             <tr>

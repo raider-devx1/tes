@@ -70,14 +70,10 @@ class JurnalController extends Controller
 
     public function editSiswa($id)
     {
+        // Edit selalu diizinkan (apa pun statusnya)
         $jurnal = Jurnal::where('id', $id)->where('siswa_id', Auth::id())
             ->with('items')
             ->firstOrFail();
-
-        if ($jurnal->status_persetujuan !== 'pending') {
-            return redirect()->route('siswa.jurnal.index')
-                ->with('error', 'Jurnal yang sudah disetujui/direvisi tidak bisa diedit.');
-        }
 
         return view('siswa.jurnal.edit', compact('jurnal'));
     }
@@ -85,10 +81,6 @@ class JurnalController extends Controller
     public function updateSiswa(Request $request, $id)
     {
         $jurnal = Jurnal::where('id', $id)->where('siswa_id', Auth::id())->firstOrFail();
-
-        if ($jurnal->status_persetujuan !== 'pending') {
-            return redirect()->back()->with('error', 'Jurnal yang sudah disetujui/direvisi tidak bisa diedit.');
-        }
 
         $validated = $request->validate([
             'hari_tanggal'        => 'required|date',
@@ -102,7 +94,13 @@ class JurnalController extends Controller
         ]);
 
         DB::transaction(function () use ($request, $validated, $jurnal) {
-            $jurnal->update(['hari_tanggal' => $validated['hari_tanggal']]);
+            // Setelah diedit: status kembali "pending" dan perlu disetujui ulang
+            $jurnal->update([
+                'hari_tanggal'       => $validated['hari_tanggal'],
+                'status_persetujuan' => 'pending',
+                'catatan_instruktur' => null,
+                'disetujui_oleh'     => null,
+            ]);
 
             $keptIds = [];
 
@@ -145,16 +143,13 @@ class JurnalController extends Controller
         });
 
         return redirect()->route('siswa.jurnal.index')
-            ->with('success', 'Jurnal harian berhasil diperbarui!');
+            ->with('success', 'Jurnal berhasil diperbarui. Status kembali menunggu persetujuan instruktur.');
     }
 
     public function destroySiswa($id)
     {
+        // Hapus selalu diizinkan (apa pun statusnya)
         $jurnal = Jurnal::where('id', $id)->where('siswa_id', Auth::id())->firstOrFail();
-
-        if ($jurnal->status_persetujuan !== 'pending') {
-            return redirect()->back()->with('error', 'Jurnal yang sudah disetujui/direvisi tidak bisa dihapus.');
-        }
 
         foreach ($jurnal->items as $item) {
             if ($item->dokumentasi) {
