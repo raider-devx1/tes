@@ -11,11 +11,11 @@
 
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <div class="rounded-3xl border border-[#dee1e6] bg-white p-6 md:p-8">
+            <div class="rounded-3xl border border-[#dee1e6] bg-white p-4 sm:p-6 md:p-8">
 
                 <div class="flex flex-wrap justify-between items-center gap-3 mb-6">
                     <h3 class="text-lg font-semibold tracking-tight text-[#0a0b0d]">Riwayat Jurnal Saya</h3>
-                    <div class="flex gap-2">
+                    <div class="flex flex-wrap gap-2">
                         <a href="{{ route('siswa.jurnal.create') }}"
                            class="inline-flex items-center rounded-full bg-[#0052ff] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#003ecc]">
                             + Tambah Jurnal
@@ -63,16 +63,16 @@
 
                 {{-- ===== TABEL JURNAL ===== --}}
                 <div class="overflow-x-auto rounded-2xl border border-[#eef0f3]">
-                    <table class="w-full text-left text-sm">
+                    <table class="w-full min-w-[900px] text-left text-sm table-fixed">
                         <thead>
                             <tr class="bg-[#f7f7f7] text-xs uppercase tracking-wide text-[#7c828a]">
                                 <th class="px-4 py-3 text-center w-12 font-semibold">No</th>
-                                <th class="px-4 py-3 font-semibold">Tanggal</th>
-                                <th class="px-4 py-3 font-semibold">Unit Kerja</th>
-                                <th class="px-4 py-3 font-semibold w-1/3">Catatan Instruktur</th>
-                                <th class="px-4 py-3 font-semibold">Foto</th>
-                                <th class="px-4 py-3 text-center font-semibold">Status</th>
-                                <th class="px-4 py-3 text-center font-semibold">Aksi</th>
+                                <th class="px-4 py-3 font-semibold w-28">Tanggal</th>
+                                <th class="px-4 py-3 font-semibold w-[38%]">Unit Kerja</th>
+                                <th class="px-4 py-3 font-semibold w-1/5">Catatan Instruktur</th>
+                                <th class="px-4 py-3 font-semibold w-36">Foto</th>
+                                <th class="px-4 py-3 text-center font-semibold w-28">Status</th>
+                                <th class="px-4 py-3 text-center font-semibold w-40">Aksi</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-[#eef0f3]">
@@ -83,15 +83,42 @@
                                      {{ \Carbon\Carbon::parse($jurnal->hari_tanggal)->translatedFormat('d M Y') }}
                                 </td>
 
-                                <td class="px-4 py-3 text-[#5b616e]">
-                                    <ol class="list-decimal list-inside space-y-0.5">
-                                        @foreach($jurnal->items as $it)
-                                            <li>{{ $it->unit_kerja }}</li>
-                                        @endforeach
-                                    </ol>
+                                {{-- ===== UNIT KERJA: tampilkan pekerjaan pertama, sisanya bisa dibuka ===== --}}
+                                <td class="px-4 py-3 text-[#5b616e] break-words">
+                                    @php $items = $jurnal->items; @endphp
+                                    @if($items->count())
+                                        <div x-data="{ open: false }">
+                                            <div class="flex items-start gap-1.5">
+                                                <span class="font-semibold text-[#0a0b0d]">1.</span>
+                                                <span class="break-words">{{ $items->first()->unit_kerja }}</span>
+                                            </div>
+
+                                            @if($items->count() > 1)
+                                                <button type="button" @click="open = !open"
+                                                        class="mt-1 inline-flex items-center gap-1 rounded-full bg-[#eef0f3] px-2.5 py-1 text-xs font-semibold text-[#0052ff] transition hover:bg-[#dee1e6]">
+                                                    <span x-show="!open">+ {{ $items->count() - 1 }} pekerjaan lainnya</span>
+                                                    <span x-show="open" style="display:none;">Sembunyikan</span>
+                                                    <svg class="h-3 w-3 transition-transform" :class="open ? 'rotate-180' : ''"
+                                                         xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                                         stroke-width="2.5" stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                                                    </svg>
+                                                </button>
+
+                                                <ol start="2" x-show="open" x-cloak x-transition
+                                                    class="mt-2 list-decimal list-inside space-y-0.5 border-t border-[#eef0f3] pt-2">
+                                                    @foreach($items->slice(1) as $it)
+                                                        <li class="break-words">{{ $it->unit_kerja }}</li>
+                                                    @endforeach
+                                                </ol>
+                                            @endif
+                                        </div>
+                                    @else
+                                        <span class="text-[#a8acb3]">-</span>
+                                    @endif
                                 </td>
 
-                                <td class="px-4 py-3 text-[#5b616e]">
+                                <td class="px-4 py-3 text-[#5b616e] break-words">
                                     @if($jurnal->catatan_instruktur)
                                         <div class="rounded-lg border-l-2 border-[#f4b000] bg-[#f4b000]/5 p-2 text-xs italic text-[#5b616e]">
                                              {{ $jurnal->catatan_instruktur }}
@@ -101,15 +128,24 @@
                                     @endif
                                 </td>
 
+                                {{-- ===== FOTO: tombol Lihat + Download ===== --}}
                                 <td class="px-4 py-3 text-center">
                                     @php $fotos = $jurnal->items->whereNotNull('dokumentasi')->values(); @endphp
                                     @if($fotos->count())
-                                        <div class="flex flex-col gap-1">
+                                        <div class="flex flex-col gap-1.5">
                                             @foreach($fotos as $k => $it)
-                                                <a href="{{ asset('storage/' . $it->dokumentasi) }}" target="_blank"
-                                                   class="text-sm font-semibold text-[#0052ff] hover:underline">
-                                                    Foto {{ $k + 1 }}
-                                                </a>
+                                                <div class="flex flex-wrap items-center justify-center gap-1.5">
+                                                    <span class="text-xs text-[#7c828a]">Foto {{ $k + 1 }}</span>
+                                                    <a href="{{ asset('storage/' . $it->dokumentasi) }}" target="_blank"
+                                                       class="inline-flex items-center rounded-full bg-[#0052ff]/10 px-2.5 py-1 text-xs font-semibold text-[#0052ff] transition hover:bg-[#0052ff]/20">
+                                                        Lihat
+                                                    </a>
+                                                    <a href="{{ asset('storage/' . $it->dokumentasi) }}"
+                                                       download="Foto_Jurnal_{{ $jurnal->id }}_{{ $k + 1 }}"
+                                                       class="inline-flex items-center rounded-full bg-[#05b169]/10 px-2.5 py-1 text-xs font-semibold text-[#05b169] transition hover:bg-[#05b169]/20">
+                                                        Download
+                                                    </a>
+                                                </div>
                                             @endforeach
                                         </div>
                                     @else
@@ -127,9 +163,9 @@
                                     @endif
                                 </td>
 
-                                {{-- ===== KOLOM AKSI: PDF + EDIT + HAPUS ===== --}}
+                                {{-- ===== AKSI ===== --}}
                                 <td class="px-4 py-3">
-                                    <div class="flex items-center justify-center gap-2 whitespace-nowrap">
+                                    <div class="flex flex-wrap items-center justify-center gap-2">
                                         <a href="{{ route('cetak.jurnal', ['jurnal_id' => $jurnal->id]) }}" target="_blank"
                                            class="inline-flex items-center rounded-full bg-[#eef0f3] px-3 py-1.5 text-xs font-semibold text-[#0a0b0d] transition hover:bg-[#dee1e6]">
                                             PDF
