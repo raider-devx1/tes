@@ -63,14 +63,14 @@ public function index(Request $request)
     | MONITORING 1: LIHAT JURNAL (hanya-baca, semua siswa bimbingan)
     |--------------------------------------------------------------------------
     */
-   public function monitoringJurnal(Request $request)
+  public function monitoringJurnal(Request $request)
 {
     $siswaIds = User::where('role', 'siswa_pkl')
         ->where('guru_id', Auth::id())
         ->where('status_pkl', 'aktif')
         ->pluck('id');
 
-    $jurnals = Jurnal::with('siswa')
+    $jurnals = Jurnal::with(['siswa', 'items'])   // ⬅️ tambahkan 'items' agar unit kerja & foto tampil
         ->whereIn('siswa_id', $siswaIds)
         ->when($request->filled('q'), function ($query) use ($request) {
             $q = $request->q;

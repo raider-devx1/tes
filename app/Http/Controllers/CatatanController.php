@@ -106,6 +106,17 @@ public function indexGuru(Request $request)
 {
     $guru_id = Auth::id();
 
+    // Query dasar: semua catatan milik siswa bimbingan guru ini (untuk rekap)
+    $rekapQuery = CatatanKegiatan::whereHas('user', function ($u) use ($guru_id) {
+        $u->where('guru_id', $guru_id)->where('status_pkl', 'aktif');
+    });
+
+    $rekap = [
+        'total'     => (clone $rekapQuery)->count(),
+        'disetujui' => (clone $rekapQuery)->where('is_approved', true)->count(),
+        'menunggu'  => (clone $rekapQuery)->where('is_approved', false)->count(),
+    ];
+
     $catatan = CatatanKegiatan::with('user')
         ->whereHas('user', function ($u) use ($guru_id, $request) {
             $u->where('guru_id', $guru_id)
@@ -126,10 +137,10 @@ public function indexGuru(Request $request)
         ->paginate(15)
         ->withQueryString();
 
-    return view('guru.catatan.index', compact('catatan'));
+    return view('guru.catatan.index', compact('catatan', 'rekap'));
 }
 
-    // ====== ROLE: INSTRUKTUR INDUSTRI (menyetujui catatan) ======
+    
    // ====== ROLE: INSTRUKTUR INDUSTRI (menyetujui catatan) ======
 public function indexInstruktur(Request $request)
 {
