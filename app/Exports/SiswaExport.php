@@ -17,10 +17,15 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
 class SiswaExport extends StringValueBinder implements FromQuery, WithHeadings, WithMapping, ShouldAutoSize, WithStyles, WithColumnFormatting, WithCustomValueBinder
 {
-    public function __construct(
-        protected string $q = '',
-        protected string $status = ''
-    ) {}
+    protected string $q;
+    protected string $status;
+
+    public function __construct(?string $q = '', ?string $status = '')
+    {
+        // Terima null dari controller lalu normalkan jadi string kosong
+        $this->q = (string) $q;
+        $this->status = (string) $status;
+    }
 
     public function query(): Builder
     {
