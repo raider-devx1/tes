@@ -209,8 +209,11 @@ Route::put('/jurnal/{id}', [JurnalController::class, 'updateSiswa'])->name('jurn
 Route::delete('/jurnal/{id}', [JurnalController::class, 'destroySiswa'])->name('jurnal.destroy');
 
         Route::get('/catatan', [CatatanController::class, 'indexSiswa'])->name('catatan.index');
-        Route::get('/catatan/create', [CatatanController::class, 'createSiswa'])->name('catatan.create');
-        Route::post('/catatan', [CatatanController::class, 'storeSiswa'])->name('catatan.store');
+Route::get('/catatan/create', [CatatanController::class, 'createSiswa'])->name('catatan.create');
+Route::post('/catatan', [CatatanController::class, 'storeSiswa'])->name('catatan.store');
+Route::get('/catatan/{id}/edit', [CatatanController::class, 'editSiswa'])->name('catatan.edit');   // ⬅️ baru
+Route::put('/catatan/{id}', [CatatanController::class, 'updateSiswa'])->name('catatan.update');     // ⬅️ baru
+Route::delete('/catatan/{id}', [CatatanController::class, 'destroySiswa'])->name('catatan.destroy'); // ⬅️ baru
 
         Route::get('/observasi', [ObservasiController::class, 'indexSiswa'])->name('observasi.index');
         Route::get('/nilai', [NilaiController::class, 'indexSiswa'])->name('nilai.index');

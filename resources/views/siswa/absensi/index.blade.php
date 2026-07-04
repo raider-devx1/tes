@@ -1,7 +1,17 @@
 <x-app-layout>
+     <x-slot name="header">
+        <div class="flex items-center justify-between gap-4">
+           
+            <h1 class="text-xl md:text-2xl font-bold text-black mb-6">Daftar Hadir PKL Saya</h1>
+            
+            <a href="{{ route('siswa.dashboard') }}"
+               class="inline-flex items-center gap-1 rounded-xl border-2 border-[#0047d6]/25 bg-white px-4 py-2 text-sm font-bold text-[#0047d6] transition hover:bg-[#0047d6]/5">
+                &larr; Kembali ke Dashboard
+            </a>
+        </div>
+    </x-slot>
     <div class="bg-white min-h-screen">
         <div class="max-w-5xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-            <h1 class="text-xl md:text-2xl font-bold text-black mb-6">Daftar Hadir PKL Saya</h1>
 
             {{-- ===== KARTU REKAP ABSENSI ===== --}}
             <div class="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-6">

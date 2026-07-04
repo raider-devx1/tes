@@ -44,6 +44,63 @@ class CatatanController extends Controller
         return redirect()->route('siswa.catatan.index')->with('success', 'Catatan Kegiatan berhasil ditambahkan.');
     }
 
+    /** Form edit catatan milik siswa yang login. */
+public function editSiswa($id)
+{
+    // Pastikan hanya bisa mengedit catatan miliknya sendiri
+    $catatan = CatatanKegiatan::where('user_id', Auth::id())->findOrFail($id);
+
+    // Catatan yang sudah disetujui instruktur tidak boleh diubah lagi
+    if ($catatan->is_approved) {
+        return redirect()->route('siswa.catatan.index')
+            ->with('error', 'Catatan yang sudah disetujui tidak dapat diubah.');
+    }
+
+    return view('siswa.catatan.edit', compact('catatan'));
+}
+
+/** Simpan perubahan catatan milik siswa yang login. */
+public function updateSiswa(Request $request, $id)
+{
+    $catatan = CatatanKegiatan::where('user_id', Auth::id())->findOrFail($id);
+
+    if ($catatan->is_approved) {
+        return redirect()->route('siswa.catatan.index')
+            ->with('error', 'Catatan yang sudah disetujui tidak dapat diubah.');
+    }
+
+    $request->validate([
+        'nama_pekerjaan'       => 'required|string|max:255',
+        'perencanaan_kegiatan' => 'required|string',
+        'pelaksanaan_kegiatan' => 'required|string',
+    ]);
+
+    $catatan->update([
+        'nama_pekerjaan'       => $request->nama_pekerjaan,
+        'perencanaan_kegiatan' => $request->perencanaan_kegiatan,
+        'pelaksanaan_kegiatan' => $request->pelaksanaan_kegiatan,
+    ]);
+
+    return redirect()->route('siswa.catatan.index')
+        ->with('success', 'Catatan Kegiatan berhasil diperbarui.');
+}
+
+/** Hapus catatan milik siswa yang login. */
+public function destroySiswa($id)
+{
+    $catatan = CatatanKegiatan::where('user_id', Auth::id())->findOrFail($id);
+
+    if ($catatan->is_approved) {
+        return redirect()->route('siswa.catatan.index')
+            ->with('error', 'Catatan yang sudah disetujui tidak dapat dihapus.');
+    }
+
+    $catatan->delete();
+
+    return redirect()->route('siswa.catatan.index')
+        ->with('success', 'Catatan Kegiatan berhasil dihapus.');
+}
+
     // ====== ROLE: GURU PEMBIMBING (memantau catatan) ======
 public function indexGuru(Request $request)
 {

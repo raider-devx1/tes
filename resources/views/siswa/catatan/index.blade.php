@@ -1,6 +1,13 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="text-xl md:text-2xl font-bold tracking-tight text-black">Catatan Kegiatan</h2>
+        <div class="flex items-center justify-between gap-4">
+            <h2 class="text-xl md:text-2xl font-bold tracking-tight text-black">Catatan Kegiatan</h2>
+            
+            <a href="{{ route('siswa.dashboard') }}"
+               class="inline-flex items-center gap-1 rounded-xl border-2 border-[#0047d6]/25 bg-white px-4 py-2 text-sm font-bold text-[#0047d6] transition hover:bg-[#0047d6]/5">
+                &larr; Kembali ke Dashboard
+            </a>
+        </div>
     </x-slot>
 
     <div class="py-8 md:py-12 bg-white">
@@ -21,6 +28,12 @@
                 @if(session('success'))
                     <div class="mb-4 rounded-xl border-2 border-[#05b169] bg-[#05b169]/10 px-4 py-3 text-sm font-semibold text-black">
                         {{ session('success') }}
+                    </div>
+                @endif
+
+                @if(session('error'))
+                    <div class="mb-4 rounded-xl border-2 border-red-500 bg-red-500/10 px-4 py-3 text-sm font-semibold text-black">
+                        {{ session('error') }}
                     </div>
                 @endif
 
@@ -54,19 +67,19 @@
                                 <th class="px-4 py-3 text-center w-12 font-bold">No</th>
                                 <th class="px-4 py-3 font-bold w-28">Tanggal</th>
                                 <th class="px-4 py-3 font-bold w-40">Nama Pekerjaan</th>
-                                <th class="px-4 py-3 font-bold w-[22%]">Perencanaan</th>
-                                <th class="px-4 py-3 font-bold w-[22%]">Pelaksanaan / Hasil</th>
-                                <th class="px-4 py-3 font-bold w-[18%]">Catatan Instruktur</th>
+                                <th class="px-4 py-3 font-bold w-[20%]">Perencanaan</th>
+                                <th class="px-4 py-3 font-bold w-[20%]">Pelaksanaan / Hasil</th>
+                                <th class="px-4 py-3 font-bold w-[16%]">Catatan Instruktur</th>
                                 <th class="px-4 py-3 text-center font-bold w-28">Status</th>
-                                <th class="px-4 py-3 text-center font-bold w-20">Cetak</th>
+                                <th class="px-4 py-3 text-center font-bold w-32">Aksi</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-[#0047d6]/10">
                             @forelse ($catatan as $item)
                                 <tr class="align-top transition hover:bg-[#0047d6]/5">
-                                    <td class="px-4 py-3 text-center font-semibold text-black">{{ $catatan->firstItem() + $loop->index }}</td>
+                                    <td class="px-4 py-3 text-center font-semibold text-black">{{ $loop->iteration + ($catatan->firstItem() - 1) }}</td>
                                     <td class="px-4 py-3 whitespace-nowrap font-medium text-black">
-                                         {{ \Carbon\Carbon::parse($item->created_at)->translatedFormat('d M Y') }}
+                                         {{ $item->created_at->translatedFormat('d M Y') }}
                                     </td>
                                     <td class="px-4 py-3 font-bold text-black break-words">{{ $item->nama_pekerjaan }}</td>
                                     <td class="px-4 py-3 font-medium text-black break-words">{{ $item->perencanaan_kegiatan }}</td>
@@ -85,9 +98,34 @@
                                             <span class="inline-flex items-center rounded-full bg-[#d98200] px-3 py-1 text-xs font-bold text-white">Menunggu</span>
                                         @endif
                                     </td>
-                                    <td class="px-4 py-3 text-center">
-                                        <a href="{{ route('cetak.catatan', ['catatan_id' => $item->id]) }}" target="_blank"
-                                           class="inline-flex items-center rounded-xl bg-[#0047d6] px-3 py-1.5 text-xs font-bold text-white transition hover:bg-[#0038aa] focus:outline-none focus:ring-2 focus:ring-[#0047d6]/30">PDF</a>
+
+                                    {{-- ===== KOLOM AKSI ===== --}}
+                                    <td class="px-4 py-3">
+                                        <div class="flex flex-col items-stretch gap-1.5">
+                                            <a href="{{ route('cetak.catatan', ['catatan_id' => $item->id]) }}" target="_blank"
+                                               class="inline-flex items-center justify-center rounded-xl bg-[#0047d6] px-3 py-1.5 text-xs font-bold text-white transition hover:bg-[#0038aa] focus:outline-none focus:ring-2 focus:ring-[#0047d6]/30">
+                                                Cetak PDF
+                                            </a>
+
+                                            @if(! $item->is_approved)
+                                                <a href="{{ route('siswa.catatan.edit', $item->id) }}"
+                                                   class="inline-flex items-center justify-center rounded-xl bg-[#d98200] px-3 py-1.5 text-xs font-bold text-white transition hover:bg-[#b56d00] focus:outline-none focus:ring-2 focus:ring-[#d98200]/30">
+                                                    Edit
+                                                </a>
+
+                                                <form action="{{ route('siswa.catatan.destroy', $item->id) }}" method="POST"
+                                                      onsubmit="return confirm('Yakin ingin menghapus catatan ini?')">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit"
+                                                            class="w-full inline-flex items-center justify-center rounded-xl bg-red-600 px-3 py-1.5 text-xs font-bold text-white transition hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-600/30">
+                                                        Hapus
+                                                    </button>
+                                                </form>
+                                            @else
+                                                <span class="text-center text-xs italic text-[#5b616e]">Terkunci</span>
+                                            @endif
+                                        </div>
                                     </td>
                                 </tr>
                             @empty
