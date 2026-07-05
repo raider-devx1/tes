@@ -30,21 +30,37 @@ $isAdmin = auth()->check() && auth()->user()->role === 'admin';
     {{-- LAYOUT ADMIN                                                        --}}
     {{-- =================================================================== --}}
     @if($isAdmin)
-    <div x-data="{ sidebarOpen: false }" class="min-h-screen">
+    <div
+    x-data="{
+        sidebarOpen: localStorage.getItem('sidebarOpen') !== null
+            ? localStorage.getItem('sidebarOpen') === 'true'
+            : window.innerWidth >= 1024
+    }"
+    x-init="$watch('sidebarOpen', value => localStorage.setItem('sidebarOpen', value))"
+    class="min-h-screen">
 
         {{-- ===== SIDEBAR MINIMALIS ===== --}}
-        <aside
-            class="fixed inset-y-0 left-0 z-40 w-64 bg-white border-r border-slate-100 transform transition-transform duration-200 lg:translate-x-0 overflow-y-auto"
-            :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'">
+       <aside
+    class="fixed inset-y-0 left-0 z-40 w-64 bg-white border-r border-slate-100 transform transition-transform duration-300 ease-in-out overflow-y-auto"
+    :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'">
 
-            <div class="h-16 flex items-center gap-3 px-6 border-b border-slate-100">
-                <div class="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white font-bold text-base shadow-sm shadow-blue-200">
-                    P
-                </div>
-                <span class="font-bold text-slate-800 text-base tracking-tight">
-                    LMS <span class="text-blue-600 font-extrabold">PKL</span>
-                </span>
-            </div>
+           <div class="h-16 flex items-center justify-between px-6 border-b border-slate-100">
+    <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white font-bold text-base shadow-sm shadow-blue-200">
+            P
+        </div>
+        <span class="font-bold text-slate-800 text-base tracking-tight">
+            LMS <span class="text-blue-600 font-extrabold">PKL</span>
+        </span>
+    </div>
+    <button @click="sidebarOpen = false"
+        class="p-1.5 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition-colors"
+        title="Tutup sidebar">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path d="M18 6L6 18M6 6l12 12" />
+        </svg>
+    </button>
+</div>
 
             <nav class="px-4 py-6 space-y-1.5 text-sm">
                 
@@ -226,7 +242,7 @@ $isAdmin = auth()->check() && auth()->user()->role === 'admin';
                         </a>
                        <a href="{{ route('admin.akun-admin.index') }}"
    class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm {{ request()->routeIs('admin.akun-admin.*') ? 'bg-blue-50 text-[#2563EB] font-medium' : 'text-gray-600 hover:bg-blue-50' }}">
-    <span>🛡️</span> Kelola Akun Admin
+     Kelola Akun Admin
 </a>
                         <a href="{{ route('profile.edit') }}"
                             class="block px-3 py-2 text-[13px] rounded-lg transition-all {{ request()->routeIs('profile.edit') ? 'text-blue-600 font-semibold' : 'text-slate-500 hover:text-slate-900' }}">
@@ -242,17 +258,20 @@ $isAdmin = auth()->check() && auth()->user()->role === 'admin';
             class="fixed inset-0 z-30 bg-slate-900/30 lg:hidden backdrop-blur-xs"></div>
 
         {{-- ===== WRAPPER ===== --}}
-        <div class="lg:ml-64 flex flex-col min-h-screen">
+        <div class="flex flex-col min-h-screen transition-all duration-300 ease-in-out"
+    :class="sidebarOpen ? 'lg:ml-64' : 'ml-0'">
 
             {{-- NAVBAR sticky --}}
             <header
                 class="sticky top-0 z-20 h-16 bg-white/80 backdrop-blur-md border-b border-slate-100 flex items-center justify-between px-6">
                 <div class="flex items-center gap-3">
-                    <button @click="sidebarOpen=true" class="lg:hidden p-2 rounded-xl text-slate-600 hover:bg-slate-50">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                            <path d="M4 6h16M4 12h16M4 18h16" />
-                        </svg>
-                    </button>
+                   <button @click="sidebarOpen = !sidebarOpen"
+    class="p-2 rounded-xl text-slate-600 hover:bg-slate-50 transition-colors"
+    title="Buka / tutup menu">
+    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path d="M4 6h16M4 12h16M4 18h16" />
+    </svg>
+</button>
                     <h1 class="text-base font-semibold text-slate-800">{{ $title ?? 'Dashboard' }}</h1>
                 </div>
 
