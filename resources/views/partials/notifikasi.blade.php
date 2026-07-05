@@ -142,7 +142,17 @@
 @endphp
 
 @if ($jumlahNotif > 0)
-    <div x-data="{ open: false }" class="mb-6">
+    <div x-data="{ 
+            open: false, 
+            activeKeys: [
+                @foreach($notifikasi as $n)
+                    @if($n['nanti']) localStorage.getItem('notif_dismiss_{{ $n['key'] }}') !== '1' ? '{{ $n['key'] }}' : null, @else '{{ $n['key'] }}', @endif
+                @endforeach
+            ].filter(Boolean)
+         }" 
+         x-show="activeKeys.length > 0" 
+         x-cloak 
+         class="mb-6">
 
         {{-- ===== KARTU RINGKAS (pemicu pop-up) ===== --}}
         <button type="button" @click="open = true"
@@ -154,16 +164,16 @@
                     <path stroke-linecap="round" stroke-linejoin="round"
                           d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
                 </svg>
-                <span class="absolute -right-1 -top-1 flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-[#cf202f] px-1 text-xs font-bold text-white">{{ $jumlahNotif }}</span>
+                <span class="absolute -right-1 -top-1 flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-[#cf202f] px-1 text-xs font-bold text-white" x-text="activeKeys.length"></span>
             </span>
 
             {{-- Teks penjelasan --}}
             <span class="min-w-0 flex-1">
-                <span class="block text-sm font-bold text-black sm:text-base">Anda Memiliki {{ $jumlahNotif }} Notifikasi</span>
+                <span class="block text-sm font-bold text-black sm:text-base">Anda Memiliki <span x-text="activeKeys.length"></span> Notifikasi</span>
                 <span class="mt-0.5 block text-sm font-medium text-[#5b616e]">Ada tugas yang perlu ditindaklanjuti. Ketuk untuk melihat detailnya.</span>
             </span>
 
-            {{-- Tombol / panah --}}
+            {{-- Tombol (desktop) / panah (mobile) --}}
             <span class="hidden shrink-0 items-center rounded-lg bg-[#0047d6] px-4 py-2 text-sm font-semibold text-white transition group-hover:bg-[#0038aa] sm:inline-flex">
                 Lihat Notifikasi
             </span>
@@ -173,17 +183,15 @@
         </button>
 
         {{-- ===== POP-UP / MODAL NOTIFIKASI ===== --}}
-        <div x-cloak x-show="open"
-             class="fixed inset-0 z-50 flex items-end justify-center sm:items-center"
-             x-trap.inert.noscroll="open"
-             @keydown.escape.window="open = false">
+        <div x-cloak x-show="open" style="display: none;"
+             class="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
 
             {{-- Backdrop --}}
             <div x-show="open" x-transition.opacity
                  @click="open = false"
                  class="absolute inset-0 bg-black/50"></div>
 
-            {{-- Panel: bottom-sheet di HP, dialog tengah di desktop --}}
+            {{-- Panel --}}
             <div x-show="open"
                  x-transition:enter="transition ease-out duration-200"
                  x-transition:enter-start="opacity-0 translate-y-8 sm:translate-y-0 sm:scale-95"
@@ -193,11 +201,11 @@
                  x-transition:leave-end="opacity-0 translate-y-8 sm:translate-y-0 sm:scale-95"
                  class="relative flex max-h-[88vh] w-full flex-col overflow-hidden rounded-t-3xl bg-white shadow-xl sm:mx-4 sm:max-w-lg sm:rounded-2xl">
 
-                {{-- Header modal --}}
+                {{-- Header --}}
                 <div class="flex items-center justify-between gap-3 border-b border-[#e6e9ef] px-5 py-4">
                     <div class="flex items-center gap-2">
                         <h3 class="text-base font-bold text-black sm:text-lg">Notifikasi</h3>
-                        <span class="flex h-6 min-w-[1.5rem] items-center justify-center rounded-full bg-[#0047d6]/10 px-2 text-xs font-bold text-[#0047d6]">{{ $jumlahNotif }}</span>
+                        <span class="flex h-6 min-w-[1.5rem] items-center justify-center rounded-full bg-[#0047d6]/10 px-2 text-xs font-bold text-[#0047d6]" x-text="activeKeys.length"></span>
                     </div>
                     <button type="button" @click="open = false"
                             class="rounded-lg p-1.5 text-[#8a909a] transition hover:bg-black/5 hover:text-black"
@@ -208,7 +216,7 @@
                     </button>
                 </div>
 
-                {{-- Daftar notifikasi (bisa di-scroll) --}}
+                {{-- Daftar notifikasi --}}
                 <div class="space-y-3 overflow-y-auto px-4 py-4 sm:px-5">
                     @foreach ($notifikasi as $n)
                         @php
@@ -228,7 +236,8 @@
                             ][$n['warna']];
                         @endphp
 
-                        <div x-data="{ show: true }" x-show="show"
+                        <div x-data="{ key: '{{ $n['key'] }}' }" 
+                             x-show="activeKeys.includes(key)"
                              class="flex items-start gap-3 rounded-2xl border-2 {{ $tema['ring'] }} {{ $tema['bg'] }} p-4">
 
                             <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl {{ $tema['chip'] }}">
@@ -249,7 +258,8 @@
                                     </a>
 
                                     @if ($n['nanti'])
-                                        <button type="button" @click="show = false"
+                                        <button type="button" 
+                                                @click="localStorage.setItem('notif_dismiss_' + key, '1'); activeKeys = activeKeys.filter(k => k !== key); if(activeKeys.length === 0) open = false;"
                                                 class="inline-flex items-center rounded-lg border-2 border-[#d5d9e0] bg-white px-4 py-2 text-sm font-semibold text-[#3f4550] transition hover:bg-[#f3f5f9]">
                                             Nanti
                                         </button>
@@ -260,7 +270,7 @@
                     @endforeach
                 </div>
 
-                {{-- Footer modal --}}
+                {{-- Footer --}}
                 <div class="border-t border-[#e6e9ef] px-5 py-3">
                     <button type="button" @click="open = false"
                             class="w-full rounded-lg border-2 border-[#d5d9e0] bg-white px-4 py-2.5 text-sm font-semibold text-[#3f4550] transition hover:bg-[#f3f5f9]">
