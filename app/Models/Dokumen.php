@@ -40,7 +40,8 @@ class Dokumen extends Model
 
     /**
      * Cek apakah $user boleh melakukan $aksi (upload|lihat|download)
-     * pada $jenis dokumen milik $siswa. Mengecek role DAN relasi kepemilikan.
+     * pada $jenis dokumen milik $siswa. Mengecek role, relasi kepemilikan,
+     * DAN status PKL siswa (guru/instruktur hanya untuk siswa yang masih aktif).
      */
     public static function boleh(string $aksi, string $jenis, User $user, User $siswa): bool
     {
@@ -53,8 +54,10 @@ class Dokumen extends Model
         return match ($user->role) {
             'admin'               => true,
             'siswa_pkl'           => $siswa->id === $user->id,
-            'guru_pembimbing'     => (int) $siswa->guru_id === $user->id,
-            'instruktur_industri' => (int) $siswa->instruktur_id === $user->id,
+            'guru_pembimbing'     => (int) $siswa->guru_id === $user->id
+                                     && $siswa->status_pkl === 'aktif',
+            'instruktur_industri' => (int) $siswa->instruktur_id === $user->id
+                                     && $siswa->status_pkl === 'aktif',
             default               => false,
         };
     }
