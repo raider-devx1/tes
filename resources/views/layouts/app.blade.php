@@ -1,5 +1,5 @@
 @php
-    $isAdmin = auth()->check() && auth()->user()->role === 'admin';
+$isAdmin = auth()->check() && auth()->user()->role === 'admin';
 @endphp
 
 <!DOCTYPE html>
@@ -20,7 +20,7 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     
     @if($isAdmin)
-        <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
     @endif
 </head>
 
@@ -30,35 +30,37 @@
     {{-- LAYOUT ADMIN                                                        --}}
     {{-- =================================================================== --}}
     @if($isAdmin)
-    <div x-data="{
-            sidebarOpen: localStorage.getItem('sidebarOpen') !== null
-                ? localStorage.getItem('sidebarOpen') === 'true'
-                : window.innerWidth >= 1024
-        }"
-        x-init="$watch('sidebarOpen', value => localStorage.setItem('sidebarOpen', value))"
-        class="min-h-screen">
+    <div
+    x-data="{
+        sidebarOpen: localStorage.getItem('sidebarOpen') !== null
+            ? localStorage.getItem('sidebarOpen') === 'true'
+            : window.innerWidth >= 1024
+    }"
+    x-init="$watch('sidebarOpen', value => localStorage.setItem('sidebarOpen', value))"
+    class="min-h-screen">
 
         {{-- ===== SIDEBAR MINIMALIS ===== --}}
-        <aside class="fixed inset-y-0 left-0 z-40 w-64 bg-white border-r border-slate-100 transform transition-transform duration-300 ease-in-out overflow-y-auto"
-            :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'">
+       <aside
+    class="fixed inset-y-0 left-0 z-40 w-64 bg-white border-r border-slate-100 transform transition-transform duration-300 ease-in-out overflow-y-auto"
+    :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'">
 
-            <div class="h-16 flex items-center justify-between px-6 border-b border-slate-100">
-                <div class="flex items-center gap-3">
-                    <div class="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white font-bold text-base shadow-sm shadow-blue-200">
-                        P
-                    </div>
-                    <span class="font-bold text-slate-800 text-base tracking-tight">
-                        LMS <span class="text-blue-600 font-extrabold">PKL</span>
-                    </span>
-                </div>
-                <button @click="sidebarOpen = false"
-                    class="p-1.5 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition-colors"
-                    title="Tutup sidebar">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        <path d="M18 6L6 18M6 6l12 12" />
-                    </svg>
-                </button>
-            </div>
+           <div class="h-16 flex items-center justify-between px-6 border-b border-slate-100">
+    <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white font-bold text-base shadow-sm shadow-blue-200">
+            P
+        </div>
+        <span class="font-bold text-slate-800 text-base tracking-tight">
+            LMS <span class="text-blue-600 font-extrabold">PKL</span>
+        </span>
+    </div>
+    <button @click="sidebarOpen = false"
+        class="p-1.5 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition-colors"
+        title="Tutup sidebar">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path d="M18 6L6 18M6 6l12 12" />
+        </svg>
+    </button>
+</div>
 
             <nav class="px-4 py-6 space-y-1.5 text-sm">
                 
@@ -219,7 +221,7 @@
                 <div class="pt-4 px-3 mb-2 text-xs font-semibold text-slate-400 tracking-wider uppercase">Konfigurasi</div>
 
                 {{-- Pengaturan --}}
-                <div x-data="{ open: {{ request()->routeIs('admin.riwayat.index', 'admin.akun-admin.*', 'profile.edit') ? 'true' : 'false' }} }">
+                <div x-data="{ open: {{ request()->routeIs('admin.riwayat.index', 'profile.edit') ? 'true' : 'false' }} }">
                     <button @click="open = !open"
                         class="group w-full flex items-center justify-between px-3 py-2.5 rounded-xl font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all duration-150">
                         <span class="flex items-center gap-3">
@@ -238,10 +240,10 @@
                             class="block px-3 py-2 text-[13px] rounded-lg transition-all {{ request()->routeIs('admin.riwayat.index') ? 'text-blue-600 font-semibold' : 'text-slate-500 hover:text-slate-900' }}">
                             Riwayat Aktivitas
                         </a>
-                        <a href="{{ route('admin.akun-admin.index') }}"
-                            class="block px-3 py-2 text-[13px] rounded-lg transition-all {{ request()->routeIs('admin.akun-admin.*') ? 'text-blue-600 font-semibold' : 'text-slate-500 hover:text-slate-900' }}">
-                            Kelola Akun Admin
-                        </a>
+                       <a href="{{ route('admin.akun-admin.index') }}"
+   class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm {{ request()->routeIs('admin.akun-admin.*') ? 'bg-blue-50 text-[#2563EB] font-medium' : 'text-gray-600 hover:bg-blue-50' }}">
+     Kelola Akun Admin
+</a>
                         <a href="{{ route('profile.edit') }}"
                             class="block px-3 py-2 text-[13px] rounded-lg transition-all {{ request()->routeIs('profile.edit') ? 'text-blue-600 font-semibold' : 'text-slate-500 hover:text-slate-900' }}">
                             Profil Admin
@@ -257,93 +259,56 @@
 
         {{-- ===== WRAPPER ===== --}}
         <div class="flex flex-col min-h-screen transition-all duration-300 ease-in-out"
-            :class="sidebarOpen ? 'lg:ml-64' : 'ml-0'">
+    :class="sidebarOpen ? 'lg:ml-64' : 'ml-0'">
 
-            {{-- ===== NAVBAR / HEADER ===== --}}
-            <header class="sticky top-0 z-20 h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 sm:px-6">
-                
-                {{-- Kiri: tombol menu (ikon smooth) + judul halaman --}}
+            {{-- NAVBAR sticky --}}
+            <header
+                class="sticky top-0 z-20 h-16 bg-white/80 backdrop-blur-md border-b border-slate-100 flex items-center justify-between px-6">
                 <div class="flex items-center gap-3">
-                    <button @click="sidebarOpen = !sidebarOpen"
-                        class="relative w-9 h-9 flex items-center justify-center rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors duration-200"
-                        title="Buka / tutup menu" aria-label="Toggle menu">
-
-                        {{-- Ikon garis (saat sidebar tertutup) --}}
-                        <svg x-show="!sidebarOpen"
-                            x-transition:enter="transition ease-out duration-200"
-                            x-transition:enter-start="opacity-0 rotate-90 scale-75"
-                            x-transition:enter-end="opacity-100 rotate-0 scale-100"
-                            x-transition:leave="transition ease-in duration-150"
-                            x-transition:leave-start="opacity-100 rotate-0 scale-100"
-                            x-transition:leave-end="opacity-0 -rotate-90 scale-75"
-                            class="absolute w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                            <path d="M4 6h16M4 12h16M4 18h16" />
-                        </svg>
-
-                        {{-- Ikon silang (saat sidebar terbuka) --}}
-                        <svg x-show="sidebarOpen" x-cloak
-                            x-transition:enter="transition ease-out duration-200"
-                            x-transition:enter-start="opacity-0 -rotate-90 scale-75"
-                            x-transition:enter-end="opacity-100 rotate-0 scale-100"
-                            x-transition:leave="transition ease-in duration-150"
-                            x-transition:leave-start="opacity-100 rotate-0 scale-100"
-                            x-transition:leave-end="opacity-0 rotate-90 scale-75"
-                            class="absolute w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                            <path d="M18 6L6 18M6 6l12 12" />
-                        </svg>
-                    </button>
-
+                   <button @click="sidebarOpen = !sidebarOpen"
+    class="p-2 rounded-xl text-slate-600 hover:bg-slate-50 transition-colors"
+    title="Buka / tutup menu">
+    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path d="M4 6h16M4 12h16M4 18h16" />
+    </svg>
+</button>
                     <h1 class="text-base font-semibold text-slate-800">{{ $title ?? 'Dashboard' }}</h1>
                 </div>
 
-                {{-- Kanan: menu profil (minimalis) --}}
-                <div x-data="{ openP: false }" class="relative">
-                    <button @click="openP = !openP"
-                        class="flex items-center gap-2.5 p-1 pr-2.5 rounded-lg hover:bg-slate-100 transition-colors duration-200">
-                        <span class="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center font-semibold text-xs">
-                            {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
-                        </span>
-                        <span class="hidden sm:block text-sm font-medium text-slate-700">
-                            {{ auth()->user()->name }}
-                        </span>
-                        <svg class="hidden sm:block w-3.5 h-3.5 text-slate-400 transition-transform duration-200"
-                            :class="openP ? 'rotate-180' : ''" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                            <path d="M19 9l-7 7-7-7" />
-                        </svg>
-                    </button>
-
-                    <div x-show="openP" @click.outside="openP = false" x-cloak
-                        x-transition:enter="transition ease-out duration-150"
-                        x-transition:enter-start="opacity-0 translate-y-1"
-                        x-transition:enter-end="opacity-100 translate-y-0"
-                        x-transition:leave="transition ease-in duration-100"
-                        x-transition:leave-start="opacity-100 translate-y-0"
-                        x-transition:leave-end="opacity-0 translate-y-1"
-                        class="absolute right-0 mt-2 w-48 bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden text-sm py-1">
-                        <a href="{{ route('profile.edit') }}"
-                            class="block px-4 py-2 text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors">
-                            Profil Admin
-                        </a>
-                        <form method="POST" action="{{ route('logout') }}">
-                            @csrf
-                            <button type="submit"
-                                class="w-full text-left px-4 py-2 text-blue-600 hover:bg-blue-50 font-medium transition-colors">
-                                Keluar
-                            </button>
-                        </form>
+                <div class="flex items-center gap-2">
+                    {{-- Profile dropdown --}}
+                    <div x-data="{ openP: false }" class="relative">
+                        <button @click="openP=!openP"
+                            class="flex items-center gap-2.5 p-1.5 pr-3 rounded-xl hover:bg-slate-50 transition-all">
+                            <span class="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold text-xs shadow-sm shadow-blue-200">
+                                {{ strtoupper(substr(auth()->user()->name ?? 'A', 0, 1)) }}
+                            </span>
+                            <span class="hidden sm:block text-sm font-medium text-slate-700">
+                                {{ auth()->user()->name ?? 'Admin' }}
+                            </span>
+                        </button>
+                        <div x-show="openP" @click.outside="openP=false" x-transition
+                            class="absolute right-0 mt-2 w-48 bg-white border border-slate-100 rounded-xl shadow-xl overflow-hidden text-sm py-1">
+                            <a href="{{ route('profile.edit') }}"
+                                class="block px-4 py-2 text-slate-600 hover:bg-slate-50 hover:text-slate-900">Profil Admin</a>
+                            <form method="POST" action="{{ route('logout') }}">
+                                @csrf
+                                <button type="submit"
+                                    class="w-full text-left px-4 py-2 text-blue-600 hover:bg-blue-50/50 font-medium">Keluar</button>
+                            </form>
+                        </div>
                     </div>
                 </div>
             </header>
 
             {{-- Header slot opsional --}}
             @isset($header)
-                <div class="px-6 pt-5">
-                    {{ $header }}
-                </div>
+            <div class="px-6 pt-5">{{ $header }}</div>
             @endisset
 
             {{-- CONTENT --}}
             <main class="flex-1 p-6">
+
                 {{ $slot }}
             </main>
 
@@ -363,11 +328,11 @@
         @include('layouts.navigation')
 
         @isset($header)
-            <header class="bg-white border-b border-slate-100">
-                <div class="max-w-7xl mx-auto py-5 px-4 sm:px-6 lg:px-8">
-                    {{ $header }}
-                </div>
-            </header>
+        <header class="bg-white border-b border-slate-100">
+            <div class="max-w-7xl mx-auto py-5 px-4 sm:px-6 lg:px-8">
+                {{ $header }}
+            </div>
+        </header>
         @endisset
 
         {{-- Menggunakan flex-1 mendorong footer agar selalu menempel di bawah --}}
@@ -381,6 +346,7 @@
                 <div class="flex items-center gap-1.5 justify-center">
                     <span>Copyright</span>
                     <span>&copy; {{ date('Y') }}</span>
+                   
                 </div>
             </div>
         </footer>
@@ -393,22 +359,17 @@
     <script>
         // 1) Flash message (berlaku untuk semua role)
         @if(session('success'))
-            document.addEventListener('DOMContentLoaded', () => Swal.fire({
-                icon: 'success', 
-                title: 'Berhasil',
-                text: @json(session('success')),
-                timer: 2200, 
-                timerProgressBar: true, 
-                showConfirmButton: false
-            }));
+        document.addEventListener('DOMContentLoaded', () => Swal.fire({
+            icon: 'success', title: 'Berhasil',
+            text: @json(session('success')),
+            timer: 2200, timerProgressBar: true, showConfirmButton: false
+        }));
         @endif
-
         @if(session('error'))
-            document.addEventListener('DOMContentLoaded', () => Swal.fire({
-                icon: 'error', 
-                title: 'Gagal',
-                text: @json(session('error'))
-            }));
+        document.addEventListener('DOMContentLoaded', () => Swal.fire({
+            icon: 'error', title: 'Gagal',
+            text: @json(session('error'))
+        }));
         @endif
 
         // 2) Konfirmasi untuk SETIAP <form data-confirm="...">

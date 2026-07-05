@@ -1,13 +1,11 @@
-<nav x-data="{ open: false }" class="bg-white border-b border-slate-100 sticky top-0 z-30 backdrop-blur-md bg-white/90">
+<nav x-data="{ open: false }" x-init="window.addEventListener('resize', () => { if (window.innerWidth >= 640) open = false })">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
             <div class="flex">
                 <div class="shrink-0 flex items-center">
                     <a href="{{ route('dashboard') }}" class="flex items-center gap-2.5">
-                        <div class="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white font-bold text-base shadow-sm shadow-blue-200">
-                            P
-                        </div>
-                        <span class="font-bold text-slate-800 text-base tracking-tight hidden sm:block">
+                       
+                        <span class="font-bold text-slate-800 text-base tracking-tight">
                             LMS <span class="text-blue-600 font-extrabold">PKL</span>
                         </span>
                     </a>
@@ -83,7 +81,14 @@
         </div>
     </div>
 
-    <div :class="{'block': open, 'hidden': ! open}" class="hidden sm:hidden border-t border-slate-100 bg-white">
+    <div x-show="open" x-cloak
+    x-transition:enter="transition ease-out duration-200"
+    x-transition:enter-start="opacity-0 -translate-y-2"
+    x-transition:enter-end="opacity-100 translate-y-0"
+    x-transition:leave="transition ease-in duration-150"
+    x-transition:leave-start="opacity-100 translate-y-0"
+    x-transition:leave-end="opacity-0 -translate-y-2"
+    class="sm:hidden border-t border-slate-100 bg-white">
         <div class="pt-2 pb-3 space-y-1 px-3">
             <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')"
                 class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium {{ request()->routeIs('dashboard') ? 'bg-blue-50 text-blue-600 border-l-0' : 'text-slate-600 hover:bg-slate-50 border-l-0' }}">
