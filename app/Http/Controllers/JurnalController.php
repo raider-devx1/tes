@@ -202,14 +202,35 @@ class JurnalController extends Controller
     return view('instruktur.jurnal.index', compact('jurnals', 'rekap'));
 }
 
-    public function updateInstruktur(Request $request, $id)
+     public function updateInstruktur(Request $request, $id)
     {
-        $jurnal = Jurnal::findOrFail($id);
+        // Ambil jurnal beserta pemiliknya
+        $jurnal = Jurnal::with('siswa')->findOrFail($id);
+
+        // Cegah IDOR: jurnal harus milik siswa bimbingan instruktur yang login & masih aktif PKL
+        abort_unless(
+            $jurnal->siswa
+                && $jurnal->siswa->instruktur_id === Auth::id()
+                && $jurnal->siswa->status_pkl === 'aktif',
+            403,
+            'Akses ditolak: jurnal ini bukan milik siswa bimbingan Anda.'
+        );
+
+        // Validasi input agar status tidak bisa diisi nilai sembarang
+        $validated = $request->validate([
+            'status_persetujuan' => 'required|in:disetujui,pending,revisi',
+            'catatan_instruktur' => 'nullable|string',
+        ], [
+            'status_persetujuan.required' => 'Status persetujuan wajib dipilih.',
+            'status_persetujuan.in'       => 'Status persetujuan tidak valid.',
+        ]);
+
         $jurnal->update([
-            'status_persetujuan' => $request->status_persetujuan,
-            'catatan_instruktur' => $request->catatan_instruktur,
+            'status_persetujuan' => $validated['status_persetujuan'],
+            'catatan_instruktur' => $validated['catatan_instruktur'] ?? null,
             'disetujui_oleh'     => Auth::id(),
         ]);
+
         return redirect()->back()->with('success', 'Status Jurnal diperbarui!');
     }
 }

@@ -182,10 +182,11 @@ public function indexGuru(Request $request)
             'catatan_guru'  => 'nullable|string',
         ]);
 
-        // pastikan siswa benar-benar bimbingan guru ini
+       // Pastikan siswa benar-benar bimbingan guru ini & masih aktif PKL
         $siswa = User::where('id', $request->user_id)
             ->where('role', 'siswa_pkl')
             ->where('guru_id', Auth::id())
+            ->where('status_pkl', 'aktif')
             ->firstOrFail();
 
         $nilai = Nilai::firstOrNew(['user_id' => $siswa->id]);
