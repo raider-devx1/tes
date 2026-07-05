@@ -202,9 +202,20 @@ public function destroyGuru($id)
     |--------------------------------------------------------------------------
     */
 
-   public function indexInstruktur(Request $request)
+  public function indexInstruktur(Request $request)
 {
     $instruktur_id = Auth::id();
+
+    // Rekap seluruh observasi siswa bimbingan aktif (tidak terpengaruh filter)
+    $rekapQuery = Observasi::whereHas('user', function ($u) use ($instruktur_id) {
+        $u->where('instruktur_id', $instruktur_id)->where('status_pkl', 'aktif');
+    });
+
+    $rekap = [
+        'total'     => (clone $rekapQuery)->count(),
+        'disetujui' => (clone $rekapQuery)->where('is_approved', true)->count(),
+        'menunggu'  => (clone $rekapQuery)->where('is_approved', false)->count(),
+    ];
 
     $observasi = Observasi::whereHas('user', function ($u) use ($instruktur_id, $request) {
             $u->where('instruktur_id', $instruktur_id)
@@ -226,7 +237,7 @@ public function destroyGuru($id)
         ->paginate(15)
         ->withQueryString();
 
-    return view('instruktur.observasi.index', compact('observasi'));
+    return view('instruktur.observasi.index', compact('observasi', 'rekap'));
 }
 
        public function approveInstruktur($id)

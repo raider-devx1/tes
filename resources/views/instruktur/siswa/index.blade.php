@@ -9,8 +9,22 @@
         </div>
     </x-slot>
 
+   
+
     <div class="py-8 md:py-12 bg-white">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+             <div class="mb-6 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+       
+        <div class="flex items-center gap-3 rounded-2xl border-2 border-[#0047d6]/15 bg-white p-4 shadow-sm transition hover:border-[#0047d6]/40 sm:gap-4 sm:p-5">
+          
+            <div class="min-w-0">
+                <p class="truncate text-xs font-bold uppercase tracking-wide text-[#0047d6] sm:text-sm">Aktif</p>
+                <p class="mt-0.5 text-2xl font-extrabold leading-none text-black sm:text-3xl">{{ $rekap['aktif'] }}</p>
+            </div>
+        </div>
+       
+       
+    </div>
             <div class="rounded-2xl border-2 border-[#0047d6]/15 bg-white p-4 sm:p-6 md:p-8 shadow-sm">
 
                 <h3 class="text-lg font-bold text-black mb-6">Siswa Bimbingan Industri Anda</h3>

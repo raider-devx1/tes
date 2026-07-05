@@ -15,21 +15,15 @@
                 <p class="mt-3 max-w-xl font-medium text-white/85">Kelola absensi dan validasi kegiatan siswa bimbingan Anda.</p>
             </div>
 
-            {{-- ===== STATISTIK RINGKASAN ===== --}}
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <!-- ===== KARTU STATISTIK ===== -->
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                
+                <div class="rounded-2xl border-2 border-[#05b169]/30 bg-[#05b169]/5 p-6 shadow-sm">
+                    <p class="text-xs font-bold uppercase tracking-wide text-[#5b616e]">Siswa Aktif</p>
+                    <p class="mt-2 text-4xl font-bold text-[#05b169]">{{ $siswaAktif }}</p>
+                    <p class="mt-1 text-sm font-medium text-[#5b616e]">Sedang menjalani PKL.</p>
+                </div> 
                
-
-                <div class="rounded-2xl border-2 border-[#0047d6]/15 bg-white p-6 shadow-sm">
-                    <p class="text-xs font-bold uppercase tracking-wide text-[#5b616e]">Total Bimbingan</p>
-                    <p class="mt-2 text-4xl font-bold text-black">{{ $siswaBimbingan }}</p>
-                    <p class="mt-1 text-sm font-medium text-black">Seluruh siswa bimbingan Anda.</p>
-                </div>
-
-                <div class="rounded-2xl border-2 border-[#0047d6]/15 bg-white p-6 shadow-sm">
-                    <p class="text-xs font-bold uppercase tracking-wide text-[#5b616e]">Jurnal Menunggu</p>
-                    <p class="mt-2 text-4xl font-bold text-[#d98200]">{{ $jurnalPending }}</p>
-                    <p class="mt-1 text-sm font-medium text-black">Perlu divalidasi.</p>
-                </div>
             </div>
 
             {{-- ===== MENU UTAMA NAVIGASI ===== --}}

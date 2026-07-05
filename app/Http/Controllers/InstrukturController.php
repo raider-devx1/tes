@@ -164,28 +164,37 @@ class InstrukturController extends Controller
     }
 
     /** Ruang Monitoring & Daftar Siswa bimbingan industri (instruktur yang login). */
-    public function monitoringSiswa(Request $request)
-    {
-        $query = User::where('role', 'siswa_pkl')
-            ->where('instruktur_id', Auth::id())
-            ->where('status_pkl', 'aktif') // hanya siswa yang sedang aktif PKL
-            ->with(['guru', 'perusahaan']);
+   /** Ruang Monitoring & Daftar Siswa bimbingan industri (instruktur yang login). */
+public function monitoringSiswa(Request $request)
+{
+    $query = User::where('role', 'siswa_pkl')
+        ->where('instruktur_id', Auth::id())
+        ->where('status_pkl', 'aktif') // hanya siswa yang sedang aktif PKL
+        ->with(['guru', 'perusahaan']);
 
-        // Filter pencarian teks
-        if ($request->filled('q')) {
-            $q = $request->q;
-            $query->where(function ($sub) use ($q) {
-                $sub->where('name', 'like', "%{$q}%")
-                    ->orWhere('nisn', 'like', "%{$q}%")
-                    ->orWhere('kelas', 'like', "%{$q}%")
-                    ->orWhere('jurusan', 'like', "%{$q}%");
-            });
-        }
-
-        // Catatan: filter "Status PKL" tidak dipakai lagi — daftar dikunci hanya 'aktif'.
-
-        $siswas = $query->orderBy('name')->paginate(15)->withQueryString();
-
-        return view('instruktur.siswa.index', compact('siswas'));
+    // Filter pencarian teks
+    if ($request->filled('q')) {
+        $q = $request->q;
+        $query->where(function ($sub) use ($q) {
+            $sub->where('name', 'like', "%{$q}%")
+                ->orWhere('nisn', 'like', "%{$q}%")
+                ->orWhere('kelas', 'like', "%{$q}%")
+                ->orWhere('jurusan', 'like', "%{$q}%");
+        });
     }
+
+    $siswas = $query->orderBy('name')->paginate(15)->withQueryString();
+
+    // ---- Kartu informasi (seluruh siswa bimbingan, tidak terpengaruh filter) ----
+    $rekapQuery = User::where('role', 'siswa_pkl')->where('instruktur_id', Auth::id());
+
+    $rekap = [
+        'total'   => (clone $rekapQuery)->count(),
+        'aktif'   => (clone $rekapQuery)->where('status_pkl', 'aktif')->count(),
+        'belum'   => (clone $rekapQuery)->where('status_pkl', 'belum')->count(),
+        'selesai' => (clone $rekapQuery)->where('status_pkl', 'selesai')->count(),
+    ];
+
+    return view('instruktur.siswa.index', compact('siswas', 'rekap'));
+}
 }

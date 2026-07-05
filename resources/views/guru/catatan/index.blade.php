@@ -16,7 +16,7 @@
             
             <!-- ===== CARD REKAP (JUMLAH DISETUJUI & MENUNGGU) ===== -->
             <div class="mb-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div class="rounded-2xl border-2 border-[#0047d6]/15 bg-white p-5 shadow-sm">
+                <div class="rounded-2xl border border-[#0047d6]/15 bg-white p-5 shadow-sm">
                     <p class="text-xs font-bold uppercase tracking-wide text-[#5b616e]">Total Catatan</p>
                     <p class="mt-1 text-3xl font-bold text-black">{{ $rekap['total'] }}</p>
                 </div>

@@ -165,32 +165,42 @@ class JurnalController extends Controller
 
     // ========================== INSTRUKTUR ==========================
 
-    public function indexInstruktur(Request $request)
-    {
-        $siswaIds = User::where('role', 'siswa_pkl')
-            ->where('instruktur_id', Auth::id())
-            ->where('status_pkl', 'aktif')
-            ->pluck('id');
+   public function indexInstruktur(Request $request)
+{
+    $siswaIds = User::where('role', 'siswa_pkl')
+        ->where('instruktur_id', Auth::id())
+        ->where('status_pkl', 'aktif')
+        ->pluck('id');
 
-        $jurnals = Jurnal::whereIn('siswa_id', $siswaIds)
-            ->with(['siswa', 'items'])
-            ->when($request->filled('q'), function ($query) use ($request) {
-                $q = $request->q;
-                $query->whereHas('siswa', function ($s) use ($q) {
-                    $s->where('name', 'like', "%{$q}%")
-                      ->orWhere('nisn', 'like', "%{$q}%");
-                });
-            })
-            ->when($request->filled('status'), fn ($query) =>
-                $query->where('status_persetujuan', $request->status))
-            ->when($request->filled('tanggal'), fn ($query) =>
-                $query->whereDate('hari_tanggal', $request->tanggal))
-            ->orderBy('hari_tanggal', 'desc')
-            ->paginate(15)
-            ->withQueryString();
+    $jurnals = Jurnal::whereIn('siswa_id', $siswaIds)
+        ->with(['siswa', 'items'])
+        ->when($request->filled('q'), function ($query) use ($request) {
+            $q = $request->q;
+            $query->whereHas('siswa', function ($s) use ($q) {
+                $s->where('name', 'like', "%{$q}%")
+                  ->orWhere('nisn', 'like', "%{$q}%");
+            });
+        })
+        ->when($request->filled('status'), fn ($query) =>
+            $query->where('status_persetujuan', $request->status))
+        ->when($request->filled('tanggal'), fn ($query) =>
+            $query->whereDate('hari_tanggal', $request->tanggal))
+        ->orderBy('hari_tanggal', 'desc')
+        ->paginate(15)
+        ->withQueryString();
 
-        return view('instruktur.jurnal.index', compact('jurnals'));
-    }
+    // ---- Kartu informasi jurnal siswa bimbingan aktif (tidak terpengaruh filter) ----
+    $rekapQuery = Jurnal::whereIn('siswa_id', $siswaIds);
+
+    $rekap = [
+        'total'     => (clone $rekapQuery)->count(),
+        'disetujui' => (clone $rekapQuery)->where('status_persetujuan', 'disetujui')->count(),
+        'pending'   => (clone $rekapQuery)->where('status_persetujuan', 'pending')->count(),
+        'revisi'    => (clone $rekapQuery)->where('status_persetujuan', 'revisi')->count(),
+    ];
+
+    return view('instruktur.jurnal.index', compact('jurnals', 'rekap'));
+}
 
     public function updateInstruktur(Request $request, $id)
     {

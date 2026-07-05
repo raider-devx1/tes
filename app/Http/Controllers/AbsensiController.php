@@ -74,7 +74,15 @@ public function indexInstruktur(Request $request)
         ->get()
         ->keyBy('siswa_id');
 
-    return view('instruktur.absensi.index', compact('siswas', 'tanggal', 'absensis'));
+    // ---- Kartu informasi kehadiran pada tanggal terpilih ----
+    $rekap = [
+        'Hadir' => $absensis->where('status', 'Hadir')->count(),
+        'Izin'  => $absensis->where('status', 'Izin')->count(),
+        'Sakit' => $absensis->where('status', 'Sakit')->count(),
+        'Alpha' => $absensis->where('status', 'Alpha')->count(),
+    ];
+
+    return view('instruktur.absensi.index', compact('siswas', 'tanggal', 'absensis', 'rekap'));
 }
 
     public function storeInstruktur(Request $request)
