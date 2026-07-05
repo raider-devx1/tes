@@ -27,6 +27,7 @@ class MonitoringController extends Controller
         $status  = $request->get('status', '');
         $kelas   = $request->get('kelas', '');
         $jurusan = $request->get('jurusan', '');
+        $tanggal = $request->get('tanggal', ''); // ⬅️ baca filter tanggal
 
         $jurnal = Jurnal::query()
             ->with(['siswa', 'items']) // ⬅️ eager-load items agar tidak N+1
@@ -35,6 +36,7 @@ class MonitoringController extends Controller
             ->when($kelas,   fn ($query) => $query->whereHas('siswa', fn ($s) => $s->where('kelas', $kelas)))
             ->when($jurusan, fn ($query) => $query->whereHas('siswa', fn ($s) => $s->where('jurusan', $jurusan)))
             ->when($status,  fn ($query) => $query->where('status_persetujuan', $status))
+            ->when($tanggal, fn ($query) => $query->whereDate('hari_tanggal', $tanggal)) // ⬅️ terapkan filter tanggal
             ->orderByDesc('hari_tanggal')
             ->paginate(15)
             ->withQueryString();
@@ -47,41 +49,41 @@ class MonitoringController extends Controller
         ];
 
         return view('admin.monitoring.jurnal', array_merge(
-            compact('jurnal', 'q', 'status', 'kelas', 'jurusan', 'rekap'),
+            compact('jurnal', 'q', 'status', 'kelas', 'jurusan', 'tanggal', 'rekap'), // ⬅️ kirim $tanggal ke view
             $this->opsiFilter()
         ));
     }
 
-   public function catatan(Request $request)
-{
-    $q        = trim($request->get('q', ''));
-    $approved = $request->get('approved', '');
-    $kelas    = $request->get('kelas', '');
-    $jurusan  = $request->get('jurusan', '');
+    public function catatan(Request $request)
+    {
+        $q        = trim($request->get('q', ''));
+        $approved = $request->get('approved', '');
+        $kelas    = $request->get('kelas', '');
+        $jurusan  = $request->get('jurusan', '');
 
-    $catatan = CatatanKegiatan::query()
-        ->with('user')
-        ->when($q, fn ($query) => $query->whereHas('user', fn ($u) =>
-            $u->where('name', 'like', "%{$q}%")->orWhere('nisn', 'like', "%{$q}%")))
-        ->when($kelas,   fn ($query) => $query->whereHas('user', fn ($u) => $u->where('kelas', $kelas)))
-        ->when($jurusan, fn ($query) => $query->whereHas('user', fn ($u) => $u->where('jurusan', $jurusan)))
-        ->when($approved !== '', fn ($query) => $query->where('is_approved', $approved === '1'))
-        ->latest()
-        ->paginate(15)
-        ->withQueryString();
+        $catatan = CatatanKegiatan::query()
+            ->with('user')
+            ->when($q, fn ($query) => $query->whereHas('user', fn ($u) =>
+                $u->where('name', 'like', "%{$q}%")->orWhere('nisn', 'like', "%{$q}%")))
+            ->when($kelas,   fn ($query) => $query->whereHas('user', fn ($u) => $u->where('kelas', $kelas)))
+            ->when($jurusan, fn ($query) => $query->whereHas('user', fn ($u) => $u->where('jurusan', $jurusan)))
+            ->when($approved !== '', fn ($query) => $query->where('is_approved', $approved === '1'))
+            ->latest()
+            ->paginate(15)
+            ->withQueryString();
 
-    // ---- Kartu informasi (dihitung menyeluruh, tidak terpengaruh filter) ----
-    $rekap = [
-        'total'     => CatatanKegiatan::count(),
-        'disetujui' => CatatanKegiatan::where('is_approved', true)->count(),
-        'belum'     => CatatanKegiatan::where('is_approved', false)->count(),
-    ];
+        // ---- Kartu informasi (dihitung menyeluruh, tidak terpengaruh filter) ----
+        $rekap = [
+            'total'     => CatatanKegiatan::count(),
+            'disetujui' => CatatanKegiatan::where('is_approved', true)->count(),
+            'belum'     => CatatanKegiatan::where('is_approved', false)->count(),
+        ];
 
-    return view('admin.monitoring.catatan', array_merge(
-        compact('catatan', 'q', 'approved', 'kelas', 'jurusan', 'rekap'),
-        $this->opsiFilter()
-    ));
-}
+        return view('admin.monitoring.catatan', array_merge(
+            compact('catatan', 'q', 'approved', 'kelas', 'jurusan', 'rekap'),
+            $this->opsiFilter()
+        ));
+    }
 
     public function absensi(Request $request)
     {

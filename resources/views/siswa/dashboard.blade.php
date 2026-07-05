@@ -6,6 +6,8 @@
     <div class="py-8 md:py-12 bg-white">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
 
+        @include('partials.notifikasi')
+
             {{-- ===== BANNER SELAMAT DATANG ===== --}}
             <div class="rounded-2xl bg-[#0047d6] p-6 sm:p-8 text-white shadow-sm">
                 <h3 class="text-xl sm:text-2xl font-bold tracking-tight">Selamat Datang, {{ Auth::user()->name }}!</h3>

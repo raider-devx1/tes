@@ -6,6 +6,8 @@
     <div class="py-8 md:py-12 bg-white">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
 
+        @include('partials.notifikasi')
+
             <!-- ===== HERO / BANNER ===== -->
             <div class="rounded-2xl bg-[#0047d6] p-8 md:p-12 text-white shadow-sm">
                 <p class="text-sm font-semibold text-white/80">Ruang Guru Pembimbing</p>
