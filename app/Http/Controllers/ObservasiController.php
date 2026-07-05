@@ -47,16 +47,18 @@ class ObservasiController extends Controller
     return view('guru.observasi.index', compact('observasi', 'q', 'status', 'rekap'));
 }
 
-    /** Form tambah observasi (hanya siswa bimbingan guru ini yang bisa dipilih). */
-    public function createGuru()
-    {
-        $siswas = User::where('role', 'siswa_pkl')
-            ->where('guru_id', Auth::id())
-            ->orderBy('name')
-            ->get();
 
-        return view('guru.observasi.create', compact('siswas'));
-    }
+   /** Form tambah observasi (hanya siswa bimbingan guru ini yang bisa dipilih). */
+public function createGuru()
+{
+    $siswas = User::where('role', 'siswa_pkl')
+        ->where('guru_id', Auth::id())
+        ->where('status_pkl', 'aktif')   // ⬅️ hanya siswa aktif yang bisa dipilih
+        ->orderBy('name')
+        ->get();
+
+    return view('guru.observasi.create', compact('siswas'));
+}
 
     /** Simpan observasi baru (1 observasi = banyak poin permasalahan & solusi). */
     public function storeGuru(Request $request)

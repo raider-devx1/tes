@@ -130,11 +130,14 @@ public function guruIndex(Request $request)
     $status = $request->get('status'); // lengkap | sebagian | belum
 
     $siswa = $this->querySiswa($q, null, null, $status)
-        ->where('guru_id', Auth::id())   // hanya bimbingannya
+        ->where('guru_id', Auth::id())     // hanya bimbingannya
+        ->where('status_pkl', 'aktif')     // ⬅️ sembunyikan siswa yang sudah "selesai" / "belum"
         ->paginate(15)->withQueryString();
 
-    // Rekap dokumen seluruh siswa bimbingan (tidak terpengaruh filter/pagination)
-    $rekapQuery = User::where('role', 'siswa_pkl')->where('guru_id', Auth::id());
+    // Rekap dokumen seluruh siswa bimbingan yang masih AKTIF (tidak terpengaruh filter/pagination)
+    $rekapQuery = User::where('role', 'siswa_pkl')
+        ->where('guru_id', Auth::id())
+        ->where('status_pkl', 'aktif');    // ⬅️ agar kartu rekap ikut konsisten
 
     $totalSiswa = (clone $rekapQuery)->count();
 
