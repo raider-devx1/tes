@@ -10,26 +10,14 @@
 
             <!-- ===== CARD REKAP INFORMASI (LAYOUT UTAMA) ===== -->
             <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                <div class="rounded-2xl border-2 border-[#0047d6]/15 bg-white p-6 shadow-sm">
-                    <p class="text-xs font-bold uppercase tracking-wide text-[#5b616e]">Total Bimbingan</p>
-                    <p class="mt-2 text-4xl font-bold text-black">{{ $rekap['total'] }}</p>
-                    <p class="mt-1 text-sm font-medium text-[#5b616e]">Seluruh siswa Anda.</p>
-                </div>
+               
                 <div class="rounded-2xl border-2 border-[#05b169]/30 bg-[#05b169]/5 p-6 shadow-sm">
                     <p class="text-xs font-bold uppercase tracking-wide text-[#5b616e]">Siswa Aktif</p>
                     <p class="mt-2 text-4xl font-bold text-[#05b169]">{{ $rekap['aktif'] }}</p>
                     <p class="mt-1 text-sm font-medium text-[#5b616e]">Sedang menjalani PKL.</p>
                 </div>
-                <div class="rounded-2xl border-2 border-[#d98200]/30 bg-[#d98200]/5 p-6 shadow-sm">
-                    <p class="text-xs font-bold uppercase tracking-wide text-[#5b616e]">Siswa Belum</p>
-                    <p class="mt-2 text-4xl font-bold text-[#d98200]">{{ $rekap['belum'] }}</p>
-                    <p class="mt-1 text-sm font-medium text-[#5b616e]">Belum memulai PKL.</p>
-                </div>
-                <div class="rounded-2xl border-2 border-[#0047d6]/30 bg-[#0047d6]/5 p-6 shadow-sm">
-                    <p class="text-xs font-bold uppercase tracking-wide text-[#5b616e]">Siswa Selesai</p>
-                    <p class="mt-2 text-4xl font-bold text-[#0047d6]">{{ $rekap['selesai'] }}</p>
-                    <p class="mt-1 text-sm font-medium text-[#5b616e]">Telah menuntaskan PKL.</p>
-                </div>
+                
+               
             </div>
 
             <div class="rounded-2xl border-2 border-[#0047d6]/15 bg-white p-4 sm:p-6 md:p-8 shadow-sm">
