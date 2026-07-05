@@ -1,117 +1,167 @@
-<x-app-layout title="Monitoring Catatan">
-    <div class="max-w-7xl mx-auto space-y-6">
-        <div>
-            <h2 class="text-2xl font-bold text-gray-800">Monitoring Catatan Kegiatan</h2>
-            <p class="text-sm text-gray-500">Pantau catatan kegiatan siswa PKL (hanya-baca).</p>
+<x-app-layout>
+    <x-slot name="header">
+        <div class="flex items-center justify-between gap-4">
+            <h2 class="text-xl md:text-2xl font-bold tracking-tight text-black">
+                Catatan Kegiatan Siswa PKL
+            </h2>
+            <button type="button" onclick="history.back()"
+                    class="inline-flex items-center gap-1 rounded-xl border-2 border-[#0047d6]/25 bg-white px-4 py-2 text-sm font-bold text-[#0047d6] transition hover:bg-[#0047d6]/5">
+                &larr; Kembali
+            </button>
         </div>
+    </x-slot>
 
-        {{-- ===== KARTU INFORMASI ===== --}}
-<div class="grid grid-cols-2 lg:grid-cols-3 gap-4">
-    <div class="bg-white rounded-2xl shadow-sm border border-blue-100 p-4">
-        <div class="flex items-center justify-between">
-            <p class="text-xs font-medium text-gray-500">Total Catatan</p>
-            <span class="w-9 h-9 flex items-center justify-center rounded-lg bg-blue-50 text-[#2563EB]">📝</span>
-        </div>
-        <p class="mt-2 text-2xl font-bold text-gray-800">{{ $rekap['total'] }}</p>
-    </div>
-    <div class="bg-white rounded-2xl shadow-sm border border-blue-100 p-4">
-        <div class="flex items-center justify-between">
-            <p class="text-xs font-medium text-gray-500">Disetujui</p>
-            <span class="w-9 h-9 flex items-center justify-center rounded-lg bg-green-50 text-green-600">✅</span>
-        </div>
-        <p class="mt-2 text-2xl font-bold text-green-600">{{ $rekap['disetujui'] }}</p>
-    </div>
-    <div class="bg-white rounded-2xl shadow-sm border border-blue-100 p-4">
-        <div class="flex items-center justify-between">
-            <p class="text-xs font-medium text-gray-500">Belum Disetujui</p>
-            <span class="w-9 h-9 flex items-center justify-center rounded-lg bg-amber-50 text-amber-600">⏳</span>
-        </div>
-        <p class="mt-2 text-2xl font-bold text-amber-600">{{ $rekap['belum'] }}</p>
-    </div>
-</div>
+    <div class="py-8 md:py-12 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
-        {{-- Filter --}}
-        <form method="GET" class="bg-white rounded-xl border border-blue-100 p-4 flex flex-wrap gap-3 items-end">
-            <div class="flex-1 min-w-[180px]">
-                <label class="block text-xs text-gray-500 mb-1">Cari siswa</label>
-                <input type="text" name="q" value="{{ $q }}" placeholder="Nama / NISN"
-                       class="w-full rounded-lg border-gray-200 text-sm focus:border-[#2563EB] focus:ring-[#2563EB]">
+            <!-- ===== CARD REKAP ===== -->
+            <div class="mb-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div class="rounded-2xl border-2 border-[#0047d6]/15 bg-white p-5 shadow-sm">
+                    <p class="text-xs font-bold uppercase tracking-wide text-[#5b616e]">Total Catatan</p>
+                    <p class="mt-1 text-3xl font-bold text-black">{{ $rekap['total'] }}</p>
+                </div>
+                <div class="rounded-2xl border-2 border-[#05b169]/30 bg-[#05b169]/5 p-5 shadow-sm">
+                    <p class="text-xs font-bold uppercase tracking-wide text-[#5b616e]">Sudah Disetujui</p>
+                    <p class="mt-1 text-3xl font-bold text-[#05b169]">{{ $rekap['disetujui'] }}</p>
+                </div>
+                <div class="rounded-2xl border-2 border-[#d98200]/30 bg-[#d98200]/5 p-5 shadow-sm">
+                    <p class="text-xs font-bold uppercase tracking-wide text-[#5b616e]">Belum Disetujui</p>
+                    <p class="mt-1 text-3xl font-bold text-[#d98200]">{{ $rekap['belum'] }}</p>
+                </div>
             </div>
-            <div>
-                <label class="block text-xs text-gray-500 mb-1">Kelas</label>
-                <select name="kelas" class="rounded-lg border-gray-200 text-sm focus:border-[#2563EB] focus:ring-[#2563EB]">
-                    <option value="">Semua</option>
-                    @foreach($kelasList as $k)
-                        <option value="{{ $k }}" {{ $kelas === $k ? 'selected' : '' }}>{{ $k }}</option>
-                    @endforeach
-                </select>
-            </div>
-            <div>
-                <label class="block text-xs text-gray-500 mb-1">Jurusan</label>
-                <select name="jurusan" class="rounded-lg border-gray-200 text-sm focus:border-[#2563EB] focus:ring-[#2563EB]">
-                    <option value="">Semua</option>
-                    @foreach($jurusanList as $jr)
-                        <option value="{{ $jr }}" {{ $jurusan === $jr ? 'selected' : '' }}>{{ $jr }}</option>
-                    @endforeach
-                </select>
-            </div>
-            <div>
-                <label class="block text-xs text-gray-500 mb-1">Status</label>
-                <select name="approved" class="rounded-lg border-gray-200 text-sm focus:border-[#2563EB] focus:ring-[#2563EB]">
-                    <option value="">Semua</option>
-                    <option value="1" {{ $approved === '1' ? 'selected' : '' }}>Disetujui</option>
-                    <option value="0" {{ $approved === '0' ? 'selected' : '' }}>Belum</option>
-                </select>
-            </div>
-            <button type="submit" class="px-4 py-2 rounded-lg bg-[#2563EB] text-white text-sm font-medium hover:bg-blue-700">Filter</button>
-            <a href="{{ route('admin.monitoring.catatan') }}" class="px-4 py-2 rounded-lg text-gray-500 text-sm hover:bg-gray-50">Reset</a>
-        </form>
 
-        {{-- Tabel Data --}}
-        <div class="bg-white rounded-xl border border-blue-100 overflow-hidden">
-            <div class="overflow-x-auto">
-                <table class="w-full text-sm">
-                    <thead class="bg-blue-50 text-gray-600 text-left">
-                        <tr>
-                            <th class="px-4 py-3 text-center w-12">No</th>
-                            <th class="px-4 py-3">Siswa</th>
-                            <th class="px-4 py-3">Kelas</th>
-                            <th class="px-4 py-3">Jurusan</th>
-                            <th class="px-4 py-3">Nama Pekerjaan</th>
-                            <th class="px-4 py-3">Perencanaan</th>
-                            <th class="px-4 py-3">Pelaksanaan</th>
-                            <th class="px-4 py-3 text-center">Status</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-100">
-                        @forelse($catatan as $c)
-                            <tr class="hover:bg-blue-50/40">
-                                <td class="px-4 py-3 text-center text-gray-500">{{ ($catatan->currentPage() - 1) * $catatan->perPage() + $loop->iteration }}</td>
-                                <td class="px-4 py-3 font-medium text-gray-800">{{ $c->user->name ?? '-' }}</td>
-                                <td class="px-4 py-3">{{ $c->user->kelas ?? '-' }}</td>
-                                <td class="px-4 py-3">{{ $c->user->jurusan ?? '-' }}</td>
-                                <td class="px-4 py-3">{{ $c->nama_pekerjaan }}</td>
-                                <td class="px-4 py-3 text-gray-600">{{ \Illuminate\Support\Str::limit($c->perencanaan_kegiatan, 60) }}</td>
-                                <td class="px-4 py-3 text-gray-600">{{ \Illuminate\Support\Str::limit($c->pelaksanaan_kegiatan, 60) }}</td>
-                                <td class="px-4 py-3 text-center">
-                                    @if($c->is_approved)
-                                        <span class="inline-block px-2.5 py-1 rounded-full text-xs font-medium bg-green-50 text-green-700">Disetujui</span>
-                                    @else
-                                        <span class="inline-block px-2.5 py-1 rounded-full text-xs font-medium bg-amber-50 text-amber-700">Belum</span>
-                                    @endif
-                                </td>
+            <div class="rounded-2xl border-2 border-[#0047d6]/15 bg-white p-4 sm:p-6 md:p-8 shadow-sm">
+
+                @if (session('success'))
+                    <div class="mb-4 rounded-xl border-2 border-[#05b169] bg-[#05b169]/10 px-4 py-3 text-sm font-semibold text-black">
+                        {{ session('success') }}
+                    </div>
+                @endif
+
+                <!-- ===== BANNER & CETAK SEMUA PDF ===== -->
+                <div class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                    <div>
+                        <h3 class="text-lg font-bold tracking-tight text-black">Catatan Kegiatan Seluruh Siswa</h3>
+                        <p class="text-xs font-medium text-[#5b616e]">Tombol <span class="font-bold text-black">Cetak Semua PDF</span> mencetak seluruh catatan yang sudah disetujui — 1 catatan per halaman.</p>
+                    </div>
+
+                    <a href="{{ route('cetak.catatan.semua') }}" target="_blank"
+                       class="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-[#0047d6] px-6 py-3.5 text-base font-bold text-white shadow-sm transition hover:bg-[#0038aa] focus:outline-none focus:ring-4 focus:ring-[#0047d6]/30">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2M6 14h12v8H6v-8z"/>
+                        </svg>
+                        Cetak Semua PDF
+                    </a>
+                </div>
+
+                <!-- ===== FORM FILTER ===== -->
+                <form method="GET" action="{{ route('admin.monitoring.catatan') }}" class="mb-6">
+                    <div class="flex flex-col md:flex-row gap-3 md:items-end">
+                        <div class="flex-1">
+                            <label class="block text-xs font-bold uppercase tracking-wide text-black mb-1">Cari (Nama / NISN)</label>
+                            <input type="text" name="q" value="{{ request('q') }}" placeholder="Ketik nama atau NISN siswa..."
+                                   class="w-full rounded-xl border-2 border-[#0047d6]/25 bg-white px-4 py-2.5 text-sm font-medium text-black placeholder-[#a8acb3] focus:border-[#0047d6] focus:ring-2 focus:ring-[#0047d6]/30">
+                        </div>
+
+                        <div class="w-full md:w-44">
+                            <label class="block text-xs font-bold uppercase tracking-wide text-black mb-1">Kelas</label>
+                            <select name="kelas" class="w-full rounded-xl border-2 border-[#0047d6]/25 bg-white px-3 py-2.5 text-sm font-medium text-black focus:border-[#0047d6] focus:ring-2 focus:ring-[#0047d6]/30">
+                                <option value="">Semua Kelas</option>
+                                @foreach($kelasList as $opsiKelas)
+                                    <option value="{{ $opsiKelas }}" @selected(request('kelas') === $opsiKelas)>{{ $opsiKelas }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <div class="w-full md:w-44">
+                            <label class="block text-xs font-bold uppercase tracking-wide text-black mb-1">Jurusan</label>
+                            <select name="jurusan" class="w-full rounded-xl border-2 border-[#0047d6]/25 bg-white px-3 py-2.5 text-sm font-medium text-black focus:border-[#0047d6] focus:ring-2 focus:ring-[#0047d6]/30">
+                                <option value="">Semua Jurusan</option>
+                                @foreach($jurusanList as $opsiJurusan)
+                                    <option value="{{ $opsiJurusan }}" @selected(request('jurusan') === $opsiJurusan)>{{ $opsiJurusan }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <div class="w-full md:w-48">
+                            <label class="block text-xs font-bold uppercase tracking-wide text-black mb-1">Status</label>
+                            <select name="approved" class="w-full rounded-xl border-2 border-[#0047d6]/25 bg-white px-3 py-2.5 text-sm font-medium text-black focus:border-[#0047d6] focus:ring-2 focus:ring-[#0047d6]/30">
+                                <option value="">Semua Status</option>
+                                <option value="1" @selected(request('approved') === '1')>Sudah Disetujui</option>
+                                <option value="0" @selected(request('approved') === '0')>Belum Disetujui</option>
+                            </select>
+                        </div>
+
+                        <div class="flex gap-2">
+                            <button type="submit" class="inline-flex items-center rounded-xl bg-[#0047d6] px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-[#0038aa] focus:outline-none focus:ring-4 focus:ring-[#0047d6]/30">Cari</button>
+                            <a href="{{ route('admin.monitoring.catatan') }}" class="inline-flex items-center rounded-xl border-2 border-[#0047d6]/25 bg-white px-5 py-2.5 text-sm font-bold text-[#0047d6] transition hover:bg-[#0047d6]/5">Reset</a>
+                        </div>
+                    </div>
+                </form>
+
+                <!-- ===== TABEL DATA ===== -->
+                <div class="overflow-x-auto rounded-xl border-2 border-[#0047d6]/15">
+                    <table class="w-full min-w-[1200px] text-left text-sm table-fixed">
+                        <thead>
+                            <tr class="bg-[#0047d6] text-xs uppercase tracking-wide text-white">
+                                <th class="px-4 py-3 text-center w-12 font-bold">No</th>
+                                <th class="px-4 py-3 font-bold w-40">Nama Siswa</th>
+                                <th class="px-4 py-3 font-bold w-28">NISN</th>
+                                <th class="px-4 py-3 font-bold w-40">Pekerjaan</th>
+                                <th class="px-4 py-3 font-bold w-[24%]">Perencanaan</th>
+                                <th class="px-4 py-3 font-bold w-[24%]">Hasil/Pelaksanaan</th>
+                                <th class="px-4 py-3 font-bold w-48">Catatan Instruktur</th>
+                                <th class="px-4 py-3 text-center font-bold w-28">Status</th>
+                                <th class="px-4 py-3 text-center font-bold w-20">Cetak</th>
                             </tr>
-                        @empty
-                            <tr><td colspan="8" class="px-4 py-8 text-center text-gray-400">Tidak ada data catatan.</td></tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
-        </div>
+                        </thead>
+                        <tbody class="divide-y divide-[#0047d6]/10">
+                            @forelse ($catatan as $item)
+                                <tr class="align-top transition hover:bg-[#0047d6]/5">
+                                    <td class="px-4 py-3 text-center font-semibold text-black">{{ $catatan->firstItem() + $loop->index }}</td>
+                                    <td class="px-4 py-3 font-bold text-black break-words">{{ $item->user->name ?? '-' }}</td>
+                                    <td class="px-4 py-3 whitespace-nowrap font-medium text-black">{{ $item->user->nisn ?? '-' }}</td>
+                                    <td class="px-4 py-3 font-medium text-black break-words">{{ $item->nama_pekerjaan }}</td>
+                                    <td class="px-4 py-3 font-medium text-black break-words">{{ $item->perencanaan_kegiatan }}</td>
+                                    <td class="px-4 py-3 font-medium text-black break-words">{{ $item->pelaksanaan_kegiatan }}</td>
+                                    <td class="px-4 py-3 text-black break-words">
+                                        @if($item->catatan_instruktur)
+                                            <div class="rounded-lg border-l-4 border-[#d98200] bg-[#d98200]/5 p-2 text-xs font-medium italic text-black">
+                                                {{ $item->catatan_instruktur }}
+                                            </div>
+                                        @else
+                                            <span class="text-[#5b616e]">-</span>
+                                        @endif
+                                    </td>
+                                    <td class="px-4 py-3 text-center">
+                                        @if($item->is_approved)
+                                            <span class="inline-flex items-center rounded-full bg-[#05b169] px-3 py-1 text-xs font-bold text-white">Disetujui</span>
+                                        @else
+                                            <span class="inline-flex items-center rounded-full bg-[#d98200] px-3 py-1 text-xs font-bold text-white">Menunggu</span>
+                                        @endif
+                                    </td>
+                                    <td class="px-4 py-3 text-center">
+                                        <a href="{{ route('cetak.catatan', ['siswa_id' => $item->user_id, 'catatan_id' => $item->id]) }}" target="_blank"
+                                           class="inline-flex items-center rounded-full bg-[#0047d6] px-3 py-1.5 text-xs font-bold text-white transition hover:bg-[#0038aa]">PDF</a>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="9" class="px-4 py-8 text-center font-medium text-[#5b616e] italic">
+                                        Tidak ada catatan yang cocok / belum ada catatan dari siswa.
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
 
-        {{-- Pagination --}}
-        <div>
-            {!! $catatan->links() !!}
+                <!-- ===== PAGINATION ===== -->
+                <div class="mt-4">
+                    {!! $catatan->links() !!}
+                </div>
+
+            </div>
         </div>
     </div>
 </x-app-layout>

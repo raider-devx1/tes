@@ -1,144 +1,161 @@
-<x-app-layout title="Penilaian PKL">
-   <div>
-    <h2 class="text-2xl font-bold text-gray-800">Penilaian PKL</h2>
-    <p class="text-sm text-gray-500">Rekap nilai seluruh siswa PKL — termasuk yang belum dinilai (hanya-baca).</p>
-</div>
-
-{{-- ===== KARTU RINGKASAN ===== --}}
-<div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-    <div class="bg-white rounded-xl border border-blue-100 p-5 flex items-center gap-4">
-    
-        <div>
-            <p class="text-sm text-gray-500">Total Siswa</p>
-            <p class="text-2xl font-bold text-gray-800">{{ $totalSiswa }}</p>
+<x-app-layout>
+    <x-slot name="header">
+        <div class="flex items-center justify-between gap-4">
+            <h2 class="text-xl md:text-2xl font-bold tracking-tight text-black">Rekap &amp; Penilaian Siswa PKL</h2>
+            <button type="button" onclick="history.back()"
+                    class="inline-flex items-center gap-1 rounded-xl border-2 border-[#0047d6]/25 bg-white px-4 py-2 text-sm font-bold text-[#0047d6] transition hover:bg-[#0047d6]/5 shrink-0">
+                &larr; Kembali
+            </button>
         </div>
-    </div>
+    </x-slot>
 
-    <div class="bg-white rounded-xl border border-blue-100 p-5 flex items-center gap-4">
-        
-        <div>
-            <p class="text-sm text-gray-500">Sudah Dinilai</p>
-            <p class="text-2xl font-bold text-gray-800">{{ $sudahDinilai }}</p>
-        </div>
-    </div>
+    <div class="py-8 md:py-12 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
-    <div class="bg-white rounded-xl border border-blue-100 p-5 flex items-center gap-4">
-       
-        <div>
-            <p class="text-sm text-gray-500">Belum Dinilai</p>
-            <p class="text-2xl font-bold text-gray-800">{{ $belumLengkap }}</p>
-        </div>
-    </div>
-</div>
-
-
-
-        {{-- FILTER --}}
-        <form method="GET" class="bg-white rounded-xl border border-blue-100 p-4 grid grid-cols-1 md:grid-cols-5 gap-3 items-end">
-            <div class="md:col-span-2">
-                <label class="block text-xs text-gray-500 mb-1">Cari siswa</label>
-                <input type="text" name="q" value="{{ $q }}" placeholder="Nama / NISN"
-                       class="w-full rounded-lg border-gray-200 text-sm focus:border-[#2563EB] focus:ring-[#2563EB]">
+            <!-- ===== CARD REKAP INFORMASI ===== -->
+            <div class="mb-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div class="rounded-2xl border-2 border-[#0047d6]/15 bg-white p-5 shadow-sm">
+                    <p class="text-xs font-bold uppercase tracking-wide text-[#5b616e]">Total Siswa</p>
+                    <p class="mt-1 text-3xl font-bold text-black">{{ $totalSiswa }}</p>
+                </div>
+                <div class="rounded-2xl border-2 border-[#05b169]/30 bg-[#05b169]/5 p-5 shadow-sm">
+                    <p class="text-xs font-bold uppercase tracking-wide text-[#5b616e]">Sudah Dinilai</p>
+                    <p class="mt-1 text-3xl font-bold text-[#05b169]">{{ $sudahDinilai }}</p>
+                </div>
+                <div class="rounded-2xl border-2 border-[#d98200]/30 bg-[#d98200]/5 p-5 shadow-sm">
+                    <p class="text-xs font-bold uppercase tracking-wide text-[#5b616e]">Belum Lengkap</p>
+                    <p class="mt-1 text-3xl font-bold text-[#d98200]">{{ $belumLengkap }}</p>
+                </div>
             </div>
-            <div>
-                <label class="block text-xs text-gray-500 mb-1">Kelas</label>
-                <select name="kelas" class="w-full rounded-lg border-gray-200 text-sm focus:border-[#2563EB] focus:ring-[#2563EB]">
-                    <option value="">Semua</option>
-                    @foreach ($kelasList as $k)
-                        <option value="{{ $k }}" @selected($kelas === $k)>{{ $k }}</option>
-                    @endforeach
-                </select>
-            </div>
-            <div>
-                <label class="block text-xs text-gray-500 mb-1">Jurusan</label>
-                <select name="jurusan" class="w-full rounded-lg border-gray-200 text-sm focus:border-[#2563EB] focus:ring-[#2563EB]">
-                    <option value="">Semua</option>
-                    @foreach ($jurusanList as $j)
-                        <option value="{{ $j }}" @selected($jurusan === $j)>{{ $j }}</option>
-                    @endforeach
-                </select>
-            </div>
-            <div>
-                <label class="block text-xs text-gray-500 mb-1">Status</label>
-                <select name="status" class="w-full rounded-lg border-gray-200 text-sm focus:border-[#2563EB] focus:ring-[#2563EB]">
-                    <option value="">Semua</option>
-                    <option value="sudah" @selected($status === 'sudah')>Sudah Dinilai</option>
-                    <option value="belum" @selected($status === 'belum')>Belum Dinilai</option>
-                </select>
-            </div>
-            <div class="md:col-span-5 flex gap-2">
-                <button type="submit" class="px-4 py-2 rounded-lg bg-[#2563EB] text-white text-sm font-medium hover:bg-blue-700">Filter</button>
-                <a href="{{ route('admin.evaluasi.penilaian') }}" class="px-4 py-2 rounded-lg text-gray-500 text-sm hover:bg-gray-50">Reset</a>
-            </div>
-        </form>
 
-        {{-- TABEL --}}
-        <div class="bg-white rounded-xl border border-blue-100 overflow-hidden">
-            <div class="overflow-x-auto">
-                <table class="w-full text-sm">
-                    <thead class="bg-blue-50 text-gray-600 text-left">
-                        <tr>
-                            <th class="px-4 py-3 w-12 text-center">No</th>
-                            <th class="px-4 py-3">Siswa</th>
-                            <th class="px-4 py-3">Kelas</th>
-                            <th class="px-4 py-3">Jurusan</th>
-                            <th class="px-4 py-3 text-center">Soft</th>
-                            <th class="px-4 py-3 text-center">Hard</th>
-                            <th class="px-4 py-3 text-center">Pengemb.</th>
-                            <th class="px-4 py-3 text-center">Wirausaha</th>
-                            <th class="px-4 py-3 text-center">Rata (1-5)</th>
-                            <th class="px-4 py-3 text-center">N. Guru</th>
-                            <th class="px-4 py-3 text-center">N. Laporan</th>
-                            <th class="px-4 py-3 text-center">Nilai Akhir</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-100">
-                        @forelse($siswa as $s)
-                            @php
-                                $n      = $s->nilai; // bisa null kalau belum dinilai
-                                $akhir  = $n?->nilai_akhir;
-                                $sudah  = $n && ! is_null($akhir);
-                                $gradeBadge = ! $sudah ? 'bg-gray-100 text-gray-500'
-                                    : ($akhir >= 85 ? 'bg-green-50 text-green-700'
-                                    : ($akhir >= 70 ? 'bg-blue-50 text-blue-700'
-                                    : ($akhir >= 60 ? 'bg-amber-50 text-amber-700' : 'bg-red-50 text-red-600')));
-                            @endphp
-                            <tr class="hover:bg-blue-50/40">
-                                <td class="px-4 py-3 text-center text-gray-500">
-    {{  $siswa->firstItem() + $loop->index }}
-</td>
-                                <td class="px-4 py-3 font-medium text-gray-800">
-                                    {{ $s->name }}
-                                    <div class="text-xs text-gray-400">NISN: {{ $s->nisn ?? '-' }}</div>
-                                </td>
-                                <td class="px-4 py-3">{{ $s->kelas ?? '-' }}</td>
-                                <td class="px-4 py-3">{{ $s->jurusan ?? '-' }}</td>
-                                <td class="px-4 py-3 text-center">{{ $n?->soft_skill ?? '-' }}</td>
-                                <td class="px-4 py-3 text-center">{{ $n?->hard_skill ?? '-' }}</td>
-                                <td class="px-4 py-3 text-center">{{ $n?->pengembangan_hard_skill ?? '-' }}</td>
-                                <td class="px-4 py-3 text-center">{{ $n?->kewirausahaan ?? '-' }}</td>
-                                <td class="px-4 py-3 text-center font-medium">
-                                    {{ is_null($n?->rata_rata) ? '-' : number_format($n->rata_rata, 2) }}
-                                </td>
-                                <td class="px-4 py-3 text-center">{{ $n?->nilai_guru ?? '-' }}</td>
-                                <td class="px-4 py-3 text-center">{{ $n?->nilai_laporan ?? '-' }}</td>
-                                <td class="px-4 py-3 text-center">
-                                    <span class="inline-block px-2.5 py-1 rounded-full text-xs font-bold {{ $gradeBadge }}">
-                                        {{ ! $sudah ? 'Belum' : number_format($akhir, 2) }}
-                                    </span>
-                                </td>
+            <div class="rounded-2xl border-2 border-[#0047d6]/15 bg-white p-4 sm:p-6 md:p-8 shadow-sm">
+
+                @if(session('success'))
+                    <div class="mb-4 rounded-xl border-2 border-[#05b169] bg-[#05b169]/10 px-4 py-3 text-sm font-semibold text-black">
+                        {{ session('success') }}
+                    </div>
+                @endif
+
+                <!-- ===== BANNER & CETAK SEMUA PDF ===== -->
+                <div class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                    <div>
+                        <h3 class="text-lg font-bold tracking-tight text-black">Daftar Penilaian Seluruh Siswa</h3>
+                        <p class="text-xs font-medium text-[#5b616e]">
+                            Nilai Akhir = 50% Instruktur + 20% Guru + 30% Laporan. Tombol <span class="font-bold text-black">Cetak Semua PDF</span> mencetak seluruh lembar nilai — 1 siswa per halaman.
+                        </p>
+                    </div>
+
+                    <a href="{{ route('cetak.nilai.semua') }}" target="_blank"
+                       class="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-[#0047d6] px-6 py-3.5 text-base font-bold text-white shadow-sm transition hover:bg-[#0038aa] focus:outline-none focus:ring-4 focus:ring-[#0047d6]/30 shrink-0">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2M6 14h12v8H6v-8z"/>
+                        </svg>
+                        Cetak Semua PDF
+                    </a>
+                </div>
+
+                <!-- ===== FORM FILTER ===== -->
+                <form method="GET" action="{{ route('admin.evaluasi.penilaian') }}" class="mb-6">
+                    <div class="flex flex-col md:flex-row gap-3 md:items-end">
+                        <div class="flex-1">
+                            <label class="block text-xs font-bold uppercase tracking-wide text-black mb-1">Cari (Nama / NISN)</label>
+                            <input type="text" name="q" value="{{ request('q') }}" placeholder="Ketik nama atau NISN siswa..."
+                                   class="w-full rounded-xl border-2 border-[#0047d6]/25 bg-white px-4 py-2.5 text-sm font-medium text-black placeholder-[#a8acb3] focus:border-[#0047d6] focus:ring-2 focus:ring-[#0047d6]/30">
+                        </div>
+
+                        <div class="w-full md:w-44">
+                            <label class="block text-xs font-bold uppercase tracking-wide text-black mb-1">Kelas</label>
+                            <select name="kelas" class="w-full rounded-xl border-2 border-[#0047d6]/25 bg-white px-3 py-2.5 text-sm font-medium text-black focus:border-[#0047d6] focus:ring-2 focus:ring-[#0047d6]/30">
+                                <option value="">Semua Kelas</option>
+                                @foreach($kelasList as $opsiKelas)
+                                    <option value="{{ $opsiKelas }}" @selected(request('kelas') === $opsiKelas)>{{ $opsiKelas }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <div class="w-full md:w-44">
+                            <label class="block text-xs font-bold uppercase tracking-wide text-black mb-1">Jurusan</label>
+                            <select name="jurusan" class="w-full rounded-xl border-2 border-[#0047d6]/25 bg-white px-3 py-2.5 text-sm font-medium text-black focus:border-[#0047d6] focus:ring-2 focus:ring-[#0047d6]/30">
+                                <option value="">Semua Jurusan</option>
+                                @foreach($jurusanList as $opsiJurusan)
+                                    <option value="{{ $opsiJurusan }}" @selected(request('jurusan') === $opsiJurusan)>{{ $opsiJurusan }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <div class="w-full md:w-48">
+                            <label class="block text-xs font-bold uppercase tracking-wide text-black mb-1">Status Penilaian</label>
+                            <select name="status" class="w-full rounded-xl border-2 border-[#0047d6]/25 bg-white px-3 py-2.5 text-sm font-medium text-black focus:border-[#0047d6] focus:ring-2 focus:ring-[#0047d6]/30">
+                                <option value="">Semua Status</option>
+                                <option value="sudah" @selected(request('status') === 'sudah')>Sudah Dinilai</option>
+                                <option value="belum" @selected(request('status') === 'belum')>Belum Dinilai</option>
+                            </select>
+                        </div>
+
+                        <div class="flex gap-2">
+                            <button type="submit" class="inline-flex items-center rounded-xl bg-[#0047d6] px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-[#0038aa] focus:outline-none focus:ring-4 focus:ring-[#0047d6]/30">Cari</button>
+                            <a href="{{ route('admin.evaluasi.penilaian') }}" class="inline-flex items-center rounded-xl border-2 border-[#0047d6]/25 bg-white px-5 py-2.5 text-sm font-bold text-[#0047d6] transition hover:bg-[#0047d6]/5">Reset</a>
+                        </div>
+                    </div>
+                </form>
+
+                <!-- ===== TABEL DATA ===== -->
+                <div class="overflow-x-auto rounded-xl border-2 border-[#0047d6]/15">
+                    <table class="w-full min-w-[1000px] text-left text-sm">
+                        <thead>
+                            <tr class="bg-[#0047d6] text-xs uppercase tracking-wide text-white">
+                                <th class="px-4 py-3 text-center w-12 font-bold">No</th>
+                                <th class="px-4 py-3 font-bold">Siswa</th>
+                                <th class="px-4 py-3 font-bold w-28">NISN</th>
+                                <th class="px-4 py-3 font-bold w-40">Guru Pembimbing</th>
+                                <th class="px-4 py-3 text-center font-bold w-32">Instruktur (/5)</th>
+                                <th class="px-4 py-3 text-center font-bold w-32 bg-[#0038aa]">Nilai Akhir</th>
+                                <th class="px-4 py-3 text-center font-bold w-32">Status</th>
+                                <th class="px-4 py-3 text-center font-bold w-28">Cetak</th>
                             </tr>
-                        @empty
-                            <tr><td colspan="12" class="px-4 py-8 text-center text-gray-400">Tidak ada siswa PKL.</td></tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
-        </div>
+                        </thead>
+                        <tbody class="divide-y divide-[#0047d6]/10">
+                            @forelse($siswa as $item)
+                                @php
+                                    $nilai = $item->nilai;
+                                    $telahDinilai = $nilai && $nilai->nilai_akhir !== null;
+                                @endphp
+                                <tr class="align-top transition hover:bg-[#0047d6]/5">
+                                    <td class="px-4 py-3 text-center font-semibold text-black">{{ $siswa->firstItem() + $loop->index }}</td>
+                                    <td class="px-4 py-3 font-bold text-black break-words">{{ $item->name }}</td>
+                                    <td class="px-4 py-3 whitespace-nowrap font-medium text-black">{{ $item->nisn ?? '-' }}</td>
+                                    <td class="px-4 py-3 font-medium text-black break-words">{{ $item->guru->name ?? '-' }}</td>
+                                    <td class="px-4 py-3 text-center font-medium text-black">{{ $nilai->nilai_instruktur ?? '-' }}</td>
+                                    <td class="px-4 py-3 text-center font-bold text-[#0047d6] bg-[#0047d6]/5">{{ $nilai->nilai_akhir ?? '-' }}</td>
 
-        {{-- PAGINATION --}}
-        <div>
-            {!! $siswa->links() !!}
+                                    <td class="px-4 py-3 text-center">
+                                        @if($telahDinilai)
+                                            <span class="inline-flex items-center rounded-full bg-[#05b169] px-3 py-1 text-xs font-bold text-white">Sudah Dinilai</span>
+                                        @else
+                                            <span class="inline-flex items-center rounded-full bg-[#d98200] px-3 py-1 text-xs font-bold text-white">Belum Dinilai</span>
+                                        @endif
+                                    </td>
+
+                                    <td class="px-4 py-3 text-center">
+                                        <a href="{{ route('cetak.nilai', $item->id) }}" target="_blank"
+                                           class="inline-flex items-center rounded-full bg-[#0047d6] px-3 py-1.5 text-xs font-bold text-white transition hover:bg-[#0038aa]">PDF</a>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="8" class="px-4 py-8 text-center font-medium text-[#5b616e] italic">Tidak ada data siswa PKL yang cocok dengan pencarian.</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- ===== PAGINATION ===== -->
+                <div class="mt-4">
+                    {!! $siswa->links() !!}
+                </div>
+
+            </div>
         </div>
     </div>
 </x-app-layout>
