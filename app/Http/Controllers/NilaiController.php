@@ -57,42 +57,53 @@ public function indexInstruktur(Request $request)
     return view('instruktur.nilai.index', compact('siswa', 'q', 'status'));
 }
 
-    public function createInstruktur(Request $request)
-    {
-        $siswaId = $request->query('siswa_id');
-        $siswa = User::where('role', 'siswa_pkl')->findOrFail($siswaId);
+   public function createInstruktur(Request $request)
+{
+    $siswaId = $request->query('siswa_id');
 
-        return view('instruktur.nilai.create', compact('siswa'));
-    }
+    // Hanya siswa bimbingan instruktur ini yang MASIH aktif yang boleh dinilai
+    $siswa = User::where('role', 'siswa_pkl')
+        ->where('instruktur_id', Auth::id())  // ⬅️ pastikan memang bimbingannya
+        ->where('status_pkl', 'aktif')        // ⬅️ tolak siswa yang sudah "selesai" / "belum"
+        ->findOrFail($siswaId);
 
-    public function storeInstruktur(Request $request)
-    {
-        $request->validate([
-            'user_id'                 => 'required|exists:users,id',
-            'soft_skill'              => 'required|integer|between:1,5',
-            'hard_skill'              => 'required|integer|between:1,5',
-            'pengembangan_hard_skill' => 'required|integer|between:1,5',
-            'kewirausahaan'           => 'required|integer|between:1,5',
-            'catatan_rekomendasi'     => 'nullable|string',
-        ]);
+    return view('instruktur.nilai.create', compact('siswa'));
+}
 
-        $rataRata = ($request->soft_skill + $request->hard_skill
-            + $request->pengembangan_hard_skill + $request->kewirausahaan) / 4;
+   public function storeInstruktur(Request $request)
+{
+    $request->validate([
+        'user_id'                 => 'required|exists:users,id',
+        'soft_skill'              => 'required|integer|between:1,5',
+        'hard_skill'              => 'required|integer|between:1,5',
+        'pengembangan_hard_skill' => 'required|integer|between:1,5',
+        'kewirausahaan'           => 'required|integer|between:1,5',
+        'catatan_rekomendasi'     => 'nullable|string',
+    ]);
 
-        $nilai = Nilai::firstOrNew(['user_id' => $request->user_id]);
-        $nilai->instruktur_id           = Auth::id();
-        $nilai->soft_skill              = $request->soft_skill;
-        $nilai->hard_skill              = $request->hard_skill;
-        $nilai->pengembangan_hard_skill = $request->pengembangan_hard_skill;
-        $nilai->kewirausahaan           = $request->kewirausahaan;
-        $nilai->rata_rata               = $rataRata;
-        $nilai->catatan_rekomendasi     = $request->catatan_rekomendasi;
-        $nilai->nilai_akhir             = $this->hitungNilaiAkhir($nilai); // recompute
-        $nilai->save();
+    // Pastikan siswa memang bimbingan instruktur ini & masih aktif PKL
+    $siswa = User::where('role', 'siswa_pkl')
+        ->where('instruktur_id', Auth::id())  // ⬅️ cegah menilai siswa instruktur lain
+        ->where('status_pkl', 'aktif')        // ⬅️ cegah menilai siswa yang sudah selesai
+        ->findOrFail($request->user_id);
 
-        return redirect()->route('instruktur.nilai.index')
-            ->with('success', 'Lembar evaluasi penilaian siswa sukses disimpan.');
-    }
+    $rataRata = ($request->soft_skill + $request->hard_skill
+        + $request->pengembangan_hard_skill + $request->kewirausahaan) / 4;
+
+    $nilai = Nilai::firstOrNew(['user_id' => $siswa->id]);
+    $nilai->instruktur_id           = Auth::id();
+    $nilai->soft_skill              = $request->soft_skill;
+    $nilai->hard_skill              = $request->hard_skill;
+    $nilai->pengembangan_hard_skill = $request->pengembangan_hard_skill;
+    $nilai->kewirausahaan           = $request->kewirausahaan;
+    $nilai->rata_rata               = $rataRata;
+    $nilai->catatan_rekomendasi     = $request->catatan_rekomendasi;
+    $nilai->nilai_akhir             = $this->hitungNilaiAkhir($nilai); // hitung ulang
+    $nilai->save();
+
+    return redirect()->route('instruktur.nilai.index')
+        ->with('success', 'Lembar evaluasi penilaian siswa sukses disimpan.');
+}
 
     /* ===================== SISWA PKL ===================== */
     public function indexSiswa()
