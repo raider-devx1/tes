@@ -4,10 +4,10 @@
     <x-slot name="header">
         <div class="flex items-center justify-between gap-4">
             <h2 class="text-xl md:text-2xl font-bold tracking-tight text-black">Dokumen Siswa Bimbingan</h2>
-            <button type="button" onclick="history.back()"
-                    class="inline-flex items-center gap-1 rounded-xl border-2 border-[#0047d6]/25 bg-white px-4 py-2 text-sm font-bold text-[#0047d6] transition hover:bg-[#0047d6]/5 shrink-0">
-                &larr; Kembali
-            </button>
+            <a href="{{ route('guru.dashboard') }}"
+           class="inline-flex items-center gap-1 rounded-xl border-2 border-[#0047d6]/25 bg-white px-4 py-2 text-sm font-bold text-[#0047d6] transition hover:bg-[#0047d6]/5">
+            Kembali ke Dashboard
+        </a>
         </div>
     </x-slot>
 
