@@ -112,8 +112,8 @@
                                     <td class="px-4 py-3 whitespace-nowrap font-medium text-black">
                                          {{ $item->nisn ?? '-' }} 
                                     </td>
-                                    <td class="px-4 py-3 text-center font-medium text-black">
-                                        {{ $n->nilai_instruktur ?? '-' }}
+                                     <td class="px-4 py-3 text-center font-medium text-black">
+                                        {{ $n && $n->rata_rata !== null ? number_format($n->rata_rata, 2) : '-' }}
                                     </td>
                                     <td class="px-4 py-3 text-center font-bold text-[#0047d6] bg-[#0047d6]/5">
                                         {{ $n->nilai_akhir ?? '-' }}

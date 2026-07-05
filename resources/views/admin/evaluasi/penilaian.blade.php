@@ -125,7 +125,7 @@
                                     <td class="px-4 py-3 font-bold text-black break-words">{{ $item->name }}</td>
                                     <td class="px-4 py-3 whitespace-nowrap font-medium text-black">{{ $item->nisn ?? '-' }}</td>
                                     <td class="px-4 py-3 font-medium text-black break-words">{{ $item->guru->name ?? '-' }}</td>
-                                    <td class="px-4 py-3 text-center font-medium text-black">{{ $nilai->nilai_instruktur ?? '-' }}</td>
+                                     <td class="px-4 py-3 text-center font-medium text-black">{{ $nilai && $nilai->rata_rata !== null ? number_format($nilai->rata_rata, 2) : '-' }}</td>
                                     <td class="px-4 py-3 text-center font-bold text-[#0047d6] bg-[#0047d6]/5">{{ $nilai->nilai_akhir ?? '-' }}</td>
 
                                     <td class="px-4 py-3 text-center">
