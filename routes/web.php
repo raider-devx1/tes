@@ -131,10 +131,22 @@ Route::delete('/akun-admin/{admin}', [AdminAkunController::class, 'destroy'])->n
 // ---- MASTER DATA: DATA SISWA PKL ----
         Route::resource('siswa', SiswaController::class)->except(['show']);
 
-// ---- MONITORING (read-only) ----
-        Route::get('/monitoring/jurnal', [MonitoringController::class, 'jurnal'])->name('monitoring.jurnal');
-        Route::get('/monitoring/catatan', [MonitoringController::class, 'catatan'])->name('monitoring.catatan');
-        Route::get('/monitoring/absensi', [MonitoringController::class, 'absensi'])->name('monitoring.absensi');
+
+       // ---- MONITORING (read + CRUD) ----
+Route::get('/monitoring/jurnal', [MonitoringController::class, 'jurnal'])->name('monitoring.jurnal');
+Route::post('/monitoring/jurnal', [MonitoringController::class, 'storeJurnal'])->name('monitoring.jurnal.store');
+Route::put('/monitoring/jurnal/{jurnal}', [MonitoringController::class, 'updateJurnal'])->name('monitoring.jurnal.update');
+Route::delete('/monitoring/jurnal/{jurnal}', [MonitoringController::class, 'destroyJurnal'])->name('monitoring.jurnal.destroy');
+
+Route::get('/monitoring/catatan', [MonitoringController::class, 'catatan'])->name('monitoring.catatan');
+Route::post('/monitoring/catatan', [MonitoringController::class, 'storeCatatan'])->name('monitoring.catatan.store');
+Route::put('/monitoring/catatan/{catatan}', [MonitoringController::class, 'updateCatatan'])->name('monitoring.catatan.update');
+Route::delete('/monitoring/catatan/{catatan}', [MonitoringController::class, 'destroyCatatan'])->name('monitoring.catatan.destroy');
+
+Route::get('/monitoring/absensi', [MonitoringController::class, 'absensi'])->name('monitoring.absensi');
+Route::post('/monitoring/absensi', [MonitoringController::class, 'storeAbsensi'])->name('monitoring.absensi.store');
+Route::put('/monitoring/absensi/{absensi}', [MonitoringController::class, 'updateAbsensi'])->name('monitoring.absensi.update');
+Route::delete('/monitoring/absensi/{absensi}', [MonitoringController::class, 'destroyAbsensi'])->name('monitoring.absensi.destroy');
 
 // ---- EVALUASI & NILAI (read-only) ----
         Route::get('/evaluasi/observasi', [EvaluasiController::class, 'observasi'])->name('evaluasi.observasi');
