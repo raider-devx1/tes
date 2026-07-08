@@ -219,10 +219,10 @@
                                     <span class="inline-block rounded-full px-3 py-1 text-xs font-bold {{ $badgeStatus }}"> {{ $labelStatus }} </span>
                                 </td>
 
-                                <td class="px-4 py-3 text-center">
-                                    <a href="{{ route('cetak.jurnal', $item->id) }}" target="_blank"
-                                       class="inline-flex items-center rounded-full bg-[#0047d6] px-3 py-1.5 text-xs font-bold text-white transition hover:bg-[#0038aa]">PDF</a>
-                                </td>
+                              <td class="px-4 py-3 text-center">
+    <a href="{{ route('cetak.jurnal', ['siswa_id' => $item->siswa_id, 'jurnal_id' => $item->id]) }}" target="_blank"
+       class="inline-flex items-center rounded-full bg-[#0047d6] px-3 py-1.5 text-xs font-bold text-white transition hover:bg-[#0038aa]">PDF</a>
+</td>
 
                                 <td class="px-4 py-3">
                                     <div class="flex items-center justify-center gap-2">
