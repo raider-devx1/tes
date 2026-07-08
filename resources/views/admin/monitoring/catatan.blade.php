@@ -1,32 +1,27 @@
 <x-app-layout>
     <x-slot name="header">
-        <div class="flex items-center justify-between gap-4">
-            <h2 class="text-xl md:text-2xl font-bold tracking-tight text-black">Catatan Kegiatan Siswa PKL</h2>
-            <button type="button" onclick="window.dispatchEvent(new CustomEvent('buka-tambah-catatan'))"
-                    class="inline-flex items-center gap-1.5 rounded-xl bg-[#0047d6] px-4 py-2 text-sm font-bold text-white transition hover:bg-[#0038aa]">
-                + Tambah Catatan
-            </button>
-        </div>
+        <h2 class="text-xl md:text-2xl font-bold tracking-tight text-black">Catatan Kegiatan Siswa PKL</h2>
     </x-slot>
 
     <style>[x-cloak]{display:none!important;}</style>
 
-    <div class="py-8 md:py-12 bg-white">
+    <div x-data="catatanCrud()" class="py-8 md:py-12 bg-white">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
-            {{-- ===== KARTU REKAPITULASI ===== --}}
-            <div class="mb-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div class="rounded-2xl border-2 border-[#0047d6]/15 bg-white p-5 shadow-sm">
-                    <p class="text-xs font-bold uppercase tracking-wide text-[#5b616e]">Total Catatan</p>
-                    <p class="mt-1 text-3xl font-bold text-black">{{ $rekap['total'] ?? 0 }}</p>
-                </div>
-                <div class="rounded-2xl border-2 border-[#05b169]/30 bg-[#05b169]/5 p-5 shadow-sm">
-                    <p class="text-xs font-bold uppercase tracking-wide text-[#5b616e]">Sudah Disetujui</p>
-                    <p class="mt-1 text-3xl font-bold text-[#05b169]">{{ $rekap['disetujui'] ?? 0 }}</p>
-                </div>
-                <div class="rounded-2xl border-2 border-[#d98200]/30 bg-[#d98200]/5 p-5 shadow-sm">
-                    <p class="text-xs font-bold uppercase tracking-wide text-[#5b616e]">Belum Disetujui</p>
-                    <p class="mt-1 text-3xl font-bold text-[#d98200]">{{ $rekap['belum'] ?? 0 }}</p>
+            <div class="mb-6 flex items-center justify-between gap-4">
+                <div class="grid flex-1 grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div class="rounded-2xl border-2 border-[#0047d6]/15 bg-white p-5 shadow-sm">
+                        <p class="text-xs font-bold uppercase tracking-wide text-[#5b616e]">Total Catatan</p>
+                        <p class="mt-1 text-3xl font-bold text-black"> {{ $rekap['total'] }} </p>
+                    </div>
+                    <div class="rounded-2xl border-2 border-[#05b169]/30 bg-[#05b169]/5 p-5 shadow-sm">
+                        <p class="text-xs font-bold uppercase tracking-wide text-[#5b616e]">Sudah Disetujui</p>
+                        <p class="mt-1 text-3xl font-bold text-[#05b169]"> {{ $rekap['disetujui'] }} </p>
+                    </div>
+                    <div class="rounded-2xl border-2 border-[#d98200]/30 bg-[#d98200]/5 p-5 shadow-sm">
+                        <p class="text-xs font-bold uppercase tracking-wide text-[#5b616e]">Belum Disetujui</p>
+                        <p class="mt-1 text-3xl font-bold text-[#d98200]"> {{ $rekap['belum'] }} </p>
+                    </div>
                 </div>
             </div>
 
@@ -43,13 +38,18 @@
                         <h3 class="text-lg font-bold tracking-tight text-black">Catatan Kegiatan Seluruh Siswa</h3>
                         <p class="text-xs font-medium text-[#5b616e]">Admin dapat menambah, mengubah, dan menghapus catatan.</p>
                     </div>
-                    <a href="{{ route('cetak.catatan.semua') }}" target="_blank"
-                       class="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-[#0047d6] px-6 py-3.5 text-base font-bold text-white shadow-sm transition hover:bg-[#0038aa]">
-                        Cetak Semua PDF
-                    </a>
+                    <div class="flex gap-2">
+                        <button type="button" @click="tambah()"
+                                class="inline-flex items-center justify-center gap-1.5 rounded-xl bg-[#0047d6] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#0038aa]">
+                            + Tambah Catatan
+                        </button>
+                        <a href="{{ route('cetak.catatan.semua') }}" target="_blank"
+                           class="inline-flex items-center justify-center gap-2 rounded-xl border-2 border-[#0047d6]/25 bg-white px-5 py-3 text-sm font-bold text-[#0047d6] transition hover:bg-[#0047d6]/5">
+                            Cetak Semua PDF
+                        </a>
+                    </div>
                 </div>
 
-                {{-- ===== FILTER PENCARIAN ===== --}}
                 <form method="GET" action="{{ route('admin.monitoring.catatan') }}" class="mb-6">
                     <div class="flex flex-col md:flex-row gap-3 md:items-end">
                         <div class="flex-1">
@@ -62,7 +62,7 @@
                             <select name="kelas" class="w-full rounded-xl border-2 border-[#0047d6]/25 bg-white px-3 py-2.5 text-sm font-medium text-black focus:border-[#0047d6] focus:ring-2 focus:ring-[#0047d6]/30">
                                 <option value="">Semua Kelas</option>
                                 @foreach($kelasList as $opsiKelas)
-                                    <option value="{{ $opsiKelas }}" @selected(request('kelas') === $opsiKelas)>{{ $opsiKelas }}</option>
+                                    <option value="{{ $opsiKelas }}" @selected(request('kelas') === $opsiKelas)> {{ $opsiKelas }} </option>
                                 @endforeach
                             </select>
                         </div>
@@ -71,7 +71,7 @@
                             <select name="jurusan" class="w-full rounded-xl border-2 border-[#0047d6]/25 bg-white px-3 py-2.5 text-sm font-medium text-black focus:border-[#0047d6] focus:ring-2 focus:ring-[#0047d6]/30">
                                 <option value="">Semua Jurusan</option>
                                 @foreach($jurusanList as $opsiJurusan)
-                                    <option value="{{ $opsiJurusan }}" @selected(request('jurusan') === $opsiJurusan)>{{ $opsiJurusan }}</option>
+                                    <option value="{{ $opsiJurusan }}" @selected(request('jurusan') === $opsiJurusan)> {{ $opsiJurusan }} </option>
                                 @endforeach
                             </select>
                         </div>
@@ -90,7 +90,6 @@
                     </div>
                 </form>
 
-                {{-- ===== TABEL DATA CATATAN ===== --}}
                 <div class="overflow-x-auto rounded-xl border-2 border-[#0047d6]/15">
                     <table class="w-full min-w-[1300px] text-left text-sm table-fixed">
                         <thead>
@@ -110,16 +109,16 @@
                         <tbody class="divide-y divide-[#0047d6]/10">
                             @forelse ($catatan as $item)
                                 <tr class="align-top transition hover:bg-[#0047d6]/5">
-                                    <td class="px-4 py-3 text-center font-semibold text-black">{{ $catatan->firstItem() + $loop->index }}</td>
-                                    <td class="px-4 py-3 font-bold text-black break-words">{{ $item->user->name }}</td>
-                                    <td class="px-4 py-3 whitespace-nowrap font-medium text-black">{{ $item->user->nisn }}</td>
-                                    <td class="px-4 py-3 font-medium text-black break-words">{{ $item->nama_pekerjaan }}</td>
-                                    <td class="px-4 py-3 font-medium text-black break-words">{{ $item->perencanaan_kegiatan }}</td>
-                                    <td class="px-4 py-3 font-medium text-black break-words">{{ $item->pelaksanaan_kegiatan }}</td>
+                                    <td class="px-4 py-3 text-center font-semibold text-black"> {{ $catatan->firstItem() + $loop->index }} </td>
+                                    <td class="px-4 py-3 font-bold text-black break-words"> {{ $item->user->name }} </td>
+                                    <td class="px-4 py-3 whitespace-nowrap font-medium text-black"> {{ $item->user->nisn }} </td>
+                                    <td class="px-4 py-3 font-medium text-black break-words"> {{ $item->nama_pekerjaan }} </td>
+                                    <td class="px-4 py-3 font-medium text-black break-words"> {{ $item->perencanaan_kegiatan }} </td>
+                                    <td class="px-4 py-3 font-medium text-black break-words"> {{ $item->pelaksanaan_kegiatan }} </td>
                                     <td class="px-4 py-3 text-black break-words">
                                         @if($item->catatan_instruktur)
                                             <div class="rounded-lg border-l-4 border-[#d98200] bg-[#d98200]/5 p-2 text-xs font-medium italic text-black">
-                                                {{ $item->catatan_instruktur }}
+                                                 {{ $item->catatan_instruktur }} 
                                             </div>
                                         @else
                                             <span class="text-[#5b616e]">-</span>
@@ -139,18 +138,18 @@
                                     <td class="px-4 py-3">
                                         <div class="flex items-center justify-center gap-2">
                                             <button type="button"
-                                                    onclick='window.dispatchEvent(new CustomEvent("buka-edit-catatan",{detail:@js([
-                                                        "id" => $item->id,
-                                                        "user_id" => $item->user_id,
-                                                        "nama_pekerjaan" => $item->nama_pekerjaan,
-                                                        "perencanaan_kegiatan" => $item->perencanaan_kegiatan,
-                                                        "pelaksanaan_kegiatan" => $item->pelaksanaan_kegiatan,
-                                                        "catatan_instruktur" => $item->catatan_instruktur,
-                                                        "is_approved" => (bool) $item->is_approved,
-                                                    ])}))'
+                                                    @click="edit(@js([
+                                                        'id' => $item->id,
+                                                        'user_id' => $item->user_id,
+                                                        'nama_pekerjaan' => $item->nama_pekerjaan,
+                                                        'perencanaan_kegiatan' => $item->perencanaan_kegiatan,
+                                                        'pelaksanaan_kegiatan' => $item->pelaksanaan_kegiatan,
+                                                        'catatan_instruktur' => $item->catatan_instruktur,
+                                                        'is_approved' => (bool) $item->is_approved,
+                                                    ]))"
                                                     class="rounded-lg border-2 border-[#0047d6]/30 px-3 py-1.5 text-xs font-bold text-[#0047d6] hover:bg-[#0047d6]/5">Edit</button>
                                             <button type="button"
-                                                    onclick='window.dispatchEvent(new CustomEvent("buka-hapus-catatan",{detail:@js(route("admin.monitoring.catatan.destroy", $item->id))}))'
+                                                    @click="konfirmHapus(@js(route('admin.monitoring.catatan.destroy', $item->id)))"
                                                     class="rounded-lg border-2 border-red-200 px-3 py-1.5 text-xs font-bold text-red-600 hover:bg-red-50">Hapus</button>
                                         </div>
                                     </td>
@@ -166,21 +165,13 @@
                     </table>
                 </div>
 
-                {{-- ===== PAGINATION ===== --}}
                 <div class="mt-4">
                     {!! $catatan->links() !!}
                 </div>
             </div>
         </div>
-    </div>
 
-    {{-- ===== MODAL + KONFIRMASI HAPUS ===== --}}
-    <div x-data="catatanCrud" x-cloak
-         @buka-tambah-catatan.window="tambah()"
-         @buka-edit-catatan.window="edit($event.detail)"
-         @buka-hapus-catatan.window="konfirmHapus($event.detail)">
-
-        <div x-show="open" class="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-0 sm:items-center sm:p-4"
+        <div x-show="open" x-cloak class="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-0 sm:items-center sm:p-4"
              @keydown.escape.window="open = false">
             <div class="w-full rounded-t-2xl bg-white p-5 shadow-xl sm:max-w-lg sm:rounded-2xl sm:p-6 max-h-[90vh] overflow-y-auto"
                  @click.outside="open = false" x-transition>
@@ -237,8 +228,7 @@
                     </label>
 
                     <div class="flex gap-2 pt-2">
-                        <button type="submit" :disabled="!siswaCocok"
-                                :class="!siswaCocok ? 'opacity-50 cursor-not-allowed' : ''"
+                        <button type="submit" :disabled="!siswaCocok" :class="!siswaCocok ? 'opacity-50 cursor-not-allowed' : ''"
                                 class="flex-1 rounded-xl bg-[#0047d6] px-4 py-2.5 text-sm font-bold text-white hover:bg-[#0038aa]">Simpan</button>
                         <button type="button" @click="open = false" class="rounded-xl border-2 border-[#0047d6]/25 px-4 py-2.5 text-sm font-bold text-[#0047d6] hover:bg-[#0047d6]/5">Batal</button>
                     </div>
@@ -246,60 +236,56 @@
             </div>
         </div>
 
-        <div x-show="hapusOpen" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+        <div x-show="hapusOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
              @keydown.escape.window="hapusOpen = false">
             <div class="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl" @click.outside="hapusOpen = false" x-transition>
-                <h3 class="text-base font-bold text-gray-800">Hapus Catatan Kegiatan</h3>
+                <h3 class="text-base font-bold text-black">Hapus Catatan Kegiatan</h3>
                 <p class="mt-1 text-sm text-[#5b616e]">Yakin ingin menghapus catatan ini? Tindakan ini tidak dapat dibatalkan.</p>
                 <form :action="hapusUrl" method="POST" class="mt-4 flex justify-end gap-2">
                     @csrf
                     @method('DELETE')
                     <button type="button" @click="hapusOpen = false" class="rounded-xl border-2 border-[#0047d6]/25 px-4 py-2 text-sm font-bold text-[#0047d6] hover:bg-[#0047d6]/5">Batal</button>
-                    <button type="submit" class="rounded-lg bg-red-600 px-4 py-2 text-sm font-bold text-white hover:bg-red-700">Ya, Hapus</button>
+                    <button type="submit" class="rounded-xl bg-[#cf202f] px-4 py-2 text-sm font-bold text-white hover:bg-[#b01926]">Ya, Hapus</button>
                 </form>
             </div>
         </div>
     </div>
 
-    @push('scripts')
     <script>
-        document.addEventListener('alpine:init', () => {
-            Alpine.data('catatanCrud', () => {
-                const daftarSiswa = @js($siswaList);
-                const kosong = () => ({ id: null, nisn: '', nama_pekerjaan: '', perencanaan_kegiatan: '', pelaksanaan_kegiatan: '', catatan_instruktur: '', is_approved: false });
-                return {
-                    open: false,
-                    mode: 'create',
-                    storeUrl: @js(route('admin.monitoring.catatan.store')),
-                    form: kosong(),
-                    hapusOpen: false,
-                    hapusUrl: '',
-                    get siswaCocok() {
-                        const nisn = String(this.form.nisn || '').trim();
-                        if (!nisn) return null;
-                        return daftarSiswa.find(s => String(s.nisn).trim() === nisn) || null;
-                    },
-                    get actionUrl() { return this.mode === 'create' ? this.storeUrl : this.storeUrl + '/' + this.form.id; },
-                    tambah() { this.mode = 'create'; this.form = kosong(); this.open = true; },
-                    edit(d) {
-                        const s = daftarSiswa.find(x => String(x.id) === String(d.user_id));
-                        this.mode = 'edit';
-                        this.form = {
-                            id: d.id,
-                            nisn: s ? String(s.nisn) : '',
-                            nama_pekerjaan: d.nama_pekerjaan || '',
-                            perencanaan_kegiatan: d.perencanaan_kegiatan || '',
-                            pelaksanaan_kegiatan: d.pelaksanaan_kegiatan || '',
-                            catatan_instruktur: d.catatan_instruktur || '',
-                            is_approved: !!d.is_approved,
-                        };
-                        this.open = true;
-                    },
-                    simpan(e) { if (!this.siswaCocok) e.preventDefault(); },
-                    konfirmHapus(url) { this.hapusUrl = url; this.hapusOpen = true; },
-                };
-            });
-        });
+        window.catatanCrud = function () {
+            const daftarSiswa = @js($siswaList);
+            const storeUrl = @js(route('admin.monitoring.catatan.store'));
+            const kosong = () => ({ id: null, nisn: '', nama_pekerjaan: '', perencanaan_kegiatan: '', pelaksanaan_kegiatan: '', catatan_instruktur: '', is_approved: false });
+            return {
+                open: false,
+                mode: 'create',
+                form: kosong(),
+                hapusOpen: false,
+                hapusUrl: '',
+                get siswaCocok() {
+                    const nisn = String(this.form.nisn || '').trim();
+                    if (!nisn) return null;
+                    return daftarSiswa.find(s => String(s.nisn).trim() === nisn) || null;
+                },
+                get actionUrl() { return this.mode === 'create' ? storeUrl : storeUrl + '/' + this.form.id; },
+                tambah() { this.mode = 'create'; this.form = kosong(); this.open = true; },
+                edit(d) {
+                    const s = daftarSiswa.find(x => String(x.id) === String(d.user_id));
+                    this.mode = 'edit';
+                    this.form = {
+                        id: d.id,
+                        nisn: s ? String(s.nisn) : '',
+                        nama_pekerjaan: d.nama_pekerjaan || '',
+                        perencanaan_kegiatan: d.perencanaan_kegiatan || '',
+                        pelaksanaan_kegiatan: d.pelaksanaan_kegiatan || '',
+                        catatan_instruktur: d.catatan_instruktur || '',
+                        is_approved: !!d.is_approved,
+                    };
+                    this.open = true;
+                },
+                simpan(e) { if (!this.siswaCocok) e.preventDefault(); },
+                konfirmHapus(url) { this.hapusUrl = url; this.hapusOpen = true; },
+            };
+        };
     </script>
-    @endpush
 </x-app-layout>
