@@ -20,6 +20,7 @@ class AdminController extends Controller
     {
         // ====== KARTU RINGKASAN ======
         $totalSiswa      = User::where('role', 'siswa_pkl')->count();
+        $siswaAktif      = User::where('role', 'siswa_pkl')->where('status_pkl', 'aktif')->count();
         $totalGuru       = User::where('role', 'guru_pembimbing')->count();
         $totalInstruktur = User::where('role', 'instruktur_industri')->count();
         $totalIndustri   = Perusahaan::count();
@@ -80,7 +81,7 @@ class AdminController extends Controller
         ];
 
         return view('admin.dashboard', compact(
-            'totalSiswa', 'totalGuru', 'totalInstruktur', 'totalIndustri',
+            'totalSiswa', 'siswaAktif', 'totalGuru', 'totalInstruktur', 'totalIndustri',
             'kehadiran', 'jurnalStatus', 'catatanStatus', 'observasiStatus',
             'perJurusan', 'statusNilai'
         ));

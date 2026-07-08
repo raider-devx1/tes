@@ -2,7 +2,7 @@
 
     @php
         $cards = [
-            ['label' => 'Total Siswa PKL',     'value' => $totalSiswa],
+            ['label' => 'Siswa Aktif PKL',     'value' => $siswaAktif],
             ['label' => 'Guru Pembimbing',     'value' => $totalGuru],
             ['label' => 'Instruktur Industri', 'value' => $totalInstruktur],
             ['label' => 'Industri Mitra',      'value' => $totalIndustri],
@@ -31,75 +31,121 @@
         @endforeach
     </div>
 
-    {{-- ================= GRAFIK BATANG ================= --}}
+    {{-- ================= GRAFIK + POIN INFORMASI ================= --}}
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
 
-        {{-- Grafik 1: Kehadiran Siswa --}}
+        {{-- ---- Kehadiran Siswa ---- --}}
         <div class="bg-white rounded-2xl shadow-sm border border-blue-200 p-5">
             <h4 class="font-bold text-black mb-4">Informasi Kehadiran Siswa</h4>
             <canvas id="chartKehadiran" height="160"></canvas>
-            <p class="mt-4 text-sm text-black bg-blue-50 rounded-xl p-3">
-                Dari <span class="font-bold">{{ $totalKehadiran }}</span> catatan absensi, tingkat kehadiran
-                (Hadir) mencapai <span class="font-bold">{{ $persenHadir }}%</span>.
-                Izin {{ $kehadiran['Izin'] }}, Sakit {{ $kehadiran['Sakit'] }}, Alpha {{ $kehadiran['Alpha'] }}.
-            </p>
+            <ul class="mt-4 space-y-1.5 text-sm">
+                @foreach($kehadiran as $status => $jumlah)
+                    <li class="flex items-center justify-between rounded-lg bg-blue-50 px-3 py-2">
+                        <span class="font-medium text-black">{{ $status }}</span>
+                        <span class="font-bold text-blue-700">{{ $jumlah }}</span>
+                    </li>
+                @endforeach
+                <li class="flex items-center justify-between rounded-lg bg-blue-600 px-3 py-2 text-white">
+                    <span class="font-semibold">Total absensi</span>
+                    <span class="font-bold">{{ $totalKehadiran }}</span>
+                </li>
+                <li class="flex items-center justify-between rounded-lg bg-blue-600 px-3 py-2 text-white">
+                    <span class="font-semibold">Persentase Hadir</span>
+                    <span class="font-bold">{{ $persenHadir }}%</span>
+                </li>
+            </ul>
         </div>
 
-        {{-- Grafik 2: Progres Jurnal --}}
+        {{-- ---- Progres Jurnal ---- --}}
         <div class="bg-white rounded-2xl shadow-sm border border-blue-200 p-5">
             <h4 class="font-bold text-black mb-4">Progres Jurnal</h4>
             <canvas id="chartJurnal" height="160"></canvas>
-            <p class="mt-4 text-sm text-black bg-blue-50 rounded-xl p-3">
-                Total <span class="font-bold">{{ $totalJurnal }}</span> jurnal:
-                <span class="font-bold">{{ $jurnalStatus['Disetujui'] }}</span> disetujui,
-                <span class="font-bold">{{ $jurnalStatus['Menunggu'] }}</span> menunggu persetujuan,
-                <span class="font-bold">{{ $jurnalStatus['Revisi'] }}</span> perlu revisi.
-            </p>
+            <ul class="mt-4 space-y-1.5 text-sm">
+                @foreach($jurnalStatus as $status => $jumlah)
+                    <li class="flex items-center justify-between rounded-lg bg-blue-50 px-3 py-2">
+                        <span class="font-medium text-black">{{ $status }}</span>
+                        <span class="font-bold text-blue-700">{{ $jumlah }} jurnal</span>
+                    </li>
+                @endforeach
+                <li class="flex items-center justify-between rounded-lg bg-blue-600 px-3 py-2 text-white">
+                    <span class="font-semibold">Total jurnal</span>
+                    <span class="font-bold">{{ $totalJurnal }}</span>
+                </li>
+            </ul>
         </div>
 
-        {{-- Grafik 3: Catatan Kegiatan --}}
+        {{-- ---- Catatan Kegiatan ---- --}}
         <div class="bg-white rounded-2xl shadow-sm border border-blue-200 p-5">
             <h4 class="font-bold text-black mb-4">Catatan Kegiatan</h4>
             <canvas id="chartCatatan" height="160"></canvas>
-            <p class="mt-4 text-sm text-black bg-blue-50 rounded-xl p-3">
-                Dari <span class="font-bold">{{ $totalCatatan }}</span> catatan,
-                <span class="font-bold">{{ $catatanStatus['Disetujui'] }}</span> sudah disetujui dan
-                <span class="font-bold">{{ $catatanStatus['Belum'] }}</span> belum disetujui.
-            </p>
+            <ul class="mt-4 space-y-1.5 text-sm">
+                @foreach($catatanStatus as $status => $jumlah)
+                    <li class="flex items-center justify-between rounded-lg bg-blue-50 px-3 py-2">
+                        <span class="font-medium text-black">{{ $status }}</span>
+                        <span class="font-bold text-blue-700">{{ $jumlah }} catatan</span>
+                    </li>
+                @endforeach
+                <li class="flex items-center justify-between rounded-lg bg-blue-600 px-3 py-2 text-white">
+                    <span class="font-semibold">Total catatan</span>
+                    <span class="font-bold">{{ $totalCatatan }}</span>
+                </li>
+            </ul>
         </div>
 
-        {{-- Grafik 4: Observasi --}}
+        {{-- ---- Observasi ---- --}}
         <div class="bg-white rounded-2xl shadow-sm border border-blue-200 p-5">
             <h4 class="font-bold text-black mb-4">Observasi</h4>
             <canvas id="chartObservasi" height="160"></canvas>
-            <p class="mt-4 text-sm text-black bg-blue-50 rounded-xl p-3">
-                Dari <span class="font-bold">{{ $totalObservasi }}</span> observasi,
-                <span class="font-bold">{{ $observasiStatus['Disetujui'] }}</span> sudah disetujui dan
-                <span class="font-bold">{{ $observasiStatus['Belum'] }}</span> belum disetujui.
-            </p>
+            <ul class="mt-4 space-y-1.5 text-sm">
+                @foreach($observasiStatus as $status => $jumlah)
+                    <li class="flex items-center justify-between rounded-lg bg-blue-50 px-3 py-2">
+                        <span class="font-medium text-black">{{ $status }}</span>
+                        <span class="font-bold text-blue-700">{{ $jumlah }} observasi</span>
+                    </li>
+                @endforeach
+                <li class="flex items-center justify-between rounded-lg bg-blue-600 px-3 py-2 text-white">
+                    <span class="font-semibold">Total observasi</span>
+                    <span class="font-bold">{{ $totalObservasi }}</span>
+                </li>
+            </ul>
         </div>
 
-        {{-- Grafik 5: Siswa per Jurusan --}}
+        {{-- ---- Siswa per Jurusan ---- --}}
         <div class="bg-white rounded-2xl shadow-sm border border-blue-200 p-5">
             <h4 class="font-bold text-black mb-4">Siswa per Jurusan</h4>
             <canvas id="chartJurusan" height="160"></canvas>
-            <p class="mt-4 text-sm text-black bg-blue-50 rounded-xl p-3">
-                <span class="font-bold">{{ $totalSiswaJurusan }}</span> siswa PKL tersebar di
-                <span class="font-bold">{{ $jumlahJurusan }}</span> jurusan.
-            </p>
+            <ul class="mt-4 space-y-1.5 text-sm">
+                @forelse($perJurusan as $jurusan => $jumlah)
+                    <li class="flex items-center justify-between rounded-lg bg-blue-50 px-3 py-2">
+                        <span class="font-medium text-black">{{ $jurusan }}</span>
+                        <span class="font-bold text-blue-700">{{ $jumlah }} orang</span>
+                    </li>
+                @empty
+                    <li class="rounded-lg bg-blue-50 px-3 py-2 text-black italic">Belum ada data jurusan.</li>
+                @endforelse
+                <li class="flex items-center justify-between rounded-lg bg-blue-600 px-3 py-2 text-white">
+                    <span class="font-semibold">Total</span>
+                    <span class="font-bold">{{ $totalSiswaJurusan }} siswa • {{ $jumlahJurusan }} jurusan</span>
+                </li>
+            </ul>
         </div>
 
-        {{-- Grafik 6: Status Penilaian --}}
+        {{-- ---- Status Penilaian Siswa ---- --}}
         <div class="bg-white rounded-2xl shadow-sm border border-blue-200 p-5">
             <h4 class="font-bold text-black mb-4">Status Penilaian Siswa</h4>
             <canvas id="chartNilai" height="160"></canvas>
-            <p class="mt-4 text-sm text-black bg-blue-50 rounded-xl p-3">
-                Sudah masuk: <span class="font-bold">{{ $statusNilai['Laporan'] }}</span> nilai laporan,
-                <span class="font-bold">{{ $statusNilai['Nilai Guru'] }}</span> nilai guru,
-                <span class="font-bold">{{ $statusNilai['Instruktur'] }}</span> nilai instruktur.
-                Sekitar <span class="font-bold">{{ $sudahDinilai }}</span> siswa dinilai lengkap,
-                <span class="font-bold">{{ $statusNilai['Belum'] }}</span> siswa belum dinilai.
-            </p>
+            <ul class="mt-4 space-y-1.5 text-sm">
+                @foreach($statusNilai as $label => $jumlah)
+                    <li class="flex items-center justify-between rounded-lg bg-blue-50 px-3 py-2">
+                        <span class="font-medium text-black">{{ $label }}</span>
+                        <span class="font-bold text-blue-700">{{ $jumlah }} siswa</span>
+                    </li>
+                @endforeach
+                <li class="flex items-center justify-between rounded-lg bg-blue-600 px-3 py-2 text-white">
+                    <span class="font-semibold">Dinilai lengkap</span>
+                    <span class="font-bold">{{ $sudahDinilai }} siswa</span>
+                </li>
+            </ul>
         </div>
     </div>
 
@@ -108,7 +154,9 @@
         Chart.defaults.color = '#000000';
         Chart.defaults.font.weight = '500';
 
-        const warnaBiru = ['#1E3A8A', '#2563EB', '#3B82F6', '#93C5FD'];
+        const warnaBiru = ['#00ff08', '#2563EB', '#3B82F6', '#93C5FD'];
+        const warnaJurnal = ['#00ff08', '#fff200', '#fa0000'];
+       
 
         new Chart(document.getElementById('chartKehadiran'), {
             type: 'bar',
@@ -125,7 +173,7 @@
             data: {
                 labels: @json(array_keys($jurnalStatus)),
                 datasets: [{ label: 'Jurnal', data: @json(array_values($jurnalStatus)),
-                    backgroundColor: warnaBiru, borderRadius: 6 }]
+                    backgroundColor: warnaJurnal, borderRadius: 6 }]
             },
             options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
         });
@@ -135,7 +183,7 @@
             data: {
                 labels: @json(array_keys($catatanStatus)),
                 datasets: [{ label: 'Catatan', data: @json(array_values($catatanStatus)),
-                    backgroundColor: ['#2563EB', '#93C5FD'], borderRadius: 6 }]
+                    backgroundColor: ['#00ff08', '#fa0000'], borderRadius: 6 }]
             },
             options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
         });
@@ -145,7 +193,7 @@
             data: {
                 labels: @json(array_keys($observasiStatus)),
                 datasets: [{ label: 'Observasi', data: @json(array_values($observasiStatus)),
-                    backgroundColor: ['#2563EB', '#93C5FD'], borderRadius: 6 }]
+                    backgroundColor: ['#00ff08', '#fa0000'], borderRadius: 6 }]
             },
             options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
         });
