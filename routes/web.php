@@ -148,9 +148,16 @@ Route::post('/monitoring/absensi', [MonitoringController::class, 'storeAbsensi']
 Route::put('/monitoring/absensi/{absensi}', [MonitoringController::class, 'updateAbsensi'])->name('monitoring.absensi.update');
 Route::delete('/monitoring/absensi/{absensi}', [MonitoringController::class, 'destroyAbsensi'])->name('monitoring.absensi.destroy');
 
-// ---- EVALUASI & NILAI (read-only) ----
-        Route::get('/evaluasi/observasi', [EvaluasiController::class, 'observasi'])->name('evaluasi.observasi');
-        Route::get('/evaluasi/penilaian', [EvaluasiController::class, 'penilaian'])->name('evaluasi.penilaian');
+// ---- EVALUASI & NILAI (read + CRUD) ----
+Route::get('/evaluasi/observasi', [EvaluasiController::class, 'observasi'])->name('evaluasi.observasi');
+Route::post('/evaluasi/observasi', [EvaluasiController::class, 'storeObservasi'])->name('evaluasi.observasi.store');
+Route::put('/evaluasi/observasi/{observasi}', [EvaluasiController::class, 'updateObservasi'])->name('evaluasi.observasi.update');
+Route::delete('/evaluasi/observasi/{observasi}', [EvaluasiController::class, 'destroyObservasi'])->name('evaluasi.observasi.destroy');
+
+Route::get('/evaluasi/penilaian', [EvaluasiController::class, 'penilaian'])->name('evaluasi.penilaian');
+Route::post('/evaluasi/penilaian', [EvaluasiController::class, 'storePenilaian'])->name('evaluasi.penilaian.store');
+Route::put('/evaluasi/penilaian/{nilai}', [EvaluasiController::class, 'updatePenilaian'])->name('evaluasi.penilaian.update');
+Route::delete('/evaluasi/penilaian/{nilai}', [EvaluasiController::class, 'destroyPenilaian'])->name('evaluasi.penilaian.destroy');
 
 // ---- MONITORING DOKUMEN ----
         Route::get('/dokumen', [DokumenController::class, 'adminIndex'])->name('dokumen.index');
