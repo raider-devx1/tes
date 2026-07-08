@@ -17,19 +17,19 @@
             <div class="mb-6 grid grid-cols-2 lg:grid-cols-4 gap-4">
                 <div class="rounded-2xl border-2 border-[#0047d6]/15 bg-white p-5 shadow-sm">
                     <p class="text-xs font-bold uppercase tracking-wide text-[#5b616e]">Total Observasi</p>
-                    <p class="mt-1 text-3xl font-bold text-black"> {{ $rekap['total'] }} </p>
+                    <p class="mt-1 text-3xl font-bold text-black">{{ $rekap['total'] }}</p>
                 </div>
                 <div class="rounded-2xl border-2 border-[#05b169]/30 bg-[#05b169]/5 p-5 shadow-sm">
                     <p class="text-xs font-bold uppercase tracking-wide text-[#5b616e]">Sudah Disetujui</p>
-                    <p class="mt-1 text-3xl font-bold text-[#05b169]"> {{ $rekap['disetujui'] }} </p>
+                    <p class="mt-1 text-3xl font-bold text-[#05b169]">{{ $rekap['disetujui'] }}</p>
                 </div>
                 <div class="rounded-2xl border-2 border-[#d98200]/30 bg-[#d98200]/5 p-5 shadow-sm">
                     <p class="text-xs font-bold uppercase tracking-wide text-[#5b616e]">Menunggu Disetujui</p>
-                    <p class="mt-1 text-3xl font-bold text-[#d98200]"> {{ $rekap['menunggu'] }} </p>
+                    <p class="mt-1 text-3xl font-bold text-[#d98200]">{{ $rekap['menunggu'] }}</p>
                 </div>
                 <div class="rounded-2xl border-2 border-[#0047d6]/15 bg-white p-5 shadow-sm">
                     <p class="text-xs font-bold uppercase tracking-wide text-[#5b616e]">Jumlah Guru</p>
-                    <p class="mt-1 text-3xl font-bold text-black"> {{ $jumlahGuru }} </p>
+                    <p class="mt-1 text-3xl font-bold text-black">{{ $jumlahGuru }}</p>
                 </div>
             </div>
 
@@ -70,7 +70,7 @@
                             <select name="kelas" class="w-full rounded-xl border-2 border-[#0047d6]/25 bg-white px-3 py-2.5 text-sm font-medium text-black focus:border-[#0047d6] focus:ring-2 focus:ring-[#0047d6]/30">
                                 <option value="">Semua Kelas</option>
                                 @foreach($kelasList as $opsiKelas)
-                                    <option value="{{ $opsiKelas }}" @selected(request('kelas') === $opsiKelas)> {{ $opsiKelas }} </option>
+                                    <option value="{{ $opsiKelas }}" @selected(request('kelas') === $opsiKelas)>{{ $opsiKelas }}</option>
                                 @endforeach
                             </select>
                         </div>
@@ -79,7 +79,7 @@
                             <select name="jurusan" class="w-full rounded-xl border-2 border-[#0047d6]/25 bg-white px-3 py-2.5 text-sm font-medium text-black focus:border-[#0047d6] focus:ring-2 focus:ring-[#0047d6]/30">
                                 <option value="">Semua Jurusan</option>
                                 @foreach($jurusanList as $opsiJurusan)
-                                    <option value="{{ $opsiJurusan }}" @selected(request('jurusan') === $opsiJurusan)> {{ $opsiJurusan }} </option>
+                                    <option value="{{ $opsiJurusan }}" @selected(request('jurusan') === $opsiJurusan)>{{ $opsiJurusan }}</option>
                                 @endforeach
                             </select>
                         </div>
@@ -118,35 +118,37 @@
                         <tbody class="divide-y divide-[#0047d6]/10">
                             @forelse ($observasi as $obs)
                                 @php $poin = $obs->items; @endphp
-                                <tr class="align-top transition hover:bg-[#0047d6]/5" x-data="{ open: false }">
-                                    <td class="px-4 py-3 text-center font-semibold text-black"> {{ $observasi->firstItem() + $loop->index }} </td>
-                                    <td class="px-4 py-3 whitespace-nowrap font-medium text-black"> {{ optional($obs->hari_tanggal)->format('d M Y') }} </td>
-                                    <td class="px-4 py-3 font-bold text-black break-words"> {{ $obs->user->name ?? '-' }} </td>
-                                    <td class="px-4 py-3 whitespace-nowrap font-medium text-black"> {{ $obs->user->nisn ?? '-' }} </td>
-                                    <td class="px-4 py-3 font-medium text-black break-words"> {{ $obs->guru?->name ?? '-' }} </td>
-                                    <td class="px-4 py-3 font-medium text-black break-words"> {{ $obs->pekerjaan_projek ?? '-' }} </td>
+                                <tr class="align-top transition hover:bg-[#0047d6]/5">
+                                    <td class="px-4 py-3 text-center font-semibold text-black">{{ $observasi->firstItem() + $loop->index }}</td>
+                                    <td class="px-4 py-3 whitespace-nowrap font-medium text-black">{{ optional($obs->hari_tanggal)->format('d M Y') }}</td>
+                                    <td class="px-4 py-3 font-bold text-black break-words">{{ $obs->user->name }}</td>
+                                    <td class="px-4 py-3 whitespace-nowrap font-medium text-black">{{ $obs->user->nisn }}</td>
+                                    <td class="px-4 py-3 font-medium text-black break-words">{{ $obs->guru?->name ?? '-' }}</td>
+                                    <td class="px-4 py-3 font-medium text-black break-words">{{ $obs->pekerjaan_projek ?? '-' }}</td>
 
                                     <td class="px-4 py-3 text-black break-words">
                                         @if($poin->count())
-                                            <div class="flex items-start gap-1.5">
-                                                <span class="font-bold text-[#0047d6]">1.</span>
-                                                <span class="font-medium break-words"> {{ $poin->first()->permasalahan }} </span>
+                                            <div x-data="{ open: false }">
+                                                <div class="flex items-start gap-1.5">
+                                                    <span class="font-bold text-[#0047d6]">1.</span>
+                                                    <span class="font-medium break-words">{{ $poin->first()->permasalahan }}</span>
+                                                </div>
+                                                @if($poin->count() > 1)
+                                                    <button type="button" @click="open = !open"
+                                                            class="mt-1.5 inline-flex items-center gap-1 rounded-full bg-[#0047d6]/10 px-2.5 py-1 text-xs font-bold text-[#0047d6] transition hover:bg-[#0047d6]/20">
+                                                        <span x-show="!open">+ {{ $poin->count() - 1 }} lainnya</span>
+                                                        <span x-show="open" style="display:none;">Sembunyikan</span>
+                                                        <svg class="h-3 w-3 transition-transform" :class="open ? 'rotate-180' : ''" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                                                        </svg>
+                                                    </button>
+                                                    <ol start="2" x-show="open" x-cloak x-transition class="mt-2 list-decimal list-inside space-y-0.5 border-t border-[#0047d6]/15 pt-2 font-medium">
+                                                        @foreach($poin->slice(1) as $poinLainnya)
+                                                            <li class="break-words">{{ $poinLainnya->permasalahan }}</li>
+                                                        @endforeach
+                                                    </ol>
+                                                @endif
                                             </div>
-                                            @if($poin->count() > 1)
-                                                <button type="button" @click="open = !open"
-                                                        class="mt-1.5 inline-flex items-center gap-1 rounded-full bg-[#0047d6]/10 px-2.5 py-1 text-xs font-bold text-[#0047d6] transition hover:bg-[#0047d6]/20">
-                                                    <span x-show="!open">+ {{ $poin->count() - 1 }} lainnya</span>
-                                                    <span x-show="open" style="display:none;">Sembunyikan</span>
-                                                    <svg class="h-3 w-3 transition-transform" :class="open ? 'rotate-180' : ''" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
-                                                    </svg>
-                                                </button>
-                                                <ol start="2" x-show="open" x-cloak x-transition class="mt-2 list-decimal list-inside space-y-0.5 border-t border-[#0047d6]/15 pt-2 font-medium">
-                                                    @foreach($poin->slice(1) as $poinLainnya)
-                                                        <li class="break-words"> {{ $poinLainnya->permasalahan }} </li>
-                                                    @endforeach
-                                                </ol>
-                                            @endif
                                         @else
                                             <span class="text-[#5b616e]">-</span>
                                         @endif
@@ -154,25 +156,27 @@
 
                                     <td class="px-4 py-3 text-black break-words">
                                         @if($poin->count())
-                                            <div class="flex items-start gap-1.5">
-                                                <span class="font-bold text-[#0047d6]">1.</span>
-                                                <span class="font-medium break-words"> {{ $poin->first()->solusi }} </span>
+                                            <div x-data="{ open: false }">
+                                                <div class="flex items-start gap-1.5">
+                                                    <span class="font-bold text-[#0047d6]">1.</span>
+                                                    <span class="font-medium break-words">{{ $poin->first()->solusi }}</span>
+                                                </div>
+                                                @if($poin->count() > 1)
+                                                    <button type="button" @click="open = !open"
+                                                            class="mt-1.5 inline-flex items-center gap-1 rounded-full bg-[#0047d6]/10 px-2.5 py-1 text-xs font-bold text-[#0047d6] transition hover:bg-[#0047d6]/20">
+                                                        <span x-show="!open">+ {{ $poin->count() - 1 }} lainnya</span>
+                                                        <span x-show="open" style="display:none;">Sembunyikan</span>
+                                                        <svg class="h-3 w-3 transition-transform" :class="open ? 'rotate-180' : ''" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                                                        </svg>
+                                                    </button>
+                                                    <ol start="2" x-show="open" x-cloak x-transition class="mt-2 list-decimal list-inside space-y-0.5 border-t border-[#0047d6]/15 pt-2 font-medium">
+                                                        @foreach($poin->slice(1) as $poinLainnya)
+                                                            <li class="break-words">{{ $poinLainnya->solusi }}</li>
+                                                        @endforeach
+                                                    </ol>
+                                                @endif
                                             </div>
-                                            @if($poin->count() > 1)
-                                                <button type="button" @click="open = !open"
-                                                        class="mt-1.5 inline-flex items-center gap-1 rounded-full bg-[#0047d6]/10 px-2.5 py-1 text-xs font-bold text-[#0047d6] transition hover:bg-[#0047d6]/20">
-                                                    <span x-show="!open">+ {{ $poin->count() - 1 }} lainnya</span>
-                                                    <span x-show="open" style="display:none;">Sembunyikan</span>
-                                                    <svg class="h-3 w-3 transition-transform" :class="open ? 'rotate-180' : ''" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
-                                                    </svg>
-                                                </button>
-                                                <ol start="2" x-show="open" x-cloak x-transition class="mt-2 list-decimal list-inside space-y-0.5 border-t border-[#0047d6]/15 pt-2 font-medium">
-                                                    @foreach($poin->slice(1) as $poinLainnya)
-                                                        <li class="break-words"> {{ $poinLainnya->solusi }} </li>
-                                                    @endforeach
-                                                </ol>
-                                            @endif
                                         @else
                                             <span class="text-[#5b616e]">-</span>
                                         @endif
@@ -218,7 +222,7 @@
                     </table>
                 </div>
 
-                <div class="mt-4"> {!! $observasi->links() !!} </div>
+                <div class="mt-4">{!! $observasi->links() !!}</div>
             </div>
         </div>
 
