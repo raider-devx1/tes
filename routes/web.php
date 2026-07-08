@@ -163,6 +163,10 @@ Route::delete('/evaluasi/penilaian/{nilai}', [EvaluasiController::class, 'destro
         Route::get('/dokumen', [DokumenController::class, 'adminIndex'])->name('dokumen.index');
         Route::get('/dokumen/surat-tugas', [DokumenController::class, 'suratTugasIndex'])->name('dokumen.surat-tugas.index');
         Route::post('/dokumen/surat-tugas', [DokumenController::class, 'uploadSuratTugas'])->name('dokumen.surat-tugas'); // ← global, tanpa {siswa}
+
+        // ---- CRUD dokumen per-siswa oleh admin ----
+        Route::post('/dokumen/{siswa}', [DokumenController::class, 'adminStore'])->whereNumber('siswa')->name('dokumen.store');
+        Route::delete('/dokumen/{siswa}/{jenis}', [DokumenController::class, 'adminDestroy'])->whereNumber('siswa')->name('dokumen.destroy');
         
 
     });

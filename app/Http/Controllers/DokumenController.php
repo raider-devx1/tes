@@ -80,6 +80,53 @@ public function adminIndex(Request $request)
         return back()->with('success', 'Surat Tugas berhasil diunggah & berlaku untuk semua siswa.');
     }
 
+    /** Admin: unggah / ganti Surat Penerimaan & Laporan Akhir milik siswa tertentu. */
+public function adminStore(Request $request, int $siswa)
+{
+    $request->validate([
+        'surat_penerimaan' => 'nullable|mimes:pdf|max:2048',
+        'laporan_akhir'    => 'nullable|mimes:pdf|max:5120',
+    ]);
+
+    $siswaModel = User::where('role', 'siswa_pkl')->findOrFail($siswa);
+    $dokumen    = Dokumen::firstOrNew(['siswa_id' => $siswaModel->id]);
+
+    foreach (['surat_penerimaan', 'laporan_akhir'] as $jenis) {
+        if ($request->hasFile($jenis)) {
+            // hapus berkas lama bila ada agar tidak menumpuk
+            if ($dokumen->{$jenis} && Storage::disk('public')->exists($dokumen->{$jenis})) {
+                Storage::disk('public')->delete($dokumen->{$jenis});
+            }
+            $dokumen->{$jenis} = $request->file($jenis)->store('dokumen_pkl', 'public');
+        }
+    }
+
+    $dokumen->save();
+    return back()->with('success', 'Dokumen siswa berhasil disimpan.');
+}
+
+/** Admin: hapus salah satu berkas dokumen (surat_penerimaan / laporan_akhir) milik siswa. */
+public function adminDestroy(int $siswa, string $jenis)
+{
+    abort_unless(
+        in_array($jenis, ['surat_penerimaan', 'laporan_akhir'], true),
+        404, 'Jenis dokumen tidak dikenal.'
+    );
+
+    $siswaModel = User::where('role', 'siswa_pkl')->findOrFail($siswa);
+    $dokumen    = Dokumen::where('siswa_id', $siswaModel->id)->first();
+
+    if ($dokumen && $dokumen->{$jenis}) {
+        if (Storage::disk('public')->exists($dokumen->{$jenis})) {
+            Storage::disk('public')->delete($dokumen->{$jenis});
+        }
+        $dokumen->{$jenis} = null;
+        $dokumen->save();
+    }
+
+    return back()->with('success', 'Dokumen berhasil dihapus.');
+}
+
     /*
     |--------------------------------------------------------------------------
     | SISWA

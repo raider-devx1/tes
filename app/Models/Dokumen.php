@@ -26,13 +26,13 @@ class Dokumen extends Model
         ],
         'surat_penerimaan' => [
             'label'    => 'Surat Penerimaan Industri',
-            'upload'   => ['siswa_pkl'],
+            'upload'   => ['siswa_pkl', 'admin'],
             'lihat'    => ['siswa_pkl', 'guru_pembimbing', 'admin'],
             'download' => ['admin', 'guru_pembimbing'],
         ],
         'laporan_akhir' => [
             'label'    => 'Laporan PKL Final',
-            'upload'   => ['siswa_pkl'],
+            'upload'   => ['siswa_pkl', 'admin'],
             'lihat'    => ['siswa_pkl', 'guru_pembimbing', 'admin', 'instruktur_industri'],
             'download' => ['guru_pembimbing', 'admin'],
         ],
@@ -40,8 +40,7 @@ class Dokumen extends Model
 
     /**
      * Cek apakah $user boleh melakukan $aksi (upload|lihat|download)
-     * pada $jenis dokumen milik $siswa. Mengecek role, relasi kepemilikan,
-     * DAN status PKL siswa (guru/instruktur hanya untuk siswa yang masih aktif).
+     * pada $jenis dokumen milik $siswa.
      */
     public static function boleh(string $aksi, string $jenis, User $user, User $siswa): bool
     {
