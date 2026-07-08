@@ -154,7 +154,8 @@
         Chart.defaults.color = '#000000';
         Chart.defaults.font.weight = '500';
 
-        const warnaBiru = ['#00ff08', '#2563EB', '#3B82F6', '#93C5FD'];
+        const warnaBiru = ['#00ff08', '#fff700', '#ffae00', '#ff0000'];
+        const warnaNilai = ['#0067f8', '#2563EB', '#3B82F6', '#fa0000'];
         const warnaJurnal = ['#00ff08', '#fff200', '#fa0000'];
        
 
@@ -213,7 +214,7 @@
             data: {
                 labels: @json(array_keys($statusNilai)),
                 datasets: [{ label: 'Jumlah', data: @json(array_values($statusNilai)),
-                    backgroundColor: warnaBiru, borderRadius: 6 }]
+                    backgroundColor: warnaNilai, borderRadius: 6 }]
             },
             options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
         });

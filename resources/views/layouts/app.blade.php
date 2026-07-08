@@ -19,9 +19,25 @@ $isAdmin = auth()->check() && auth()->user()->role === 'admin';
     
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     
-    @if($isAdmin)
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
-    @endif
+   @if($isAdmin)
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+
+<style>
+    [x-cloak]{display:none!important;}
+    html.sidebar-terbuka .app-sidebar        { transform: translateX(0); }
+    html:not(.sidebar-terbuka) .app-sidebar  { transform: translateX(-100%); }
+    @media (min-width: 1024px) {
+        html.sidebar-terbuka .app-konten { margin-left: 16rem; }
+    }
+</style>
+<script>
+    (function () {
+        var tersimpan = localStorage.getItem('sidebarOpen');
+        var terbuka = tersimpan !== null ? tersimpan === 'true' : window.innerWidth >= 1024;
+        document.documentElement.classList.toggle('sidebar-terbuka', terbuka);
+    })();
+</script>
+@endif
 </head>
 
 <body class="font-sans antialiased text-gray-600 bg-slate-50/50">
@@ -30,19 +46,26 @@ $isAdmin = auth()->check() && auth()->user()->role === 'admin';
     {{-- LAYOUT ADMIN                                                        --}}
     {{-- =================================================================== --}}
     @if($isAdmin)
-    <div
-    x-data="{
-        sidebarOpen: localStorage.getItem('sidebarOpen') !== null
-            ? localStorage.getItem('sidebarOpen') === 'true'
-            : window.innerWidth >= 1024
-    }"
-    x-init="$watch('sidebarOpen', value => localStorage.setItem('sidebarOpen', value))"
-    class="min-h-screen">
+ <div
+x-data="{
+    sidebarOpen: localStorage.getItem('sidebarOpen') !== null
+        ? localStorage.getItem('sidebarOpen') === 'true'
+        : window.innerWidth >= 1024,
+    loaded: false
+}"
+x-init="
+    $watch('sidebarOpen', value => {
+        localStorage.setItem('sidebarOpen', value);
+        document.documentElement.classList.toggle('sidebar-terbuka', value);
+    });
+    $nextTick(() => loaded = true);
+"
+class="min-h-screen">
 
         {{-- ===== SIDEBAR MINIMALIS ===== --}}
-       <aside
-    class="fixed inset-y-0 left-0 z-40 w-64 bg-white border-r border-slate-100 transform transition-transform duration-300 ease-in-out overflow-y-auto"
-    :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'">
+     <aside
+class="app-sidebar fixed inset-y-0 left-0 z-40 w-64 bg-white border-r border-slate-100 transform overflow-y-auto"
+:class="[sidebarOpen ? 'translate-x-0' : '-translate-x-full', loaded ? 'transition-transform duration-300 ease-in-out' : '']">
 
            <div class="h-16 flex items-center justify-between px-6 border-b border-slate-100">
     <div class="flex items-center gap-3">
@@ -258,8 +281,8 @@ $isAdmin = auth()->check() && auth()->user()->role === 'admin';
             class="fixed inset-0 z-30 bg-slate-900/30 lg:hidden backdrop-blur-xs"></div>
 
         {{-- ===== WRAPPER ===== --}}
-        <div class="flex flex-col min-h-screen transition-all duration-300 ease-in-out"
-    :class="sidebarOpen ? 'lg:ml-64' : 'ml-0'">
+     <div class="app-konten flex flex-col min-h-screen"
+:class="[sidebarOpen ? 'lg:ml-64' : 'ml-0', loaded ? 'transition-all duration-300 ease-in-out' : '']">
 
             {{-- NAVBAR sticky --}}
             <header
