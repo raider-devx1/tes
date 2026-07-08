@@ -132,14 +132,15 @@ class UserSeeder extends Seeder
             'Qori', 'Rian', 'Sari', 'Tono',
         ];
 
-        $kelasList = ['XI TKJ 1', 'XI TKJ 2', 'XI RPL 1', 'XI RPL 2', 'XI MM 1'];
-        $jurusanMap = [
-            'XI TKJ 1' => 'Teknik Komputer dan Jaringan',
-            'XI TKJ 2' => 'Teknik Komputer dan Jaringan',
-            'XI RPL 1' => 'Rekayasa Perangkat Lunak',
-            'XI RPL 2' => 'Rekayasa Perangkat Lunak',
-            'XI MM 1'  => 'Multimedia',
-        ];
+        $kelasList = ['XI KULINER 1', 'XI BUSANA 1', 'XI KECANTIKAN 1', 'XI TJKT 1', 'XI PERHOTELAN 1'];
+
+$jurusanMap = [
+    'XI KULINER 1'    => 'Kuliner',
+    'XI BUSANA 1'     => 'Busana',
+    'XI KECANTIKAN 1' => 'Kecantikan & Spa',
+    'XI TJKT 1'       => 'Teknik Jaringan Komputer dan Telekomunikasi',
+    'XI PERHOTELAN 1' => 'Perhotelan',
+];
 
         $statusJurnal = ['pending', 'disetujui', 'revisi'];
         $statusAbsen  = ['Hadir', 'Hadir', 'Izin', 'Sakit', 'Alpha'];

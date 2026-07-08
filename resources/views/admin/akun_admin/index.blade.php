@@ -28,21 +28,21 @@
         <div class="bg-white rounded-2xl shadow-sm border border-blue-100 p-4">
             <div class="flex items-center justify-between">
                 <p class="text-xs font-medium text-gray-500">Total Admin</p>
-                <span class="w-9 h-9 flex items-center justify-center rounded-lg bg-blue-50 text-[#2563EB]">🛡️</span>
+              
             </div>
             <p class="mt-2 text-2xl font-bold text-gray-800">{{ $rekap['total'] }}</p>
         </div>
         <div class="bg-white rounded-2xl shadow-sm border border-blue-100 p-4">
             <div class="flex items-center justify-between">
                 <p class="text-xs font-medium text-gray-500">Akun Anda</p>
-                <span class="w-9 h-9 flex items-center justify-center rounded-lg bg-green-50 text-green-600">👤</span>
+               
             </div>
             <p class="mt-2 text-2xl font-bold text-green-600">{{ $rekap['akun_anda'] }}</p>
         </div>
         <div class="bg-white rounded-2xl shadow-sm border border-blue-100 p-4">
             <div class="flex items-center justify-between">
                 <p class="text-xs font-medium text-gray-500">Admin Lain</p>
-                <span class="w-9 h-9 flex items-center justify-center rounded-lg bg-amber-50 text-amber-600">👥</span>
+              
             </div>
             <p class="mt-2 text-2xl font-bold text-amber-600">{{ $rekap['admin_lain'] }}</p>
         </div>
