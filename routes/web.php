@@ -199,7 +199,7 @@ Route::delete('/evaluasi/penilaian/{nilai}', [EvaluasiController::class, 'destro
         })->name('dashboard');
 
         Route::get('/siswa', [GuruController::class, 'index'])->name('siswa.index');
-        Route::get('/siswa/{id}/detail', [GuruController::class, 'detailSiswa'])->name('siswa.detail');
+       
 
         // ---- MONITORING (dipisah: Jurnal & Absensi) ----
         Route::get('/monitoring/jurnal', [GuruController::class, 'monitoringJurnal'])->name('monitoring.jurnal');

@@ -54,17 +54,7 @@ public function index(Request $request)
     return view('guru.siswa.index', compact('siswas', 'periodes', 'rekap'));
 }
 
-    // (Opsional) detail 1 siswa — boleh tetap dipakai atau dihapus
-   public function detailSiswa($id)
-{
-    $siswa = User::findOrFail($id);
-    if ($siswa->guru_id !== Auth::id() || $siswa->status_pkl !== 'aktif') {
-        abort(403, 'Akses Ditolak: Bukan siswa bimbingan aktif Anda.');
-    }
-    $jurnals  = Jurnal::where('siswa_id', $id)->orderBy('hari_tanggal', 'desc')->get();
-    $absensis = Absensi::where('siswa_id', $id)->orderBy('tanggal', 'desc')->get();
-    return view('guru.siswa.detail', compact('siswa', 'jurnals', 'absensis'));
-}
+    
 
     /*
     |--------------------------------------------------------------------------
