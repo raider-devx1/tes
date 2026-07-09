@@ -196,7 +196,7 @@
                                                       :class="badgeClass()"
                                                       x-text="sudahAda ? status : 'Belum diisi'"></span>
                                                 <span class="text-xs font-medium text-[#5b616e]" x-show="jamMasuk || jamPulang">
-                                                    🕒 <span x-text="jamMasuk || '--:--'"></span> – <span x-text="jamPulang || '--:--'"></span> WITA
+                                                     <span x-text="jamMasuk || '--:--'"></span> – <span x-text="jamPulang || '--:--'"></span> WITA
                                                 </span>
                                             </div>
                                         </td>
@@ -208,7 +208,7 @@
                                                     :class="sudahAda
                                                         ? 'border-2 border-[#0047d6]/30 bg-white text-[#0047d6] hover:bg-[#0047d6]/5'
                                                         : 'bg-[#0047d6] text-white hover:bg-[#0038aa]'">
-                                                <span x-text="sudahAda ? '✏️ Update Kehadiran' : '＋ Isi Kehadiran'"></span>
+                                                <span x-text="sudahAda ? ' Update Kehadiran' : '＋ Isi Kehadiran'"></span>
                                             </button>
 
                                             {{-- Modal per siswa --}}

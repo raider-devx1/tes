@@ -44,16 +44,7 @@
 
                        
 
-                        <div class="w-full md:w-48">
-                            <label class="block text-xs font-bold uppercase tracking-wide text-black mb-1">Status PKL</label>
-                            <select name="status"
-                                    class="w-full rounded-xl border-2 border-[#0047d6]/25 bg-white px-3 py-2.5 text-sm font-medium text-black focus:border-[#0047d6] focus:ring-2 focus:ring-[#0047d6]/30">
-                                <option value="">Semua Status</option>
-                                <option value="belum" @selected(request('status') === 'belum')>Belum</option>
-                                <option value="aktif" @selected(request('status') === 'aktif')>Aktif</option>
-                                <option value="selesai" @selected(request('status') === 'selesai')>Selesai</option>
-                            </select>
-                        </div>
+                       
 
                         <div class="flex gap-2">
                             <button type="submit"

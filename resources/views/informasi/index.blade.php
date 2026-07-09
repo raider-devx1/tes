@@ -23,7 +23,7 @@
                                 <div class="mt-3">
                                     <a href="{{ asset('storage/' . $info->file) }}" download
                                        class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-50 text-[#2563EB] text-sm font-medium hover:bg-blue-100">
-                                        <span>⬇️</span> Unduh Lampiran
+                                        Unduh Lampiran
                                     </a>
                                 </div>
                             @endif
