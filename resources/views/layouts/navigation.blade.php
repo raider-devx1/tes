@@ -37,9 +37,14 @@
                 <x-dropdown align="right" width="48">
                     <x-slot name="trigger">
                         <button class="inline-flex items-center gap-2.5 p-1.5 pr-3 rounded-xl text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 focus:outline-none transition ease-in-out duration-150">
-                            <span class="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold text-xs shadow-sm shadow-blue-200">
-                                {{ strtoupper(substr(Auth::user()->name ?? 'U', 0, 1)) }}
-                            </span>
+                           @if(auth()->user()->foto)
+    <img src="{{ asset('storage/' . auth()->user()->foto) }}" alt="Foto profil"
+         class="w-7 h-7 rounded-lg object-cover shadow-sm">
+@else
+    <span class="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold text-xs shadow-sm shadow-blue-200">
+         {{ strtoupper(substr(auth()->user()->name, 0, 1)) }} 
+    </span>
+@endif
                             <div>{{ Auth::user()->name }}</div>
 
                             <div class="ms-0.5 text-slate-400">
@@ -103,9 +108,14 @@
 
         <div class="pt-4 pb-3 border-t border-slate-100 px-3">
             <div class="px-3 flex items-center gap-3 mb-3">
-                <span class="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold text-sm shadow-sm shadow-blue-200">
-                    {{ strtoupper(substr(Auth::user()->name ?? 'U', 0, 1)) }}
-                </span>
+               @if(auth()->user()->foto)
+    <img src="{{ asset('storage/' . auth()->user()->foto) }}" alt="Foto profil"
+         class="w-8 h-8 rounded-lg object-cover shadow-sm">
+@else
+    <span class="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold text-sm shadow-sm shadow-blue-200">
+         {{ strtoupper(substr(auth()->user()->name, 0, 1)) }} 
+    </span>
+@endif
                 <div>
                     <div class="font-semibold text-sm text-slate-800">{{ Auth::user()->name }}</div>
                     <div class="font-medium text-xs text-slate-400">{{ Auth::user()->email }}</div>

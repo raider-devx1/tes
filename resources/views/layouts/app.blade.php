@@ -303,9 +303,14 @@ class="app-sidebar fixed inset-y-0 left-0 z-40 w-64 bg-white border-r border-sla
                     <div x-data="{ openP: false }" class="relative">
                         <button @click="openP=!openP"
                             class="flex items-center gap-2.5 p-1.5 pr-3 rounded-xl hover:bg-slate-50 transition-all">
-                            <span class="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold text-xs shadow-sm shadow-blue-200">
-                                {{ strtoupper(substr(auth()->user()->name ?? 'A', 0, 1)) }}
-                            </span>
+                           @if(auth()->user()->foto)
+    <img src="{{ asset('storage/' . auth()->user()->foto) }}" alt="Foto profil"
+         class="w-7 h-7 rounded-lg object-cover shadow-sm">
+@else
+    <span class="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold text-xs shadow-sm shadow-blue-200">
+         {{ strtoupper(substr(auth()->user()->name, 0, 1)) }} 
+    </span>
+@endif
                             <span class="hidden sm:block text-sm font-medium text-slate-700">
                                 {{ auth()->user()->name ?? 'Admin' }}
                             </span>

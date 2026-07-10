@@ -18,6 +18,7 @@ class ProfileUpdateRequest extends FormRequest
     {
         $rules = [
             'name' => ['required', 'string', 'max:255'],
+            'foto' => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:2048'], // maks 2MB
         ];
 
         // Email hanya divalidasi (dan boleh diubah) oleh instruktur & admin.

@@ -24,7 +24,7 @@
                 'warna'    => 'kuning',
                 'judul'    => 'Jurnal Hari Ini Belum Diisi',
                 'pesan'    => "Anda belum mengisi jurnal kegiatan PKL untuk tanggal {$tanggalIndo}. "
-                            . "Silakan isi jurnal sebelum pukul 21.00 agar dapat diverifikasi oleh instruktur.",
+                            . "Silakan isi jurnal untuk diverifikasi oleh instruktur.",
                 'aksi_url' => route('siswa.jurnal.create'),
                 'aksi'     => 'Isi Sekarang',
                 'nanti'    => true,

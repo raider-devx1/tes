@@ -8,9 +8,9 @@
 
         <p class="mt-1 text-sm text-gray-600">
             @if(in_array($role, ['instruktur_industri', 'admin'], true))
-                Perbarui informasi nama dan alamat email akun Anda.
+                Perbarui informasi nama, email, dan foto akun Anda.
             @else
-                Perbarui nama akun Anda.
+                Perbarui nama dan foto akun Anda.
             @endif
         </p>
     </header>
@@ -19,11 +19,38 @@
         @csrf
     </form>
 
-    <form method="post" action="{{ route('profile.update') }}" class="mt-6 space-y-6">
+    <form method="post" action="{{ route('profile.update') }}" class="mt-6 space-y-6"
+          enctype="multipart/form-data"
+          x-data="{ fotoPreview: '{{ $user->foto ? asset('storage/' . $user->foto) : '' }}' }">
         @csrf
         @method('patch')
 
-        <!-- Nama (semua peran) -->
+        <div>
+            <x-input-label :value="__('Foto Profil')" />
+            <div class="mt-2 flex items-center gap-4">
+                <template x-if="fotoPreview">
+                    <img :src="fotoPreview" alt="Foto profil"
+                         class="h-20 w-20 rounded-full object-cover ring-2 ring-gray-100">
+                </template>
+                <template x-if="!fotoPreview">
+                    <span class="h-20 w-20 rounded-full bg-blue-600 text-white flex items-center justify-center text-2xl font-bold">
+                         {{ strtoupper(substr($user->name, 0, 1)) }} 
+                    </span>
+                </template>
+
+                <div>
+                    <input type="file" name="foto" accept="image/*"
+                           @change="const f = $event.target.files[0]; if (f) fotoPreview = URL.createObjectURL(f);"
+                           class="block w-full text-sm text-gray-600
+                                  file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0
+                                  file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700
+                                  hover:file:bg-blue-100 cursor-pointer">
+                    <p class="mt-1 text-xs text-gray-500">Format JPG, JPEG, atau PNG. Maksimal 2MB.</p>
+                    <x-input-error class="mt-2" :messages="$errors->get('foto')" />
+                </div>
+            </div>
+        </div>
+
         <div>
             <x-input-label for="name" :value="__('Name')" />
             <x-text-input id="name" name="name" type="text" class="mt-1 block w-full" :value="old('name', $user->name)" required autofocus autocomplete="name" />
@@ -31,7 +58,6 @@
         </div>
 
         @if(in_array($role, ['instruktur_industri', 'admin'], true))
-            <!-- Email hanya untuk instruktur & admin -->
             <div>
                 <x-input-label for="email" :value="__('Email')" />
                 <x-text-input id="email" name="email" type="email" class="mt-1 block w-full" :value="old('email', $user->email)" required autocomplete="username" />
