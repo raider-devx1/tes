@@ -207,15 +207,17 @@
                                     <td class="px-4 py-3">
                                         <div class="flex flex-col items-stretch gap-2">
                                             @if($item->is_approved)
-                                                <form action="{{ route('instruktur.observasi.batal', $item->id) }}" method="POST"
-                                                      onsubmit="return confirm('Batalkan persetujuan observasi ini? Observasi akan kembali berstatus menunggu.');">
-                                                    @csrf
-                                                    @method('PUT')
-                                                    <button type="submit"
-                                                            class="w-full inline-flex items-center justify-center rounded-full bg-[#d98200] px-3 py-1.5 text-xs font-bold text-white transition hover:bg-[#b56d00]">
-                                                        Batalkan Persetujuan
-                                                    </button>
-                                                </form>
+                                               <form action="{{ route('instruktur.observasi.batal', $item->id) }}" method="POST"
+      data-confirm="Batalkan persetujuan observasi {{ $item->nama ?? 'ini' }}?"
+      data-confirm-text="Observasi akan kembali berstatus menunggu."
+      data-confirm-yes="Ya, batalkan">
+    @csrf
+    @method('PUT')
+    <button type="submit"
+            class="w-full inline-flex items-center justify-center rounded-full bg-[#d98200] px-3 py-1.5 text-xs font-bold text-white transition hover:bg-[#b56d00]">
+        Batalkan Persetujuan
+    </button>
+</form>
                                             @else
                                                 <form action="{{ route('instruktur.observasi.approve', $item->id) }}" method="POST">
                                                     @csrf

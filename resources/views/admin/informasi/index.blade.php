@@ -13,7 +13,7 @@
                     <div class="flex justify-between items-center mb-6">
                         <a href="{{ route('admin.informasi.create') }}"
                            class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
-                            + Tambah Informasi
+                             Tambah Informasi
                         </a>
                     </div>
 

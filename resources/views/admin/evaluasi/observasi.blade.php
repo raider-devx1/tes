@@ -6,7 +6,7 @@
             <h2 class="text-xl md:text-2xl font-bold tracking-tight text-black">Evaluasi Lembar Observasi Guru</h2>
             <button type="button" onclick="history.back()"
                     class="inline-flex items-center gap-1 rounded-xl border-2 border-[#0047d6]/25 bg-white px-4 py-2 text-sm font-bold text-[#0047d6] transition hover:bg-[#0047d6]/5">
-                &larr; Kembali
+                 Kembali
             </button>
         </div>
     </x-slot>
@@ -49,7 +49,7 @@
                     <div class="flex gap-2">
                         <button type="button" @click="tambah()"
                                 class="inline-flex items-center justify-center gap-1.5 rounded-xl bg-[#0047d6] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#0038aa]">
-                            + Tambah Observasi
+                             Tambah Observasi
                         </button>
                         <a href="{{ route('cetak.observasi.semua') }}" target="_blank"
                            class="inline-flex items-center justify-center gap-2 rounded-xl border-2 border-[#0047d6]/25 bg-white px-5 py-3 text-sm font-bold text-[#0047d6] transition hover:bg-[#0047d6]/5">
@@ -262,7 +262,7 @@
                     <div>
                         <div class="mb-1 flex items-center justify-between">
                             <label class="block text-xs font-bold uppercase tracking-wide text-black">Poin Permasalahan &amp; Solusi</label>
-                            <button type="button" @click="tambahItem()" class="rounded-lg bg-[#0047d6]/10 px-2.5 py-1 text-xs font-bold text-[#0047d6] hover:bg-[#0047d6]/20">+ Tambah poin</button>
+                            <button type="button" @click="tambahItem()" class="rounded-lg bg-[#0047d6]/10 px-2.5 py-1 text-xs font-bold text-[#0047d6] hover:bg-[#0047d6]/20"> Tambah poin</button>
                         </div>
                         <div class="space-y-2">
                             <template x-for="(it, i) in form.items" :key="i">

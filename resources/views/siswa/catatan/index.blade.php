@@ -5,7 +5,7 @@
             
             <a href="{{ route('siswa.dashboard') }}"
                class="inline-flex items-center gap-1 rounded-xl border-2 border-[#0047d6]/25 bg-white px-4 py-2 text-sm font-bold text-[#0047d6] transition hover:bg-[#0047d6]/5">
-                &larr; Kembali ke Dashboard
+                Kembali ke Dashboard
             </a>
         </div>
     </x-slot>
@@ -17,7 +17,7 @@
                 <div class="flex flex-col sm:flex-row sm:flex-wrap sm:justify-between gap-3 mb-6">
                     <a href="{{ route('siswa.catatan.create') }}"
                        class="inline-flex items-center justify-center gap-1.5 rounded-xl bg-[#0047d6] px-6 py-3.5 text-base font-bold text-white shadow-sm transition hover:bg-[#0038aa] focus:outline-none focus:ring-4 focus:ring-[#0047d6]/30">
-                        + Tambah Catatan
+                         Tambah Catatan
                     </a>
                     <a href="{{ route('cetak.catatan') }}" target="_blank"
                        class="inline-flex items-center justify-center gap-1.5 rounded-xl border-2 border-[#0047d6] bg-white px-6 py-3.5 text-base font-bold text-[#0047d6] shadow-sm transition hover:bg-[#0047d6]/5 focus:outline-none focus:ring-4 focus:ring-[#0047d6]/30">
@@ -113,15 +113,14 @@
                                                     Edit
                                                 </a>
 
-                                                <form action="{{ route('siswa.catatan.destroy', $item->id) }}" method="POST"
-                                                      onsubmit="return confirm('Yakin ingin menghapus catatan ini?')">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <button type="submit"
-                                                            class="w-full inline-flex items-center justify-center rounded-xl bg-red-600 px-3 py-1.5 text-xs font-bold text-white transition hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-600/30">
-                                                        Hapus
-                                                    </button>
-                                                </form>
+                                               <form method="POST" action="{{ route('siswa.catatan.destroy', $item) }}"
+      data-confirm="Hapus {{ $item->judul ?? 'catatan ini' }}?"
+      data-confirm-text="Catatan kegiatan yang dihapus tidak dapat dikembalikan."
+      data-confirm-yes="Ya, hapus">
+    @csrf
+    @method('DELETE')
+    <button class="text-xs px-3 py-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 font-medium">Hapus</button>
+</form>
                                             @else
                                                 <span class="text-center text-xs italic text-[#5b616e]">Terkunci</span>
                                             @endif

@@ -20,7 +20,7 @@
             </button>
             <a href="{{ route('admin.siswa.create') }}"
                 class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#2563EB] text-white text-sm font-medium hover:bg-blue-700">
-                + Tambah Siswa
+                 Tambah Siswa
             </a>
 
             <!-- ===== MODAL IMPORT DATA ===== -->

@@ -20,7 +20,7 @@
             </button>
             <a href="{{ route('admin.guru.create') }}"
                 class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#2563EB] text-white text-sm font-medium hover:bg-blue-700">
-                + Tambah Guru
+                 Tambah Guru
             </a>
 
             <!-- ===== MODAL IMPORT DATA ===== -->

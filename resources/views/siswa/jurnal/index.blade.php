@@ -4,7 +4,7 @@
             <h2 class="text-xl md:text-2xl font-bold tracking-tight text-black">Jurnal Kegiatan Harian</h2>
             <a href="{{ route('siswa.dashboard') }}"
                class="inline-flex items-center gap-1 rounded-xl border-2 border-[#0047d6]/25 bg-white px-4 py-2 text-sm font-bold text-[#0047d6] transition hover:bg-[#0047d6]/5">
-                &larr; Kembali ke Dashboard
+                 Kembali ke Dashboard
             </a>
         </div>
     </x-slot>
@@ -18,7 +18,7 @@
                     <div class="flex flex-col sm:flex-row flex-wrap gap-2">
                         <a href="{{ route('siswa.jurnal.create') }}"
                            class="inline-flex items-center justify-center gap-1.5 rounded-xl bg-[#0047d6] px-6 py-3.5 text-base font-bold text-white shadow-sm transition hover:bg-[#0038aa] focus:outline-none focus:ring-4 focus:ring-[#0047d6]/30">
-                            + Tambah Jurnal
+                             Tambah Jurnal
                         </a>
                         <a href="{{ route('cetak.jurnal') }}" target="_blank"
                            class="inline-flex items-center justify-center gap-1.5 rounded-xl border-2 border-[#0047d6] bg-white px-6 py-3.5 text-base font-bold text-[#0047d6] shadow-sm transition hover:bg-[#0047d6]/5 focus:outline-none focus:ring-4 focus:ring-[#0047d6]/30">
@@ -176,15 +176,14 @@
                                             Edit
                                         </a>
 
-                                        <form action="{{ route('siswa.jurnal.destroy', $jurnal->id) }}" method="POST"
-                                              onsubmit="return confirm('Hapus jurnal ini? Data tidak dapat dikembalikan.');">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit"
-                                                    class="inline-flex items-center rounded-full bg-[#cf202f]/10 px-3 py-1.5 text-xs font-bold text-[#cf202f] transition hover:bg-[#cf202f]/20">
-                                                Hapus
-                                            </button>
-                                        </form>
+                                         <form method="POST" action="{{ route('siswa.jurnal.destroy', $jurnal) }}"
+      data-confirm="Hapus {{ $jurnal->judul ?? 'jurnal ini' }}?"
+      data-confirm-text="Data jurnal yang dihapus tidak dapat dikembalikan."
+      data-confirm-yes="Ya, hapus">
+    @csrf
+    @method('DELETE')
+    <button class="text-xs px-3 py-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 font-medium">Hapus</button>
+</form>
                                     </div>
                                 </td>
                             </tr>

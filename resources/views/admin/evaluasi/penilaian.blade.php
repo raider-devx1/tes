@@ -6,7 +6,7 @@
             <h2 class="text-xl md:text-2xl font-bold tracking-tight text-black">Rekap &amp; Penilaian Siswa PKL</h2>
             <button type="button" onclick="history.back()"
                     class="inline-flex items-center gap-1 rounded-xl border-2 border-[#0047d6]/25 bg-white px-4 py-2 text-sm font-bold text-[#0047d6] transition hover:bg-[#0047d6]/5 shrink-0">
-                &larr; Kembali
+                 Kembali
             </button>
         </div>
     </x-slot>
@@ -45,7 +45,7 @@
                     <div class="flex gap-2">
                         <button type="button" @click="tambah()"
                                 class="inline-flex items-center justify-center gap-1.5 rounded-xl bg-[#0047d6] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#0038aa]">
-                            + Tambah Nilai
+                             Tambah Nilai
                         </button>
                         <a href="{{ route('cetak.nilai.semua') }}" target="_blank"
                            class="inline-flex items-center justify-center gap-2 rounded-xl border-2 border-[#0047d6]/25 bg-white px-5 py-3 text-sm font-bold text-[#0047d6] transition hover:bg-[#0047d6]/5">

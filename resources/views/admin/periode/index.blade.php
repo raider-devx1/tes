@@ -7,7 +7,7 @@
         </div>
         <a href="{{ route('admin.periode.create') }}"
            class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#2563EB] text-white text-sm font-medium hover:bg-blue-700">
-            + Tambah Periode
+             Tambah Periode
         </a>
     </div>
 

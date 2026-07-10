@@ -5,7 +5,7 @@
 
             <a href="{{ route('siswa.dashboard') }}"
                class="inline-flex items-center gap-1 rounded-full bg-[#eef0f3] px-4 py-2 text-sm font-semibold text-[#0a0b0d] transition hover:bg-[#dee1e6]">
-                &larr; Kembali ke Dashboard
+                Kembali ke Dashboard
             </a>
         </div>
     </x-slot>

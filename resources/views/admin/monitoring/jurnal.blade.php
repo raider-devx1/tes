@@ -12,11 +12,11 @@
                 <div class="flex items-center gap-2 shrink-0">
                     <button type="button" @click="tambah()"
                             class="inline-flex items-center gap-1.5 rounded-xl bg-[#0047d6] px-4 py-2 text-sm font-bold text-white transition hover:bg-[#0038aa]">
-                        + Tambah Jurnal
+                         Tambah Jurnal
                     </button>
                     <button type="button" onclick="history.back()"
                             class="inline-flex items-center gap-1 rounded-xl border-2 border-[#0047d6]/25 bg-white px-4 py-2 text-sm font-bold text-[#0047d6] transition hover:bg-[#0047d6]/5">
-                        &larr; Kembali
+                         Kembali
                     </button>
                 </div>
             </div>
@@ -303,7 +303,7 @@
                         <div class="mb-1 flex items-center justify-between">
                             <label class="block text-xs font-bold uppercase tracking-wide text-black">Unit Kerja</label>
                             <button type="button" @click="tambahItem()"
-                                    class="rounded-lg bg-[#0047d6]/10 px-2.5 py-1 text-xs font-bold text-[#0047d6] hover:bg-[#0047d6]/20">+ Tambah unit kerja</button>
+                                    class="rounded-lg bg-[#0047d6]/10 px-2.5 py-1 text-xs font-bold text-[#0047d6] hover:bg-[#0047d6]/20"> Tambah unit kerja</button>
                         </div>
                         <div class="space-y-2">
                             <template x-for="(it, i) in form.items" :key="i">

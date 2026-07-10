@@ -9,7 +9,7 @@
             </div>
             <button type="button" @click="tambah()"
                     class="inline-flex items-center justify-center gap-1.5 rounded-lg bg-[#2563EB] px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700">
-                + Tambah Absensi
+                 Tambah Absensi
             </button>
         </div>
 

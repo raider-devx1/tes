@@ -9,7 +9,7 @@
             <div class="flex items-center gap-2">
                 <a href="{{ route('guru.observasi.create') }}"
                    class="inline-flex items-center rounded-xl bg-[#0047d6] px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-[#0038aa] focus:outline-none focus:ring-4 focus:ring-[#0047d6]/30">
-                    + Tambah Observasi
+                     Tambah Observasi
                 </a>
                  <a href="{{ route('guru.dashboard') }}"
            class="inline-flex items-center gap-1 rounded-xl border-2 border-[#0047d6]/25 bg-white px-4 py-2 text-sm font-bold text-[#0047d6] transition hover:bg-[#0047d6]/5">
@@ -220,15 +220,17 @@
                                                class="inline-flex items-center rounded-full bg-[#0047d6]/10 px-3 py-1.5 text-xs font-bold text-[#0047d6] transition hover:bg-[#0047d6]/20">
                                                 Edit
                                             </a>
-                                            <form action="{{ route('guru.observasi.destroy', $obs->id) }}" method="POST"
-                                                  onsubmit="return confirm('Hapus observasi ini? Seluruh poin permasalahan & solusi pada observasi ini akan ikut terhapus.');">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit"
-                                                        class="inline-flex items-center rounded-full bg-[#cf202f]/10 px-3 py-1.5 text-xs font-bold text-[#cf202f] transition hover:bg-[#cf202f]/20">
-                                                    Hapus
-                                                </button>
-                                            </form>
+                                           <form method="POST" action="{{ route('guru.observasi.destroy', $obs->id) }}"
+      data-confirm="Hapus observasi {{ $obs->nama ?? 'ini' }}?"
+      data-confirm-text="Seluruh poin permasalahan & solusi pada observasi ini akan ikut terhapus."
+      data-confirm-yes="Ya, hapus">
+    @csrf
+    @method('DELETE')
+    <button type="submit"
+            class="inline-flex items-center rounded-full bg-[#cf202f]/10 px-3 py-1.5 text-xs font-bold text-[#cf202f] transition hover:bg-[#cf202f]/20">
+        Hapus
+    </button>
+</form>
                                         </div>
                                     </td>
                                 </tr>

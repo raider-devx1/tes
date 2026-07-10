@@ -10,7 +10,7 @@
             <h2 class="text-xl font-semibold tracking-tight text-[#0a0b0d]">Tambah Jurnal Kegiatan Harian</h2>
             <a href="{{ route('siswa.jurnal.index') }}"
                class="inline-flex items-center gap-1 rounded-full bg-[#eef0f3] px-4 py-2 text-sm font-semibold text-[#0a0b0d] transition hover:bg-[#dee1e6]">
-                &larr; Kembali
+                 Kembali
             </a>
         </div>
     </x-slot>
@@ -78,7 +78,7 @@
                     <div>
                         <button type="button" @click="addItem()"
                                 class="inline-flex items-center gap-1.5 px-4 py-2 bg-[#05b169] hover:bg-[#049a5b] text-white text-xs font-semibold rounded-full shadow-sm transition-colors">
-                            + Tambah Pekerjaan
+                             Tambah Pekerjaan
                         </button>
                     </div>
                 </div>
