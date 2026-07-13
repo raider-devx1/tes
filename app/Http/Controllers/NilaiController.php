@@ -31,95 +31,92 @@ class NilaiController extends Controller
         );
     }
 
-   /* ===================== INSTRUKTUR INDUSTRI ===================== */
-public function indexInstruktur(Request $request)
-{
-    $q      = trim($request->get('q', ''));
-    $status = $request->get('status'); // 'sudah' | 'belum' (status penilaian, bukan status_pkl)
+    /* ===================== INSTRUKTUR INDUSTRI ===================== */
+    public function indexInstruktur(Request $request)
+    {
+        $q      = trim($request->get('q', ''));
+        $status = $request->get('status');
 
-    // Rekap seluruh siswa bimbingan aktif (tidak terpengaruh filter/pagination)
-    $rekapQuery = User::where('role', 'siswa_pkl')
-        ->where('instruktur_id', Auth::id())
-        ->where('status_pkl', 'aktif');
+        $rekapQuery = User::where('role', 'siswa_pkl')
+            ->where('instruktur_id', Auth::id())
+            ->where('status_pkl', 'aktif');
 
-    $totalSiswa   = (clone $rekapQuery)->count();
-    $sudahDinilai = (clone $rekapQuery)
-        ->whereHas('nilai', fn ($n) => $n->whereNotNull('rata_rata'))
-        ->count();
+        $totalSiswa   = (clone $rekapQuery)->count();
+        $sudahDinilai = (clone $rekapQuery)
+            ->whereHas('nilai', fn ($n) => $n->whereNotNull('rata_rata'))
+            ->count();
 
-    $rekap = [
-        'total' => $totalSiswa,
-        'sudah' => $sudahDinilai,
-        'belum' => $totalSiswa - $sudahDinilai,
-    ];
+        $rekap = [
+            'total' => $totalSiswa,
+            'sudah' => $sudahDinilai,
+            'belum' => $totalSiswa - $sudahDinilai,
+        ];
 
-    $siswa = User::where('role', 'siswa_pkl')
-        ->where('instruktur_id', Auth::id())
-        ->where('status_pkl', 'aktif')
-        ->with('nilai')
-        ->when($q, fn ($query) => $query->where(fn ($u) =>
-            $u->where('name', 'like', "%{$q}%")
-              ->orWhere('nisn', 'like', "%{$q}%")))
-        ->when($status === 'sudah', fn ($query) =>
-            $query->whereHas('nilai', fn ($n) => $n->whereNotNull('rata_rata')))
-        ->when($status === 'belum', fn ($query) =>
-            $query->where(fn ($u) =>
-                $u->whereDoesntHave('nilai')
-                  ->orWhereHas('nilai', fn ($n) => $n->whereNull('rata_rata'))))
-        ->orderBy('name')
-        ->paginate(15)
-        ->withQueryString();
+        $siswa = User::where('role', 'siswa_pkl')
+            ->where('instruktur_id', Auth::id())
+            ->where('status_pkl', 'aktif')
+            ->with('nilai')
+            ->when($q, fn ($query) => $query->where(fn ($u) =>
+                $u->where('name', 'like', "%{$q}%")
+                  ->orWhere('nisn', 'like', "%{$q}%")))
+            ->when($status === 'sudah', fn ($query) =>
+                $query->whereHas('nilai', fn ($n) => $n->whereNotNull('rata_rata')))
+            ->when($status === 'belum', fn ($query) =>
+                $query->where(fn ($u) =>
+                    $u->whereDoesntHave('nilai')
+                      ->orWhereHas('nilai', fn ($n) => $n->whereNull('rata_rata'))))
+            ->orderBy('name')
+            ->paginate(15)
+            ->withQueryString();
 
-    return view('instruktur.nilai.index', compact('siswa', 'q', 'status', 'rekap'));
-}
+        return view('instruktur.nilai.index', compact('siswa', 'q', 'status', 'rekap'));
+    }
 
-   public function createInstruktur(Request $request)
-{
-    $siswaId = $request->query('siswa_id');
+    public function createInstruktur(Request $request)
+    {
+        $siswaId = $request->query('siswa_id');
 
-    // Hanya siswa bimbingan instruktur ini yang MASIH aktif yang boleh dinilai
-    $siswa = User::where('role', 'siswa_pkl')
-        ->where('instruktur_id', Auth::id())  // ⬅️ pastikan memang bimbingannya
-        ->where('status_pkl', 'aktif')        // ⬅️ tolak siswa yang sudah "selesai" / "belum"
-        ->findOrFail($siswaId);
+        $siswa = User::where('role', 'siswa_pkl')
+            ->where('instruktur_id', Auth::id())
+            ->where('status_pkl', 'aktif')
+            ->findOrFail($siswaId);
 
-    return view('instruktur.nilai.create', compact('siswa'));
-}
+        return view('instruktur.nilai.create', compact('siswa'));
+    }
 
-   public function storeInstruktur(Request $request)
-{
-    $request->validate([
-        'user_id'                 => 'required|exists:users,id',
-        'soft_skill'              => 'required|integer|between:1,5',
-        'hard_skill'              => 'required|integer|between:1,5',
-        'pengembangan_hard_skill' => 'required|integer|between:1,5',
-        'kewirausahaan'           => 'required|integer|between:1,5',
-        'catatan_rekomendasi'     => 'nullable|string',
-    ]);
+    public function storeInstruktur(Request $request)
+    {
+        $request->validate([
+            'user_id'                 => 'required|exists:users,id',
+            'soft_skill'              => 'required|integer|between:1,5',
+            'hard_skill'              => 'required|integer|between:1,5',
+            'pengembangan_hard_skill' => 'required|integer|between:1,5',
+            'kewirausahaan'           => 'required|integer|between:1,5',
+            'catatan_rekomendasi'     => 'nullable|string',
+        ]);
 
-    // Pastikan siswa memang bimbingan instruktur ini & masih aktif PKL
-    $siswa = User::where('role', 'siswa_pkl')
-        ->where('instruktur_id', Auth::id())  // ⬅️ cegah menilai siswa instruktur lain
-        ->where('status_pkl', 'aktif')        // ⬅️ cegah menilai siswa yang sudah selesai
-        ->findOrFail($request->user_id);
+        $siswa = User::where('role', 'siswa_pkl')
+            ->where('instruktur_id', Auth::id())
+            ->where('status_pkl', 'aktif')
+            ->findOrFail($request->user_id);
 
-    $rataRata = ($request->soft_skill + $request->hard_skill
-        + $request->pengembangan_hard_skill + $request->kewirausahaan) / 4;
+        $rataRata = ($request->soft_skill + $request->hard_skill
+            + $request->pengembangan_hard_skill + $request->kewirausahaan) / 4;
 
-    $nilai = Nilai::firstOrNew(['user_id' => $siswa->id]);
-    $nilai->instruktur_id           = Auth::id();
-    $nilai->soft_skill              = $request->soft_skill;
-    $nilai->hard_skill              = $request->hard_skill;
-    $nilai->pengembangan_hard_skill = $request->pengembangan_hard_skill;
-    $nilai->kewirausahaan           = $request->kewirausahaan;
-    $nilai->rata_rata               = $rataRata;
-    $nilai->catatan_rekomendasi     = $request->catatan_rekomendasi;
-    $nilai->nilai_akhir             = $this->hitungNilaiAkhir($nilai); // hitung ulang
-    $nilai->save();
+        $nilai = Nilai::firstOrNew(['user_id' => $siswa->id]);
+        $nilai->instruktur_id           = Auth::id();
+        $nilai->soft_skill              = $request->soft_skill;
+        $nilai->hard_skill              = $request->hard_skill;
+        $nilai->pengembangan_hard_skill = $request->pengembangan_hard_skill;
+        $nilai->kewirausahaan           = $request->kewirausahaan;
+        $nilai->rata_rata               = $rataRata;
+        $nilai->catatan_rekomendasi     = $request->catatan_rekomendasi;
+        $nilai->nilai_akhir             = $this->hitungNilaiAkhir($nilai);
+        $nilai->save();
 
-    return redirect()->route('instruktur.nilai.index')
-        ->with('success', 'Lembar evaluasi penilaian siswa sukses disimpan.');
-}
+        return redirect()->route('instruktur.nilai.index')
+            ->with('success', 'Lembar evaluasi penilaian instruktur sukses disimpan.');
+    }
 
     /* ===================== SISWA PKL ===================== */
     public function indexSiswa()
@@ -131,58 +128,74 @@ public function indexInstruktur(Request $request)
         return view('siswa.nilai.index', compact('nilai'));
     }
 
-   /* ===================== GURU PEMBIMBING ===================== */
-public function indexGuru(Request $request)
-{
-    $q      = trim($request->get('q', ''));
-    $status = $request->get('status'); // 'sudah' | 'belum' (status penilaian)
+    /* ===================== GURU PEMBIMBING ===================== */
+    public function indexGuru(Request $request)
+    {
+        $q      = trim($request->get('q', ''));
+        $status = $request->get('status');
 
-    // Rekap seluruh siswa bimbingan guru ini (tidak terpengaruh filter/pagination)
-    $rekapQuery = User::where('role', 'siswa_pkl')
-        ->where('guru_id', Auth::id())
-        ->where('status_pkl', 'aktif');
+        $rekapQuery = User::where('role', 'siswa_pkl')
+            ->where('guru_id', Auth::id())
+            ->where('status_pkl', 'aktif');
 
-    $totalSiswa   = (clone $rekapQuery)->count();
-    $sudahDinilai = (clone $rekapQuery)
-        ->whereHas('nilai', fn ($n) => $n->whereNotNull('nilai_akhir'))
-        ->count();
+        $totalSiswa = (clone $rekapQuery)->count();
+        
+        // Cek jumlah yang dinilai Instruktur
+        $sudahDinilaiInstruktur = (clone $rekapQuery)
+            ->whereHas('nilai', fn ($n) => $n->whereNotNull('rata_rata'))
+            ->count();
 
-    $rekap = [
-        'total' => $totalSiswa,
-        'sudah' => $sudahDinilai,
-        'belum' => $totalSiswa - $sudahDinilai,
-    ];
+        // Cek jumlah yang SUDAH dinilai GURU berdasarkan keberadaan skor_soft_skill
+        $sudahDinilaiGuru = (clone $rekapQuery)
+            ->whereHas('nilai', fn ($n) => $n->whereNotNull('skor_soft_skill'))
+            ->count();
 
-    $siswa = User::where('role', 'siswa_pkl')
-        ->where('guru_id', Auth::id())
-        ->where('status_pkl', 'aktif')
-        ->with('nilai')
-        ->when($q, fn ($query) => $query->where(fn ($u) =>
-            $u->where('name', 'like', "%{$q}%")
-              ->orWhere('nisn', 'like', "%{$q}%")))
-        ->when($status === 'sudah', fn ($query) =>
-            $query->whereHas('nilai', fn ($n) => $n->whereNotNull('nilai_akhir')))
-        ->when($status === 'belum', fn ($query) =>
-            $query->where(fn ($u) =>
-                $u->whereDoesntHave('nilai')
-                  ->orWhereHas('nilai', fn ($n) => $n->whereNull('nilai_akhir'))))
-        ->orderBy('name')
-        ->paginate(15)
-        ->withQueryString();
+        $rekap = [
+            'total' => $totalSiswa,
+            'sudah_dinilai_instruktur' => $sudahDinilaiInstruktur,
+            'sudah_dinilai_guru' => $sudahDinilaiGuru,
+        ];
 
-    return view('guru.nilai.index', compact('siswa', 'q', 'status', 'rekap'));
-}
+        $siswa = User::where('role', 'siswa_pkl')
+            ->where('guru_id', Auth::id())
+            ->where('status_pkl', 'aktif')
+            ->with('nilai')
+            ->when($q, fn ($query) => $query->where(fn ($u) =>
+                $u->where('name', 'like', "%{$q}%")
+                  ->orWhere('nisn', 'like', "%{$q}%")))
+            ->when($status === 'sudah', fn ($query) =>
+                $query->whereHas('nilai', fn ($n) => $n->whereNotNull('skor_soft_skill')))
+            ->when($status === 'belum', fn ($query) =>
+                $query->where(fn ($u) =>
+                    $u->whereDoesntHave('nilai')
+                      ->orWhereHas('nilai', fn ($n) => $n->whereNull('skor_soft_skill'))))
+            ->orderBy('name')
+            ->paginate(15)
+            ->withQueryString();
+
+        return view('guru.nilai.index', compact('siswa', 'q', 'status', 'rekap'));
+    }
 
     public function storeGuru(Request $request)
     {
+        // Validasi untuk 6 kriteria form guru
         $request->validate([
-            'user_id'       => 'required|exists:users,id',
-            'nilai_guru'    => 'required|numeric|between:0,100',
-            'nilai_laporan' => 'required|numeric|between:0,100',
-            'catatan_guru'  => 'nullable|string',
+            'user_id'                 => 'required|exists:users,id',
+            'skor_soft_skill'         => 'required|numeric|between:0,100',
+            'deskripsi_soft_skill'    => 'required|string',
+            'skor_hard_skill'         => 'required|numeric|between:0,100',
+            'deskripsi_hard_skill'    => 'required|string',
+            'skor_pengembangan'       => 'required|numeric|between:0,100',
+            'deskripsi_pengembangan'  => 'required|string',
+            'skor_kewirausahaan'      => 'required|numeric|between:0,100',
+            'deskripsi_kewirausahaan' => 'required|string',
+            'skor_laporan'            => 'required|numeric|between:0,100',
+            'deskripsi_laporan'       => 'required|string',
+            'skor_presentasi'         => 'required|numeric|between:0,100',
+            'deskripsi_presentasi'    => 'required|string',
+            'catatan_guru'            => 'nullable|string',
         ]);
 
-       // Pastikan siswa benar-benar bimbingan guru ini & masih aktif PKL
         $siswa = User::where('id', $request->user_id)
             ->where('role', 'siswa_pkl')
             ->where('guru_id', Auth::id())
@@ -190,14 +203,33 @@ public function indexGuru(Request $request)
             ->firstOrFail();
 
         $nilai = Nilai::firstOrNew(['user_id' => $siswa->id]);
-        $nilai->guru_id       = Auth::id();
-        $nilai->nilai_guru    = $request->nilai_guru;
-        $nilai->nilai_laporan = $request->nilai_laporan;
-        $nilai->catatan_guru  = $request->catatan_guru;
-        $nilai->nilai_akhir   = $this->hitungNilaiAkhir($nilai); // recompute
+        $nilai->guru_id = Auth::id();
+        
+        // Simpan 6 kriteria dan deskripsinya
+        $nilai->skor_soft_skill         = $request->skor_soft_skill;
+        $nilai->deskripsi_soft_skill    = $request->deskripsi_soft_skill;
+        $nilai->skor_hard_skill         = $request->skor_hard_skill;
+        $nilai->deskripsi_hard_skill    = $request->deskripsi_hard_skill;
+        $nilai->skor_pengembangan       = $request->skor_pengembangan;
+        $nilai->deskripsi_pengembangan  = $request->deskripsi_pengembangan;
+        $nilai->skor_kewirausahaan      = $request->skor_kewirausahaan;
+        $nilai->deskripsi_kewirausahaan = $request->deskripsi_kewirausahaan;
+        $nilai->skor_laporan            = $request->skor_laporan;
+        $nilai->deskripsi_laporan       = $request->deskripsi_laporan;
+        $nilai->skor_presentasi         = $request->skor_presentasi;
+        $nilai->deskripsi_presentasi    = $request->deskripsi_presentasi;
+        $nilai->catatan_guru            = $request->catatan_guru;
+
+        // Backup perhitungan nilai (untuk kompatibilitas fungsi hitungNilaiAkhir lama)
+        $rataGuru = ($request->skor_soft_skill + $request->skor_hard_skill + $request->skor_pengembangan + $request->skor_kewirausahaan + $request->skor_laporan + $request->skor_presentasi) / 6;
+        
+        $nilai->nilai_guru    = $rataGuru;
+        $nilai->nilai_laporan = $request->skor_laporan; 
+        
+        $nilai->nilai_akhir   = $this->hitungNilaiAkhir($nilai);
         $nilai->save();
 
         return redirect()->route('guru.nilai.index')
-            ->with('success', 'Nilai guru & laporan berhasil disimpan.');
+            ->with('success', 'Penilaian PKL berhasil disimpan.');
     }
 }

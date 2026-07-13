@@ -117,7 +117,7 @@ class UserSeeder extends Seeder
         ]);
 
         /* ============================================================
-         | 5. 20 SISWA PKL + SEMUA DATA PENDUKUNG — login pakai NISN (tanpa email)
+         | 5. 20 SISWA PKL + SEMUA DATA PENDUKUNG — login pakai NISN
          ============================================================ */
         $gurus = [$guru1, $guru2, $guru3];
         $industri = [
@@ -134,13 +134,13 @@ class UserSeeder extends Seeder
 
         $kelasList = ['XI KULINER 1', 'XI BUSANA 1', 'XI KECANTIKAN 1', 'XI TJKT 1', 'XI PERHOTELAN 1'];
 
-$jurusanMap = [
-    'XI KULINER 1'    => 'Kuliner',
-    'XI BUSANA 1'     => 'Busana',
-    'XI KECANTIKAN 1' => 'Kecantikan & Spa',
-    'XI TJKT 1'       => 'Teknik Jaringan Komputer dan Telekomunikasi',
-    'XI PERHOTELAN 1' => 'Perhotelan',
-];
+        $jurusanMap = [
+            'XI KULINER 1'    => 'Kuliner',
+            'XI BUSANA 1'     => 'Busana',
+            'XI KECANTIKAN 1' => 'Kecantikan & Spa',
+            'XI TJKT 1'       => 'Teknik Jaringan Komputer dan Telekomunikasi',
+            'XI PERHOTELAN 1' => 'Perhotelan',
+        ];
 
         $statusJurnal = ['pending', 'disetujui', 'revisi'];
         $statusAbsen  = ['Hadir', 'Hadir', 'Izin', 'Sakit', 'Alpha'];
@@ -150,7 +150,6 @@ $jurusanMap = [
             $ind   = $industri[($i - 1) % 3];
             $kelas = $kelasList[($i - 1) % count($kelasList)];
 
-            // Sebagian siswa di periode lampau (i = 5,10,15,20) untuk uji filter periode
             $periode = ($i % 5 === 0) ? $periodeLama : $periodeAktif;
 
             $siswa = User::create([
@@ -169,7 +168,7 @@ $jurusanMap = [
                 'periode_id'    => $periode->id,
             ]);
 
-            // ---- JURNAL (3 entri, tiap entri punya beberapa pekerjaan/unit kerja) ----
+            // ---- JURNAL (3 entri) ----
             for ($j = 1; $j <= 3; $j++) {
                 $st = $statusJurnal[($j - 1) % 3];
 
@@ -181,7 +180,6 @@ $jurusanMap = [
                     'disetujui_oleh'     => $st === 'pending' ? null : $ind['ins']->id,
                 ]);
 
-                // Jumlah pekerjaan bervariasi (jurnal ke-1 = 1 pekerjaan, ke-2 = 2, ke-3 = 3)
                 for ($k = 1; $k <= $j; $k++) {
                     $jurnal->items()->create([
                         'unit_kerja'  => "Pekerjaan ke-$k pada Divisi $j untuk {$siswa->name}.",
@@ -198,21 +196,20 @@ $jurusanMap = [
                     'perencanaan_kegiatan' => "Rencana kegiatan ke-$c.",
                     'pelaksanaan_kegiatan' => "Pelaksanaan & hasil kegiatan ke-$c.",
                     'catatan_instruktur'   => $c === 1 ? 'Sudah sesuai target.' : null,
-                    'is_approved'          => $c === 1, // 1 disetujui, sisanya menunggu
+                    'is_approved'          => $c === 1,
                 ]);
             }
 
-            // ---- OBSERVASI (3 entri; tiap observasi punya beberapa poin masalah & solusi) ----
+            // ---- OBSERVASI (3 entri) ----
             for ($o = 1; $o <= 3; $o++) {
                 $observasi = Observasi::create([
                     'user_id'          => $siswa->id,
                     'guru_id'          => $guru->id,
                     'hari_tanggal'     => now()->subDays($o * 2)->toDateString(),
                     'pekerjaan_projek' => "Observasi projek ke-$o",
-                    'is_approved'      => $o === 1, // 1 disetujui, sisanya menunggu
+                    'is_approved'      => $o === 1, 
                 ]);
 
-                // Jumlah poin bervariasi (observasi ke-1 = 1 poin, ke-2 = 2 poin, ke-3 = 3 poin)
                 for ($p = 1; $p <= $o; $p++) {
                     $observasi->items()->create([
                         'permasalahan' => "Permasalahan poin ke-$p pada observasi ke-$o untuk {$siswa->name}.",
@@ -221,7 +218,7 @@ $jurusanMap = [
                 }
             }
 
-            // ---- ABSENSI (5 entri, status & jam bervariasi) ----
+            // ---- ABSENSI (5 entri) ----
             foreach ($statusAbsen as $idx => $stAbs) {
                 Absensi::create([
                     'siswa_id'      => $siswa->id,
@@ -233,22 +230,30 @@ $jurusanMap = [
                 ]);
             }
 
-            // ---- NILAI (2/3 lengkap, 1/3 baru dinilai instruktur saja) ----
+            // ---- NILAI GURU (2/3 lengkap, 1/3 baru dinilai instruktur saja) ----
             $soft = rand(3, 5);
             $hard = rand(3, 5);
             $peng = rand(3, 5);
             $kwu  = rand(3, 5);
             $rata = round(($soft + $hard + $peng + $kwu) / 4, 2);
 
-            $lengkap      = ($i % 3 !== 0); // sebagian belum dinilai guru -> nilai_akhir null
-            $nilaiGuru    = $lengkap ? rand(75, 95) : null;
-            $nilaiLaporan = $lengkap ? rand(75, 95) : null;
+            $lengkap = ($i % 3 !== 0); 
+            
+            // Generate data komponen form guru (6 penilaian)
+            $skor_soft_skill    = $lengkap ? rand(85, 95) : null;
+            $skor_hard_skill    = $lengkap ? rand(85, 95) : null;
+            $skor_pengembangan  = $lengkap ? rand(85, 95) : null;
+            $skor_kewirausahaan = $lengkap ? rand(85, 95) : null;
+            $skor_laporan       = $lengkap ? rand(85, 95) : null;
+            $skor_presentasi    = $lengkap ? rand(85, 95) : null;
+            
+            $rataGuru = $lengkap ? (($skor_soft_skill + $skor_hard_skill + $skor_pengembangan + $skor_kewirausahaan + $skor_laporan + $skor_presentasi) / 6) : null;
 
             $nilaiAkhir = null;
             if ($lengkap) {
                 $instruktur100 = ($rata / 5) * 100;
                 $nilaiAkhir = round(
-                    ($instruktur100 * 0.50) + ($nilaiGuru * 0.20) + ($nilaiLaporan * 0.30),
+                    ($instruktur100 * 0.50) + ($rataGuru * 0.20) + ($skor_laporan * 0.30),
                     2
                 );
             }
@@ -263,16 +268,39 @@ $jurusanMap = [
                 'kewirausahaan'           => $kwu,
                 'rata_rata'               => $rata,
                 'catatan_rekomendasi'     => 'Direkomendasikan untuk pengembangan lebih lanjut.',
-                'nilai_guru'              => $nilaiGuru,
-                'nilai_laporan'           => $nilaiLaporan,
-                'catatan_guru'            => $lengkap ? 'Laporan disusun dengan baik.' : null,
+                
+                // --- Backup Lama ---
+                'nilai_guru'              => $rataGuru,
+                'nilai_laporan'           => $skor_laporan,
+                
+                // --- Komponen Penilaian Guru ---
+                'skor_soft_skill'         => $skor_soft_skill,
+                'deskripsi_soft_skill'    => $lengkap ? 'Menunjukkan kemampuan komunikasi, kerja sama tim, dan disiplin yang sangat baik.' : null,
+                
+                'skor_hard_skill'         => $skor_hard_skill,
+                'deskripsi_hard_skill'    => $lengkap ? 'Mampu menerapkan kompetensi keahlian sesuai bidang PKL dengan sangat baik.' : null,
+                
+                'skor_pengembangan'       => $skor_pengembangan,
+                'deskripsi_pengembangan'  => $lengkap ? 'Cepat memahami keterampilan baru dan beradaptasi mandiri.' : null,
+                
+                'skor_kewirausahaan'      => $skor_kewirausahaan,
+                'deskripsi_kewirausahaan' => $lengkap ? 'Mampu melihat dan memahami peluang budaya wirausaha.' : null,
+                
+                'skor_laporan'            => $skor_laporan,
+                'deskripsi_laporan'       => $lengkap ? 'Penulisan laporan rapi, tata bahasa baku dan mudah dipahami.' : null,
+                
+                'skor_presentasi'         => $skor_presentasi,
+                'deskripsi_presentasi'    => $lengkap ? 'Materi presentasi disampaikan dengan sangat lugas dan profesional.' : null,
+                
+                'catatan_guru'            => $lengkap ? 'SANGAT BAIK. Terus pertahankan dan tingkatkan kemampuan secara konsisten.' : null,
+                
                 'nilai_akhir'             => $nilaiAkhir,
             ]);
 
-            // ---- DOKUMEN (1 baris per siswa) ----
+            // ---- DOKUMEN ----
             Dokumen::create([
                 'siswa_id'         => $siswa->id,
-                'surat_tugas'      => null, // surat tugas bersifat global (diunggah admin)
+                'surat_tugas'      => null,
                 'surat_penerimaan' => 'dokumen/contoh_surat_penerimaan.pdf',
                 'laporan_akhir'    => $lengkap ? 'dokumen/contoh_laporan_akhir.pdf' : null,
             ]);

@@ -20,9 +20,18 @@ class Nilai extends Model
         'kewirausahaan',
         'rata_rata',
         'catatan_rekomendasi',
+        
+        // --- Komponen Penilaian Guru ---
+        'skor_soft_skill', 'deskripsi_soft_skill',
+        'skor_hard_skill', 'deskripsi_hard_skill',
+        'skor_pengembangan', 'deskripsi_pengembangan',
+        'skor_kewirausahaan', 'deskripsi_kewirausahaan',
+        'skor_laporan', 'deskripsi_laporan',
+        'skor_presentasi', 'deskripsi_presentasi',
+        'catatan_guru',
+        
         'nilai_guru',
         'nilai_laporan',
-        'catatan_guru',
         'nilai_akhir',
     ];
 

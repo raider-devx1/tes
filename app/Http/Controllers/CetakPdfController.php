@@ -390,4 +390,39 @@ class CetakPdfController extends Controller
         $pdf = Pdf::loadView('pdf.nilai', ['lembar' => $lembar])->setPaper('a4', 'portrait');
         return $pdf->stream('Daftar_Nilai_PKL_Semua.pdf');
     }
+
+    /**
+     * FUNGSI BARU: Cetak Format Penilaian Khusus Guru Pembimbing
+     */
+    public function cetakNilaiGuruSatuan($siswaId)
+    {
+        // Pengecekan role dan data siswa dengan helper yang sudah ada
+        $siswa = $this->resolveSiswa($siswaId);
+
+        // PERBAIKAN DI SINI: Ubah 'user_id' menjadi 'siswa_id'
+        $absensi = Absensi::where('siswa_id', $siswa->id)->get(); 
+        
+        // Sesuaikan dengan enum 'sakit', 'izin'/'ijin', 'alpa'/'tanpa_keterangan' di database Anda
+        $sakit = $absensi->where('status', 'Sakit')->count() + $absensi->where('status', 'sakit')->count();
+        $ijin  = $absensi->where('status', 'Izin')->count() + $absensi->where('status', 'izin')->count() + $absensi->where('status', 'Ijin')->count();
+        $alpa  = $absensi->where('status', 'Alpa')->count() + $absensi->where('status', 'alpa')->count() + $absensi->where('status', 'Tanpa Keterangan')->count();
+
+        // Mengambil data Periode PKL (Bisa via relasi jika ada, atau pencarian langsung)
+        $periodePkl = PeriodePkl::where('id', $siswa->periode_pkl_id)->first();
+
+        // Menyiapkan data array untuk dilempar ke View PDF
+        $data = [
+            'siswa'      => $siswa,
+            'nilai'      => Nilai::where('user_id', $siswa->id)->first(),
+            'periodePkl' => $periodePkl,
+            'sakit'      => $sakit,
+            'ijin'       => $ijin,
+            'alpa'       => $alpa,
+        ];
+
+        // Memuat view PDF yang baru dibuat
+        $pdf = Pdf::loadView('pdf.nilai-guru', $data)->setPaper('a4', 'portrait');
+        
+        return $pdf->stream('Nilai_PKL_Guru_'.$siswa->name.'.pdf');
+    }
 }
