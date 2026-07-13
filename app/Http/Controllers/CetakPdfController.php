@@ -391,7 +391,7 @@ class CetakPdfController extends Controller
         return $pdf->stream('Daftar_Nilai_PKL_Semua.pdf');
     }
 
-    /**
+   /**
      * FUNGSI BARU: Cetak Format Penilaian Khusus Guru Pembimbing
      */
     public function cetakNilaiGuruSatuan($siswaId)
@@ -399,28 +399,60 @@ class CetakPdfController extends Controller
         // Pengecekan role dan data siswa dengan helper yang sudah ada
         $siswa = $this->resolveSiswa($siswaId);
 
-        // PERBAIKAN DI SINI: Ubah 'user_id' menjadi 'siswa_id'
+        // Mengambil data absensi berdasarkan siswa_id
         $absensi = Absensi::where('siswa_id', $siswa->id)->get(); 
         
-        // Sesuaikan dengan enum 'sakit', 'izin'/'ijin', 'alpa'/'tanpa_keterangan' di database Anda
+        // Menghitung status absensi (case-insensitive & handle berbagai enum)
         $sakit = $absensi->where('status', 'Sakit')->count() + $absensi->where('status', 'sakit')->count();
         $ijin  = $absensi->where('status', 'Izin')->count() + $absensi->where('status', 'izin')->count() + $absensi->where('status', 'Ijin')->count();
         $alpa  = $absensi->where('status', 'Alpa')->count() + $absensi->where('status', 'alpa')->count() + $absensi->where('status', 'Tanpa Keterangan')->count();
 
-        // Mengambil data Periode PKL (Bisa via relasi jika ada, atau pencarian langsung)
+        // Mengambil data Periode PKL
         $periodePkl = PeriodePkl::where('id', $siswa->periode_pkl_id)->first();
+
+        // --- PROSES LOGIKA VARIABEL UNTUK BLADE DI SINI ---
+        // Menggunakan fallback jika relasi di model atau pencarian query yang aktif
+        // PERBAIKAN 1: Tambahkan fallback ke PeriodePkl::aktif() jika relasi kosong
+        $periode = $siswa->periodePkl ?? $siswa->periode_pkl ?? $periodePkl ?? (method_exists(PeriodePkl::class, 'aktif') ? PeriodePkl::aktif() : null);
+        
+        $mulaiPkl = ($periode && $periode->tanggal_mulai)
+            ? \Carbon\Carbon::parse($periode->tanggal_mulai)
+            : \Carbon\Carbon::now();
+            
+        // Ambil tahun ajaran dari periode jika ada
+        $tahunAjaran = $periode->tahun_ajaran ?? ($mulaiPkl->format('Y') . '/' . $mulaiPkl->copy()->addYear()->format('Y'));
+
+        // Menentukan Nama Perusahaan / Tempat PKL
+        // PERBAIKAN 2: Prioritaskan mengambil dari relasi $siswa->perusahaan (sama seperti fitur cetakNilai reguler)
+        $namaPerusahaan = $siswa->perusahaan->nama_perusahaan ?? $periode->perusahaan->nama_perusahaan ?? $periode->perusahaan->nama ?? '-';
+        
+        // Memformat Tanggal Mulai dan Selesai PKL
+        $tanggalMulaiFormat = ($periode && $periode->tanggal_mulai) 
+            ? \Carbon\Carbon::parse($periode->tanggal_mulai)->translatedFormat('d F Y') 
+            : '-';
+            
+        $tanggalSelesaiFormat = ($periode && $periode->tanggal_selesai) 
+            ? \Carbon\Carbon::parse($periode->tanggal_selesai)->translatedFormat('d F Y') 
+            : '-';
+        // --------------------------------------------------
 
         // Menyiapkan data array untuk dilempar ke View PDF
         $data = [
-            'siswa'      => $siswa,
-            'nilai'      => Nilai::where('user_id', $siswa->id)->first(),
-            'periodePkl' => $periodePkl,
-            'sakit'      => $sakit,
-            'ijin'       => $ijin,
-            'alpa'       => $alpa,
+            'siswa'                => $siswa,
+            'nilai'                => Nilai::where('user_id', $siswa->id)->first(),
+            'periodePkl'           => $periodePkl,
+            'sakit'                => $sakit,
+            'ijin'                 => $ijin,
+            'alpa'                 => $alpa,
+            
+            // Variabel tambahan yang dikirim langsung ke Blade
+            'tahunAjaran'          => $tahunAjaran,
+            'namaPerusahaan'       => $namaPerusahaan,
+            'tanggalMulaiFormat'   => $tanggalMulaiFormat,
+            'tanggalSelesaiFormat' => $tanggalSelesaiFormat,
         ];
 
-        // Memuat view PDF yang baru dibuat
+        // Memuat view PDF dengan data yang sudah lengkap
         $pdf = Pdf::loadView('pdf.nilai-guru', $data)->setPaper('a4', 'portrait');
         
         return $pdf->stream('Nilai_PKL_Guru_'.$siswa->name.'.pdf');

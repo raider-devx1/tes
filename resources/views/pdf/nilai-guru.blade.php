@@ -57,7 +57,7 @@
             margin-bottom: 15px;
         }
         .table-score th, .table-score td {
-            border: 1px solid black;
+            border: 2px solid black;
             padding: 8px;
             vertical-align: top;
         }
@@ -75,7 +75,7 @@
 
         /* Catatan (DIBERI BORDER sesuai format acuan) */
         .catatan {
-            border: 1px solid black;
+            border: 2px solid black;
             padding: 8px;
             margin-bottom: 20px;
             text-align: justify;
@@ -90,7 +90,7 @@
             width: 300px;
         }
         .table-absen td {
-            border: 1px solid black;
+            border: 2px solid black;
             padding: 3px 8px;
             vertical-align: top;
         }
@@ -137,13 +137,6 @@
     </style>
 </head>
 <body>
-    @php
-        $mulaiPkl = ($periodePkl && $periodePkl->tanggal_mulai)
-            ? \Carbon\Carbon::parse($periodePkl->tanggal_mulai)
-            : \Carbon\Carbon::now();
-        $tahunAjaran = $mulaiPkl->format('Y') . '/' . $mulaiPkl->copy()->addYear()->format('Y');
-    @endphp
-
     <div class="header">
         <h3>UPTD SMKN 1 MAJENE</h3>
         <h4>Tahun Ajaran {{ $tahunAjaran }}</h4>
@@ -178,15 +171,15 @@
         <tr>
             <td>Tempat PKL</td>
             <td class="titik-dua">:</td>
-            <td>{{ $periodePkl->perusahaan->nama_perusahaan ?? '-' }}</td>
+            <td>{{ $namaPerusahaan }}</td>
         </tr>
         <tr>
             <td>Tanggal PKL</td>
             <td class="titik-dua">:</td>
             <td>
-                Mulai: {{ $periodePkl && $periodePkl->tanggal_mulai ? \Carbon\Carbon::parse($periodePkl->tanggal_mulai)->translatedFormat('d F Y') : '-' }} 
+                Mulai: {{ $tanggalMulaiFormat }} 
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-                Selesai: {{ $periodePkl && $periodePkl->tanggal_selesai ? \Carbon\Carbon::parse($periodePkl->tanggal_selesai)->translatedFormat('d F Y') : '-' }} 
+                Selesai: {{ $tanggalSelesaiFormat }} 
             </td>
         </tr>
         <tr>
