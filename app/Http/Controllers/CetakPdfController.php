@@ -17,7 +17,7 @@ class CetakPdfController extends Controller
 {
     /**
      * Tentukan siswa target + cek hak akses sesuai role.
-     * Guru & instruktur hanya boleh mencetak siswa bimbingannya yang MASIH aktif.
+     * Guru & instruktur hanya boleh mencetak siswa bimbingannya.
      */
     private function resolveSiswa($siswaId = null): User
     {
@@ -31,17 +31,19 @@ class CetakPdfController extends Controller
         abort_if(empty($siswaId), 404, 'Siswa tidak ditemukan.');
         $siswa = User::where('role', 'siswa_pkl')->findOrFail($siswaId);
 
+        // Menggunakan perbandingan longgar (==) karena di beberapa environment hosting (seperti Namecheap),
+        // ID dari database bisa terbaca sebagai string sedangkan auth ID bertipe integer.
         if ($user->role === 'guru_pembimbing') {
             abort_unless(
-                $siswa->guru_id === $user->id && $siswa->status_pkl === 'aktif',
+                $siswa->guru_id == $user->id,
                 403,
-                'Bukan siswa bimbingan aktif Anda.'
+                'Bukan siswa bimbingan Anda.'
             );
         } elseif ($user->role === 'instruktur_industri') {
             abort_unless(
-                $siswa->instruktur_id === $user->id && $siswa->status_pkl === 'aktif',
+                $siswa->instruktur_id == $user->id,
                 403,
-                'Bukan siswa bimbingan aktif Anda.'
+                'Bukan siswa bimbingan Anda.'
             );
         }
         // admin: tanpa batasan
