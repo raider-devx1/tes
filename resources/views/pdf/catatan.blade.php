@@ -15,9 +15,25 @@
         .box-besar { border:1px solid #000; min-height:130px; padding:8px; }
         .catatan { border:1px solid #000; min-height:90px; padding:8px; }
         .ttd { margin-top:35px; width:100%; }
-        .ttd-kanan { width:40%; float:right; text-align:center; }
+        .ttd-kanan { width:45%; float:right; text-align:center; }
         .nama-ttd { margin-top:70px; text-decoration:underline; }
+        .nama-ttd-verified { margin-top:10px; text-decoration:underline; font-weight:bold; }
         .empty { text-align:center; font-style:italic; color:#555; }
+
+        /* Badge tanda tangan digital terverifikasi */
+        .verified {
+            border:1.5px solid #16a34a;
+            background:#f0fdf4;
+            color:#166534;
+            border-radius:8px;
+            padding:8px 10px;
+            font-size:10pt;
+            line-height:1.4;
+            text-align:center;
+            margin-top:8px;
+        }
+        .verified .verified-title { font-weight:bold; display:block; }
+        .verified .verified-sub { font-size:9pt; }
     </style>
 </head>
 <body>
@@ -30,22 +46,22 @@
         <tr>
             <td width="200">Nama Peserta Didik</td>
             <td width="10">:</td>
-            <td> {{ $item->user->name ?? '-' }} </td>
+            <td> {{ $item->user->name }} </td>
         </tr>
         <tr>
             <td>Dunia Kerja Tempat PKL</td>
             <td>:</td>
-            <td> {{ $item->user->perusahaan->nama_perusahaan ?? 'Belum Diatur' }} </td>
+            <td> {{ $item->user->perusahaan->nama_perusahaan ?? '-' }} </td>
         </tr>
         <tr>
             <td>Nama Instruktur</td>
             <td>:</td>
-            <td> {{ $item->user->instruktur->name ?? 'Belum Diatur' }} </td>
+            <td> {{ $item->user->instruktur->name ?? '-' }} </td>
         </tr>
         <tr>
             <td>Nama Guru Pembimbing</td>
             <td>:</td>
-            <td> {{ $item->user->guru->name ?? 'Belum Diatur' }} </td>
+            <td> {{ $item->user->guru->name ?? '-' }} </td>
         </tr>
     </table>
 
@@ -73,10 +89,24 @@
 
     <div class="ttd">
         <div class="ttd-kanan">
-            Majene,  {{ $tanggal_cetak }} 
+            Majene, {{ $tanggal_cetak }} 
             <br><br>
             Instruktur,
-            <div class="nama-ttd"> {{ $item->user->instruktur->name ?? 'Belum Diatur' }} </div>
+
+            @if($item->status === 'disetujui')
+                <div class="verified">
+                    <span class="verified-title">DISETUJUI OLEH INSTRUKTUR - TERVERIFIKASI SISTEM</span>
+                    <span class="verified-sub">
+                        (Divalidasi oleh Guru Pembimbing
+                        @if($item->validated_at)
+                            pada {{ \Carbon\Carbon::parse($item->validated_at)->locale('id')->translatedFormat('d F Y') }} 
+                        @endif)
+                    </span>
+                </div>
+                <div class="nama-ttd-verified"> {{ $item->user->instruktur->name ?? '-' }} </div>
+            @else
+                <div class="nama-ttd"> {{ $item->user->instruktur->name ?? '-' }} </div>
+            @endif
         </div>
     </div>
     <div style="clear:both;"></div>

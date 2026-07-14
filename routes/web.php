@@ -173,55 +173,59 @@ Route::delete('/evaluasi/penilaian/{nilai}', [EvaluasiController::class, 'destro
     });
 
     // ============================================================
-    // 2. GURU PEMBIMBING
-    // ============================================================
-    Route::middleware(['role:guru_pembimbing'])->prefix('guru')->name('guru.')->group(function () {
+// 2. GURU PEMBIMBING
+// ============================================================
+Route::middleware(['role:guru_pembimbing'])->prefix('guru')->name('guru.')->group(function () {
 
-        Route::get('/dashboard', function () {
-            $guruId = Auth::id();
+    Route::get('/dashboard', function () {
+        $guruId = Auth::id();
 
-            // Mengambil semua data statistik bimbingan dalam 1 kali query ke database
-            $stats = User::where('role', 'siswa_pkl')
-                ->where('guru_id', $guruId)
-                ->selectRaw("
-            COUNT(*) as bimbingan,
-            SUM(CASE WHEN status_pkl = 'aktif' THEN 1 ELSE 0 END) as aktif,
-            SUM(CASE WHEN status_pkl = 'belum' THEN 1 ELSE 0 END) as belum,
-            SUM(CASE WHEN status_pkl = 'selesai' THEN 1 ELSE 0 END) as selesai
-        ")
-                ->first();
+        $stats = User::where('role', 'siswa_pkl')
+            ->where('guru_id', $guruId)
+            ->selectRaw("
+                COUNT(*) as bimbingan,
+                SUM(CASE WHEN status_pkl = 'aktif' THEN 1 ELSE 0 END) as aktif,
+                SUM(CASE WHEN status_pkl = 'belum' THEN 1 ELSE 0 END) as belum,
+                SUM(CASE WHEN status_pkl = 'selesai' THEN 1 ELSE 0 END) as selesai
+            ")
+            ->first();
 
-            return view('guru.dashboard', [
-                'siswaBimbingan' => $stats->bimbingan ?? 0,
-                'siswaAktif'     => $stats->aktif ?? 0,
-                'siswaBelum'     => $stats->belum ?? 0,
-                'siswaSelesai'   => $stats->selesai ?? 0,
-            ]);
-        })->name('dashboard');
+        return view('guru.dashboard', [
+            'siswaBimbingan' => $stats->bimbingan ?? 0,
+            'siswaAktif'     => $stats->aktif ?? 0,
+            'siswaBelum'     => $stats->belum ?? 0,
+            'siswaSelesai'   => $stats->selesai ?? 0,
+        ]);
+    })->name('dashboard');
 
-        Route::get('/siswa', [GuruController::class, 'index'])->name('siswa.index');
-       
+    Route::get('/siswa', [GuruController::class, 'index'])->name('siswa.index');
 
-        // ---- MONITORING (dipisah: Jurnal & Absensi) ----
-        Route::get('/monitoring/jurnal', [GuruController::class, 'monitoringJurnal'])->name('monitoring.jurnal');
-        Route::get('/monitoring/absensi', [GuruController::class, 'monitoringAbsensi'])->name('monitoring.absensi');
+    // ---- MONITORING + VALIDASI JURNAL ----
+    Route::get('/monitoring/jurnal', [GuruController::class, 'monitoringJurnal'])->name('monitoring.jurnal');
+    Route::put('/monitoring/jurnal/{id}/validasi', [JurnalController::class, 'validasiByGuru'])->name('jurnal.validasi');
 
-        // Observasi (dikelola ObservasiController, bukan GuruController lagi)
-Route::get('/observasi', [ObservasiController::class, 'indexGuru'])->name('observasi.index');
-Route::get('/observasi/create', [ObservasiController::class, 'createGuru'])->name('observasi.create');
-Route::post('/observasi', [ObservasiController::class, 'storeGuru'])->name('observasi.store');
-Route::get('/observasi/{id}/edit', [ObservasiController::class, 'editGuru'])->name('observasi.edit');
-Route::put('/observasi/{id}', [ObservasiController::class, 'updateGuru'])->name('observasi.update');
-Route::delete('/observasi/{id}', [ObservasiController::class, 'destroyGuru'])->name('observasi.destroy');
+    // ---- MONITORING + VALIDASI ABSENSI ----
+    Route::get('/monitoring/absensi', [GuruController::class, 'monitoringAbsensi'])->name('monitoring.absensi');
+    Route::put('/monitoring/absensi/{id}/validasi', [AbsensiController::class, 'validasiByGuru'])->name('absensi.validasi');
 
-        Route::get('/catatan', [CatatanController::class, 'indexGuru'])->name('catatan.index');
-        // sebelumnya: Route::get('/nilai', [NilaiController::class, 'indexGuru'])->name('nilai.index');
-        Route::get('/nilai', [NilaiController::class, 'indexGuru'])->name('nilai.index');
-        Route::post('/nilai', [NilaiController::class, 'storeGuru'])->name('nilai.store');
+    // ---- MONITORING + VALIDASI CATATAN KEGIATAN ----
+    Route::get('/catatan', [CatatanController::class, 'indexGuru'])->name('catatan.index');
+    Route::put('/catatan/{id}/validasi', [CatatanController::class, 'validasiByGuru'])->name('catatan.validasi');
 
-        Route::get('/dokumen', [DokumenController::class, 'guruIndex'])->name('dokumen.index');
+    // Observasi (tetap dikelola ObservasiController)
+    Route::get('/observasi', [ObservasiController::class, 'indexGuru'])->name('observasi.index');
+    Route::get('/observasi/create', [ObservasiController::class, 'createGuru'])->name('observasi.create');
+    Route::post('/observasi', [ObservasiController::class, 'storeGuru'])->name('observasi.store');
+    Route::get('/observasi/{id}/edit', [ObservasiController::class, 'editGuru'])->name('observasi.edit');
+    Route::put('/observasi/{id}', [ObservasiController::class, 'updateGuru'])->name('observasi.update');
+    Route::delete('/observasi/{id}', [ObservasiController::class, 'destroyGuru'])->name('observasi.destroy');
 
-    });
+    Route::get('/nilai', [NilaiController::class, 'indexGuru'])->name('nilai.index');
+    Route::post('/nilai', [NilaiController::class, 'storeGuru'])->name('nilai.store');
+
+    Route::get('/dokumen', [DokumenController::class, 'guruIndex'])->name('dokumen.index');
+});
+
 
     // ============================================================
     // 3. SISWA PKL
@@ -255,63 +259,17 @@ Route::delete('/catatan/{id}', [CatatanController::class, 'destroySiswa'])->name
 
         // Lihat rekap kehadiran sendiri
         Route::get('/absensi', [AbsensiController::class, 'indexSiswa'])->name('absensi.index');
+        // ---- AJUKAN (submit bukti fisik) ----
+Route::put('/jurnal/{id}/ajukan',  [JurnalController::class, 'ajukanSiswa'])->name('jurnal.ajukan');
+Route::put('/catatan/{id}/ajukan', [CatatanController::class, 'ajukanSiswa'])->name('catatan.ajukan');
+
+// Absensi: siswa mengelola & mengajukan absensinya sendiri
+Route::post('/absensi',            [AbsensiController::class, 'storeSiswa'])->name('absensi.store');
+Route::put('/absensi/{id}/ajukan', [AbsensiController::class, 'ajukanSiswa'])->name('absensi.ajukan');
 
     });
 
-    // ============================================================
-    // 4. INSTRUKTUR INDUSTRI
-    // ============================================================
-    Route::middleware(['role:instruktur_industri'])->prefix('instruktur')->name('instruktur.')->group(function () {
-
-        Route::get('/dashboard', function () {
-            $instrukturId = Auth::id();
-
-            // Mengambil statistik siswa dan jumlah jurnal pending dalam 1 query terpadu
-            $stats = User::where('role', 'siswa_pkl')
-                ->where('instruktur_id', $instrukturId)
-                ->leftJoin('jurnals', function ($join) {
-                    $join->on('users.id', '=', 'jurnals.siswa_id')
-                        ->where('jurnals.status_persetujuan', '=', 'pending');
-                })
-                ->selectRaw("
-            COUNT(DISTINCT users.id) as bimbingan,
-            COUNT(DISTINCT CASE WHEN users.status_pkl = 'aktif' THEN users.id END) as aktif,
-            COUNT(DISTINCT CASE WHEN users.status_pkl = 'belum' THEN users.id END) as belum,
-            COUNT(DISTINCT CASE WHEN users.status_pkl = 'selesai' THEN users.id END) as selesai,
-            COUNT(jurnals.id) as pending
-        ")
-                ->first();
-
-            return view('instruktur.dashboard', [
-                'siswaBimbingan' => $stats->bimbingan ?? 0,
-                'siswaAktif'     => $stats->aktif ?? 0,
-                'siswaBelum'     => $stats->belum ?? 0,
-                'siswaSelesai'   => $stats->selesai ?? 0,
-                'jurnalPending'  => $stats->pending ?? 0,
-            ]);
-        })->name('dashboard');
-
-        Route::get('/siswa', [InstrukturController::class, 'monitoringSiswa'])->name('siswa.index');
-
-        Route::get('/jurnal', [JurnalController::class, 'indexInstruktur'])->name('jurnal.index');
-        Route::put('/jurnal/{id}/update', [JurnalController::class, 'updateInstruktur'])->name('jurnal.update');
-
-        Route::get('/absensi', [AbsensiController::class, 'indexInstruktur'])->name('absensi.index');
-        Route::post('/absensi', [AbsensiController::class, 'storeInstruktur'])->name('absensi.store');
-
-       Route::get('/catatan', [CatatanController::class, 'indexInstruktur'])->name('catatan.index');
-Route::put('/catatan/{id}/approve', [CatatanController::class, 'approveInstruktur'])->name('catatan.approve');
-Route::put('/catatan/{id}/batal', [CatatanController::class, 'batalApproveInstruktur'])->name('catatan.batal');
-Route::put('/catatan/{id}/komentar', [CatatanController::class, 'komentarInstruktur'])->name('catatan.komentar');
-
-       Route::get('/observasi', [ObservasiController::class, 'indexInstruktur'])->name('observasi.index');
-Route::put('/observasi/{id}/approve', [ObservasiController::class, 'approveInstruktur'])->name('observasi.approve');
-Route::put('/observasi/{id}/batal', [ObservasiController::class, 'batalApproveInstruktur'])->name('observasi.batal');
-
-        Route::get('/nilai', [NilaiController::class, 'indexInstruktur'])->name('nilai.index');
-        Route::get('/nilai/create', [NilaiController::class, 'createInstruktur'])->name('nilai.create');
-        Route::post('/nilai', [NilaiController::class, 'storeInstruktur'])->name('nilai.store');
-    });
+   
 
 });
 

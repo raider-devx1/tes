@@ -32,41 +32,41 @@ class JurnalController extends Controller
     }
 
     public function storeSiswa(Request $request)
-    {
-        $validated = $request->validate([
-            'hari_tanggal'        => 'required|date',
-            'items'               => 'required|array|min:1',
-            'items.*.unit_kerja'  => 'required|string',
-            'items.*.dokumentasi' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
-        ], [
-            'items.required'              => 'Minimal harus ada 1 pekerjaan / unit kerja.',
-            'items.min'                   => 'Minimal harus ada 1 pekerjaan / unit kerja.',
-            'items.*.unit_kerja.required' => 'Unit kerja / pekerjaan wajib diisi pada setiap poin.',
+{
+    $validated = $request->validate([
+        'hari_tanggal'        => 'required|date',
+        'items'               => 'required|array|min:1',
+        'items.*.unit_kerja'  => 'required|string',
+        'items.*.dokumentasi' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+    ], [
+        'items.required'              => 'Minimal harus ada 1 pekerjaan / unit kerja.',
+        'items.min'                   => 'Minimal harus ada 1 pekerjaan / unit kerja.',
+        'items.*.unit_kerja.required' => 'Unit kerja / pekerjaan wajib diisi pada setiap poin.',
+    ]);
+
+    DB::transaction(function () use ($request, $validated) {
+        $jurnal = Jurnal::create([
+            'siswa_id'     => Auth::id(),
+            'hari_tanggal' => $validated['hari_tanggal'],
+            'status'       => 'draft', // <-- alur baru: draft dulu, boleh langsung cetak draf PDF
         ]);
 
-        DB::transaction(function () use ($request, $validated) {
-            $jurnal = Jurnal::create([
-                'siswa_id'           => Auth::id(),
-                'hari_tanggal'       => $validated['hari_tanggal'],
-                'status_persetujuan' => 'pending',
-            ]);
-
-            foreach ($request->input('items', []) as $i => $item) {
-                $path = null;
-                if ($request->hasFile("items.$i.dokumentasi")) {
-                    $path = $request->file("items.$i.dokumentasi")->store('dokumentasi_jurnal', 'public');
-                }
-
-                $jurnal->items()->create([
-                    'unit_kerja'  => $item['unit_kerja'],
-                    'dokumentasi' => $path,
-                ]);
+        foreach ($request->input('items', []) as $i => $item) {
+            $path = null;
+            if ($request->hasFile("items.$i.dokumentasi")) {
+                $path = $request->file("items.$i.dokumentasi")->store('dokumentasi_jurnal', 'public');
             }
-        });
 
-        return redirect()->route('siswa.jurnal.index')
-            ->with('success', 'Jurnal harian berhasil ditambahkan!');
-    }
+            $jurnal->items()->create([
+                'unit_kerja'  => $item['unit_kerja'],
+                'dokumentasi' => $path,
+            ]);
+        }
+    });
+
+    return redirect()->route('siswa.jurnal.index')
+        ->with('success', 'Jurnal harian berhasil dibuat (status: draft). Silakan cetak draf, minta paraf instruktur, lalu ajukan.');
+}
 
     public function editSiswa($id)
     {
@@ -94,13 +94,13 @@ class JurnalController extends Controller
         ]);
 
         DB::transaction(function () use ($request, $validated, $jurnal) {
-            // Setelah diedit: status kembali "pending" dan perlu disetujui ulang
-            $jurnal->update([
-                'hari_tanggal'       => $validated['hari_tanggal'],
-                'status_persetujuan' => 'pending',
-                'catatan_instruktur' => null,
-                'disetujui_oleh'     => null,
-            ]);
+           // Setelah diedit, kembali ke draft (harus diajukan & divalidasi ulang)
+$jurnal->update([
+    'hari_tanggal'         => $validated['hari_tanggal'],
+    'status'               => 'draft',
+    'validated_by_guru_id' => null,
+    'validated_at'         => null,
+]);
 
             $keptIds = [];
 
@@ -202,35 +202,78 @@ class JurnalController extends Controller
     return view('instruktur.jurnal.index', compact('jurnals', 'rekap'));
 }
 
-     public function updateInstruktur(Request $request, $id)
-    {
-        // Ambil jurnal beserta pemiliknya
-        $jurnal = Jurnal::with('siswa')->findOrFail($id);
+    // ===================== AJUKAN (SISWA) =====================
 
-        // Cegah IDOR: jurnal harus milik siswa bimbingan instruktur yang login & masih aktif PKL
-        abort_unless(
-            $jurnal->siswa
-                && $jurnal->siswa->instruktur_id === Auth::id()
-                && $jurnal->siswa->status_pkl === 'aktif',
-            403,
-            'Akses ditolak: jurnal ini bukan milik siswa bimbingan Anda.'
-        );
+/**
+ * Siswa mengunggah foto bukti fisik + mengetik ulang catatan instruktur.
+ * Validasi strict: foto_bukti & catatan_instruktur WAJIB. Status -> diajukan.
+ */
+public function ajukanSiswa(Request $request, $id)
+{
+    $jurnal = Jurnal::where('id', $id)->where('siswa_id', Auth::id())->firstOrFail();
 
-        // Validasi input agar status tidak bisa diisi nilai sembarang
-        $validated = $request->validate([
-            'status_persetujuan' => 'required|in:disetujui,pending,revisi',
-            'catatan_instruktur' => 'nullable|string',
-        ], [
-            'status_persetujuan.required' => 'Status persetujuan wajib dipilih.',
-            'status_persetujuan.in'       => 'Status persetujuan tidak valid.',
-        ]);
+    $validated = $request->validate([
+        'catatan_instruktur' => 'required|string',
+        'foto_bukti'         => 'required|image|mimes:jpeg,png,jpg|max:2048',
+    ], [
+        'catatan_instruktur.required' => 'Catatan/nilai dari instruktur wajib diketik ulang.',
+        'foto_bukti.required'         => 'Foto bukti fisik lembar berparaf wajib diunggah.',
+        'foto_bukti.image'            => 'File harus berupa gambar.',
+        'foto_bukti.mimes'            => 'Format foto harus jpeg, png, atau jpg.',
+        'foto_bukti.max'              => 'Ukuran foto maksimal 2MB.',
+    ]);
 
-        $jurnal->update([
-            'status_persetujuan' => $validated['status_persetujuan'],
-            'catatan_instruktur' => $validated['catatan_instruktur'] ?? null,
-            'disetujui_oleh'     => Auth::id(),
-        ]);
-
-        return redirect()->back()->with('success', 'Status Jurnal diperbarui!');
+    // Ganti foto lama bila ada
+    if ($jurnal->foto_bukti) {
+        Storage::disk('public')->delete($jurnal->foto_bukti);
     }
+    $path = $request->file('foto_bukti')->store('bukti_fisik/jurnal', 'public');
+
+    $jurnal->update([
+        'catatan_instruktur' => $validated['catatan_instruktur'],
+        'foto_bukti'         => $path,
+        'status'             => 'diajukan',
+    ]);
+
+    return redirect()->route('siswa.jurnal.index')
+        ->with('success', 'Jurnal berhasil diajukan ke Guru Pembimbing untuk divalidasi.');
+}
+
+// ===================== VALIDASI (GURU) =====================
+
+/**
+ * Guru Pembimbing memvalidasi. aksi = 'valid' -> disetujui, 'tolak' -> kembali draft.
+ */
+public function validasiByGuru(Request $request, $id)
+{
+    $jurnal = Jurnal::with('siswa')->findOrFail($id);
+
+    // Pastikan jurnal milik siswa bimbingan guru yang login
+    abort_unless(
+        $jurnal->siswa && (int) $jurnal->siswa->guru_id === (int) Auth::id(),
+        403,
+        'Akses ditolak: jurnal ini bukan milik siswa bimbingan Anda.'
+    );
+
+    $aksi = $request->input('aksi', 'valid');
+
+    if ($aksi === 'tolak') {
+        $jurnal->update([
+            'status'               => 'draft',
+            'validated_by_guru_id' => null,
+            'validated_at'         => null,
+        ]);
+
+        return redirect()->back()->with('success', 'Pengajuan ditolak. Jurnal dikembalikan ke siswa (status draft).');
+    }
+
+    $jurnal->update([
+        'status'               => 'disetujui',
+        'validated_by_guru_id' => Auth::id(),
+        'validated_at'         => now(),
+    ]);
+
+    return redirect()->back()->with('success', 'Jurnal berhasil divalidasi (disetujui).');
+}
+
 }

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\CatatanKegiatan;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -27,31 +28,30 @@ class CatatanController extends Controller
     }
 
     public function storeSiswa(Request $request)
-    {
-        $request->validate([
-            'nama_pekerjaan' => 'required|string|max:255',
-            'perencanaan_kegiatan' => 'required|string',
-            'pelaksanaan_kegiatan' => 'required|string',
-        ]);
-
-        CatatanKegiatan::create([
-            'user_id' => Auth::id(),
-            'nama_pekerjaan' => $request->nama_pekerjaan,
-            'perencanaan_kegiatan' => $request->perencanaan_kegiatan,
-            'pelaksanaan_kegiatan' => $request->pelaksanaan_kegiatan,
-        ]);
-
-        return redirect()->route('siswa.catatan.index')->with('success', 'Catatan Kegiatan berhasil ditambahkan.');
-    }
-
-    /** Form edit catatan milik siswa yang login. */
-public function editSiswa($id)
 {
-    // Pastikan hanya bisa mengedit catatan miliknya sendiri
+    $request->validate([
+        'nama_pekerjaan'       => 'required|string|max:255',
+        'perencanaan_kegiatan' => 'required|string',
+        'pelaksanaan_kegiatan' => 'required|string',
+    ]);
+
+    CatatanKegiatan::create([
+        'user_id'              => Auth::id(),
+        'nama_pekerjaan'       => $request->nama_pekerjaan,
+        'perencanaan_kegiatan' => $request->perencanaan_kegiatan,
+        'pelaksanaan_kegiatan' => $request->pelaksanaan_kegiatan,
+        'status'               => 'draft',
+    ]);
+
+    return redirect()->route('siswa.catatan.index')
+        ->with('success', 'Catatan Kegiatan berhasil dibuat (draft). Cetak draf, minta paraf instruktur, lalu ajukan.');
+}
+
+   public function editSiswa($id)
+{
     $catatan = CatatanKegiatan::where('user_id', Auth::id())->findOrFail($id);
 
-    // Catatan yang sudah disetujui instruktur tidak boleh diubah lagi
-    if ($catatan->is_approved) {
+    if ($catatan->status === 'disetujui') {
         return redirect()->route('siswa.catatan.index')
             ->with('error', 'Catatan yang sudah disetujui tidak dapat diubah.');
     }
@@ -59,12 +59,11 @@ public function editSiswa($id)
     return view('siswa.catatan.edit', compact('catatan'));
 }
 
-/** Simpan perubahan catatan milik siswa yang login. */
 public function updateSiswa(Request $request, $id)
 {
     $catatan = CatatanKegiatan::where('user_id', Auth::id())->findOrFail($id);
 
-    if ($catatan->is_approved) {
+    if ($catatan->status === 'disetujui') {
         return redirect()->route('siswa.catatan.index')
             ->with('error', 'Catatan yang sudah disetujui tidak dapat diubah.');
     }
@@ -79,20 +78,26 @@ public function updateSiswa(Request $request, $id)
         'nama_pekerjaan'       => $request->nama_pekerjaan,
         'perencanaan_kegiatan' => $request->perencanaan_kegiatan,
         'pelaksanaan_kegiatan' => $request->pelaksanaan_kegiatan,
+        'status'               => 'draft', // edit -> kembali draft
+        'validated_by_guru_id' => null,
+        'validated_at'         => null,
     ]);
 
     return redirect()->route('siswa.catatan.index')
-        ->with('success', 'Catatan Kegiatan berhasil diperbarui.');
+        ->with('success', 'Catatan Kegiatan berhasil diperbarui (status kembali draft).');
 }
 
-/** Hapus catatan milik siswa yang login. */
 public function destroySiswa($id)
 {
     $catatan = CatatanKegiatan::where('user_id', Auth::id())->findOrFail($id);
 
-    if ($catatan->is_approved) {
+    if ($catatan->status === 'disetujui') {
         return redirect()->route('siswa.catatan.index')
             ->with('error', 'Catatan yang sudah disetujui tidak dapat dihapus.');
+    }
+
+    if ($catatan->foto_bukti) {
+        \Illuminate\Support\Facades\Storage::disk('public')->delete($catatan->foto_bukti);
     }
 
     $catatan->delete();
@@ -112,10 +117,10 @@ public function indexGuru(Request $request)
     });
 
     $rekap = [
-        'total'     => (clone $rekapQuery)->count(),
-        'disetujui' => (clone $rekapQuery)->where('is_approved', true)->count(),
-        'menunggu'  => (clone $rekapQuery)->where('is_approved', false)->count(),
-    ];
+    'total'     => (clone $rekapQuery)->count(),
+    'disetujui' => (clone $rekapQuery)->where('status', 'disetujui')->count(),
+    'diajukan'  => (clone $rekapQuery)->where('status', 'diajukan')->count(),
+];
 
     $catatan = CatatanKegiatan::with('user')
         ->whereHas('user', function ($u) use ($guru_id, $request) {
@@ -141,85 +146,68 @@ public function indexGuru(Request $request)
 }
 
   
-// ====== ROLE: INSTRUKTUR INDUSTRI (menyetujui catatan) ======
-public function indexInstruktur(Request $request)
+// ===================== AJUKAN (SISWA) =====================
+public function ajukanSiswa(Request $request, $id)
 {
-    $instruktur_id = Auth::id();
+    $catatan = CatatanKegiatan::where('user_id', Auth::id())->findOrFail($id);
 
-    // Rekap seluruh catatan siswa bimbingan aktif (tidak terpengaruh filter)
-    $rekapQuery = CatatanKegiatan::whereHas('user', function ($u) use ($instruktur_id) {
-        $u->where('instruktur_id', $instruktur_id)->where('status_pkl', 'aktif');
-    });
+    $validated = $request->validate([
+        'catatan_instruktur' => 'required|string',
+        'foto_bukti'         => 'required|image|mimes:jpeg,png,jpg|max:2048',
+    ], [
+        'catatan_instruktur.required' => 'Catatan/nilai dari instruktur wajib diketik ulang.',
+        'foto_bukti.required'         => 'Foto bukti fisik lembar berparaf wajib diunggah.',
+        'foto_bukti.image'            => 'File harus berupa gambar.',
+        'foto_bukti.mimes'            => 'Format foto harus jpeg, png, atau jpg.',
+        'foto_bukti.max'              => 'Ukuran foto maksimal 2MB.',
+    ]);
 
-    $rekap = [
-        'total'     => (clone $rekapQuery)->count(),
-        'disetujui' => (clone $rekapQuery)->where('is_approved', true)->count(),
-        'menunggu'  => (clone $rekapQuery)->where('is_approved', false)->count(),
-    ];
+    if ($catatan->foto_bukti) {
+        Storage::disk('public')->delete($catatan->foto_bukti);
+    }
+    $path = $request->file('foto_bukti')->store('bukti_fisik/catatan', 'public');
 
-    $catatan = CatatanKegiatan::with('user')
-        ->whereHas('user', function ($u) use ($instruktur_id, $request) {
-            $u->where('instruktur_id', $instruktur_id)
-                ->where('status_pkl', 'aktif');
+    $catatan->update([
+        'catatan_instruktur' => $validated['catatan_instruktur'],
+        'foto_bukti'         => $path,
+        'status'             => 'diajukan',
+    ]);
 
-            if ($request->filled('q')) {
-                $q = $request->q;
-                $u->where(function ($sub) use ($q) {
-                    $sub->where('name', 'like', "%{$q}%")
-                        ->orWhere('nisn', 'like', "%{$q}%");
-                });
-            }
-        })
-        ->when($request->filled('status'), function ($query) use ($request) {
-            $query->where('is_approved', $request->status === 'disetujui');
-        })
-        ->latest()
-        ->paginate(15)
-        ->withQueryString();
-
-    return view('instruktur.catatan.index', compact('catatan', 'rekap'));
+    return redirect()->route('siswa.catatan.index')
+        ->with('success', 'Catatan Kegiatan berhasil diajukan ke Guru Pembimbing.');
 }
 
-        /** Setujui catatan (tanpa perlu mengisi catatan instruktur). */
-    public function approveInstruktur($id)
-    {
-        $catatan = CatatanKegiatan::findOrFail($id);
+// ===================== VALIDASI (GURU) =====================
+public function validasiByGuru(Request $request, $id)
+{
+    $catatan = CatatanKegiatan::with('user')->findOrFail($id);
 
-        abort_unless($catatan->user->instruktur_id === Auth::id(), 403, 'Akses ditolak.');
+    abort_unless(
+        $catatan->user && (int) $catatan->user->guru_id === (int) Auth::id(),
+        403,
+        'Akses ditolak: catatan ini bukan milik siswa bimbingan Anda.'
+    );
 
-        $catatan->update(['is_approved' => true]);
+    $aksi = $request->input('aksi', 'valid');
 
-        return redirect()->back()->with('success', 'Catatan berhasil disetujui.');
-    }
-
-    /** Batalkan persetujuan catatan (kembali ke status menunggu). */
-    public function batalApproveInstruktur($id)
-    {
-        $catatan = CatatanKegiatan::findOrFail($id);
-
-        abort_unless($catatan->user->instruktur_id === Auth::id(), 403, 'Akses ditolak.');
-
-        $catatan->update(['is_approved' => false]);
-
-        return redirect()->back()->with('success', 'Persetujuan catatan berhasil dibatalkan.');
-    }
-
-    /** Simpan / perbarui catatan instruktur (via pop-up form). */
-    public function komentarInstruktur(Request $request, $id)
-    {
-        $catatan = CatatanKegiatan::findOrFail($id);
-
-        abort_unless($catatan->user->instruktur_id === Auth::id(), 403, 'Akses ditolak.');
-
-        $validated = $request->validate([
-            'catatan_instruktur' => 'required|string',
-        ], [
-            'catatan_instruktur.required' => 'Catatan instruktur wajib diisi.',
+    if ($aksi === 'tolak') {
+        $catatan->update([
+            'status'               => 'draft',
+            'validated_by_guru_id' => null,
+            'validated_at'         => null,
         ]);
 
-        $catatan->update(['catatan_instruktur' => $validated['catatan_instruktur']]);
-
-        return redirect()->back()->with('success', 'Catatan instruktur berhasil disimpan.');
+        return redirect()->back()->with('success', 'Pengajuan ditolak. Catatan dikembalikan ke siswa (draft).');
     }
+
+    $catatan->update([
+        'status'               => 'disetujui',
+        'is_approved'          => true, // sinkron kolom lama
+        'validated_by_guru_id' => Auth::id(),
+        'validated_at'         => now(),
+    ]);
+
+    return redirect()->back()->with('success', 'Catatan Kegiatan berhasil divalidasi (disetujui).');
+}
 
 }

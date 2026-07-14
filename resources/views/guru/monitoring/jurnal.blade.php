@@ -6,36 +6,45 @@
 
             <div class="flex items-start justify-between gap-4">
                 <div>
-                    <h2 class="text-xl md:text-2xl font-bold tracking-tight text-black">Monitoring Jurnal Siswa</h2>
-                    <p class="text-sm font-medium text-[#5b616e] mt-1">Pantau jurnal kegiatan siswa bimbingan Anda (hanya-baca).</p>
+                    <h2 class="text-xl md:text-2xl font-bold tracking-tight text-black">Monitoring & Validasi Jurnal Siswa</h2>
+                    <p class="text-sm font-medium text-[#5b616e] mt-1">Pantau jurnal siswa bimbingan Anda dan lakukan validasi bukti fisik.</p>
                 </div>
                 <a href="{{ route('guru.dashboard') }}"
-           class="inline-flex items-center gap-1 rounded-xl border-2 border-[#0047d6]/25 bg-white px-4 py-2 text-sm font-bold text-[#0047d6] transition hover:bg-[#0047d6]/5">
-            Kembali ke Dashboard
-        </a>
+                   class="inline-flex items-center gap-1 rounded-xl border-2 border-[#0047d6]/25 bg-white px-4 py-2 text-sm font-bold text-[#0047d6] transition hover:bg-[#0047d6]/5">
+                    Kembali ke Dashboard
+                </a>
             </div>
 
-            {{-- ===== KARTU REKAP ===== --}}
+            @if(session('success'))
+                <div class="rounded-xl border-2 border-[#05b169] bg-[#05b169]/10 px-4 py-3 text-sm font-semibold text-black">
+                     {{ session('success') }} 
+                </div>
+            @endif
+            @if(session('error'))
+                <div class="rounded-xl border-2 border-[#cf202f] bg-[#cf202f]/10 px-4 py-3 text-sm font-semibold text-black">
+                     {{ session('error') }} 
+                </div>
+            @endif
+
             <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <div class="rounded-2xl border-2 border-[#0047d6]/15 bg-white p-5 shadow-sm">
                     <p class="text-xs font-bold uppercase tracking-wide text-[#5b616e]">Total Jurnal</p>
-                    <p class="mt-1 text-2xl font-bold text-black">{{ $rekap['total'] }}</p>
+                    <p class="mt-1 text-2xl font-bold text-black"> {{ $rekap['total'] ?? 0 }} </p>
                 </div>
                 <div class="rounded-2xl border-2 border-[#0047d6]/15 bg-white p-5 shadow-sm">
                     <p class="text-xs font-bold uppercase tracking-wide text-[#5b616e]">Disetujui</p>
-                    <p class="mt-1 text-2xl font-bold text-[#05b169]">{{ $rekap['disetujui'] }}</p>
+                    <p class="mt-1 text-2xl font-bold text-[#05b169]"> {{ $rekap['disetujui'] ?? 0 }} </p>
                 </div>
                 <div class="rounded-2xl border-2 border-[#0047d6]/15 bg-white p-5 shadow-sm">
-                    <p class="text-xs font-bold uppercase tracking-wide text-[#5b616e]">Pending</p>
-                    <p class="mt-1 text-2xl font-bold text-[#d98200]">{{ $rekap['pending'] }}</p>
+                    <p class="text-xs font-bold uppercase tracking-wide text-[#5b616e]">Diajukan</p>
+                    <p class="mt-1 text-2xl font-bold text-[#d98200]"> {{ $rekap['diajukan'] ?? 0 }} </p>
                 </div>
                 <div class="rounded-2xl border-2 border-[#0047d6]/15 bg-white p-5 shadow-sm">
-                    <p class="text-xs font-bold uppercase tracking-wide text-[#5b616e]">Revisi</p>
-                    <p class="mt-1 text-2xl font-bold text-[#cf202f]">{{ $rekap['revisi'] }}</p>
+                    <p class="text-xs font-bold uppercase tracking-wide text-[#5b616e]">Draft</p>
+                    <p class="mt-1 text-2xl font-bold text-[#5b616e]"> {{ $rekap['draft'] ?? 0 }} </p>
                 </div>
             </div>
 
-            {{-- ===== BANNER UTAMA & CETAK SEMUA PDF ===== --}}
             <div class="rounded-2xl border-2 border-[#0047d6]/15 bg-white p-4 sm:p-6 shadow-sm flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                 <div>
                     <h3 class="text-lg font-bold tracking-tight text-black">Jurnal Kegiatan Siswa Bimbingan</h3>
@@ -45,7 +54,7 @@
                     </p>
                 </div>
 
-                <a href="{{ route('cetak.jurnal.semua', ['tanggal' => request('tanggal')]) }}" target="_blank"
+                <a href="{{ route('cetak.jurnal.semua') }}" target="_blank"
                    class="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-[#0047d6] px-6 py-3.5 text-base font-bold text-white shadow-sm transition hover:bg-[#0038aa] focus:outline-none focus:ring-4 focus:ring-[#0047d6]/30 shrink-0">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2M6 14h12v8H6v-8z"/>
@@ -54,7 +63,6 @@
                 </a>
             </div>
 
-            {{-- ===== FILTER DATA ===== --}}
             <form method="GET" action="{{ route('guru.monitoring.jurnal') }}"
                   class="rounded-2xl border-2 border-[#0047d6]/15 bg-white p-5 flex flex-wrap gap-3 items-end shadow-sm">
                 <div class="flex-1 min-w-[220px]">
@@ -68,8 +76,8 @@
                             class="rounded-xl border-2 border-[#0047d6]/25 bg-white px-3 py-2.5 text-sm font-medium text-black focus:border-[#0047d6] focus:ring-2 focus:ring-[#0047d6]/30">
                         <option value="">Semua</option>
                         <option value="disetujui" @selected(request('status') === 'disetujui')>Disetujui</option>
-                        <option value="pending" @selected(request('status') === 'pending')>Pending</option>
-                        <option value="revisi" @selected(request('status') === 'revisi')>Revisi</option>
+                        <option value="diajukan" @selected(request('status') === 'diajukan')>Diajukan</option>
+                        <option value="draft" @selected(request('status') === 'draft')>Draft</option>
                     </select>
                 </div>
                 <div>
@@ -83,53 +91,52 @@
                    class="inline-flex items-center rounded-xl border-2 border-[#0047d6]/25 bg-white px-5 py-2.5 text-sm font-bold text-[#0047d6] transition hover:bg-[#0047d6]/5">Reset</a>
             </form>
 
-            {{-- ===== TABEL KONTEN MONITORING ===== --}}
             <div class="overflow-x-auto rounded-xl border-2 border-[#0047d6]/15">
-                <table class="w-full min-w-[1100px] text-sm text-left table-fixed">
+                <table class="w-full min-w-[1200px] text-sm text-left table-fixed">
                     <thead>
                         <tr class="bg-[#0047d6] text-xs uppercase tracking-wide text-white">
                             <th class="px-4 py-3 text-center w-12 font-bold">No</th>
                             <th class="px-4 py-3 font-bold w-28">Tanggal</th>
                             <th class="px-4 py-3 font-bold w-40">Nama</th>
                             <th class="px-4 py-3 font-bold w-28">NISN</th>
-                            <th class="px-4 py-3 font-bold w-[28%]">Unit Kerja</th>
-                            <th class="px-4 py-3 font-bold w-[20%]">Catatan Instruktur</th>
-                            <th class="px-4 py-3 font-bold w-36">Foto</th>
+                            <th class="px-4 py-3 font-bold w-[24%]">Unit Kerja</th>
+                            <th class="px-4 py-3 font-bold w-[18%]">Catatan Instruktur</th>
+                            <th class="px-4 py-3 font-bold w-32">Foto Kegiatan</th>
                             <th class="px-4 py-3 text-center font-bold w-28">Status</th>
+                            <th class="px-4 py-3 text-center font-bold w-40">Validasi</th>
                             <th class="px-4 py-3 text-center font-bold w-24">Cetak</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-[#0047d6]/10">
                         @forelse ($jurnals as $jurnal)
                             @php
-                                $badgeStatus = match($jurnal->status_persetujuan) {
+                                $badgeStatus = match($jurnal->status) {
                                     'disetujui' => 'bg-[#05b169] text-white',
-                                    'pending'   => 'bg-[#d98200] text-white',
-                                    'revisi'    => 'bg-[#cf202f] text-white',
+                                    'diajukan'  => 'bg-[#d98200] text-white',
+                                    'draft'     => 'bg-[#5b616e] text-white',
                                     default     => 'bg-[#5b616e] text-white',
                                 };
-                                $labelStatus = match($jurnal->status_persetujuan) {
+                                $labelStatus = match($jurnal->status) {
                                     'disetujui' => 'Disetujui',
-                                    'pending'   => 'Menunggu',
-                                    'revisi'    => 'Revisi',
-                                    default     => ucfirst($jurnal->status_persetujuan),
+                                    'diajukan'  => 'Diajukan',
+                                    'draft'     => 'Draft',
+                                    default     => ucfirst((string) $jurnal->status),
                                 };
                                 $items = $jurnal->items;
                                 $fotos = $jurnal->items->whereNotNull('dokumentasi')->values();
                             @endphp
                             <tr class="align-top transition hover:bg-[#0047d6]/5">
-                                <td class="px-4 py-3 text-center font-semibold text-black">{{ $jurnals->firstItem() + $loop->index }}</td>
-                                <td class="px-4 py-3 whitespace-nowrap font-medium text-black">{{ \Carbon\Carbon::parse($jurnal->hari_tanggal)->translatedFormat('d M Y') }}</td>
-                                <td class="px-4 py-3 font-bold text-black break-words">{{ $jurnal->siswa->name ?? '-' }}</td>
-                                <td class="px-4 py-3 whitespace-nowrap font-medium text-black">{{ $jurnal->siswa->nisn ?? '-' }}</td>
+                                <td class="px-4 py-3 text-center font-semibold text-black"> {{ $jurnals->firstItem() + $loop->index }} </td>
+                                <td class="px-4 py-3 whitespace-nowrap font-medium text-black"> {{ $jurnal->hari_tanggal->format('d/m/Y') }} </td>
+                                <td class="px-4 py-3 font-bold text-black break-words"> {{ $jurnal->siswa->name ?? '-' }} </td>
+                                <td class="px-4 py-3 whitespace-nowrap font-medium text-black"> {{ $jurnal->siswa->nisn ?? '-' }} </td>
 
-                                {{-- Unit Kerja (tampil 1, sisanya bisa dibuka) --}}
                                 <td class="px-4 py-3 text-black break-words">
                                     @if($items->count())
                                         <div x-data="{ open: false }">
                                             <div class="flex items-start gap-1.5">
                                                 <span class="font-bold text-[#0047d6]">1.</span>
-                                                <span class="font-medium break-words">{{ $items->first()->unit_kerja ?? '-' }}</span>
+                                                <span class="font-medium break-words"> {{ $items->first()->unit_kerja }} </span>
                                             </div>
 
                                             @if($items->count() > 1)
@@ -147,7 +154,7 @@
                                                 <ol start="2" x-show="open" x-cloak x-transition
                                                     class="mt-2 list-decimal list-inside space-y-0.5 border-t border-[#0047d6]/15 pt-2 font-medium">
                                                     @foreach($items->slice(1) as $it)
-                                                        <li class="break-words">{{ $it->unit_kerja }}</li>
+                                                        <li class="break-words"> {{ $it->unit_kerja }} </li>
                                                     @endforeach
                                                 </ol>
                                             @endif
@@ -157,32 +164,25 @@
                                     @endif
                                 </td>
 
-                                {{-- Catatan Instruktur --}}
                                 <td class="px-4 py-3 text-black break-words">
                                     @if($jurnal->catatan_instruktur)
                                         <div class="rounded-lg border-l-4 border-[#d98200] bg-[#d98200]/5 p-2 text-xs font-medium italic text-black">
-                                             {{ $jurnal->catatan_instruktur }}
+                                             {{ $jurnal->catatan_instruktur }} 
                                         </div>
                                     @else
                                         <span class="text-[#5b616e]">-</span>
                                     @endif
                                 </td>
 
-                                {{-- Foto Lampiran --}}
                                 <td class="px-4 py-3 text-center">
                                     @if($fotos->count())
                                         <div class="flex flex-col gap-1.5">
                                             @foreach($fotos as $k => $it)
                                                 <div class="flex flex-wrap items-center justify-center gap-1.5">
-                                                    <span class="text-xs font-semibold text-black">Foto {{ $k + 1 }}</span>
+                                                    <span class="text-xs font-semibold text-black">Foto {{ $k + 1 }} </span>
                                                     <a href="{{ asset('storage/'.$it->dokumentasi) }}" target="_blank"
                                                        class="inline-flex items-center rounded-full bg-[#0047d6] px-2.5 py-1 text-xs font-bold text-white transition hover:bg-[#0038aa]">
                                                         Lihat
-                                                    </a>
-                                                    <a href="{{ asset('storage/'.$it->dokumentasi) }}"
-                                                       download="Foto_Jurnal_{{ Str::slug($jurnal->siswa->name ?? 'siswa') }}_{{ $k + 1 }}"
-                                                       class="inline-flex items-center rounded-full bg-[#05b169] px-2.5 py-1 text-xs font-bold text-white transition hover:bg-[#049a5b]">
-                                                        Download
                                                     </a>
                                                 </div>
                                             @endforeach
@@ -193,25 +193,103 @@
                                 </td>
 
                                 <td class="px-4 py-3 text-center">
-                                    <span class="inline-block rounded-full px-3 py-1 text-xs font-bold {{ $badgeStatus }}">{{ $labelStatus }}</span>
+                                    <span class="inline-block rounded-full px-3 py-1 text-xs font-bold {{ $badgeStatus }}"> {{ $labelStatus }} </span>
                                 </td>
 
-                                {{-- Cetak baris tunggal --}}
                                 <td class="px-4 py-3 text-center">
-                                    <a href="{{ route('cetak.jurnal', ['siswa_id' => $jurnal->siswa_id, 'jurnal_id' => $jurnal->id]) }}" target="_blank"
+                                    <div x-data="{ openBukti: false }" class="inline">
+                                        @if($jurnal->status === 'diajukan')
+                                            <button type="button" @click="openBukti = true"
+                                                    class="inline-flex items-center rounded-full bg-[#0047d6] px-3 py-1.5 text-xs font-bold text-white transition hover:bg-[#0038aa]">
+                                                Lihat Bukti Fisik
+                                            </button>
+                                        @elseif($jurnal->status === 'disetujui')
+                                            <span class="inline-flex items-center rounded-full bg-[#05b169]/10 px-3 py-1.5 text-xs font-bold text-[#05b169]">
+                                                Tervalidasi
+                                            </span>
+                                            @if($jurnal->foto_bukti)
+                                                <button type="button" @click="openBukti = true"
+                                                        class="mt-1 block mx-auto text-[11px] font-bold text-[#0047d6] hover:underline">
+                                                    Lihat Bukti
+                                                </button>
+                                            @endif
+                                        @else
+                                            <span class="text-xs font-medium text-[#5b616e]">Belum diajukan</span>
+                                        @endif
+
+                                        <div x-show="openBukti" x-cloak
+                                             class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+                                             @keydown.escape.window="openBukti = false">
+                                            <div class="w-full max-w-2xl rounded-2xl bg-white shadow-xl text-left"
+                                                 @click.outside="openBukti = false">
+
+                                                <div class="flex items-center justify-between border-b-2 border-[#0047d6]/15 px-5 py-3">
+                                                    <h3 class="text-base font-bold text-black">
+                                                        Bukti Fisik — {{ $jurnal->siswa->name ?? '-' }} 
+                                                        ({{ $jurnal->hari_tanggal->format('d/m/Y') }})
+                                                    </h3>
+                                                    <button type="button" @click="openBukti = false"
+                                                            class="text-2xl leading-none text-[#5b616e] hover:text-black">&times;</button>
+                                                </div>
+
+                                                <div class="max-h-[70vh] overflow-y-auto p-5">
+                                                    @if($jurnal->foto_bukti)
+                                                        <img src="{{ asset('storage/'.$jurnal->foto_bukti) }}"
+                                                             alt="Bukti fisik jurnal"
+                                                             class="mx-auto max-h-[55vh] rounded-xl border-2 border-[#0047d6]/15 object-contain">
+                                                    @else
+                                                        <p class="text-center text-sm font-medium text-[#5b616e]">Tidak ada foto bukti.</p>
+                                                    @endif
+
+                                                    @if($jurnal->catatan_instruktur)
+                                                        <div class="mt-4 rounded-lg border-l-4 border-[#d98200] bg-[#d98200]/5 p-3">
+                                                            <p class="text-xs font-bold uppercase tracking-wide text-[#5b616e]">Catatan Instruktur</p>
+                                                            <p class="text-sm font-medium text-black"> {{ $jurnal->catatan_instruktur }} </p>
+                                                        </div>
+                                                    @endif
+                                                </div>
+
+                                                @if($jurnal->status === 'diajukan')
+                                                    <div class="flex justify-end gap-2 border-t-2 border-[#0047d6]/15 px-5 py-3">
+                                                        <form action="{{ route('guru.jurnal.validasi', $jurnal->id) }}" method="POST">
+                                                            @csrf
+                                                            @method('PUT')
+                                                            <input type="hidden" name="aksi" value="tolak">
+                                                            <button type="submit"
+                                                                class="rounded-xl bg-[#cf202f]/10 px-4 py-2 text-sm font-bold text-[#cf202f] hover:bg-[#cf202f]/20">
+                                                                Tolak
+                                                            </button>
+                                                        </form>
+                                                        <form action="{{ route('guru.jurnal.validasi', $jurnal->id) }}" method="POST">
+                                                            @csrf
+                                                            @method('PUT')
+                                                            <input type="hidden" name="aksi" value="valid">
+                                                            <button type="submit"
+                                                                class="rounded-xl bg-[#05b169] px-5 py-2 text-sm font-bold text-white hover:bg-[#049a5b]">
+                                                                Valid
+                                                            </button>
+                                                        </form>
+                                                    </div>
+                                                @endif
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+
+                                <td class="px-4 py-3 text-center">
+                                    <a href="{{ route('cetak.jurnal', $jurnal->siswa_id) }}" target="_blank"
                                        class="inline-flex items-center rounded-full bg-[#0047d6] px-3 py-1.5 text-xs font-bold text-white transition hover:bg-[#0038aa]">PDF</a>
                                 </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="9" class="px-4 py-8 text-center font-medium text-[#5b616e] italic">Tidak ada data jurnal.</td>
+                                <td colspan="10" class="px-4 py-8 text-center font-medium text-[#5b616e] italic">Tidak ada data jurnal.</td>
                             </tr>
                         @endforelse
                     </tbody>
                 </table>
             </div>
 
-            {{-- ===== PAGINATION ===== --}}
             <div>
                 {!! $jurnals->links() !!}
             </div>
