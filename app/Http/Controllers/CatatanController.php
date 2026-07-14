@@ -10,10 +10,10 @@ use Illuminate\Support\Facades\Auth;
 class CatatanController extends Controller
 {
     // ====== ROLE: SISWA PKL (mengisi catatan) ======
-  public function indexSiswa(Request $request)
+ public function indexSiswa(Request $request)
 {
     $catatan = CatatanKegiatan::where('user_id', Auth::id())
-        ->when($request->filled('status'), fn ($q) => $q->where('is_approved', $request->status === 'disetujui'))
+        ->when($request->filled('status'), fn ($q) => $q->where('status', $request->status))
         ->when($request->filled('tanggal'), fn ($q) => $q->whereDate('created_at', $request->tanggal))
         ->latest()
         ->paginate(15)
@@ -111,16 +111,17 @@ public function indexGuru(Request $request)
 {
     $guru_id = Auth::id();
 
-    // Query dasar: semua catatan milik siswa bimbingan guru ini (untuk rekap)
+    // Rekap seluruh catatan siswa bimbingan aktif (tidak terpengaruh filter)
     $rekapQuery = CatatanKegiatan::whereHas('user', function ($u) use ($guru_id) {
         $u->where('guru_id', $guru_id)->where('status_pkl', 'aktif');
     });
 
     $rekap = [
-    'total'     => (clone $rekapQuery)->count(),
-    'disetujui' => (clone $rekapQuery)->where('status', 'disetujui')->count(),
-    'diajukan'  => (clone $rekapQuery)->where('status', 'diajukan')->count(),
-];
+        'total'     => (clone $rekapQuery)->count(),
+        'disetujui' => (clone $rekapQuery)->where('status', 'disetujui')->count(),
+        'diajukan'  => (clone $rekapQuery)->where('status', 'diajukan')->count(),
+        'draft'     => (clone $rekapQuery)->where('status', 'draft')->count(),
+    ];
 
     $catatan = CatatanKegiatan::with('user')
         ->whereHas('user', function ($u) use ($guru_id, $request) {
@@ -135,9 +136,7 @@ public function indexGuru(Request $request)
                 });
             }
         })
-        ->when($request->filled('status'), function ($query) use ($request) {
-            $query->where('is_approved', $request->status === 'disetujui');
-        })
+        ->when($request->filled('status'), fn ($query) => $query->where('status', $request->status))
         ->latest()
         ->paginate(15)
         ->withQueryString();

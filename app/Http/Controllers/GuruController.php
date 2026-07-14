@@ -68,7 +68,7 @@ public function index(Request $request)
         ->where('status_pkl', 'aktif')
         ->pluck('id');
 
-    $jurnals = Jurnal::with(['siswa', 'items'])   // ⬅️ tambahkan 'items' agar unit kerja & foto tampil
+    $jurnals = Jurnal::with(['siswa', 'items'])
         ->whereIn('siswa_id', $siswaIds)
         ->when($request->filled('q'), function ($query) use ($request) {
             $q = $request->q;
@@ -77,7 +77,7 @@ public function index(Request $request)
                   ->orWhere('nisn', 'like', "%{$q}%");
             });
         })
-        ->when($request->filled('status'), fn ($query) => $query->where('status_persetujuan', $request->status))
+        ->when($request->filled('status'), fn ($query) => $query->where('status', $request->status))
         ->when($request->filled('tanggal'), fn ($query) => $query->whereDate('hari_tanggal', $request->tanggal))
         ->orderByDesc('hari_tanggal')
         ->paginate(15)
@@ -85,9 +85,9 @@ public function index(Request $request)
 
     $rekap = [
         'total'     => Jurnal::whereIn('siswa_id', $siswaIds)->count(),
-        'disetujui' => Jurnal::whereIn('siswa_id', $siswaIds)->where('status_persetujuan', 'disetujui')->count(),
-        'pending'   => Jurnal::whereIn('siswa_id', $siswaIds)->where('status_persetujuan', 'pending')->count(),
-        'revisi'    => Jurnal::whereIn('siswa_id', $siswaIds)->where('status_persetujuan', 'revisi')->count(),
+        'disetujui' => Jurnal::whereIn('siswa_id', $siswaIds)->where('status', 'disetujui')->count(),
+        'diajukan'  => Jurnal::whereIn('siswa_id', $siswaIds)->where('status', 'diajukan')->count(),
+        'draft'     => Jurnal::whereIn('siswa_id', $siswaIds)->where('status', 'draft')->count(),
     ];
 
     $siswas = User::where('role', 'siswa_pkl')->where('guru_id', Auth::id())->where('status_pkl', 'aktif')->orderBy('name')->get();

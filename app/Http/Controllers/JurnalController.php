@@ -14,17 +14,17 @@ class JurnalController extends Controller
     // ============================ SISWA ============================
 
     public function indexSiswa(Request $request)
-    {
-        $jurnals = Jurnal::where('siswa_id', Auth::id())
-            ->with('items')
-            ->when($request->filled('status'), fn ($q) => $q->where('status_persetujuan', $request->status))
-            ->when($request->filled('tanggal'), fn ($q) => $q->whereDate('hari_tanggal', $request->tanggal))
-            ->orderBy('hari_tanggal', 'desc')
-            ->paginate(15)
-            ->withQueryString();
+{
+    $jurnals = Jurnal::where('siswa_id', Auth::id())
+        ->with('items')
+        ->when($request->filled('status'), fn ($q) => $q->where('status', $request->status))
+        ->when($request->filled('tanggal'), fn ($q) => $q->whereDate('hari_tanggal', $request->tanggal))
+        ->orderBy('hari_tanggal', 'desc')
+        ->paginate(15)
+        ->withQueryString();
 
-        return view('siswa.jurnal.index', compact('jurnals'));
-    }
+    return view('siswa.jurnal.index', compact('jurnals'));
+}
 
     public function createSiswa()
     {

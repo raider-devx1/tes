@@ -89,17 +89,13 @@
                         @endif
                     </td>
                     <td> {{ $row->catatan_instruktur ?? '-' }} </td>
-
                     <td>
                         @if($row->status === 'disetujui')
                             <div class="verified">
                                 <span class="verified-title">DISETUJUI OLEH INSTRUKTUR</span>
                                 TERVERIFIKASI SISTEM
                                 <span class="verified-sub">
-                                    (Divalidasi oleh Guru Pembimbing
-                                    @if($row->validated_at)
-                                        pada {{ \Carbon\Carbon::parse($row->validated_at)->locale('id')->translatedFormat('d F Y') }} 
-                                    @endif)
+                                    (Divalidasi oleh Guru Pembimbing @if($row->validated_at) pada {{ \Carbon\Carbon::parse($row->validated_at)->locale('id')->translatedFormat('d F Y') }} @endif)
                                 </span>
                             </div>
                         @else
