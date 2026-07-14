@@ -97,7 +97,7 @@
                 <div class="verified">
                     <span class="verified-title">DISETUJUI OLEH INSTRUKTUR - TERVERIFIKASI SISTEM</span>
                     <span class="verified-sub">
-                        (Divalidasi oleh Guru Pembimbing@if($item->validated_at) pada {{ \Carbon\Carbon::parse($item->validated_at)->locale('id')->translatedFormat('d F Y') }} @endif)
+                        (Divalidasi oleh Guru Pembimbing @if($item->validated_at) pada {{ \Carbon\Carbon::parse($item->validated_at)->locale('id')->translatedFormat('d F Y') }} @endif)
                     </span>
                 </div>
                 <div class="nama-ttd-verified"> {{ $item->user->instruktur->name ?? '-' }} </div>
