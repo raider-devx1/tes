@@ -4,11 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\Perusahaan;
 use App\Models\User;
-use App\Models\PeriodePkl;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
 
 class InstrukturController extends Controller
@@ -34,7 +32,6 @@ class InstrukturController extends Controller
     {
         $q = trim((string) $request->get('q', ''));
 
-        // ---- Kartu informasi ----
         $totalInstruktur = User::where('role', 'instruktur_industri')->count();
         $totalIndustri   = Perusahaan::count();
 
@@ -70,7 +67,6 @@ class InstrukturController extends Controller
 
     public function create()
     {
-        // Tidak perlu daftar perusahaan lagi — diketik langsung.
         return view('admin.instruktur.create', ['instruktur' => new User()]);
     }
 
@@ -79,15 +75,13 @@ class InstrukturController extends Controller
         $data = $this->validateData($request);
 
         DB::transaction(function () use ($data) {
-            // 1) Buat data industri (kuota memakai default 0 dari DB)
             $perusahaan = Perusahaan::create([
                 'nama_perusahaan'     => $data['nama_perusahaan'],
                 'alamat'              => $data['alamat'],
                 'telepon'             => $data['telepon'] ?? null,
-                'pembimbing_industri' => $data['name'], // = nama instruktur
+                'pembimbing_industri' => $data['name'],
             ]);
 
-            // 2) Buat akun instruktur & tautkan ke industri
             User::create([
                 'name'          => $data['name'],
                 'email'         => $data['email'],
@@ -121,7 +115,6 @@ class InstrukturController extends Controller
                 'pembimbing_industri' => $data['name'],
             ];
 
-            // Perbarui industri tertaut; buat baru bila belum ada
             if ($instruktur->perusahaan) {
                 $instruktur->perusahaan->update($perusahaanData);
                 $perusahaanId = $instruktur->perusahaan->id;
@@ -152,8 +145,6 @@ class InstrukturController extends Controller
         $perusahaan = $instruktur->perusahaan;
         $instruktur->delete();
 
-        // Hapus industri tertaut hanya jika tidak dipakai siswa
-        // maupun instruktur lain (mencegah data yatim).
         if ($perusahaan
             && !$perusahaan->siswa()->exists()
             && !User::where('perusahaan_id', $perusahaan->id)->exists()) {
@@ -162,39 +153,4 @@ class InstrukturController extends Controller
 
         return back()->with('success', 'Akun instruktur industri berhasil dihapus.');
     }
-
-    /** Ruang Monitoring & Daftar Siswa bimbingan industri (instruktur yang login). */
-   /** Ruang Monitoring & Daftar Siswa bimbingan industri (instruktur yang login). */
-public function monitoringSiswa(Request $request)
-{
-    $query = User::where('role', 'siswa_pkl')
-        ->where('instruktur_id', Auth::id())
-        ->where('status_pkl', 'aktif') // hanya siswa yang sedang aktif PKL
-        ->with(['guru', 'perusahaan']);
-
-    // Filter pencarian teks
-    if ($request->filled('q')) {
-        $q = $request->q;
-        $query->where(function ($sub) use ($q) {
-            $sub->where('name', 'like', "%{$q}%")
-                ->orWhere('nisn', 'like', "%{$q}%")
-                ->orWhere('kelas', 'like', "%{$q}%")
-                ->orWhere('jurusan', 'like', "%{$q}%");
-        });
-    }
-
-    $siswas = $query->orderBy('name')->paginate(15)->withQueryString();
-
-    // ---- Kartu informasi (seluruh siswa bimbingan, tidak terpengaruh filter) ----
-    $rekapQuery = User::where('role', 'siswa_pkl')->where('instruktur_id', Auth::id());
-
-    $rekap = [
-        'total'   => (clone $rekapQuery)->count(),
-        'aktif'   => (clone $rekapQuery)->where('status_pkl', 'aktif')->count(),
-        'belum'   => (clone $rekapQuery)->where('status_pkl', 'belum')->count(),
-        'selesai' => (clone $rekapQuery)->where('status_pkl', 'selesai')->count(),
-    ];
-
-    return view('instruktur.siswa.index', compact('siswas', 'rekap'));
-}
 }

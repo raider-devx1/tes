@@ -40,9 +40,7 @@ Route::middleware(['auth', 'verified'])->get('/dashboard', function () {
     if ($role === 'siswa_pkl') {
         return redirect()->route('siswa.dashboard');
     }
-    if ($role === 'instruktur_industri') {
-        return redirect()->route('instruktur.dashboard');
-    }
+   
 
     return abort(403);
 })->name('dashboard');
