@@ -7,6 +7,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class ObservasiController extends Controller
 {
@@ -18,31 +19,27 @@ class ObservasiController extends Controller
 
     public function indexGuru(Request $request)
     {
-        $q      = trim($request->get('q', ''));
-        $status = $request->get('status'); // '1' = disetujui, '0' = menunggu
+        $q = trim($request->get('q', ''));
 
-        $rekapQuery = Observasi::where('guru_id', Auth::id())
+        $baseQuery = Observasi::where('guru_id', Auth::id())
             ->whereHas('user', fn ($u) => $u->where('status_pkl', 'aktif'));
 
         $rekap = [
-            'total'     => (clone $rekapQuery)->count(),
-            'disetujui' => (clone $rekapQuery)->where('is_approved', true)->count(),
-            'menunggu'  => (clone $rekapQuery)->where('is_approved', false)->count(),
+            'total'       => (clone $baseQuery)->count(),
+            'draft'       => (clone $baseQuery)->where('status', 'draft')->count(),
+            'tervalidasi' => (clone $baseQuery)->where('status', 'tervalidasi')->count(),
         ];
 
-        $observasi = Observasi::where('guru_id', Auth::id())
-            ->whereHas('user', fn ($u) => $u->where('status_pkl', 'aktif'))
+        $observasi = (clone $baseQuery)
             ->with(['user', 'items'])
             ->when($q, fn ($query) => $query->whereHas('user', fn ($u) =>
                 $u->where('name', 'like', "%{$q}%")
                   ->orWhere('nisn', 'like', "%{$q}%")))
-            ->when($status !== null && $status !== '', fn ($query) =>
-                $query->where('is_approved', $status === '1'))
             ->latest()
             ->paginate(15)
             ->withQueryString();
 
-        return view('guru.observasi.index', compact('observasi', 'q', 'status', 'rekap'));
+        return view('guru.observasi.index', compact('observasi', 'q', 'rekap'));
     }
 
     public function createGuru()
@@ -56,6 +53,11 @@ class ObservasiController extends Controller
         return view('guru.observasi.create', compact('siswas'));
     }
 
+    /**
+     * Guru membuat lembar observasi baru.
+     * Alur baru: cukup isi permasalahan & solusi -> tersimpan sebagai DRAFT.
+     * Foto dokumentasi & foto lembar berparaf diunggah nanti pada tahap validasi.
+     */
     public function storeGuru(Request $request)
     {
         $validated = $request->validate([
@@ -81,7 +83,7 @@ class ObservasiController extends Controller
                 'guru_id'          => Auth::id(),
                 'hari_tanggal'     => $validated['hari_tanggal'],
                 'pekerjaan_projek' => $validated['pekerjaan_projek'] ?? null,
-                'is_approved'      => false,
+                'status'           => 'draft',
             ]);
 
             foreach ($validated['items'] as $item) {
@@ -93,7 +95,7 @@ class ObservasiController extends Controller
         });
 
         return redirect()->route('guru.observasi.index')
-            ->with('success', 'Data observasi berhasil disimpan.');
+            ->with('success', 'Lembar observasi berhasil dibuat (status: draft). Silakan cetak draf, minta paraf instruktur & guru pembimbing, lalu lakukan validasi.');
     }
 
     public function editGuru($id)
@@ -111,6 +113,11 @@ class ObservasiController extends Controller
         return view('guru.observasi.edit', compact('observasi', 'siswas'));
     }
 
+    /**
+     * Guru mengubah isi lembar observasi.
+     * Karena isinya berubah, status dikembalikan ke DRAFT & validasi lama dibatalkan
+     * (harus dicetak & divalidasi ulang).
+     */
     public function updateGuru(Request $request, $id)
     {
         $observasi = Observasi::where('id', $id)
@@ -136,9 +143,12 @@ class ObservasiController extends Controller
 
         DB::transaction(function () use ($observasi, $validated, $siswa) {
             $observasi->update([
-                'user_id'          => $siswa->id,
-                'hari_tanggal'     => $validated['hari_tanggal'],
-                'pekerjaan_projek' => $validated['pekerjaan_projek'] ?? null,
+                'user_id'              => $siswa->id,
+                'hari_tanggal'         => $validated['hari_tanggal'],
+                'pekerjaan_projek'     => $validated['pekerjaan_projek'] ?? null,
+                'status'               => 'draft',
+                'validated_by_guru_id' => null,
+                'validated_at'         => null,
             ]);
 
             $observasi->items()->delete();
@@ -151,7 +161,56 @@ class ObservasiController extends Controller
         });
 
         return redirect()->route('guru.observasi.index')
-            ->with('success', 'Data observasi berhasil diperbarui.');
+            ->with('success', 'Lembar observasi diperbarui. Status kembali ke draft dan perlu divalidasi ulang.');
+    }
+
+    /**
+     * VALIDASI oleh Guru Pembimbing.
+     * Guru mengunggah foto dokumentasi kegiatan + foto lembar observasi yang sudah
+     * diparaf instruktur & guru pembimbing. Status -> tervalidasi.
+     * Setelah ini, hasil cetak PDF menampilkan keterangan "SUDAH DIVALIDASI".
+     */
+    public function validasiGuru(Request $request, $id)
+    {
+        $observasi = Observasi::where('id', $id)
+            ->where('guru_id', Auth::id())
+            ->firstOrFail();
+
+        $request->validate([
+            'foto_dokumentasi'      => 'required|image|mimes:jpeg,png,jpg|max:2048',
+            'foto_lembar_observasi' => 'required|image|mimes:jpeg,png,jpg|max:2048',
+        ], [
+            'foto_dokumentasi.required'      => 'Foto dokumentasi kegiatan/kunjungan wajib diunggah.',
+            'foto_dokumentasi.image'         => 'Foto dokumentasi harus berupa gambar.',
+            'foto_dokumentasi.mimes'         => 'Format foto dokumentasi harus JPG, JPEG, atau PNG.',
+            'foto_dokumentasi.max'           => 'Ukuran foto dokumentasi maksimal 2 MB.',
+            'foto_lembar_observasi.required' => 'Foto lembar observasi yang sudah diparaf wajib diunggah.',
+            'foto_lembar_observasi.image'    => 'Foto lembar observasi harus berupa gambar.',
+            'foto_lembar_observasi.mimes'    => 'Format foto lembar observasi harus JPG, JPEG, atau PNG.',
+            'foto_lembar_observasi.max'      => 'Ukuran foto lembar observasi maksimal 2 MB.',
+        ]);
+
+        // Hapus foto lama bila ada (validasi ulang)
+        if ($observasi->foto_dokumentasi && Storage::disk('public')->exists($observasi->foto_dokumentasi)) {
+            Storage::disk('public')->delete($observasi->foto_dokumentasi);
+        }
+        if ($observasi->foto_lembar_observasi && Storage::disk('public')->exists($observasi->foto_lembar_observasi)) {
+            Storage::disk('public')->delete($observasi->foto_lembar_observasi);
+        }
+
+        $fotoDokumentasiPath = $request->file('foto_dokumentasi')->store('observasi/dokumentasi', 'public');
+        $fotoLembarPath      = $request->file('foto_lembar_observasi')->store('observasi/lembar', 'public');
+
+        $observasi->update([
+            'foto_dokumentasi'      => $fotoDokumentasiPath,
+            'foto_lembar_observasi' => $fotoLembarPath,
+            'status'                => 'tervalidasi',
+            'validated_by_guru_id'  => Auth::id(),
+            'validated_at'          => now(),
+        ]);
+
+        return redirect()->route('guru.observasi.index')
+            ->with('success', 'Lembar observasi berhasil divalidasi. Hasil cetak kini menampilkan keterangan "SUDAH DIVALIDASI".');
     }
 
     public function destroyGuru($id)
@@ -159,6 +218,13 @@ class ObservasiController extends Controller
         $observasi = Observasi::where('id', $id)
             ->where('guru_id', Auth::id())
             ->firstOrFail();
+
+        if ($observasi->foto_dokumentasi && Storage::disk('public')->exists($observasi->foto_dokumentasi)) {
+            Storage::disk('public')->delete($observasi->foto_dokumentasi);
+        }
+        if ($observasi->foto_lembar_observasi && Storage::disk('public')->exists($observasi->foto_lembar_observasi)) {
+            Storage::disk('public')->delete($observasi->foto_lembar_observasi);
+        }
 
         $observasi->delete();
 
@@ -176,7 +242,6 @@ class ObservasiController extends Controller
     {
         $observasi = Observasi::where('user_id', Auth::id())
             ->with(['guru', 'items'])
-            ->when($request->filled('status'), fn ($q) => $q->where('is_approved', $request->status === 'disetujui'))
             ->when($request->filled('tanggal'), fn ($q) => $q->whereDate('hari_tanggal', $request->tanggal))
             ->latest()
             ->paginate(15)

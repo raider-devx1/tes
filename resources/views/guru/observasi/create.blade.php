@@ -15,6 +15,12 @@
             </div>
         @endif
 
+        <div class="mb-4 rounded-lg bg-blue-50 border border-blue-200 p-3 text-sm text-blue-800">
+            Isi permasalahan &amp; solusi terlebih dahulu. Lembar akan tersimpan sebagai <strong>draft</strong>.
+            Cetak draf, minta paraf instruktur &amp; guru pembimbing saat observasi, lalu lakukan <strong>Validasi</strong>
+            (unggah foto dokumentasi &amp; foto lembar berparaf) dari halaman daftar observasi.
+        </div>
+
         <form action="{{ route('guru.observasi.store') }}" method="POST"
               class="bg-white rounded-xl shadow-sm border p-6 space-y-4"
               x-data="{
@@ -54,14 +60,12 @@
             <div class="space-y-4">
                 <label class="block text-sm font-medium text-gray-700">Permasalahan &amp; Solusi</label>
 
-                {{-- List Card Item --}}
                 <div class="space-y-4">
                     <template x-for="(item, index) in items" :key="index">
                         <div class="rounded-lg border border-gray-200 p-4 bg-gray-50/50">
                             <div class="flex items-center justify-between mb-3">
-                                <span class="text-sm font-semibold text-gray-600">
-                                    Poin <span x-text="index + 1"></span>
-                                </span>
+                                <span class="text-sm font-semibold text-gray-600" x-text="'Poin ' + (index + 1)"></span>
+
                                 <button type="button" @click="removeItem(index)" x-show="items.length > 1"
                                         class="text-xs font-medium text-red-500 hover:text-red-700">
                                     Hapus
@@ -85,7 +89,6 @@
                     </template>
                 </div>
 
-                {{-- Tombol Tambah Poin diletakkan di bawah setelah daftar Card selesai di-render --}}
                 <div class="flex justify-start pt-1">
                     <button type="button" @click="addItem()"
                             class="inline-flex items-center gap-1.5 px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-xs font-medium rounded-lg shadow-sm transition-colors">
@@ -100,7 +103,7 @@
             <div class="pt-4 border-t border-gray-100 flex justify-end gap-3">
                 <button type="submit"
                         class="inline-flex items-center px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg shadow-sm transition-colors">
-                    Simpan Observasi
+                    Simpan Draft
                 </button>
             </div>
         </form>

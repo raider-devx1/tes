@@ -1,4 +1,6 @@
 <x-app-layout>
+    <style>[x-cloak]{display:none!important;}</style>
+
     <x-slot name="header">
         <div class="flex items-center justify-between gap-4">
              <h2 class="text-xl md:text-2xl font-bold tracking-tight text-black">Lembar Observasi PKL</h2>
@@ -14,8 +16,6 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="rounded-2xl border-2 border-[#0047d6]/15 bg-white p-4 sm:p-6 md:p-8 shadow-sm">
 
-              
-
                 {{-- ===== FORM FILTER ===== --}}
                 <form method="GET" action="{{ route('siswa.observasi.index') }}" class="mb-6 flex flex-wrap gap-3 items-end">
                     <div>
@@ -23,22 +23,13 @@
                         <input type="date" name="tanggal" value="{{ request('tanggal') }}"
                                class="rounded-xl border-2 border-[#0047d6]/25 bg-white px-3 py-2.5 text-sm font-medium text-black focus:border-[#0047d6] focus:ring-2 focus:ring-[#0047d6]/30">
                     </div>
-                    <div>
-                        <label class="block text-xs font-bold uppercase tracking-wide text-black mb-1">Status</label>
-                        <select name="status"
-                                class="rounded-xl border-2 border-[#0047d6]/25 bg-white px-3 py-2.5 text-sm font-medium text-black focus:border-[#0047d6] focus:ring-2 focus:ring-[#0047d6]/30">
-                            <option value="">Semua Status</option>
-                            <option value="disetujui" @selected(request('status') === 'disetujui')>Disetujui</option>
-                            <option value="menunggu" @selected(request('status') === 'menunggu')>Menunggu</option>
-                        </select>
-                    </div>
                     <button type="submit"
                             class="inline-flex items-center rounded-xl bg-[#0047d6] px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-[#0038aa] focus:outline-none focus:ring-4 focus:ring-[#0047d6]/30">Filter</button>
                     <a href="{{ route('siswa.observasi.index') }}"
                        class="inline-flex items-center rounded-xl border-2 border-[#0047d6]/25 bg-white px-5 py-2.5 text-sm font-bold text-[#0047d6] transition hover:bg-[#0047d6]/5">Reset</a>
                 </form>
 
-                  <div class="flex justify-end mb-6">
+                <div class="flex justify-end mb-6">
                     <a href="{{ route('cetak.observasi') }}" target="_blank"
                        class="inline-flex items-center rounded-xl bg-[#0047d6] px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-[#0038aa] focus:outline-none focus:ring-4 focus:ring-[#0047d6]/30">
                         Cetak Semua (PDF)
@@ -47,20 +38,22 @@
 
                 {{-- ===== TABEL DATA ===== --}}
                 <div class="overflow-x-auto rounded-xl border-2 border-[#0047d6]/15">
-                    <table class="w-full min-w-[900px] text-left text-sm table-fixed">
+                    <table class="w-full min-w-[1040px] text-left text-sm table-fixed">
                         <thead>
                             <tr class="bg-[#0047d6] text-xs uppercase tracking-wide text-white">
                                 <th class="px-4 py-3 text-center w-12 font-bold">No</th>
                                 <th class="px-4 py-3 font-bold w-28">Tanggal</th>
                                 <th class="px-4 py-3 font-bold w-40">Guru Pembimbing</th>
-                                <th class="px-4 py-3 font-bold w-[28%]">Permasalahan</th>
-                                <th class="px-4 py-3 font-bold w-[28%]">Solusi Pemecahan</th>
+                                <th class="px-4 py-3 font-bold w-[24%]">Permasalahan</th>
+                                <th class="px-4 py-3 font-bold w-[24%]">Solusi Pemecahan</th>
                                 <th class="px-4 py-3 text-center font-bold w-28">Status</th>
+                                <th class="px-4 py-3 text-center font-bold w-44">Foto</th>
                                 <th class="px-4 py-3 text-center font-bold w-20">Cetak</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-[#0047d6]/10">
                             @forelse ($observasi as $item)
+                                @php $isTervalidasi = ($item->status ?? 'draft') === 'tervalidasi'; @endphp
                                 <tr class="align-top transition hover:bg-[#0047d6]/5">
                                     <td class="px-4 py-3 text-center font-semibold text-black">{{ $observasi->firstItem() + $loop->index }}</td>
                                     <td class="px-4 py-3 whitespace-nowrap font-medium text-black">
@@ -71,7 +64,7 @@
                                     {{-- ===== KOLOM PERMASALAHAN ===== --}}
                                     <td class="px-4 py-3 text-black break-words">
                                         @php $poinList = $item->items; @endphp
-                                        @if($poinList->count())
+                                        @if($poinList && $poinList->count())
                                             <div x-data="{ open: false }">
                                                 <div class="flex items-start gap-1.5">
                                                     <span class="font-bold text-[#0047d6]">1.</span>
@@ -105,7 +98,7 @@
 
                                     {{-- ===== KOLOM SOLUSI ===== --}}
                                     <td class="px-4 py-3 text-black break-words">
-                                        @if($poinList->count())
+                                        @if($poinList && $poinList->count())
                                             <div x-data="{ open: false }">
                                                 <div class="flex items-start gap-1.5">
                                                     <span class="font-bold text-[#0047d6]">1.</span>
@@ -137,11 +130,42 @@
                                         @endif
                                     </td>
 
+                                    {{-- ===== KOLOM STATUS ===== --}}
                                     <td class="px-4 py-3 text-center">
-                                        @if($item->is_approved)
-                                            <span class="inline-flex items-center rounded-full bg-[#05b169] px-3 py-1 text-xs font-bold text-white">Disetujui</span>
+                                        @if($isTervalidasi)
+                                            <span class="inline-flex items-center rounded-full bg-[#05b169]/10 px-3 py-1 text-xs font-bold text-[#05b169]">Tervalidasi</span>
                                         @else
-                                            <span class="inline-flex items-center rounded-full bg-[#d98200] px-3 py-1 text-xs font-bold text-white">Menunggu</span>
+                                            <span class="inline-flex items-center rounded-full bg-[#d98200]/10 px-3 py-1 text-xs font-bold text-[#d98200]">Draft</span>
+                                        @endif
+                                    </td>
+
+                                    {{-- ===== KOLOM FOTO ===== --}}
+                                    <td class="px-4 py-3 text-center">
+                                        @if($item->foto_dokumentasi || $item->foto_lembar_observasi)
+                                            <div class="flex flex-col items-center gap-1.5">
+                                                @if($item->foto_dokumentasi)
+                                                    <a href="{{ asset('storage/' . $item->foto_dokumentasi) }}" target="_blank" rel="noopener"
+                                                       class="inline-flex w-full items-center justify-center gap-1 rounded-full bg-[#0047d6]/10 px-3 py-1.5 text-xs font-bold text-[#0047d6] transition hover:bg-[#0047d6]/20">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+                                                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                        </svg>
+                                                        Foto Dokumentasi
+                                                    </a>
+                                                @endif
+                                                @if($item->foto_lembar_observasi)
+                                                    <a href="{{ asset('storage/' . $item->foto_lembar_observasi) }}" target="_blank" rel="noopener"
+                                                       class="inline-flex w-full items-center justify-center gap-1 rounded-full bg-[#05b169]/10 px-3 py-1.5 text-xs font-bold text-[#05b169] transition hover:bg-[#05b169]/20">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+                                                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                        </svg>
+                                                        Lembar Berparaf
+                                                    </a>
+                                                @endif
+                                            </div>
+                                        @else
+                                            <span class="text-[#5b616e]">-</span>
                                         @endif
                                     </td>
 
@@ -152,7 +176,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="7" class="px-4 py-8 text-center font-medium text-[#5b616e] italic">Belum ada observasi dari guru pembimbing.</td>
+                                    <td colspan="8" class="px-4 py-8 text-center font-medium text-[#5b616e] italic">Belum ada observasi dari guru pembimbing.</td>
                                 </tr>
                             @endforelse
                         </tbody>

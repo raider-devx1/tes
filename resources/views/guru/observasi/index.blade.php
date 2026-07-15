@@ -9,50 +9,55 @@
             <div class="flex items-center gap-2">
                 <a href="{{ route('guru.observasi.create') }}"
                    class="inline-flex items-center rounded-xl bg-[#0047d6] px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-[#0038aa] focus:outline-none focus:ring-4 focus:ring-[#0047d6]/30">
-                     Tambah Observasi
+                    Tambah Observasi
                 </a>
-                 <a href="{{ route('guru.dashboard') }}"
-           class="inline-flex items-center gap-1 rounded-xl border-2 border-[#0047d6]/25 bg-white px-4 py-2 text-sm font-bold text-[#0047d6] transition hover:bg-[#0047d6]/5">
-            Kembali ke Dashboard
-        </a>
+                <a href="{{ route('guru.dashboard') }}"
+                   class="inline-flex items-center gap-1 rounded-xl border-2 border-[#0047d6]/25 bg-white px-4 py-2 text-sm font-bold text-[#0047d6] transition hover:bg-[#0047d6]/5">
+                    Kembali ke Dashboard
+                </a>
             </div>
         </div>
     </x-slot>
 
     <div class="py-8 md:py-12 bg-white">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            
-            <!-- ===== CARD REKAP INFORMASI ===== -->
-            <div class="mb-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div class="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
                 <div class="rounded-2xl border-2 border-[#0047d6]/15 bg-white p-5 shadow-sm">
                     <p class="text-xs font-bold uppercase tracking-wide text-[#5b616e]">Total Observasi</p>
                     <p class="mt-1 text-3xl font-bold text-black">{{ $rekap['total'] }}</p>
                 </div>
-                <div class="rounded-2xl border-2 border-[#05b169]/30 bg-[#05b169]/5 p-5 shadow-sm">
-                    <p class="text-xs font-bold uppercase tracking-wide text-[#5b616e]">Sudah Disetujui</p>
-                    <p class="mt-1 text-3xl font-bold text-[#05b169]">{{ $rekap['disetujui'] }}</p>
-                </div>
                 <div class="rounded-2xl border-2 border-[#d98200]/30 bg-[#d98200]/5 p-5 shadow-sm">
-                    <p class="text-xs font-bold uppercase tracking-wide text-[#5b616e]">Menunggu Disetujui</p>
-                    <p class="mt-1 text-3xl font-bold text-[#d98200]">{{ $rekap['menunggu'] }}</p>
+                    <p class="text-xs font-bold uppercase tracking-wide text-[#5b616e]">Draft</p>
+                    <p class="mt-1 text-3xl font-bold text-[#d98200]">{{ $rekap['draft'] }}</p>
+                </div>
+                <div class="rounded-2xl border-2 border-[#05b169]/30 bg-[#05b169]/5 p-5 shadow-sm">
+                    <p class="text-xs font-bold uppercase tracking-wide text-[#5b616e]">Tervalidasi</p>
+                    <p class="mt-1 text-3xl font-bold text-[#05b169]">{{ $rekap['tervalidasi'] }}</p>
                 </div>
             </div>
 
             <div class="rounded-2xl border-2 border-[#0047d6]/15 bg-white p-4 sm:p-6 md:p-8 shadow-sm">
-
                 @if (session('success'))
                     <div class="mb-4 rounded-xl border-2 border-[#05b169] bg-[#05b169]/10 px-4 py-3 text-sm font-semibold text-black">
                         {{ session('success') }}
                     </div>
                 @endif
 
-                <!-- ===== BANNER & CETAK SEMUA PDF ===== -->
+                @if ($errors->any())
+                    <div class="mb-4 rounded-xl border-2 border-[#cf202f] bg-[#cf202f]/10 px-4 py-3 text-sm font-semibold text-[#cf202f]">
+                        <ul class="list-disc list-inside">
+                            @foreach ($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
+
                 <div class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                     <div>
                         <h3 class="text-lg font-bold tracking-tight text-black">Lembar Observasi Siswa Bimbingan</h3>
-                        <p class="text-xs font-medium text-[#5b616e]">Tombol <span class="font-bold text-black">Cetak Semua PDF</span> mencetak seluruh lembar observasi — 1 observasi per halaman.</p>
+                        <p class="text-xs font-medium text-[#5b616e]">Buat draf &rarr; cetak &rarr; minta paraf instruktur &amp; guru &rarr; <span class="font-bold text-black">Validasi</span> (unggah foto). Setelah tervalidasi, hasil cetak menampilkan keterangan <span class="font-bold text-black">SUDAH DIVALIDASI</span>.</p>
                     </div>
-
                     <a href="{{ route('cetak.observasi.semua') }}" target="_blank"
                        class="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-[#0047d6] px-6 py-3.5 text-base font-bold text-white shadow-sm transition hover:bg-[#0038aa] focus:outline-none focus:ring-4 focus:ring-[#0047d6]/30">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -62,7 +67,6 @@
                     </a>
                 </div>
 
-                <!-- ===== FORM FILTER ===== -->
                 <form method="GET" action="{{ route('guru.observasi.index') }}" class="mb-6">
                     <div class="flex flex-col md:flex-row gap-3 md:items-end">
                         <div class="flex-1">
@@ -73,17 +77,6 @@
                                    placeholder="Ketik nama atau NISN siswa..."
                                    class="w-full rounded-xl border-2 border-[#0047d6]/25 bg-white px-4 py-2.5 text-sm font-medium text-black placeholder-[#a8acb3] focus:border-[#0047d6] focus:ring-2 focus:ring-[#0047d6]/30">
                         </div>
-
-                        <div class="w-full md:w-56">
-                            <label class="block text-xs font-bold uppercase tracking-wide text-black mb-1">Status</label>
-                            <select name="status"
-                                    class="w-full rounded-xl border-2 border-[#0047d6]/25 bg-white px-3 py-2.5 text-sm font-medium text-black focus:border-[#0047d6] focus:ring-2 focus:ring-[#0047d6]/30">
-                                <option value="">Semua Status</option>
-                                <option value="1" @selected(request('status') === '1')>Sudah Disetujui</option>
-                                <option value="0" @selected(request('status') === '0')>Belum (Menunggu)</option>
-                            </select>
-                        </div>
-
                         <div class="flex gap-2">
                             <button type="submit"
                                     class="inline-flex items-center rounded-xl bg-[#0047d6] px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-[#0038aa] focus:outline-none focus:ring-4 focus:ring-[#0047d6]/30">
@@ -97,9 +90,8 @@
                     </div>
                 </form>
 
-                <!-- ===== TABEL OBSERVASI ===== -->
                 <div class="overflow-x-auto rounded-xl border-2 border-[#0047d6]/15">
-                    <table class="w-full min-w-[1200px] text-left text-sm table-fixed">
+                    <table class="w-full min-w-[1300px] text-left text-sm table-fixed">
                         <thead>
                             <tr class="bg-[#0047d6] text-xs uppercase tracking-wide text-white">
                                 <th class="px-4 py-3 text-center w-12 font-bold">No</th>
@@ -107,41 +99,42 @@
                                 <th class="px-4 py-3 font-bold w-36">Siswa</th>
                                 <th class="px-4 py-3 font-bold w-28">NISN</th>
                                 <th class="px-4 py-3 font-bold w-40">Pekerjaan/Projek</th>
-                                <th class="px-4 py-3 font-bold w-[22%]">Permasalahan</th>
-                                <th class="px-4 py-3 font-bold w-[22%]">Solusi Pemecahan</th>
+                                <th class="px-4 py-3 font-bold w-[20%]">Permasalahan</th>
+                                <th class="px-4 py-3 font-bold w-[20%]">Solusi Pemecahan</th>
                                 <th class="px-4 py-3 text-center font-bold w-28">Status</th>
+                                <th class="px-4 py-3 text-center font-bold w-32">Foto</th>
                                 <th class="px-4 py-3 text-center font-bold w-20">Cetak</th>
-                                <th class="px-4 py-3 text-center font-bold w-32">Aksi</th>
+                                <th class="px-4 py-3 text-center font-bold w-40">Aksi</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-[#0047d6]/10">
                             @forelse ($observasi as $obs)
-                                @php $poin = $obs->items; @endphp
-                                <tr class="align-top transition hover:bg-[#0047d6]/5" x-data="{ open: false }">
+                                @php
+                                    $poin = $obs->items;
+                                    $isTervalidasi = ($obs->status ?? 'draft') === 'tervalidasi';
+                                @endphp
+                                <tr class="align-top transition hover:bg-[#0047d6]/5" x-data="{ open: false, showValidasi: false }">
                                     <td class="px-4 py-3 text-center font-semibold text-black">
-                                         {{ $observasi->firstItem() + $loop->index }} 
+                                        {{ $observasi->firstItem() + $loop->index }}
                                     </td>
                                     <td class="px-4 py-3 whitespace-nowrap font-medium text-black">
-                                         {{ \Carbon\Carbon::parse($obs->hari_tanggal)->format('d M Y') }} 
+                                        {{ \Carbon\Carbon::parse($obs->hari_tanggal)->format('d M Y') }}
                                     </td>
                                     <td class="px-4 py-3 font-bold text-black break-words">
-                                         {{ $obs->user->name ?? '-' }} 
+                                        {{ $obs->user->name ?? '-' }}
                                     </td>
                                     <td class="px-4 py-3 whitespace-nowrap font-medium text-black">
-                                         {{ $obs->user->nisn ?? '-' }} 
+                                        {{ $obs->user->nisn ?? '-' }}
                                     </td>
                                     <td class="px-4 py-3 font-medium text-black break-words">
-                                         {{ $obs->pekerjaan_projek ?? '-' }} 
+                                        {{ $obs->pekerjaan_projek ?? '-' }}
                                     </td>
-
-                                    <!-- Kolom Permasalahan -->
                                     <td class="px-4 py-3 text-black break-words">
-                                        @if($poin->count())
+                                        @if($poin && $poin->count())
                                             <div class="flex items-start gap-1.5">
                                                 <span class="font-bold text-[#0047d6]">1.</span>
                                                 <span class="font-medium break-words">{{ $poin->first()->permasalahan }}</span>
                                             </div>
-
                                             @if($poin->count() > 1)
                                                 <button type="button" @click="open = !open"
                                                         class="mt-1.5 inline-flex items-center gap-1 rounded-full bg-[#0047d6]/10 px-2.5 py-1 text-xs font-bold text-[#0047d6] transition hover:bg-[#0047d6]/20 focus:outline-none focus:ring-2 focus:ring-[#0047d6]/30">
@@ -153,7 +146,6 @@
                                                         <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
                                                     </svg>
                                                 </button>
-
                                                 <ol start="2" x-show="open" x-cloak x-transition
                                                     class="mt-2 list-decimal list-inside space-y-0.5 border-t border-[#0047d6]/15 pt-2 font-medium">
                                                     @foreach($poin->slice(1) as $it)
@@ -165,15 +157,12 @@
                                             <span class="text-[#5b616e]">-</span>
                                         @endif
                                     </td>
-
-                                    <!-- Kolom Solusi Pemecahan -->
                                     <td class="px-4 py-3 text-black break-words">
-                                        @if($poin->count())
+                                        @if($poin && $poin->count())
                                             <div class="flex items-start gap-1.5">
                                                 <span class="font-bold text-[#0047d6]">1.</span>
                                                 <span class="font-medium break-words">{{ $poin->first()->solusi }}</span>
                                             </div>
-
                                             @if($poin->count() > 1)
                                                 <button type="button" @click="open = !open"
                                                         class="mt-1.5 inline-flex items-center gap-1 rounded-full bg-[#0047d6]/10 px-2.5 py-1 text-xs font-bold text-[#0047d6] transition hover:bg-[#0047d6]/20 focus:outline-none focus:ring-2 focus:ring-[#0047d6]/30">
@@ -185,7 +174,6 @@
                                                         <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
                                                     </svg>
                                                 </button>
-
                                                 <ol start="2" x-show="open" x-cloak x-transition
                                                     class="mt-2 list-decimal list-inside space-y-0.5 border-t border-[#0047d6]/15 pt-2 font-medium">
                                                     @foreach($poin->slice(1) as $it)
@@ -198,45 +186,131 @@
                                         @endif
                                     </td>
 
-                                    <!-- Status -->
+                                    {{-- ===== STATUS ===== --}}
                                     <td class="px-4 py-3 text-center">
-                                        @if ($obs->is_approved)
-                                            <span class="inline-flex items-center rounded-full bg-[#05b169] px-3 py-1 text-xs font-bold text-white">Disetujui</span>
+                                        @if($isTervalidasi)
+                                            <span class="inline-flex items-center rounded-full bg-[#05b169]/10 px-3 py-1 text-xs font-bold text-[#05b169]">Tervalidasi</span>
+                                            @if($obs->validated_at)
+                                                <p class="mt-1 text-[10px] font-medium text-[#5b616e]">{{ \Carbon\Carbon::parse($obs->validated_at)->format('d M Y') }}</p>
+                                            @endif
                                         @else
-                                            <span class="inline-flex items-center rounded-full bg-[#d98200] px-3 py-1 text-xs font-bold text-white">Menunggu</span>
+                                            <span class="inline-flex items-center rounded-full bg-[#d98200]/10 px-3 py-1 text-xs font-bold text-[#d98200]">Draft</span>
                                         @endif
                                     </td>
 
-                                    <!-- Cetak PDF -->
+                                    {{-- ===== FOTO ===== --}}
+                                    <td class="px-4 py-3 text-center">
+                                        @if ($obs->foto_dokumentasi || $obs->foto_lembar_observasi)
+                                            <div class="flex flex-col items-center gap-1.5">
+                                                @if ($obs->foto_dokumentasi)
+                                                    <a href="{{ asset('storage/' . $obs->foto_dokumentasi) }}" target="_blank" rel="noopener"
+                                                       class="inline-flex items-center gap-1 rounded-full bg-[#0047d6]/10 px-3 py-1.5 text-xs font-bold text-[#0047d6] transition hover:bg-[#0047d6]/20">
+                                                        Foto Dokumentasi
+                                                    </a>
+                                                @endif
+                                                @if ($obs->foto_lembar_observasi)
+                                                    <a href="{{ asset('storage/' . $obs->foto_lembar_observasi) }}" target="_blank" rel="noopener"
+                                                       class="inline-flex items-center gap-1 rounded-full bg-[#05b169]/10 px-3 py-1.5 text-xs font-bold text-[#05b169] transition hover:bg-[#05b169]/20">
+                                                        Lembar Berparaf
+                                                    </a>
+                                                @endif
+                                            </div>
+                                        @else
+                                            <span class="text-[#5b616e]">-</span>
+                                        @endif
+                                    </td>
+
+                                    {{-- ===== CETAK ===== --}}
                                     <td class="px-4 py-3 text-center">
                                         <a href="{{ route('cetak.observasi', ['siswa_id' => $obs->user_id, 'observasi_id' => $obs->id]) }}" target="_blank"
                                            class="inline-flex items-center rounded-full bg-[#0047d6] px-3 py-1.5 text-xs font-bold text-white transition hover:bg-[#0038aa]">PDF</a>
                                     </td>
 
-                                    <!-- Aksi Edit / Hapus -->
+                                    {{-- ===== AKSI ===== --}}
                                     <td class="px-4 py-3 text-center">
-                                        <div class="flex items-center justify-center gap-2">
-                                            <a href="{{ route('guru.observasi.edit', $obs->id) }}"
-                                               class="inline-flex items-center rounded-full bg-[#0047d6]/10 px-3 py-1.5 text-xs font-bold text-[#0047d6] transition hover:bg-[#0047d6]/20">
-                                                Edit
-                                            </a>
-                                           <form method="POST" action="{{ route('guru.observasi.destroy', $obs->id) }}"
-      data-confirm="Hapus observasi {{ $obs->nama ?? 'ini' }}?"
-      data-confirm-text="Seluruh poin permasalahan & solusi pada observasi ini akan ikut terhapus."
-      data-confirm-yes="Ya, hapus">
-    @csrf
-    @method('DELETE')
-    <button type="submit"
-            class="inline-flex items-center rounded-full bg-[#cf202f]/10 px-3 py-1.5 text-xs font-bold text-[#cf202f] transition hover:bg-[#cf202f]/20">
-        Hapus
-    </button>
-</form>
+                                        <div class="flex flex-col items-center justify-center gap-2">
+                                            <button type="button" @click="showValidasi = true"
+                                                    class="inline-flex w-full items-center justify-center rounded-full bg-[#05b169] px-3 py-1.5 text-xs font-bold text-white transition hover:bg-[#049457]">
+                                                {{ $isTervalidasi ? 'Validasi Ulang' : 'Validasi' }}
+                                            </button>
+                                            <div class="flex items-center justify-center gap-2">
+                                                <a href="{{ route('guru.observasi.edit', $obs->id) }}"
+                                                   class="inline-flex items-center rounded-full bg-[#0047d6]/10 px-3 py-1.5 text-xs font-bold text-[#0047d6] transition hover:bg-[#0047d6]/20">
+                                                    Edit
+                                                </a>
+                                                <form method="POST" action="{{ route('guru.observasi.destroy', $obs->id) }}"
+                                                      data-confirm="Hapus observasi ini?"
+                                                      data-confirm-text="Seluruh poin permasalahan & solusi pada observasi ini akan ikut terhapus."
+                                                      data-confirm-yes="Ya, hapus">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit"
+                                                            class="inline-flex items-center rounded-full bg-[#cf202f]/10 px-3 py-1.5 text-xs font-bold text-[#cf202f] transition hover:bg-[#cf202f]/20">
+                                                        Hapus
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </div>
+
+                                        {{-- ===== MODAL VALIDASI ===== --}}
+                                        <div x-show="showValidasi" x-cloak
+                                             class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+                                             @keydown.escape.window="showValidasi = false">
+                                            <div class="w-full max-w-lg rounded-2xl bg-white p-6 text-left shadow-xl"
+                                                 @click.outside="showValidasi = false">
+                                                <div class="mb-4 flex items-center justify-between">
+                                                    <h3 class="text-lg font-bold text-black">Validasi Lembar Observasi</h3>
+                                                    <button type="button" @click="showValidasi = false"
+                                                            class="text-2xl leading-none text-[#5b616e] hover:text-black">&times;</button>
+                                                </div>
+                                                <p class="mb-4 text-sm text-[#5b616e]">
+                                                    Unggah foto dokumentasi kegiatan dan foto lembar observasi yang sudah diparaf
+                                                    <span class="font-semibold text-black">instruktur &amp; guru pembimbing</span>.
+                                                    Setelah divalidasi, hasil cetak PDF akan menampilkan keterangan
+                                                    <span class="font-bold text-black">SUDAH DIVALIDASI</span>.
+                                                </p>
+                                                <form method="POST" action="{{ route('guru.observasi.validasi', $obs->id) }}"
+                                                      enctype="multipart/form-data" class="space-y-4">
+                                                    @csrf
+                                                    @method('PUT')
+                                                    <div>
+                                                        <label class="block text-sm font-bold text-black mb-1">
+                                                            Foto Dokumentasi Kegiatan <span class="text-red-500">*</span>
+                                                        </label>
+                                                        <input type="file" name="foto_dokumentasi" accept="image/*" capture="environment" required
+                                                               class="w-full text-sm text-gray-600 rounded-lg border border-gray-300 bg-white
+                                                                      file:mr-4 file:py-2 file:px-4 file:border-0 file:text-sm file:font-medium
+                                                                      file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                                                        <p class="mt-1 text-xs text-gray-500">Wajib. Format JPG/JPEG/PNG, maksimal 2 MB.</p>
+                                                    </div>
+                                                    <div>
+                                                        <label class="block text-sm font-bold text-black mb-1">
+                                                            Foto Lembar Observasi (Sudah Diparaf) <span class="text-red-500">*</span>
+                                                        </label>
+                                                        <input type="file" name="foto_lembar_observasi" accept="image/*" capture="environment" required
+                                                               class="w-full text-sm text-gray-600 rounded-lg border border-gray-300 bg-white
+                                                                      file:mr-4 file:py-2 file:px-4 file:border-0 file:text-sm file:font-medium
+                                                                      file:bg-green-50 file:text-green-700 hover:file:bg-green-100">
+                                                        <p class="mt-1 text-xs text-gray-500">Wajib. Foto lembar fisik yang sudah diparaf instruktur &amp; guru pembimbing.</p>
+                                                    </div>
+                                                    <div class="flex justify-end gap-2 pt-2">
+                                                        <button type="button" @click="showValidasi = false"
+                                                                class="inline-flex items-center rounded-xl border-2 border-[#0047d6]/25 bg-white px-4 py-2 text-sm font-bold text-[#0047d6] transition hover:bg-[#0047d6]/5">
+                                                            Batal
+                                                        </button>
+                                                        <button type="submit"
+                                                                class="inline-flex items-center rounded-xl bg-[#05b169] px-5 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-[#049457]">
+                                                            Simpan Validasi
+                                                        </button>
+                                                    </div>
+                                                </form>
+                                            </div>
                                         </div>
                                     </td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="10" class="px-4 py-8 text-center font-medium text-[#5b616e] italic">
+                                    <td colspan="11" class="px-4 py-8 text-center font-medium text-[#5b616e] italic">
                                         Belum ada data observasi.
                                     </td>
                                 </tr>
@@ -245,11 +319,9 @@
                     </table>
                 </div>
 
-                <!-- ===== PAGINATION ===== -->
                 <div class="mt-4">
                     {!! $observasi->links() !!}
                 </div>
-
             </div>
         </div>
     </div>

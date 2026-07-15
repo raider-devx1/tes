@@ -17,7 +17,11 @@
 
         .text-center { text-align: center !important; }
         .paraf-col { width: 80px; }
-        .sign-text { font-family: 'Courier New', Courier, monospace; font-size: 9pt; font-style: italic; color: #333; }
+
+        /* Keterangan paraf pada hasil cetak: tulisan hitam "SUDAH DIVALIDASI" */
+        .sign-text { font-family: 'Helvetica', Arial, sans-serif; font-size: 9pt; font-weight: bold; color: #000; }
+
+        .footer-note { font-size: 9pt; color: #000; margin-top: 8px; }
 
         /* Tiap observasi 1 halaman; tanpa halaman kosong di depan */
         .lembar { page-break-after: always; }
@@ -27,7 +31,10 @@
 <body>
 
 @forelse($lembar as $data)
-    @php extract($data); @endphp
+    @php
+        extract($data);
+        $sudahValidasi = ($status ?? 'draft') === 'tervalidasi';
+    @endphp
 
     <div class="lembar">
         <div class="header-title">LEMBAR OBSERVASI PKL</div>
@@ -52,16 +59,18 @@
                 </tr>
             </thead>
             <tbody>
-                @forelse($rows as $index => $item)
+                @forelse($rows as $item)
                 <tr>
-                    <td class="text-center"> {{ $index + 1 }} </td>
+                    <td class="text-center"> {{ $loop->iteration }} </td>
                     <td>{!! nl2br(e($item->permasalahan)) !!}</td>
                     <td>{!! nl2br(e($item->solusi)) !!}</td>
                     <td class="text-center sign-text">
-                        {!! $item->is_approved ? 'Disetujui<br>Instruktur' : '' !!}
+                        {{-- Draft: paraf instruktur kosong. Tervalidasi: tulisan hitam. --}}
+                        {!! $sudahValidasi ? 'SUDAH<br>DIVALIDASI' : '' !!}
                     </td>
                     <td class="text-center sign-text">
-                        Disetujui<br>Pembimbing
+                        {{-- Draft: paraf guru pembimbing kosong. Tervalidasi: tulisan hitam. --}}
+                        {!! $sudahValidasi ? 'SUDAH<br>DIVALIDASI' : '' !!}
                     </td>
                 </tr>
                 @empty
@@ -71,6 +80,16 @@
                 @endforelse
             </tbody>
         </table>
+
+        @if($sudahValidasi)
+            <div class="footer-note">
+                Lembar observasi ini telah divalidasi oleh Guru Pembimbing
+                @if(!empty($validated_at))
+                    pada {{ \Carbon\Carbon::parse($validated_at)->locale('id')->translatedFormat('d F Y') }}
+                @endif
+                berdasarkan lembar fisik yang sudah diparaf instruktur &amp; guru pembimbing.
+            </div>
+        @endif
     </div>
 
 @empty

@@ -15,12 +15,16 @@ class Observasi extends Model
         'guru_id',
         'hari_tanggal',
         'pekerjaan_projek',
-        'is_approved',
+        'status',                 // draft | tervalidasi
+        'foto_dokumentasi',       // foto kegiatan/kunjungan (diunggah saat validasi)
+        'foto_lembar_observasi',  // foto lembar fisik yang sudah diparaf instruktur & guru
+        'validated_by_guru_id',
+        'validated_at',
     ];
 
     protected $casts = [
         'hari_tanggal' => 'date',
-        'is_approved'  => 'boolean',
+        'validated_at' => 'datetime',
     ];
 
     // Siswa yang diobservasi
@@ -35,6 +39,12 @@ class Observasi extends Model
         return $this->belongsTo(User::class, 'guru_id');
     }
 
+    // Guru pembimbing yang memvalidasi
+    public function validator()
+    {
+        return $this->belongsTo(User::class, 'validated_by_guru_id');
+    }
+
     // Banyak poin permasalahan & solusi
     public function items()
     {
@@ -45,5 +55,11 @@ class Observasi extends Model
     public function getPoinAttribute(): Collection
     {
         return $this->items;
+    }
+
+    /** True bila lembar observasi sudah divalidasi. */
+    public function getIsTervalidasiAttribute(): bool
+    {
+        return $this->status === 'tervalidasi';
     }
 }

@@ -214,12 +214,13 @@ Route::middleware(['role:guru_pembimbing'])->prefix('guru')->name('guru.')->grou
     Route::put('/catatan/{id}/validasi', [CatatanController::class, 'validasiByGuru'])->name('catatan.validasi');
 
     // Observasi (tetap dikelola ObservasiController)
-    Route::get('/observasi', [ObservasiController::class, 'indexGuru'])->name('observasi.index');
-    Route::get('/observasi/create', [ObservasiController::class, 'createGuru'])->name('observasi.create');
-    Route::post('/observasi', [ObservasiController::class, 'storeGuru'])->name('observasi.store');
-    Route::get('/observasi/{id}/edit', [ObservasiController::class, 'editGuru'])->name('observasi.edit');
-    Route::put('/observasi/{id}', [ObservasiController::class, 'updateGuru'])->name('observasi.update');
-    Route::delete('/observasi/{id}', [ObservasiController::class, 'destroyGuru'])->name('observasi.destroy');
+   Route::get('/observasi', [ObservasiController::class, 'indexGuru'])->name('observasi.index');
+Route::get('/observasi/create', [ObservasiController::class, 'createGuru'])->name('observasi.create');
+Route::post('/observasi', [ObservasiController::class, 'storeGuru'])->name('observasi.store');
+Route::get('/observasi/{id}/edit', [ObservasiController::class, 'editGuru'])->name('observasi.edit');
+Route::put('/observasi/{id}', [ObservasiController::class, 'updateGuru'])->name('observasi.update');
+Route::delete('/observasi/{id}', [ObservasiController::class, 'destroyGuru'])->name('observasi.destroy');
+Route::put('/observasi/{id}/validasi', [ObservasiController::class, 'validasiGuru'])->name('observasi.validasi');
 
     Route::get('/nilai', [NilaiController::class, 'indexGuru'])->name('nilai.index');
     Route::post('/nilai', [NilaiController::class, 'storeGuru'])->name('nilai.store');

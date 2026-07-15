@@ -228,28 +228,30 @@ class CetakPdfController extends Controller
     // ====== 3. OBSERVASI (FK: user_id) ======
     /** Bangun data 1 lembar observasi (identitas siswa + daftar poin). */
     private function buildObservasiLembar(Observasi $obs): array
-    {
-        $siswa = $obs->user;
+{
+    $siswa = $obs->user;
 
-        $rows = collect();
-        foreach ($obs->items as $poin) {
-            $rows->push((object) [
-                'permasalahan' => $poin->permasalahan,
-                'solusi'       => $poin->solusi,
-                'is_approved'  => $obs->is_approved,
-            ]);
-        }
-
-        return [
-            'nama_siswa'       => $siswa->name ?? '-',
-            'kelas'            => $siswa->kelas ?? 'Belum Diatur',
-            'dunia_kerja'      => $siswa->perusahaan->nama_perusahaan ?? 'Belum Diatur',
-            'nama_instruktur'  => $siswa->instruktur->name ?? 'Belum Diatur',
-            'nama_guru'        => $siswa->guru->name ?? 'Belum Diatur',
-            'pekerjaan_projek' => $obs->pekerjaan_projek ?? '-',
-            'rows'             => $rows,
-        ];
+    $rows = collect();
+    foreach ($obs->items as $poin) {
+        $rows->push((object) [
+            'permasalahan' => $poin->permasalahan,
+            'solusi'       => $poin->solusi,
+        ]);
     }
+
+   return [
+    'nama_siswa'       => $siswa->name ?? '-',
+    'kelas'            => $siswa->kelas ?? 'Belum Diatur',
+    'dunia_kerja'      => $siswa->perusahaan->nama_perusahaan ?? 'Belum Diatur',
+    'nama_instruktur'  => $siswa->instruktur->name ?? 'Belum Diatur',
+    'nama_guru'        => $siswa->guru->name ?? 'Belum Diatur',
+    'pekerjaan_projek' => $obs->pekerjaan_projek ?? '-',
+    'foto_dokumentasi' => $obs->foto_dokumentasi,
+    'status'           => $obs->status ?? 'draft',
+    'validated_at'     => $obs->validated_at,
+    'rows'             => $rows,
+];
+}
 
     public function cetakObservasi($siswa_id = null)
     {

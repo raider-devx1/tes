@@ -207,7 +207,7 @@ class UserSeeder extends Seeder
                     'guru_id'          => $guru->id,
                     'hari_tanggal'     => now()->subDays($o * 2)->toDateString(),
                     'pekerjaan_projek' => "Observasi projek ke-$o",
-                    'is_approved'      => $o === 1, 
+                    'foto_dokumentasi' => 'observasi/contoh_dokumentasi.jpg',
                 ]);
 
                 for ($p = 1; $p <= $o; $p++) {
@@ -237,8 +237,8 @@ class UserSeeder extends Seeder
             $kwu  = rand(3, 5);
             $rata = round(($soft + $hard + $peng + $kwu) / 4, 2);
 
-            $lengkap = ($i % 3 !== 0); 
-            
+            $lengkap = ($i % 3 !== 0);
+
             // Generate data komponen form guru (6 penilaian)
             $skor_soft_skill    = $lengkap ? rand(85, 95) : null;
             $skor_hard_skill    = $lengkap ? rand(85, 95) : null;
@@ -246,7 +246,7 @@ class UserSeeder extends Seeder
             $skor_kewirausahaan = $lengkap ? rand(85, 95) : null;
             $skor_laporan       = $lengkap ? rand(85, 95) : null;
             $skor_presentasi    = $lengkap ? rand(85, 95) : null;
-            
+
             $rataGuru = $lengkap ? (($skor_soft_skill + $skor_hard_skill + $skor_pengembangan + $skor_kewirausahaan + $skor_laporan + $skor_presentasi) / 6) : null;
 
             $nilaiAkhir = null;
@@ -268,32 +268,32 @@ class UserSeeder extends Seeder
                 'kewirausahaan'           => $kwu,
                 'rata_rata'               => $rata,
                 'catatan_rekomendasi'     => 'Direkomendasikan untuk pengembangan lebih lanjut.',
-                
+
                 // --- Backup Lama ---
                 'nilai_guru'              => $rataGuru,
                 'nilai_laporan'           => $skor_laporan,
-                
+
                 // --- Komponen Penilaian Guru ---
                 'skor_soft_skill'         => $skor_soft_skill,
                 'deskripsi_soft_skill'    => $lengkap ? 'Menunjukkan kemampuan komunikasi, kerja sama tim, dan disiplin yang sangat baik.' : null,
-                
+
                 'skor_hard_skill'         => $skor_hard_skill,
                 'deskripsi_hard_skill'    => $lengkap ? 'Mampu menerapkan kompetensi keahlian sesuai bidang PKL dengan sangat baik.' : null,
-                
+
                 'skor_pengembangan'       => $skor_pengembangan,
                 'deskripsi_pengembangan'  => $lengkap ? 'Cepat memahami keterampilan baru dan beradaptasi mandiri.' : null,
-                
+
                 'skor_kewirausahaan'      => $skor_kewirausahaan,
                 'deskripsi_kewirausahaan' => $lengkap ? 'Mampu melihat dan memahami peluang budaya wirausaha.' : null,
-                
+
                 'skor_laporan'            => $skor_laporan,
                 'deskripsi_laporan'       => $lengkap ? 'Penulisan laporan rapi, tata bahasa baku dan mudah dipahami.' : null,
-                
+
                 'skor_presentasi'         => $skor_presentasi,
                 'deskripsi_presentasi'    => $lengkap ? 'Materi presentasi disampaikan dengan sangat lugas dan profesional.' : null,
-                
+
                 'catatan_guru'            => $lengkap ? 'SANGAT BAIK. Terus pertahankan dan tingkatkan kemampuan secara konsisten.' : null,
-                
+
                 'nilai_akhir'             => $nilaiAkhir,
             ]);
 

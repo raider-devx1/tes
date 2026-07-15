@@ -15,11 +15,22 @@
             </div>
         @endif
 
+        <div class="mb-4 rounded-lg bg-yellow-50 border border-yellow-200 p-3 text-sm text-yellow-800">
+            Mengubah isi lembar akan mengembalikan status ke <strong>draft</strong> dan membatalkan validasi sebelumnya.
+            Lembar perlu dicetak, diparaf ulang, lalu divalidasi kembali.
+        </div>
+
         <form action="{{ route('guru.observasi.update', $observasi->id) }}" method="POST"
               class="bg-white rounded-xl shadow-sm border p-6 space-y-4"
               x-data="{
-                  items: {{ \Illuminate\Support\Js::from(old('items', $observasi->items ?? [['permasalahan' => '', 'solusi' => '']])) }},
-                  addItem() { this.items.push({ permasalahan: '', solusi: '' }) },
+                  items: {{ \Illuminate\Support\Js::from(old('items', $observasi->items->map(function($item) {
+                      return [
+                          'id' => $item->id,
+                          'permasalahan' => $item->permasalahan,
+                          'solusi' => $item->solusi
+                      ];
+                  })->toArray() ?? [['id' => null, 'permasalahan' => '', 'solusi' => '']])) }},
+                  addItem() { this.items.push({ id: null, permasalahan: '', solusi: '' }) },
                   removeItem(i) { if (this.items.length > 1) this.items.splice(i, 1) },
               }">
             @csrf
@@ -56,27 +67,26 @@
             {{-- ===== DAFTAR POIN PERMASALAHAN & SOLUSI (DINAMIS) ===== --}}
             <div class="space-y-4">
                 <label class="block text-sm font-medium text-gray-700">Permasalahan &amp; Solusi</label>
-
                 <div class="space-y-4">
                     <template x-for="(item, index) in items" :key="index">
                         <div class="rounded-lg border border-gray-200 p-4 bg-gray-50/50">
+
+                            <input type="hidden" :name="`items[${index}][id]`" x-model="item.id">
+
                             <div class="flex items-center justify-between mb-3">
-                                <span class="text-sm font-semibold text-gray-600">
-                                    Poin <span x-text="index + 1"></span>
-                                </span>
+                                <span class="text-sm font-semibold text-gray-600" x-text="'Poin ' + (index + 1)"></span>
+                                
                                 <button type="button" @click="removeItem(index)" x-show="items.length > 1"
                                         class="text-xs font-medium text-red-500 hover:text-red-700">
                                     Hapus
                                 </button>
                             </div>
-
                             <div class="mb-3">
                                 <label class="block text-sm font-medium text-gray-700 mb-1">Permasalahan</label>
                                 <textarea :name="`items[${index}][permasalahan]`" rows="3" required
                                           x-model="item.permasalahan"
                                           class="w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500 bg-white"></textarea>
                             </div>
-
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1">Solusi</label>
                                 <textarea :name="`items[${index}][solusi]`" rows="3" required
@@ -110,4 +120,4 @@
             </div>
         </form>
     </div>
-</x-app-layout>
+</x-app-layout> 
