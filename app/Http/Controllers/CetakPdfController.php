@@ -517,7 +517,7 @@ public function cetakAbsensiSemua()
    /**
      * FUNGSI BARU: Cetak Format Penilaian Khusus Guru Pembimbing
      */
-    public function cetakNilaiGuruSatuan($siswaId)
+    public function cetakNilaiGuruSatuan($siswaId = null)
     {
         // Pengecekan role dan data siswa dengan helper yang sudah ada
         $siswa = $this->resolveSiswa($siswaId);
@@ -580,4 +580,39 @@ public function cetakAbsensiSemua()
         
         return $pdf->stream('Nilai_PKL_Guru_'.$siswa->name.'.pdf');
     }
+
+    // ====== 4c. NILAI - CETAK TEMPLATE KOSONG (untuk diisi instruktur saat observasi) ======
+public function cetakTemplatePenilaianKosong($siswa_id = null)
+{
+    $siswa = $this->resolveSiswa($siswa_id);
+
+    $pengaturan  = $this->getPengaturan();
+    $tahunAjaran = optional(PeriodePkl::aktif())->tahun_ajaran ?? '2025/2026';
+
+    $tanggalObservasi = optional(
+        Observasi::where('user_id', $siswa->id)->orderBy('hari_tanggal', 'desc')->first()
+    )->hari_tanggal;
+
+    $data = [
+        'nama_sekolah'      => $pengaturan['nama_sekolah'] ?? 'UPTD SMKN 1 MAJENE',
+        'tahun_ajaran'      => $tahunAjaran,
+        'nama_siswa'        => $siswa->name,
+        'kelas'             => $siswa->kelas ?? 'Belum Diatur',
+        'program_keahlian'  => $siswa->jurusan ?? 'Belum Diatur',
+        'dunia_kerja'       => $siswa->perusahaan->nama_perusahaan ?? 'Belum Diatur',
+        'tanggal_observasi' => $tanggalObservasi,
+        'nama_instruktur'   => $siswa->instruktur->name ?? 'Belum Diatur',
+        'nama_guru'         => $siswa->guru->name ?? 'Belum Diatur',
+        'nip_guru'          => $siswa->guru->nip ?? '-',
+        'tanggal_cetak'     => Carbon::now()->locale('id')->translatedFormat('d F Y'),
+        'nilai'             => new Nilai(),  // objek kosong -> semua skor kosong
+        'kehadiran'         => [],
+        'isTemplate'        => true,         // tandai sebagai template kosong
+    ];
+
+    // Pakai ulang view pdf.nilai (tidak membuat file baru)
+    $pdf = Pdf::loadView('pdf.nilai', ['lembar' => [$data]])->setPaper('a4', 'portrait');
+    return $pdf->stream('Template_Penilaian_Kosong_'.$siswa->name.'.pdf');
+}
+
 }

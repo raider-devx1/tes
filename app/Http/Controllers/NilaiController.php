@@ -6,29 +6,30 @@ use App\Models\Nilai;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 
 class NilaiController extends Controller
 {
-    // Bobot nilai akhir (silakan sesuaikan)
-    private const BOBOT_INSTRUKTUR = 0.50; // 1–5 dikonversi ke 0–100
-    private const BOBOT_GURU       = 0.20; // 0–100
-    private const BOBOT_LAPORAN    = 0.30; // 0–100
-
-    /** Hitung nilai akhir (0–100). Null jika komponen belum lengkap. */
-    private function hitungNilaiAkhir(Nilai $n): ?float
+    /**
+     * Hitung rata-rata akhir (0-100) dari 6 komponen penilaian guru.
+     * Mengembalikan null bila belum semua komponen terisi.
+     */
+    private function hitungRataRata(Nilai $nilai): ?float
     {
-        if (is_null($n->rata_rata) || is_null($n->nilai_guru) || is_null($n->nilai_laporan)) {
+        $daftarSkor = [
+            $nilai->skor_soft_skill,
+            $nilai->skor_hard_skill,
+            $nilai->skor_pengembangan,
+            $nilai->skor_kewirausahaan,
+            $nilai->skor_laporan,
+            $nilai->skor_presentasi,
+        ];
+
+        if (in_array(null, $daftarSkor, true)) {
             return null;
         }
 
-        $instruktur100 = ($n->rata_rata / 5) * 100;
-
-        return round(
-            ($instruktur100 * self::BOBOT_INSTRUKTUR)
-            + ($n->nilai_guru * self::BOBOT_GURU)
-            + ($n->nilai_laporan * self::BOBOT_LAPORAN),
-            2
-        );
+        return round(array_sum($daftarSkor) / count($daftarSkor), 2);
     }
 
     /* ===================== SISWA PKL ===================== */
@@ -53,18 +54,21 @@ class NilaiController extends Controller
 
         $totalSiswa = (clone $rekapQuery)->count();
 
-        $sudahDinilaiInstruktur = (clone $rekapQuery)
-            ->whereHas('nilai', fn ($n) => $n->whereNotNull('rata_rata'))
-            ->count();
-
-        $sudahDinilaiGuru = (clone $rekapQuery)
-            ->whereHas('nilai', fn ($n) => $n->whereNotNull('skor_soft_skill'))
+        // Sudah dinilai LENGKAP = 6 komponen terisi semua
+        $sudahDinilai = (clone $rekapQuery)
+            ->whereHas('nilai', fn ($n) => $n
+                ->whereNotNull('skor_soft_skill')
+                ->whereNotNull('skor_hard_skill')
+                ->whereNotNull('skor_pengembangan')
+                ->whereNotNull('skor_kewirausahaan')
+                ->whereNotNull('skor_laporan')
+                ->whereNotNull('skor_presentasi'))
             ->count();
 
         $rekap = [
-            'total'                    => $totalSiswa,
-            'sudah_dinilai_instruktur' => $sudahDinilaiInstruktur,
-            'sudah_dinilai_guru'       => $sudahDinilaiGuru,
+            'total'         => $totalSiswa,
+            'sudah_dinilai' => $sudahDinilai,
+            'belum_dinilai' => $totalSiswa - $sudahDinilai,
         ];
 
         $siswa = User::where('role', 'siswa_pkl')
@@ -75,11 +79,11 @@ class NilaiController extends Controller
                 $u->where('name', 'like', "%{$q}%")
                   ->orWhere('nisn', 'like', "%{$q}%")))
             ->when($status === 'sudah', fn ($query) =>
-                $query->whereHas('nilai', fn ($n) => $n->whereNotNull('skor_soft_skill')))
+                $query->whereHas('nilai', fn ($n) => $n->whereNotNull('skor_presentasi')))
             ->when($status === 'belum', fn ($query) =>
                 $query->where(fn ($u) =>
                     $u->whereDoesntHave('nilai')
-                      ->orWhereHas('nilai', fn ($n) => $n->whereNull('skor_soft_skill'))))
+                      ->orWhereHas('nilai', fn ($n) => $n->whereNull('skor_presentasi'))))
             ->orderBy('name')
             ->paginate(15)
             ->withQueryString();
@@ -89,8 +93,18 @@ class NilaiController extends Controller
 
     public function storeGuru(Request $request)
     {
+        $siswa = User::where('id', $request->user_id)
+            ->where('role', 'siswa_pkl')
+            ->where('guru_id', Auth::id())
+            ->where('status_pkl', 'aktif')
+            ->firstOrFail();
+
+        $nilai = Nilai::firstOrNew(['user_id' => $siswa->id]);
+
+        // Foto wajib hanya jika belum pernah diunggah sebelumnya
+        $aturanFoto = $nilai->foto_lembar_instruktur ? 'nullable' : 'required';
+
         $request->validate([
-            'user_id'                 => 'required|exists:users,id',
             'skor_soft_skill'         => 'required|numeric|between:0,100',
             'deskripsi_soft_skill'    => 'required|string',
             'skor_hard_skill'         => 'required|numeric|between:0,100',
@@ -104,15 +118,14 @@ class NilaiController extends Controller
             'skor_presentasi'         => 'required|numeric|between:0,100',
             'deskripsi_presentasi'    => 'required|string',
             'catatan_guru'            => 'nullable|string',
+            'foto_lembar_instruktur'  => $aturanFoto . '|image|mimes:jpeg,png,jpg|max:2048',
+        ], [
+            'foto_lembar_instruktur.required' => 'Foto lembar penilaian instruktur wajib diunggah.',
+            'foto_lembar_instruktur.image'    => 'File harus berupa gambar (JPG/JPEG/PNG).',
+            'foto_lembar_instruktur.mimes'    => 'Format foto harus JPG, JPEG, atau PNG.',
+            'foto_lembar_instruktur.max'      => 'Ukuran foto maksimal 2 MB.',
         ]);
 
-        $siswa = User::where('id', $request->user_id)
-            ->where('role', 'siswa_pkl')
-            ->where('guru_id', Auth::id())
-            ->where('status_pkl', 'aktif')
-            ->firstOrFail();
-
-        $nilai = Nilai::firstOrNew(['user_id' => $siswa->id]);
         $nilai->guru_id = Auth::id();
 
         $nilai->skor_soft_skill         = $request->skor_soft_skill;
@@ -129,12 +142,20 @@ class NilaiController extends Controller
         $nilai->deskripsi_presentasi    = $request->deskripsi_presentasi;
         $nilai->catatan_guru            = $request->catatan_guru;
 
-        $rataGuru = ($request->skor_soft_skill + $request->skor_hard_skill + $request->skor_pengembangan
-            + $request->skor_kewirausahaan + $request->skor_laporan + $request->skor_presentasi) / 6;
+        // Simpan / ganti foto lembar penilaian instruktur
+        if ($request->hasFile('foto_lembar_instruktur')) {
+            if ($nilai->foto_lembar_instruktur && Storage::disk('public')->exists($nilai->foto_lembar_instruktur)) {
+                Storage::disk('public')->delete($nilai->foto_lembar_instruktur);
+            }
+            $nilai->foto_lembar_instruktur = $request->file('foto_lembar_instruktur')
+                ->store('nilai/lembar-instruktur', 'public');
+        }
 
-        $nilai->nilai_guru    = $rataGuru;
-        $nilai->nilai_laporan = $request->skor_laporan;
-        $nilai->nilai_akhir   = $this->hitungNilaiAkhir($nilai);
+        // Nilai akhir = rata-rata 6 komponen (0-100)
+        $nilai->nilai_akhir   = $this->hitungRataRata($nilai);
+        $nilai->nilai_guru    = $nilai->nilai_akhir;    // kompatibilitas kolom lama
+        $nilai->nilai_laporan = $request->skor_laporan; // kompatibilitas kolom lama
+
         $nilai->save();
 
         return redirect()->route('guru.nilai.index')

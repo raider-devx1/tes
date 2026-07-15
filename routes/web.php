@@ -66,7 +66,12 @@ Route::get('/cetak/observasi-semua', [CetakPdfController::class, 'cetakObservasi
     Route::get('/cetak/nilai/{siswa_id?}', [CetakPdfController::class, 'cetakNilai'])->name('cetak.nilai');
 Route::get('/cetak/nilai-semua', [CetakPdfController::class, 'cetakNilaiSemua'])->name('cetak.nilai.semua');
 // Route untuk cetak Nilai khusus PDF Guru
-Route::get('/cetak-nilai-guru/{siswa_id}', [App\Http\Controllers\CetakPdfController::class, 'cetakNilaiGuruSatuan'])->name('cetak.nilai.guru');
+// Cetak format Penilaian Guru (siswa: tanpa id -> otomatis dirinya; guru/admin: sertakan id)
+Route::get('/cetak-nilai-guru/{siswa_id?}', [CetakPdfController::class, 'cetakNilaiGuruSatuan'])->name('cetak.nilai.guru');
+
+// Cetak TEMPLATE KOSONG untuk diisi instruktur
+// Cetak template kosong penilaian (untuk diisi instruktur) — pakai ulang view pdf.nilai
+Route::get('/cetak-template-nilai/{siswa_id?}', [CetakPdfController::class, 'cetakTemplatePenilaianKosong'])->name('cetak.nilai.template');
 Route::get('/cetak/absensi/{siswa_id?}', [CetakPdfController::class, 'cetakAbsensi'])->name('cetak.absensi');
 Route::get('/cetak/absensi-semua', [CetakPdfController::class, 'cetakAbsensiSemua'])->name('cetak.absensi.semua');
 

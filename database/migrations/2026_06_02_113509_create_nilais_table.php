@@ -16,7 +16,7 @@ return new class extends Migration
             $table->foreignId('instruktur_id')->nullable()->constrained('users')->nullOnDelete();
             $table->foreignId('guru_id')->nullable()->constrained('users')->nullOnDelete();
 
-            // Komponen instruktur (skala 1-5)
+            // Komponen instruktur (skala 1-5) — kolom lama, disimpan untuk kompatibilitas data lama
             $table->integer('soft_skill')->nullable();
             $table->integer('hard_skill')->nullable();
             $table->integer('pengembangan_hard_skill')->nullable();
@@ -27,24 +27,27 @@ return new class extends Migration
             // --- Komponen guru (skala 0-100) beserta Deskripsi ---
             $table->integer('skor_soft_skill')->nullable();
             $table->text('deskripsi_soft_skill')->nullable();
-            
+
             $table->integer('skor_hard_skill')->nullable();
             $table->text('deskripsi_hard_skill')->nullable();
-            
+
             $table->integer('skor_pengembangan')->nullable();
             $table->text('deskripsi_pengembangan')->nullable();
-            
+
             $table->integer('skor_kewirausahaan')->nullable();
             $table->text('deskripsi_kewirausahaan')->nullable();
-            
+
             $table->integer('skor_laporan')->nullable();
             $table->text('deskripsi_laporan')->nullable();
-            
+
             $table->integer('skor_presentasi')->nullable();
             $table->text('deskripsi_presentasi')->nullable();
 
             $table->text('catatan_guru')->nullable();
-            
+
+            // Foto lembar penilaian instruktur (diunggah guru)
+            $table->string('foto_lembar_instruktur')->nullable();
+
             // Backup kompatibilitas nilai lama
             $table->decimal('nilai_guru', 5, 2)->nullable();
             $table->decimal('nilai_laporan', 5, 2)->nullable();

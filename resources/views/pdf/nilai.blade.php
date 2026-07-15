@@ -7,6 +7,7 @@
         body { font-family: Arial, Helvetica, sans-serif; font-size: 11pt; color:#000; margin: 30px; }
         .header { text-align:center; font-weight:bold; line-height:1.5; margin-bottom:20px; }
         .header div { text-transform:uppercase; }
+        .sub-template { font-weight:bold; text-transform:uppercase; margin-top:4px; }
         .biodata { width:100%; margin-bottom:18px; }
         .biodata td { padding:2px 0; vertical-align:top; }
         .biodata td.label { width:160px; }
@@ -43,27 +44,36 @@
     @endphp
 
     @foreach($lembar as $data)
-        @php extract($data); @endphp
+        @php 
+            extract($data); 
+            $isTemplate = $isTemplate ?? false;
+            // Memastikan variabel berbentuk objek agar tidak error saat diakses di Blade
+            $nilaiObj = (object) ($nilai ?? []);
+            $kehadiranArr = (array) ($kehadiran ?? []);
+        @endphp
 
         <div class="page">
             <div class="header">
                 <div>DAFTAR NILAI MURID</div>
                 <div>MATA PELAJARAN PKL</div>
-                <div> {{ $nama_sekolah }} </div>
-                <div>TAHUN PELAJARAN  {{ $tahun_ajaran }} </div>
+                <div> {{ $nama_sekolah ?? '' }} </div>
+                <div>TAHUN PELAJARAN  {{ $tahun_ajaran ?? '' }} </div>
+                @if($isTemplate)
+                    <div class="sub-template">(Lembar Penilaian untuk Diisi Instruktur)</div>
+                @endif
             </div>
 
             <table class="biodata">
-                <tr><td class="label">Nama Murid</td><td class="colon">:</td><td> {{ $nama_siswa }} </td></tr>
-                <tr><td class="label">Kelas</td><td class="colon">:</td><td> {{ $kelas }} </td></tr>
-                <tr><td class="label">Program Keahlian</td><td class="colon">:</td><td> {{ $program_keahlian }} </td></tr>
-                <tr><td class="label">Tempat PKL</td><td class="colon">:</td><td> {{ $dunia_kerja }} </td></tr>
+                <tr><td class="label">Nama Murid</td><td class="colon">:</td><td> {{ $nama_siswa ?? '' }} </td></tr>
+                <tr><td class="label">Kelas</td><td class="colon">:</td><td> {{ $kelas ?? '' }} </td></tr>
+                <tr><td class="label">Program Keahlian</td><td class="colon">:</td><td> {{ $program_keahlian ?? '' }} </td></tr>
+                <tr><td class="label">Tempat PKL</td><td class="colon">:</td><td> {{ $dunia_kerja ?? '' }} </td></tr>
                 <tr>
                     <td class="label">Tanggal Observasi</td><td class="colon">:</td>
-                    <td> {{ $tanggal_observasi ? \Carbon\Carbon::parse($tanggal_observasi)->format('d F Y') : '.....................' }} </td>
+                    <td> {{ ($isTemplate || empty($tanggal_observasi)) ? '.....................' : \Carbon\Carbon::parse($tanggal_observasi)->format('d F Y') }} </td>
                 </tr>
-                <tr><td class="label">Nama Instruktur</td><td class="colon">:</td><td> {{ $nama_instruktur }} </td></tr>
-                <tr><td class="label">Nama Pembimbing</td><td class="colon">:</td><td> {{ $nama_guru }} </td></tr>
+                <tr><td class="label">Nama Instruktur</td><td class="colon">:</td><td> {{ $nama_instruktur ?? '' }} </td></tr>
+                <tr><td class="label">Nama Pembimbing</td><td class="colon">:</td><td> {{ $nama_guru ?? '' }} </td></tr>
             </table>
 
             <table class="nilai">
@@ -77,32 +87,32 @@
                 <tbody>
                     <tr>
                         <td>1. Internalisasi dan Penerapan Soft Skills</td>
-                        <td class="text-center"> {{ $nilai->soft_skill ?? '-' }} </td>
-                        <td class="text-center"> {{ $predikat($nilai->soft_skill) }} </td>
+                        <td class="text-center"> {{ $isTemplate ? '' : ($nilaiObj->soft_skill ?? '-') }} </td>
+                        <td class="text-center"> {{ $isTemplate ? '' : $predikat($nilaiObj->soft_skill ?? null) }} </td>
                     </tr>
                     <tr>
                         <td>2. Penerapan Hard Skills</td>
-                        <td class="text-center"> {{ $nilai->hard_skill ?? '-' }} </td>
-                        <td class="text-center"> {{ $predikat($nilai->hard_skill) }} </td>
+                        <td class="text-center"> {{ $isTemplate ? '' : ($nilaiObj->hard_skill ?? '-') }} </td>
+                        <td class="text-center"> {{ $isTemplate ? '' : $predikat($nilaiObj->hard_skill ?? null) }} </td>
                     </tr>
                     <tr>
                         <td>3. Peningkatan &amp; Pengembangan Hard Skills</td>
-                        <td class="text-center"> {{ $nilai->pengembangan_hard_skill ?? '-' }} </td>
-                        <td class="text-center"> {{ $predikat($nilai->pengembangan_hard_skill) }} </td>
+                        <td class="text-center"> {{ $isTemplate ? '' : ($nilaiObj->pengembangan_hard_skill ?? '-') }} </td>
+                        <td class="text-center"> {{ $isTemplate ? '' : $predikat($nilaiObj->pengembangan_hard_skill ?? null) }} </td>
                     </tr>
                     <tr>
-                        <td>4. Penyiapan kemandirian kewirausahaan</td>
-                        <td class="text-center"> {{ $nilai->kewirausahaan ?? '-' }} </td>
-                        <td class="text-center"> {{ $predikat($nilai->kewirausahaan) }} </td>
+                        <td>4. Penyiapan kemandirim kewirausahaan</td>
+                        <td class="text-center"> {{ $isTemplate ? '' : ($nilaiObj->kewirausahaan ?? '-') }} </td>
+                        <td class="text-center"> {{ $isTemplate ? '' : $predikat($nilaiObj->kewirausahaan ?? null) }} </td>
                     </tr>
                 </tbody>
             </table>
 
             <table class="hadir">
                 <tr><td class="judul-hadir" colspan="2">Kehadiran :</td></tr>
-                <tr><td>Sakit</td><td>:  {{ $kehadiran['sakit'] ?? 0 }}  Hari</td></tr>
-                <tr><td>Ijin</td><td>:  {{ $kehadiran['izin'] ?? 0 }}  Hari</td></tr>
-                <tr><td>Tanpa Keterangan</td><td>:  {{ $kehadiran['alpha'] ?? 0 }}  Hari</td></tr>
+                <tr><td>Sakit</td><td>:  {{ $isTemplate ? '' : ($kehadiranArr['sakit'] ?? 0) }}  Hari</td></tr>
+                <tr><td>Ijin</td><td>:  {{ $isTemplate ? '' : ($kehadiranArr['izin'] ?? 0) }}  Hari</td></tr>
+                <tr><td>Tanpa Keterangan</td><td>:  {{ $isTemplate ? '' : ($kehadiranArr['alpha'] ?? 0) }}  Hari</td></tr>
             </table>
 
             <table class="footer">
@@ -110,13 +120,13 @@
                     <td>
                         <br>
                         Instruktur
-                        <div class="nama-ttd">  {{ $nama_instruktur }}  </div>
+                        <div class="nama-ttd">  {{ $nama_instruktur ?? '' }}  </div>
                     </td>
                     <td>
-                        Majene,  {{ $tanggal_cetak }}  <br>
+                        Majene,  {{ $isTemplate ? '.....................' : ($tanggal_cetak ?? '') }}  <br>
                         Guru Pembimbing,
-                        <div class="nama-ttd"> {{ $nama_guru }}  </div>
-                        <div class="nip-ttd">NIP.  {{ $nip_guru }} </div>
+                        <div class="nama-ttd"> {{ $nama_guru ?? '' }}  </div>
+                        <div class="nip-ttd">NIP.  {{ $nip_guru ?? '' }} </div>
                     </td>
                 </tr>
             </table>
