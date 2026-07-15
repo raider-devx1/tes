@@ -14,7 +14,6 @@
     <script>
         document.addEventListener('alpine:init', () => {
             Alpine.data('fotoBuktiPicker', () => ({
-                previewUrl: null,
                 fileName: '',
                 pilih(event) {
                     const file = event.target.files[0];
@@ -24,8 +23,6 @@
                     dt.items.add(file);
                     this.$refs.finalInput.files = dt.files;
                     this.fileName = file.name;
-                    if (this.previewUrl) URL.revokeObjectURL(this.previewUrl);
-                    this.previewUrl = URL.createObjectURL(file);
                 },
             }));
         });
@@ -51,19 +48,19 @@
 
                 @if(session('success'))
                     <div class="mb-4 rounded-xl border-2 border-[#05b169] bg-[#05b169]/10 px-4 py-3 text-sm font-semibold text-black">
-                         {{ session('success') }} 
+                         {{ session('success') }}  
                     </div>
                 @endif
                 @if(session('error'))
                     <div class="mb-4 rounded-xl border-2 border-[#cf202f] bg-[#cf202f]/10 px-4 py-3 text-sm font-semibold text-black">
-                         {{ session('error') }} 
+                         {{ session('error') }}  
                     </div>
                 @endif
                 @if($errors->any())
                     <div class="mb-4 rounded-xl border-2 border-[#cf202f] bg-[#cf202f]/10 px-4 py-3 text-sm font-semibold text-black">
                         <ul class="list-disc list-inside space-y-0.5">
                             @foreach($errors->all() as $error)
-                                <li> {{ $error }} </li>
+                                <li>  {{ $error }}  </li>
                             @endforeach
                         </ul>
                     </div>
@@ -107,9 +104,9 @@
                         <tbody class="divide-y divide-[#0047d6]/10">
                             @forelse($jurnals as $jurnal)
                             <tr class="align-top transition hover:bg-[#0047d6]/5">
-                                <td class="px-4 py-3 text-center font-semibold text-black"> {{ $jurnals->firstItem() + $loop->index }} </td>
+                                <td class="px-4 py-3 text-center font-semibold text-black">  {{ $jurnals->firstItem() + $loop->index }}  </td>
                                 <td class="px-4 py-3 whitespace-nowrap font-medium text-black">
-                                     {{ $jurnal->hari_tanggal->format('d/m/Y') }} 
+                                      {{ $jurnal->hari_tanggal->format('d/m/Y') }}  
                                 </td>
 
                                 <td class="px-4 py-3 text-black break-words">
@@ -118,13 +115,13 @@
                                         <div x-data="{ open: false }">
                                             <div class="flex items-start gap-1.5">
                                                 <span class="font-bold text-[#0047d6]">1.</span>
-                                                <span class="font-medium break-words"> {{ $items->first()->unit_kerja }} </span>
+                                                <span class="font-medium break-words">  {{ $items->first()->unit_kerja }}  </span>
                                             </div>
 
                                             @if($items->count() > 1)
                                                 <button type="button" @click="open = !open"
                                                         class="mt-1.5 inline-flex items-center gap-1 rounded-full bg-[#0047d6]/10 px-2.5 py-1 text-xs font-bold text-[#0047d6] transition hover:bg-[#0047d6]/20 focus:outline-none focus:ring-2 focus:ring-[#0047d6]/30">
-                                                    <span x-show="!open">+ {{ $items->count() - 1 }} pekerjaan lainnya</span>
+                                                    <span x-show="!open">+  {{ $items->count() - 1 }}  pekerjaan lainnya</span>
                                                     <span x-show="open" style="display:none;">Sembunyikan</span>
                                                     <svg class="h-3 w-3 transition-transform" :class="open ? 'rotate-180' : ''"
                                                          xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
@@ -136,7 +133,7 @@
                                                 <ol start="2" x-show="open" x-cloak x-transition
                                                     class="mt-2 list-decimal list-inside space-y-0.5 border-t border-[#0047d6]/15 pt-2 font-medium">
                                                     @foreach($items->slice(1) as $it)
-                                                        <li class="break-words"> {{ $it->unit_kerja }} </li>
+                                                        <li class="break-words">  {{ $it->unit_kerja }}  </li>
                                                     @endforeach
                                                 </ol>
                                             @endif
@@ -149,7 +146,7 @@
                                 <td class="px-4 py-3 text-black break-words">
                                     @if($jurnal->catatan_instruktur)
                                         <div class="rounded-lg border-l-4 border-[#d98200] bg-[#d98200]/5 p-2 text-xs font-medium italic text-black">
-                                             {{ $jurnal->catatan_instruktur }} 
+                                              {{ $jurnal->catatan_instruktur }}  
                                         </div>
                                     @else
                                         <span class="text-[#5b616e]">-</span>
@@ -162,7 +159,7 @@
                                         <div class="flex flex-col gap-1.5">
                                             @foreach($fotos as $k => $it)
                                                 <div class="flex flex-wrap items-center justify-center gap-1.5">
-                                                    <span class="text-xs font-semibold text-black">Foto {{ $k + 1 }} </span>
+                                                    <span class="text-xs font-semibold text-black">Foto  {{ $k + 1 }}  </span>
                                                     <a href="{{ asset('storage/'.$it->dokumentasi) }}" target="_blank"
                                                        class="inline-flex items-center rounded-full bg-[#0047d6] px-2.5 py-1 text-xs font-bold text-white transition hover:bg-[#0038aa]">
                                                         Lihat
@@ -197,7 +194,7 @@
 
                                         <a href="{{ route('cetak.jurnal', $jurnal->id) }}" target="_blank"
                                            class="inline-flex items-center rounded-full bg-[#0047d6] px-3 py-1.5 text-xs font-bold text-white transition hover:bg-[#0038aa]">
-                                             {{ $jurnal->status === 'disetujui' ? 'PDF Final' : 'Cetak Draf' }} 
+                                              {{ $jurnal->status === 'disetujui' ? 'PDF Final' : 'Cetak Draf' }}  
                                         </a>
 
                                         @if($jurnal->status !== 'disetujui')
@@ -207,7 +204,7 @@
                                             </a>
 
                                             <form method="POST" action="{{ route('siswa.jurnal.destroy', $jurnal->id) }}"
-                                                  data-confirm="Hapus jurnal {{ $jurnal->hari_tanggal->format('d/m/Y') }} ?"
+                                                  data-confirm="Hapus jurnal  {{ $jurnal->hari_tanggal->format('d/m/Y') }}  ?"
                                                   data-confirm-text="Data jurnal yang dihapus tidak dapat dikembalikan."
                                                   data-confirm-yes="Ya, hapus">
                                                 @csrf
@@ -231,7 +228,7 @@
 
                                                         <div class="flex items-center justify-between border-b-2 border-[#0047d6]/15 px-5 py-3">
                                                             <h3 class="text-base font-bold text-black">
-                                                                Ajukan Jurnal — {{ $jurnal->hari_tanggal->format('d/m/Y') }} 
+                                                                Ajukan Jurnal —  {{ $jurnal->hari_tanggal->format('d/m/Y') }}  
                                                             </h3>
                                                             <button type="button" @click="openAjukan = false"
                                                                     class="text-2xl leading-none text-[#5b616e] hover:text-black">&times;</button>
@@ -280,11 +277,6 @@
 
                                                                 <p class="mt-1 text-[11px] font-medium text-[#5b616e]">Format: jpg/jpeg/png, maks 2MB.</p>
                                                                 <p x-show="fileName" x-cloak class="mt-1 text-xs font-semibold text-[#05b169]" x-text="'Terpilih: ' + fileName"></p>
-
-                                                                <template x-if="previewUrl">
-                                                                    <img :src="previewUrl" alt="Preview bukti"
-                                                                         class="mt-2 max-h-48 rounded-xl border-2 border-[#0047d6]/15 object-contain">
-                                                                </template>
                                                             </div>
 
                                                             <div class="flex justify-end gap-2 pt-2">
