@@ -67,6 +67,9 @@ Route::get('/cetak/observasi-semua', [CetakPdfController::class, 'cetakObservasi
 Route::get('/cetak/nilai-semua', [CetakPdfController::class, 'cetakNilaiSemua'])->name('cetak.nilai.semua');
 // Route untuk cetak Nilai khusus PDF Guru
 Route::get('/cetak-nilai-guru/{siswa_id}', [App\Http\Controllers\CetakPdfController::class, 'cetakNilaiGuruSatuan'])->name('cetak.nilai.guru');
+Route::get('/cetak/absensi/{siswa_id?}', [CetakPdfController::class, 'cetakAbsensi'])->name('cetak.absensi');
+Route::get('/cetak/absensi-semua', [CetakPdfController::class, 'cetakAbsensiSemua'])->name('cetak.absensi.semua');
+
     // Surat Tugas (global)
     Route::get('/dokumen/surat-tugas/lihat', [DokumenController::class, 'lihatSuratTugas'])->name('dokumen.surat-tugas.lihat');
     Route::get('/dokumen/surat-tugas/download', [DokumenController::class, 'downloadSuratTugas'])->name('dokumen.surat-tugas.download');

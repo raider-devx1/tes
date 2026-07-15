@@ -391,6 +391,127 @@ class CetakPdfController extends Controller
         return $pdf->stream('Daftar_Nilai_PKL_Semua.pdf');
     }
 
+
+    // ====== 5. ABSENSI (FK: siswa_id) ======
+/** Hitung rekap kehadiran dari koleksi absensi. */
+private function rekapAbsensi($absensis): array
+{
+    return [
+        'hadir' => $absensis->where('status', 'Hadir')->count(),
+        'izin'  => $absensis->where('status', 'Izin')->count(),
+        'sakit' => $absensis->where('status', 'Sakit')->count(),
+        'alpha' => $absensis->where('status', 'Alpha')->count(),
+    ];
+}
+
+/** Bangun data lembar absensi: 1 siswa = 1 lembar, semua absensi jadi baris bernomor urut. */
+private function buildAbsensiLembar(User $siswa, ?string $bulan = null): array
+{
+    $query = Absensi::where('siswa_id', $siswa->id);
+
+    // $bulan format: YYYY-MM
+    if ($bulan) {
+        $query->whereYear('tanggal', substr($bulan, 0, 4))
+              ->whereMonth('tanggal', substr($bulan, 5, 2));
+    }
+
+    $absensis = $query->orderBy('tanggal', 'asc')->get();
+
+    return [
+        'siswa'    => $siswa,
+        'absensis' => $absensis,
+        'rekap'    => $this->rekapAbsensi($absensis),
+    ];
+}
+
+public function cetakAbsensi($siswa_id = null)
+{
+    $siswa = $this->resolveSiswa($siswa_id);
+    $siswa->loadMissing(['perusahaan', 'instruktur', 'guru']);
+
+    $query = Absensi::where('siswa_id', $siswa->id);
+
+    // Cetak SATU baris absensi (tombol PDF per baris)
+    if (request()->filled('absensi_id')) {
+        $query->where('id', request('absensi_id'));
+    }
+    // (opsional) semua absensi pada satu bulan (format YYYY-MM)
+    elseif (request()->filled('bulan')) {
+        $query->whereYear('tanggal', substr(request('bulan'), 0, 4))
+              ->whereMonth('tanggal', substr(request('bulan'), 5, 2));
+    }
+    // Tanpa filter -> semua absensi siswa (tombol "Cetak Semua PDF")
+
+    $absensis = $query->orderBy('tanggal', 'asc')->get();
+
+    abort_if(
+        (request()->filled('absensi_id') || request()->filled('bulan')) && $absensis->isEmpty(),
+        404,
+        'Absensi tidak ditemukan untuk dicetak.'
+    );
+
+    // Semua absensi dalam SATU lembar/tabel, bernomor urut.
+    $lembar = $absensis->isEmpty() ? [] : [[
+        'siswa'    => $siswa,
+        'absensis' => $absensis,
+        'rekap'    => $this->rekapAbsensi($absensis),
+    ]];
+
+    $pengaturan = $this->getPengaturan();
+
+    $pdf = Pdf::loadView('pdf.absensi', compact('lembar', 'pengaturan'))
+              ->setPaper('a4', 'portrait');
+
+    $suffix = request('absensi_id')
+        ? '_'.request('absensi_id')
+        : (request('bulan') ? '_'.request('bulan') : '');
+
+    return $pdf->stream('Absensi_PKL_'.$siswa->name.$suffix.'.pdf');
+}
+
+// ====== 5b. ABSENSI - CETAK SEMUA (semua siswa bimbingan, 1 siswa 1 halaman) ======
+public function cetakAbsensiSemua()
+{
+    $user = auth()->user();
+
+    if (!in_array($user->role, ['instruktur_industri', 'guru_pembimbing', 'admin'])) {
+        abort(403, 'Akses ditolak.');
+    }
+
+    // Jika ada filter bulan (YYYY-MM) → batasi ke bulan itu, jika tidak → semua data.
+    $bulan = request()->filled('bulan') ? request('bulan') : null;
+
+    $query = User::where('role', 'siswa_pkl')
+        ->where('status_pkl', 'aktif')
+        ->with(['perusahaan', 'instruktur', 'guru']);
+
+    if ($user->role === 'instruktur_industri') {
+        $query->where('instruktur_id', $user->id);
+    } elseif ($user->role === 'guru_pembimbing') {
+        $query->where('guru_id', $user->id);
+    }
+
+    $siswas = $query->orderBy('name')->get();
+
+    // Hanya sertakan siswa yang punya absensi (1 siswa = 1 halaman)
+    $lembar = [];
+    foreach ($siswas as $siswa) {
+        $data = $this->buildAbsensiLembar($siswa, $bulan);
+        if ($data['absensis']->isNotEmpty()) {
+            $lembar[] = $data;
+        }
+    }
+
+    abort_if(empty($lembar), 404, 'Tidak ada data absensi untuk dicetak.');
+
+    $pengaturan = $this->getPengaturan();
+
+    $pdf = Pdf::loadView('pdf.absensi', compact('lembar', 'pengaturan'))
+              ->setPaper('a4', 'portrait');
+
+    return $pdf->stream('Absensi_PKL_Semua'.($bulan ? '_'.$bulan : '').'.pdf');
+}
+
    /**
      * FUNGSI BARU: Cetak Format Penilaian Khusus Guru Pembimbing
      */
