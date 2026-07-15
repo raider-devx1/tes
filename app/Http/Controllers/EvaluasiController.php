@@ -12,11 +12,6 @@ use Illuminate\Support\Facades\DB;
 
 class EvaluasiController extends Controller
 {
-    // Bobot nilai akhir (samakan dengan NilaiController)
-    private const BOBOT_INSTRUKTUR = 0.50; // rata-rata 1–5 dikonversi ke 0–100
-    private const BOBOT_GURU       = 0.20; // 0–100
-    private const BOBOT_LAPORAN    = 0.30; // 0–100
-
     /** Opsi filter kelas & jurusan dari seluruh siswa PKL. */
     private function opsiFilter(): array
     {
@@ -39,95 +34,86 @@ class EvaluasiController extends Controller
             ->get(['id', 'name', 'nisn']);
     }
 
-    /** Hitung nilai akhir (0–100). Null bila komponen belum lengkap. */
-    private function hitungNilaiAkhir(Nilai $n): ?float
-    {
-        if (is_null($n->rata_rata) || is_null($n->nilai_guru) || is_null($n->nilai_laporan)) {
-            return null;
-        }
-
-        $instruktur100 = ($n->rata_rata / 5) * 100;
-
-        return round(
-            ($instruktur100 * self::BOBOT_INSTRUKTUR)
-            + ($n->nilai_guru * self::BOBOT_GURU)
-            + ($n->nilai_laporan * self::BOBOT_LAPORAN),
-            2
-        );
-    }
-
     /*
     |--------------------------------------------------------------------------
     | OBSERVASI — Evaluasi Lembar Observasi Guru
     |--------------------------------------------------------------------------
     */
-    public function observasi(Request $request)
+   /*
+|--------------------------------------------------------------------------
+| EVALUASI — LEMBAR OBSERVASI (admin: full akses, sama seperti guru)
+|--------------------------------------------------------------------------
+*/
+
+public function observasi(Request $request)
 {
     [$kelasList, $jurusanList] = $this->opsiFilter();
 
-    $q       = trim($request->get('q', ''));
-    $kelas   = $request->get('kelas');
-    $jurusan = $request->get('jurusan');
+    $query = Observasi::with(['user', 'guru', 'items'])
+        ->whereHas('user', fn ($u) => $u->where('role', 'siswa_pkl'))
+        ->when($request->filled('q'), function ($q) use ($request) {
+            $cari = trim($request->q);
+            $q->whereHas('user', fn ($u) => $u
+                ->where('name', 'like', "%{$cari}%")
+                ->orWhere('nisn', 'like', "%{$cari}%"));
+        })
+        ->when($request->filled('kelas'), fn ($q) => $q
+            ->whereHas('user', fn ($u) => $u->where('kelas', $request->kelas)))
+        ->when($request->filled('jurusan'), fn ($q) => $q
+            ->whereHas('user', fn ($u) => $u->where('jurusan', $request->jurusan)))
+        ->when($request->filled('status'), function ($q) use ($request) {
+            if ($request->status === '1') {
+                $q->where('status', 'tervalidasi');
+            } elseif ($request->status === '0') {
+                $q->where('status', '!=', 'tervalidasi');
+            }
+        })
+        ->latest('hari_tanggal');
 
+    $observasi = (clone $query)->paginate(15)->withQueryString();
+
+    $baseRekap = Observasi::whereHas('user', fn ($u) => $u->where('role', 'siswa_pkl'));
     $rekap = [
-        'total' => Observasi::count(),
+        'total'     => (clone $baseRekap)->count(),
+        'disetujui' => (clone $baseRekap)->where('status', 'tervalidasi')->count(),
+        'menunggu'  => (clone $baseRekap)->where('status', '!=', 'tervalidasi')->count(),
     ];
 
-    $jumlahGuru = User::where('role', 'guru_pembimbing')->count();
-
-    $observasi = Observasi::with(['user', 'guru', 'items'])
-        ->when($q !== '', fn ($query) => $query->whereHas('user', fn ($u) =>
-            $u->where('name', 'like', "%{$q}%")->orWhere('nisn', 'like', "%{$q}%")))
-        ->when($kelas, fn ($query) => $query->whereHas('user', fn ($u) => $u->where('kelas', $kelas)))
-        ->when($jurusan, fn ($query) => $query->whereHas('user', fn ($u) => $u->where('jurusan', $jurusan)))
-        ->latest()
-        ->paginate(15)
-        ->withQueryString();
-
-    $siswaList = $this->siswaList();
+    $jumlahGuru = User::where('role', 'guru')->count();
+    $siswaList  = $this->siswaList();   // <-- INI yang kurang
 
     return view('admin.evaluasi.observasi', compact(
         'observasi', 'rekap', 'jumlahGuru', 'kelasList', 'jurusanList', 'siswaList'
     ));
 }
 
-private function validasiObservasi(Request $request): array
+public function storeObservasi(Request $request)
 {
-    return $request->validate([
+    $validated = $request->validate([
         'user_id'              => 'required|exists:users,id',
         'hari_tanggal'         => 'required|date',
         'pekerjaan_projek'     => 'nullable|string|max:255',
-        'foto_dokumentasi'     => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
         'items'                => 'required|array|min:1',
         'items.*.permasalahan' => 'required|string',
         'items.*.solusi'       => 'required|string',
     ], [
-        'foto_dokumentasi.image' => 'Berkas yang diunggah harus berupa gambar.',
-        'foto_dokumentasi.mimes' => 'Format foto harus JPG, JPEG, atau PNG.',
-        'foto_dokumentasi.max'   => 'Ukuran foto maksimal 2 MB.',
+        'user_id.required'              => 'Siswa (NISN) wajib dipilih.',
         'items.required'                => 'Minimal harus ada 1 poin permasalahan & solusi.',
         'items.*.permasalahan.required' => 'Permasalahan pada setiap poin wajib diisi.',
         'items.*.solusi.required'       => 'Solusi pada setiap poin wajib diisi.',
     ]);
-}
 
-public function storeObservasi(Request $request)
-{
-    $validated = $this->validasiObservasi($request);
-    $siswa = User::where('role', 'siswa_pkl')->findOrFail($validated['user_id']);
+    $siswa = User::where('id', $validated['user_id'])
+        ->where('role', 'siswa_pkl')
+        ->firstOrFail();
 
-    $fotoPath = null;
-    if ($request->hasFile('foto_dokumentasi')) {
-        $fotoPath = $request->file('foto_dokumentasi')->store('observasi', 'public');
-    }
-
-    DB::transaction(function () use ($validated, $siswa, $fotoPath) {
+    DB::transaction(function () use ($validated, $siswa) {
         $observasi = Observasi::create([
             'user_id'          => $siswa->id,
-            'guru_id'          => $siswa->guru_id ?? Auth::id(),
+            'guru_id'          => $siswa->guru_id,
             'hari_tanggal'     => $validated['hari_tanggal'],
             'pekerjaan_projek' => $validated['pekerjaan_projek'] ?? null,
-            'foto_dokumentasi' => $fotoPath,
+            'status'           => 'draft',
         ]);
 
         foreach ($validated['items'] as $item) {
@@ -139,29 +125,39 @@ public function storeObservasi(Request $request)
     });
 
     return redirect()->route('admin.evaluasi.observasi')
-        ->with('success', 'Data observasi berhasil ditambahkan.');
+        ->with('success', 'Lembar observasi berhasil ditambahkan (status: menunggu). Lakukan validasi untuk mengesahkan.');
 }
 
 public function updateObservasi(Request $request, Observasi $observasi)
 {
-    $validated = $this->validasiObservasi($request);
-    $siswa = User::where('role', 'siswa_pkl')->findOrFail($validated['user_id']);
+    $validated = $request->validate([
+        'user_id'              => 'required|exists:users,id',
+        'hari_tanggal'         => 'required|date',
+        'pekerjaan_projek'     => 'nullable|string|max:255',
+        'items'                => 'required|array|min:1',
+        'items.*.permasalahan' => 'required|string',
+        'items.*.solusi'       => 'required|string',
+    ], [
+        'user_id.required'              => 'Siswa (NISN) wajib dipilih.',
+        'items.required'                => 'Minimal harus ada 1 poin permasalahan & solusi.',
+        'items.*.permasalahan.required' => 'Permasalahan pada setiap poin wajib diisi.',
+        'items.*.solusi.required'       => 'Solusi pada setiap poin wajib diisi.',
+    ]);
 
-    $fotoPath = $observasi->foto_dokumentasi;
-    if ($request->hasFile('foto_dokumentasi')) {
-        if ($fotoPath && Storage::disk('public')->exists($fotoPath)) {
-            Storage::disk('public')->delete($fotoPath);
-        }
-        $fotoPath = $request->file('foto_dokumentasi')->store('observasi', 'public');
-    }
+    $siswa = User::where('id', $validated['user_id'])
+        ->where('role', 'siswa_pkl')
+        ->firstOrFail();
 
-    DB::transaction(function () use ($observasi, $validated, $siswa, $fotoPath) {
+    DB::transaction(function () use ($observasi, $validated, $siswa) {
+        // Isi diubah -> status kembali ke menunggu & validasi lama dibatalkan
         $observasi->update([
-            'user_id'          => $siswa->id,
-            'guru_id'          => $siswa->guru_id ?? $observasi->guru_id,
-            'hari_tanggal'     => $validated['hari_tanggal'],
-            'pekerjaan_projek' => $validated['pekerjaan_projek'] ?? null,
-            'foto_dokumentasi' => $fotoPath,
+            'user_id'              => $siswa->id,
+            'guru_id'              => $siswa->guru_id,
+            'hari_tanggal'         => $validated['hari_tanggal'],
+            'pekerjaan_projek'     => $validated['pekerjaan_projek'] ?? null,
+            'status'               => 'draft',
+            'validated_by_guru_id' => null,
+            'validated_at'         => null,
         ]);
 
         $observasi->items()->delete();
@@ -174,7 +170,63 @@ public function updateObservasi(Request $request, Observasi $observasi)
     });
 
     return redirect()->route('admin.evaluasi.observasi')
-        ->with('success', 'Data observasi berhasil diperbarui.');
+        ->with('success', 'Lembar observasi diperbarui. Status kembali ke menunggu dan perlu divalidasi ulang.');
+}
+
+/**
+ * VALIDASI oleh Admin — unggah foto dokumentasi kegiatan + foto lembar
+ * observasi yang sudah diparaf instruktur & guru. Status -> tervalidasi.
+ */
+public function validasiObservasi(Request $request, Observasi $observasi)
+{
+    $request->validate([
+        'foto_dokumentasi'      => 'required|image|mimes:jpeg,png,jpg|max:2048',
+        'foto_lembar_observasi' => 'required|image|mimes:jpeg,png,jpg|max:2048',
+    ], [
+        'foto_dokumentasi.required'      => 'Foto dokumentasi kegiatan/kunjungan wajib diunggah.',
+        'foto_dokumentasi.image'         => 'Foto dokumentasi harus berupa gambar.',
+        'foto_dokumentasi.mimes'         => 'Format foto dokumentasi harus JPG, JPEG, atau PNG.',
+        'foto_dokumentasi.max'           => 'Ukuran foto dokumentasi maksimal 2 MB.',
+        'foto_lembar_observasi.required' => 'Foto lembar observasi yang sudah diparaf wajib diunggah.',
+        'foto_lembar_observasi.image'    => 'Foto lembar observasi harus berupa gambar.',
+        'foto_lembar_observasi.mimes'    => 'Format foto lembar observasi harus JPG, JPEG, atau PNG.',
+        'foto_lembar_observasi.max'      => 'Ukuran foto lembar observasi maksimal 2 MB.',
+    ]);
+
+    // Hapus foto lama bila validasi ulang
+    if ($observasi->foto_dokumentasi && Storage::disk('public')->exists($observasi->foto_dokumentasi)) {
+        Storage::disk('public')->delete($observasi->foto_dokumentasi);
+    }
+    if ($observasi->foto_lembar_observasi && Storage::disk('public')->exists($observasi->foto_lembar_observasi)) {
+        Storage::disk('public')->delete($observasi->foto_lembar_observasi);
+    }
+
+    $observasi->update([
+        'foto_dokumentasi'      => $request->file('foto_dokumentasi')->store('observasi/dokumentasi', 'public'),
+        'foto_lembar_observasi' => $request->file('foto_lembar_observasi')->store('observasi/lembar', 'public'),
+        'status'                => 'tervalidasi',
+        'validated_by_guru_id'  => $observasi->guru_id ?? Auth::id(),
+        'validated_at'          => now(),
+    ]);
+
+    return redirect()->route('admin.evaluasi.observasi')
+        ->with('success', 'Lembar observasi berhasil divalidasi. Hasil cetak kini menampilkan keterangan "SUDAH DIVALIDASI".');
+}
+
+/**
+ * BATALKAN VALIDASI oleh Admin — status kembali ke menunggu.
+ * Foto tetap disimpan agar mudah divalidasi ulang.
+ */
+public function batalValidasiObservasi(Observasi $observasi)
+{
+    $observasi->update([
+        'status'               => 'draft',
+        'validated_by_guru_id' => null,
+        'validated_at'         => null,
+    ]);
+
+    return redirect()->route('admin.evaluasi.observasi')
+        ->with('success', 'Validasi lembar observasi dibatalkan. Status kembali ke menunggu.');
 }
 
 public function destroyObservasi(Observasi $observasi)
@@ -182,8 +234,10 @@ public function destroyObservasi(Observasi $observasi)
     if ($observasi->foto_dokumentasi && Storage::disk('public')->exists($observasi->foto_dokumentasi)) {
         Storage::disk('public')->delete($observasi->foto_dokumentasi);
     }
+    if ($observasi->foto_lembar_observasi && Storage::disk('public')->exists($observasi->foto_lembar_observasi)) {
+        Storage::disk('public')->delete($observasi->foto_lembar_observasi);
+    }
 
-    $observasi->items()->delete();
     $observasi->delete();
 
     return redirect()->route('admin.evaluasi.observasi')
@@ -192,7 +246,7 @@ public function destroyObservasi(Observasi $observasi)
 
     /*
     |--------------------------------------------------------------------------
-    | PENILAIAN — Rekap & Penilaian Siswa PKL
+    | PENILAIAN — Rekap & Penilaian Siswa PKL (sistem guru 6 komponen 0–100)
     |--------------------------------------------------------------------------
     */
     public function penilaian(Request $request)
@@ -233,55 +287,84 @@ public function destroyObservasi(Observasi $observasi)
         ));
     }
 
-    private function validasiPenilaian(Request $request): void
+    /** Nilai akhir = rata-rata 6 komponen (0–100). Null bila belum lengkap. */
+    private function hitungRataRataAkhir(Nilai $nilai): ?float
     {
-        $request->validate([
-            'user_id'                 => 'required|exists:users,id',
-            'soft_skill'              => 'nullable|integer|between:1,5',
-            'hard_skill'              => 'nullable|integer|between:1,5',
-            'pengembangan_hard_skill' => 'nullable|integer|between:1,5',
-            'kewirausahaan'           => 'nullable|integer|between:1,5',
-            'catatan_rekomendasi'     => 'nullable|string',
-            'nilai_guru'              => 'nullable|numeric|between:0,100',
-            'nilai_laporan'           => 'nullable|numeric|between:0,100',
-            'catatan_guru'            => 'nullable|string',
-        ]);
+        $daftarSkor = [
+            $nilai->skor_soft_skill,
+            $nilai->skor_hard_skill,
+            $nilai->skor_pengembangan,
+            $nilai->skor_kewirausahaan,
+            $nilai->skor_laporan,
+            $nilai->skor_presentasi,
+        ];
+
+        if (in_array(null, $daftarSkor, true)) {
+            return null;
+        }
+
+        return round(array_sum($daftarSkor) / count($daftarSkor), 2);
     }
 
-    /** Isi seluruh komponen nilai + hitung rata-rata & nilai akhir. */
+    private function aturanPenilaian(): array
+    {
+        return [
+            'user_id'                 => 'required|exists:users,id',
+            'skor_soft_skill'         => 'required|numeric|between:0,100',
+            'deskripsi_soft_skill'    => 'required|string',
+            'skor_hard_skill'         => 'required|numeric|between:0,100',
+            'deskripsi_hard_skill'    => 'required|string',
+            'skor_pengembangan'       => 'required|numeric|between:0,100',
+            'deskripsi_pengembangan'  => 'required|string',
+            'skor_kewirausahaan'      => 'required|numeric|between:0,100',
+            'deskripsi_kewirausahaan' => 'required|string',
+            'skor_laporan'            => 'required|numeric|between:0,100',
+            'deskripsi_laporan'       => 'required|string',
+            'skor_presentasi'         => 'required|numeric|between:0,100',
+            'deskripsi_presentasi'    => 'required|string',
+            'catatan_guru'            => 'nullable|string',
+            'foto_lembar_instruktur'  => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+        ];
+    }
+
+    /** Isi seluruh komponen nilai (sistem guru) + hitung nilai akhir. */
     private function isiNilai(Nilai $nilai, Request $request, User $siswa): void
     {
-        $nilai->user_id                 = $siswa->id;
-        $nilai->soft_skill              = $request->soft_skill;
-        $nilai->hard_skill              = $request->hard_skill;
-        $nilai->pengembangan_hard_skill = $request->pengembangan_hard_skill;
-        $nilai->kewirausahaan           = $request->kewirausahaan;
+        $nilai->user_id = $siswa->id;
+        // Instruktur kini bukan akun; guru penilai diambil dari data siswa bila belum tercatat.
+        $nilai->guru_id = $nilai->guru_id ?? $siswa->guru_id;
 
-        // Rata-rata instruktur hanya dihitung bila 4 komponen terisi penuh
-        $komponen = [
-            $request->soft_skill,
-            $request->hard_skill,
-            $request->pengembangan_hard_skill,
-            $request->kewirausahaan,
-        ];
-        $terisiPenuh = count(array_filter($komponen, fn ($v) => $v !== null && $v !== '')) === 4;
-        $nilai->rata_rata = $terisiPenuh ? array_sum($komponen) / 4 : null;
+        $nilai->skor_soft_skill         = $request->skor_soft_skill;
+        $nilai->deskripsi_soft_skill    = $request->deskripsi_soft_skill;
+        $nilai->skor_hard_skill         = $request->skor_hard_skill;
+        $nilai->deskripsi_hard_skill    = $request->deskripsi_hard_skill;
+        $nilai->skor_pengembangan       = $request->skor_pengembangan;
+        $nilai->deskripsi_pengembangan  = $request->deskripsi_pengembangan;
+        $nilai->skor_kewirausahaan      = $request->skor_kewirausahaan;
+        $nilai->deskripsi_kewirausahaan = $request->deskripsi_kewirausahaan;
+        $nilai->skor_laporan            = $request->skor_laporan;
+        $nilai->deskripsi_laporan       = $request->deskripsi_laporan;
+        $nilai->skor_presentasi         = $request->skor_presentasi;
+        $nilai->deskripsi_presentasi    = $request->deskripsi_presentasi;
+        $nilai->catatan_guru            = $request->catatan_guru;
 
-        $nilai->catatan_rekomendasi = $request->catatan_rekomendasi;
-        $nilai->nilai_guru          = $request->nilai_guru;
-        $nilai->nilai_laporan       = $request->nilai_laporan;
-        $nilai->catatan_guru        = $request->catatan_guru;
+        if ($request->hasFile('foto_lembar_instruktur')) {
+            if ($nilai->foto_lembar_instruktur && Storage::disk('public')->exists($nilai->foto_lembar_instruktur)) {
+                Storage::disk('public')->delete($nilai->foto_lembar_instruktur);
+            }
+            $nilai->foto_lembar_instruktur = $request->file('foto_lembar_instruktur')
+                ->store('nilai/lembar-instruktur', 'public');
+        }
 
-        // Lengkapi penilai dari data siswa bila belum ada (tanpa menimpa yang sudah tercatat)
-        $nilai->instruktur_id = $nilai->instruktur_id ?? $siswa->instruktur_id;
-        $nilai->guru_id       = $nilai->guru_id ?? $siswa->guru_id;
-
-        $nilai->nilai_akhir = $this->hitungNilaiAkhir($nilai);
+        // Nilai akhir = rata-rata 6 komponen (0–100)
+        $nilai->nilai_akhir   = $this->hitungRataRataAkhir($nilai);
+        $nilai->nilai_guru    = $nilai->nilai_akhir;    // kompatibilitas kolom lama
+        $nilai->nilai_laporan = $request->skor_laporan; // kompatibilitas kolom lama
     }
 
     public function storePenilaian(Request $request)
     {
-        $this->validasiPenilaian($request);
+        $request->validate($this->aturanPenilaian());
         $siswa = User::where('role', 'siswa_pkl')->findOrFail($request->user_id);
 
         $nilai = Nilai::firstOrNew(['user_id' => $siswa->id]);
@@ -294,7 +377,7 @@ public function destroyObservasi(Observasi $observasi)
 
     public function updatePenilaian(Request $request, Nilai $nilai)
     {
-        $this->validasiPenilaian($request);
+        $request->validate($this->aturanPenilaian());
         $siswa = User::where('role', 'siswa_pkl')->findOrFail($request->user_id);
 
         $this->isiNilai($nilai, $request, $siswa);
@@ -306,6 +389,9 @@ public function destroyObservasi(Observasi $observasi)
 
     public function destroyPenilaian(Nilai $nilai)
     {
+        if ($nilai->foto_lembar_instruktur && Storage::disk('public')->exists($nilai->foto_lembar_instruktur)) {
+            Storage::disk('public')->delete($nilai->foto_lembar_instruktur);
+        }
         $nilai->delete();
 
         return redirect()->route('admin.evaluasi.penilaian')

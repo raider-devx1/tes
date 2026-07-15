@@ -30,7 +30,6 @@ class SiswaController extends Controller
             'jurusan'       => ['nullable', 'string', 'max:100'],
             'status_pkl'    => ['required', Rule::in(['belum', 'aktif', 'selesai'])],
             'perusahaan_id' => ['nullable', 'exists:perusahaans,id'],
-            'instruktur_id' => ['nullable', 'exists:users,id'],
             'guru_id'       => ['nullable', 'exists:users,id'],
             'periode_id'    => ['nullable', 'exists:periode_pkls,id'],
             'foto'          => ['nullable', 'image', 'mimes:jpeg,jpg,png', 'max:2048'],
@@ -44,7 +43,6 @@ class SiswaController extends Controller
         return [
             'perusahaanList' => Perusahaan::orderBy('nama_perusahaan')->get(),
             'guruList'       => User::where('role', 'guru_pembimbing')->orderBy('name')->get(),
-            'instrukturList' => User::where('role', 'instruktur_industri')->orderBy('name')->get(),
             'periodeList'    => PeriodePkl::orderByDesc('is_active')->orderByDesc('tanggal_mulai')->get(),
         ];
     }
@@ -64,7 +62,7 @@ class SiswaController extends Controller
 
         $siswa = User::query()
             ->where('role', 'siswa_pkl')
-            ->with(['perusahaan', 'guru', 'instruktur', 'periode'])
+            ->with(['perusahaan', 'guru', 'periode'])
             ->when($q, function ($query) use ($q) {
                 $query->where('name', 'like', "%{$q}%")
                       ->orWhere('nisn', 'like', "%{$q}%");
@@ -157,7 +155,7 @@ class SiswaController extends Controller
 
         $siswa = User::query()
             ->where('role', 'siswa_pkl')
-            ->with(['perusahaan', 'guru', 'instruktur', 'periode'])
+            ->with(['perusahaan', 'guru', 'periode'])
             ->when($q, function ($query) use ($q) {
                 $query->where('name', 'like', "%{$q}%")
                       ->orWhere('nisn', 'like', "%{$q}%");

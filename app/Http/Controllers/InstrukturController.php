@@ -5,26 +5,23 @@ namespace App\Http\Controllers;
 use App\Models\Perusahaan;
 use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\Rule;
 
 class InstrukturController extends Controller
 {
-    /** Validasi akun instruktur + data industri (dipakai store & update). */
-    private function validateData(Request $request, ?User $instruktur = null): array
+    /**
+     * Instruktur industri kini BUKAN akun login.
+     * Halaman ini mengelola DATA INDUSTRI (perusahaan) sekaligus nama
+     * pembimbing/instruktur industrinya sebagai teks biasa.
+     */
+
+    /** Validasi data industri + nama pembimbing (dipakai store & update). */
+    private function validateData(Request $request): array
     {
         return $request->validate([
-            // --- Akun instruktur ---
-            'name'     => ['required', 'string', 'max:100'],
-            'email'    => ['required', 'email', 'max:150', Rule::unique('users', 'email')->ignore($instruktur?->id)],
-            'jabatan'  => ['nullable', 'string', 'max:100'],
-            'no_hp'    => ['nullable', 'string', 'max:20'],
-            'password' => [$instruktur ? 'nullable' : 'required', 'string', 'min:6', 'confirmed'],
-            // --- Data industri (ditulis langsung) ---
-            'nama_perusahaan' => ['required', 'string', 'max:150'],
-            'alamat'          => ['required', 'string', 'max:255'],
-            'telepon'         => ['nullable', 'string', 'max:20'],
+            'nama_perusahaan'     => ['required', 'string', 'max:150'],
+            'alamat'              => ['required', 'string', 'max:255'],
+            'telepon'             => ['nullable', 'string', 'max:20'],
+            'pembimbing_industri' => ['nullable', 'string', 'max:100'],
         ]);
     }
 
@@ -32,125 +29,73 @@ class InstrukturController extends Controller
     {
         $q = trim((string) $request->get('q', ''));
 
-        $totalInstruktur = User::where('role', 'instruktur_industri')->count();
-        $totalIndustri   = Perusahaan::count();
-
-        $instrukturIdsAdaSiswa = User::where('role', 'siswa_pkl')
-            ->whereNotNull('instruktur_id')
-            ->distinct()
-            ->pluck('instruktur_id');
-
-        $instrukturAdaSiswa = $instrukturIdsAdaSiswa->count();
-        $totalSiswaIndustri = User::where('role', 'siswa_pkl')->whereNotNull('instruktur_id')->count();
+        $totalIndustri      = Perusahaan::count();
+        $totalPembimbing    = Perusahaan::whereNotNull('pembimbing_industri')
+            ->where('pembimbing_industri', '!=', '')->count();
+        $industriAdaSiswa   = Perusahaan::whereHas('siswa')->count();
+        $totalSiswaIndustri = User::where('role', 'siswa_pkl')
+            ->whereNotNull('perusahaan_id')->count();
 
         $rekap = [
-            'total'          => $totalInstruktur,
-            'industri'       => $totalIndustri,
-            'ada_siswa'      => $instrukturAdaSiswa,
+            'total'          => $totalIndustri,
+            'pembimbing'     => $totalPembimbing,
+            'ada_siswa'      => $industriAdaSiswa,
             'siswa_industri' => $totalSiswaIndustri,
         ];
 
-        $instruktur = User::query()
-            ->where('role', 'instruktur_industri')
-            ->with('perusahaan')
+        $industri = Perusahaan::query()
+            ->withCount('siswa')
             ->when($q, function ($query) use ($q) {
-                $query->where('name', 'like', "%{$q}%")
-                      ->orWhere('email', 'like', "%{$q}%")
-                      ->orWhere('jabatan', 'like', "%{$q}%");
+                $query->where('nama_perusahaan', 'like', "%{$q}%")
+                      ->orWhere('pembimbing_industri', 'like', "%{$q}%")
+                      ->orWhere('alamat', 'like', "%{$q}%");
             })
-            ->orderBy('name')
+            ->orderBy('nama_perusahaan')
             ->paginate(10)
             ->withQueryString();
 
-        return view('admin.instruktur.index', compact('instruktur', 'q', 'rekap'));
+        return view('admin.instruktur.index', compact('industri', 'q', 'rekap'));
     }
 
     public function create()
     {
-        return view('admin.instruktur.create', ['instruktur' => new User()]);
+        return view('admin.instruktur.create', ['perusahaan' => new Perusahaan()]);
     }
 
     public function store(Request $request)
     {
         $data = $this->validateData($request);
 
-        DB::transaction(function () use ($data) {
-            $perusahaan = Perusahaan::create([
-                'nama_perusahaan'     => $data['nama_perusahaan'],
-                'alamat'              => $data['alamat'],
-                'telepon'             => $data['telepon'] ?? null,
-                'pembimbing_industri' => $data['name'],
-            ]);
-
-            User::create([
-                'name'          => $data['name'],
-                'email'         => $data['email'],
-                'jabatan'       => $data['jabatan'] ?? null,
-                'no_hp'         => $data['no_hp'] ?? null,
-                'role'          => 'instruktur_industri',
-                'perusahaan_id' => $perusahaan->id,
-                'password'      => Hash::make($data['password']),
-            ]);
-        });
+        Perusahaan::create($data);
 
         return redirect()->route('admin.instruktur.index')
-            ->with('success', 'Instruktur & data industrinya berhasil ditambahkan.');
+            ->with('success', 'Data industri & pembimbingnya berhasil ditambahkan.');
     }
 
-    public function edit(User $instruktur)
+    public function edit(Perusahaan $perusahaan)
     {
-        $instruktur->load('perusahaan');
-        return view('admin.instruktur.edit', ['instruktur' => $instruktur]);
+        return view('admin.instruktur.edit', ['perusahaan' => $perusahaan]);
     }
 
-    public function update(Request $request, User $instruktur)
+    public function update(Request $request, Perusahaan $perusahaan)
     {
-        $data = $this->validateData($request, $instruktur);
+        $data = $this->validateData($request);
 
-        DB::transaction(function () use ($data, $instruktur) {
-            $perusahaanData = [
-                'nama_perusahaan'     => $data['nama_perusahaan'],
-                'alamat'              => $data['alamat'],
-                'telepon'             => $data['telepon'] ?? null,
-                'pembimbing_industri' => $data['name'],
-            ];
-
-            if ($instruktur->perusahaan) {
-                $instruktur->perusahaan->update($perusahaanData);
-                $perusahaanId = $instruktur->perusahaan->id;
-            } else {
-                $perusahaanId = Perusahaan::create($perusahaanData)->id;
-            }
-
-            $payload = [
-                'name'          => $data['name'],
-                'email'         => $data['email'],
-                'jabatan'       => $data['jabatan'] ?? null,
-                'no_hp'         => $data['no_hp'] ?? null,
-                'perusahaan_id' => $perusahaanId,
-            ];
-            if (!empty($data['password'])) {
-                $payload['password'] = Hash::make($data['password']);
-            }
-
-            $instruktur->update($payload);
-        });
+        $perusahaan->update($data);
 
         return redirect()->route('admin.instruktur.index')
-            ->with('success', 'Instruktur & data industrinya berhasil diperbarui.');
+            ->with('success', 'Data industri & pembimbingnya berhasil diperbarui.');
     }
 
-    public function destroy(User $instruktur)
+    public function destroy(Perusahaan $perusahaan)
     {
-        $perusahaan = $instruktur->perusahaan;
-        $instruktur->delete();
-
-        if ($perusahaan
-            && !$perusahaan->siswa()->exists()
-            && !User::where('perusahaan_id', $perusahaan->id)->exists()) {
-            $perusahaan->delete();
+        if ($perusahaan->siswa()->exists()
+            || User::where('perusahaan_id', $perusahaan->id)->exists()) {
+            return back()->with('error', 'Industri tidak bisa dihapus karena masih dipakai siswa.');
         }
 
-        return back()->with('success', 'Akun instruktur industri berhasil dihapus.');
+        $perusahaan->delete();
+
+        return back()->with('success', 'Data industri berhasil dihapus.');
     }
 }

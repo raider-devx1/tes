@@ -32,313 +32,428 @@ class MonitoringController extends Controller
     }
 
     // ===================================================================
-    // JURNAL
-    // ===================================================================
-    public function jurnal(Request $request)
-    {
-        $q       = trim($request->get('q', ''));
-        $status  = $request->get('status', '');
-        $kelas   = $request->get('kelas', '');
-        $jurusan = $request->get('jurusan', '');
-        $tanggal = $request->get('tanggal', '');
+// JURNAL  (skema baru: status = draft | diajukan | disetujui)
+// ===================================================================
+public function jurnal(Request $request)
+{
+    $q       = trim($request->get('q', ''));
+    $status  = $request->get('status', '');
+    $kelas   = $request->get('kelas', '');
+    $jurusan = $request->get('jurusan', '');
+    $tanggal = $request->get('tanggal', '');
 
-        $jurnal = Jurnal::query()
-            ->with(['siswa', 'items'])
-            ->when($q, fn ($query) => $query->whereHas('siswa', fn ($s) =>
-                $s->where('name', 'like', "%{$q}%")->orWhere('nisn', 'like', "%{$q}%")))
-            ->when($kelas,   fn ($query) => $query->whereHas('siswa', fn ($s) => $s->where('kelas', $kelas)))
-            ->when($jurusan, fn ($query) => $query->whereHas('siswa', fn ($s) => $s->where('jurusan', $jurusan)))
-            ->when($status,  fn ($query) => $query->where('status_persetujuan', $status))
-            ->when($tanggal, fn ($query) => $query->whereDate('hari_tanggal', $tanggal))
-            ->orderByDesc('hari_tanggal')
-            ->paginate(15)
-            ->withQueryString();
+    $jurnal = Jurnal::query()
+        ->with(['siswa', 'items'])
+        ->when($q, fn ($query) => $query->whereHas('siswa', fn ($s) =>
+            $s->where('name', 'like', "%{$q}%")->orWhere('nisn', 'like', "%{$q}%")))
+        ->when($kelas,   fn ($query) => $query->whereHas('siswa', fn ($s) => $s->where('kelas', $kelas)))
+        ->when($jurusan, fn ($query) => $query->whereHas('siswa', fn ($s) => $s->where('jurusan', $jurusan)))
+        ->when($status,  fn ($query) => $query->where('status', $status))
+        ->when($tanggal, fn ($query) => $query->whereDate('hari_tanggal', $tanggal))
+        ->orderByDesc('hari_tanggal')
+        ->paginate(15)
+        ->withQueryString();
 
-        $rekap = [
-            'total'     => Jurnal::count(),
-            'disetujui' => Jurnal::where('status_persetujuan', 'disetujui')->count(),
-            'pending'   => Jurnal::where('status_persetujuan', 'pending')->count(),
-            'revisi'    => Jurnal::where('status_persetujuan', 'revisi')->count(),
-        ];
+    $rekap = [
+        'total'     => Jurnal::count(),
+        'disetujui' => Jurnal::where('status', 'disetujui')->count(),
+        'diajukan'  => Jurnal::where('status', 'diajukan')->count(),
+        'draft'     => Jurnal::where('status', 'draft')->count(),
+    ];
 
-        return view('admin.monitoring.jurnal', array_merge(
-            compact('jurnal', 'q', 'status', 'kelas', 'jurusan', 'tanggal', 'rekap'),
-            ['siswaList' => $this->siswaList()],
-            $this->opsiFilter()
-        ));
-    }
+    return view('admin.monitoring.jurnal', array_merge(
+        compact('jurnal', 'q', 'status', 'kelas', 'jurusan', 'tanggal', 'rekap'),
+        ['siswaList' => $this->siswaList()],
+        $this->opsiFilter()
+    ));
+}
 
-    public function storeJurnal(Request $request)
-    {
-        $data = $request->validate([
-            'siswa_id'           => ['required', 'exists:users,id'],
-            'hari_tanggal'       => ['required', 'date'],
-            'status_persetujuan' => ['required', Rule::in(['pending', 'disetujui', 'revisi'])],
-            'catatan_instruktur' => ['nullable', 'string'],
-            'items'              => ['required', 'array', 'min:1'],
-            'items.*.unit_kerja' => ['nullable', 'string', 'max:255'],
+public function storeJurnal(Request $request)
+{
+    $data = $request->validate([
+        'siswa_id'            => ['required', 'exists:users,id'],
+        'hari_tanggal'        => ['required', 'date'],
+        'status'              => ['required', Rule::in(['draft', 'diajukan', 'disetujui'])],
+        'catatan_instruktur'  => ['nullable', 'string'],
+        'foto_bukti'          => ['nullable', 'image', 'mimes:jpeg,png,jpg', 'max:2048'],
+        'items'               => ['required', 'array', 'min:1'],
+        'items.*.unit_kerja'  => ['required', 'string'],
+        'items.*.dokumentasi' => ['nullable', 'image', 'mimes:jpeg,png,jpg', 'max:2048'],
+    ], [
+        'items.required'              => 'Minimal harus ada 1 unit kerja / pekerjaan.',
+        'items.min'                   => 'Minimal harus ada 1 unit kerja / pekerjaan.',
+        'items.*.unit_kerja.required' => 'Unit kerja / pekerjaan wajib diisi pada setiap poin.',
+    ]);
+
+    DB::transaction(function () use ($request, $data) {
+        $fotoBukti = null;
+        if ($request->hasFile('foto_bukti')) {
+            $fotoBukti = $request->file('foto_bukti')->store('bukti_fisik/jurnal', 'public');
+        }
+
+        $jurnal = Jurnal::create([
+            'siswa_id'             => $data['siswa_id'],
+            'hari_tanggal'         => $data['hari_tanggal'],
+            'status'               => $data['status'],
+            'catatan_instruktur'   => $data['catatan_instruktur'] ?? null,
+            'foto_bukti'           => $fotoBukti,
+            'validated_by_guru_id' => $data['status'] === 'disetujui' ? Auth::id() : null,
+            'validated_at'         => $data['status'] === 'disetujui' ? now() : null,
         ]);
 
-        DB::transaction(function () use ($request, $data) {
-            $jurnal = Jurnal::create([
-                'siswa_id'           => $data['siswa_id'],
-                'hari_tanggal'       => $data['hari_tanggal'],
-                'status_persetujuan' => $data['status_persetujuan'],
-                'catatan_instruktur' => $data['catatan_instruktur'] ?? null,
-                'disetujui_oleh'     => $data['status_persetujuan'] === 'disetujui' ? Auth::id() : null,
-            ]);
-
-            foreach ($request->input('items', []) as $row) {
-                $unit = trim((string) ($row['unit_kerja'] ?? ''));
-                if ($unit === '') {
-                    continue;
-                }
-                $jurnal->items()->create(['unit_kerja' => $unit]);
+        foreach ($request->input('items', []) as $i => $row) {
+            $unit = trim((string) ($row['unit_kerja'] ?? ''));
+            if ($unit === '') {
+                continue;
             }
-        });
+            $path = null;
+            if ($request->hasFile("items.$i.dokumentasi")) {
+                $path = $request->file("items.$i.dokumentasi")->store('dokumentasi_jurnal', 'public');
+            }
+            $jurnal->items()->create([
+                'unit_kerja'  => $unit,
+                'dokumentasi' => $path,
+            ]);
+        }
+    });
 
-        return back()->with('success', 'Jurnal berhasil ditambahkan.');
-    }
+    return back()->with('success', 'Jurnal berhasil ditambahkan.');
+}
 
-    public function updateJurnal(Request $request, Jurnal $jurnal)
-    {
-        $data = $request->validate([
-            'siswa_id'           => ['required', 'exists:users,id'],
-            'hari_tanggal'       => ['required', 'date'],
-            'status_persetujuan' => ['required', Rule::in(['pending', 'disetujui', 'revisi'])],
-            'catatan_instruktur' => ['nullable', 'string'],
-            'items'              => ['nullable', 'array'],
-            'items.*.id'         => ['nullable', 'integer'],
-            'items.*.unit_kerja' => ['nullable', 'string', 'max:255'],
+public function updateJurnal(Request $request, Jurnal $jurnal)
+{
+    $data = $request->validate([
+        'siswa_id'                     => ['required', 'exists:users,id'],
+        'hari_tanggal'                 => ['required', 'date'],
+        'status'                       => ['required', Rule::in(['draft', 'diajukan', 'disetujui'])],
+        'catatan_instruktur'           => ['nullable', 'string'],
+        'foto_bukti'                   => ['nullable', 'image', 'mimes:jpeg,png,jpg', 'max:2048'],
+        'hapus_foto_bukti'             => ['nullable', 'boolean'],
+        'items'                        => ['nullable', 'array'],
+        'items.*.id'                   => ['nullable', 'integer'],
+        'items.*.unit_kerja'           => ['nullable', 'string'],
+        'items.*.existing_dokumentasi' => ['nullable', 'string'],
+        'items.*.dokumentasi'          => ['nullable', 'image', 'mimes:jpeg,png,jpg', 'max:2048'],
+    ]);
+
+    DB::transaction(function () use ($request, $data, $jurnal) {
+        $fotoBukti = $jurnal->foto_bukti;
+        if ($request->boolean('hapus_foto_bukti') && $fotoBukti) {
+            Storage::disk('public')->delete($fotoBukti);
+            $fotoBukti = null;
+        }
+        if ($request->hasFile('foto_bukti')) {
+            if ($fotoBukti) {
+                Storage::disk('public')->delete($fotoBukti);
+            }
+            $fotoBukti = $request->file('foto_bukti')->store('bukti_fisik/jurnal', 'public');
+        }
+
+        $jurnal->update([
+            'siswa_id'             => $data['siswa_id'],
+            'hari_tanggal'         => $data['hari_tanggal'],
+            'status'               => $data['status'],
+            'catatan_instruktur'   => $data['catatan_instruktur'] ?? null,
+            'foto_bukti'           => $fotoBukti,
+            'validated_by_guru_id' => $data['status'] === 'disetujui' ? ($jurnal->validated_by_guru_id ?? Auth::id()) : null,
+            'validated_at'         => $data['status'] === 'disetujui' ? ($jurnal->validated_at ?? now()) : null,
         ]);
 
-        DB::transaction(function () use ($request, $data, $jurnal) {
-            $jurnal->update([
-                'siswa_id'           => $data['siswa_id'],
-                'hari_tanggal'       => $data['hari_tanggal'],
-                'status_persetujuan' => $data['status_persetujuan'],
-                'catatan_instruktur' => $data['catatan_instruktur'] ?? null,
-                'disetujui_oleh'     => $data['status_persetujuan'] === 'disetujui'
-                    ? ($jurnal->disetujui_oleh ?? Auth::id())
-                    : null,
-            ]);
+        $keptIds = [];
+        foreach ($request->input('items', []) as $i => $row) {
+            $unit        = trim((string) ($row['unit_kerja'] ?? ''));
+            $existingId  = $row['id'] ?? null;
+            $existingDoc = $row['existing_dokumentasi'] ?? null;
 
-            // Sinkronkan item (unit kerja). Foto/dokumentasi milik item lama tetap dipertahankan.
-            $idDipakai = [];
-            foreach ($request->input('items', []) as $row) {
-                $unit = trim((string) ($row['unit_kerja'] ?? ''));
-
-                if (! empty($row['id'])) {
-                    $item = $jurnal->items()->find($row['id']);
-                    if (! $item) {
-                        continue;
+            // item lama dikosongkan -> hapus item + fotonya
+            if ($existingId && $unit === '') {
+                if ($item = $jurnal->items()->find($existingId)) {
+                    if ($item->dokumentasi) {
+                        Storage::disk('public')->delete($item->dokumentasi);
                     }
-                    if ($unit === '') { // dikosongkan = hapus item
-                        if ($item->dokumentasi) {
-                            Storage::disk('public')->delete($item->dokumentasi);
-                        }
-                        $item->delete();
-                        continue;
-                    }
-                    $item->update(['unit_kerja' => $unit]);
-                    $idDipakai[] = $item->id;
-                } else {
-                    if ($unit === '') {
-                        continue;
-                    }
-                    $baru = $jurnal->items()->create(['unit_kerja' => $unit]);
-                    $idDipakai[] = $baru->id;
+                    $item->delete();
                 }
+                continue;
+            }
+            if ($unit === '') {
+                continue;
             }
 
-            // Hapus item yang tidak dikirim lagi dari form
-            $sisa = $jurnal->items()->whereNotIn('id', $idDipakai)->get();
-            foreach ($sisa as $item) {
-                if ($item->dokumentasi) {
-                    Storage::disk('public')->delete($item->dokumentasi);
+            $path = $existingDoc;
+            if ($request->hasFile("items.$i.dokumentasi")) {
+                if ($existingDoc) {
+                    Storage::disk('public')->delete($existingDoc);
                 }
-                $item->delete();
+                $path = $request->file("items.$i.dokumentasi")->store('dokumentasi_jurnal', 'public');
             }
-        });
 
-        return back()->with('success', 'Jurnal berhasil diperbarui.');
-    }
+            if ($existingId && ($item = $jurnal->items()->find($existingId))) {
+                $item->update(['unit_kerja' => $unit, 'dokumentasi' => $path]);
+                $keptIds[] = $item->id;
+            } else {
+                $baru = $jurnal->items()->create(['unit_kerja' => $unit, 'dokumentasi' => $path]);
+                $keptIds[] = $baru->id;
+            }
+        }
 
-    public function destroyJurnal(Jurnal $jurnal)
-    {
-        foreach ($jurnal->items as $item) {
+        $sisa = $jurnal->items()->whereNotIn('id', $keptIds)->get();
+        foreach ($sisa as $item) {
             if ($item->dokumentasi) {
                 Storage::disk('public')->delete($item->dokumentasi);
             }
+            $item->delete();
         }
-        $jurnal->items()->delete();
-        $jurnal->delete();
+    });
 
-        return back()->with('success', 'Jurnal berhasil dihapus.');
+    return back()->with('success', 'Jurnal berhasil diperbarui.');
+}
+
+public function destroyJurnal(Jurnal $jurnal)
+{
+    foreach ($jurnal->items as $item) {
+        if ($item->dokumentasi) {
+            Storage::disk('public')->delete($item->dokumentasi);
+        }
+    }
+    if ($jurnal->foto_bukti) {
+        Storage::disk('public')->delete($jurnal->foto_bukti);
+    }
+    $jurnal->items()->delete();
+    $jurnal->delete();
+
+    return back()->with('success', 'Jurnal berhasil dihapus.');
+}
+
+   // ===================================================================
+// CATATAN KEGIATAN  (skema baru: status = draft | diajukan | disetujui)
+// ===================================================================
+public function catatan(Request $request)
+{
+    $q       = trim($request->get('q', ''));
+    $status  = $request->get('status', '');
+    $kelas   = $request->get('kelas', '');
+    $jurusan = $request->get('jurusan', '');
+
+    $catatan = CatatanKegiatan::query()
+        ->with('user')
+        ->when($q, fn ($query) => $query->whereHas('user', fn ($u) =>
+            $u->where('name', 'like', "%{$q}%")->orWhere('nisn', 'like', "%{$q}%")))
+        ->when($kelas,   fn ($query) => $query->whereHas('user', fn ($u) => $u->where('kelas', $kelas)))
+        ->when($jurusan, fn ($query) => $query->whereHas('user', fn ($u) => $u->where('jurusan', $jurusan)))
+        ->when($status,  fn ($query) => $query->where('status', $status))
+        ->latest()
+        ->paginate(15)
+        ->withQueryString();
+
+    $rekap = [
+        'total'     => CatatanKegiatan::count(),
+        'disetujui' => CatatanKegiatan::where('status', 'disetujui')->count(),
+        'diajukan'  => CatatanKegiatan::where('status', 'diajukan')->count(),
+        'draft'     => CatatanKegiatan::where('status', 'draft')->count(),
+    ];
+
+    return view('admin.monitoring.catatan', array_merge(
+        compact('catatan', 'q', 'status', 'kelas', 'jurusan', 'rekap'),
+        ['siswaList' => $this->siswaList()],
+        $this->opsiFilter()
+    ));
+}
+
+public function storeCatatan(Request $request)
+{
+    $data = $request->validate([
+        'user_id'              => ['required', 'exists:users,id'],
+        'nama_pekerjaan'       => ['required', 'string', 'max:255'],
+        'perencanaan_kegiatan' => ['nullable', 'string'],
+        'pelaksanaan_kegiatan' => ['nullable', 'string'],
+        'catatan_instruktur'   => ['nullable', 'string'],
+        'status'               => ['required', Rule::in(['draft', 'diajukan', 'disetujui'])],
+        'foto_bukti'           => ['nullable', 'image', 'mimes:jpeg,png,jpg', 'max:2048'],
+    ]);
+
+    if ($request->hasFile('foto_bukti')) {
+        $data['foto_bukti'] = $request->file('foto_bukti')->store('bukti_fisik/catatan', 'public');
+    }
+    $data['validated_by_guru_id'] = $data['status'] === 'disetujui' ? Auth::id() : null;
+    $data['validated_at']         = $data['status'] === 'disetujui' ? now() : null;
+
+    CatatanKegiatan::create($data);
+
+    return back()->with('success', 'Catatan kegiatan berhasil ditambahkan.');
+}
+
+public function updateCatatan(Request $request, CatatanKegiatan $catatan)
+{
+    $data = $request->validate([
+        'user_id'              => ['required', 'exists:users,id'],
+        'nama_pekerjaan'       => ['required', 'string', 'max:255'],
+        'perencanaan_kegiatan' => ['nullable', 'string'],
+        'pelaksanaan_kegiatan' => ['nullable', 'string'],
+        'catatan_instruktur'   => ['nullable', 'string'],
+        'status'               => ['required', Rule::in(['draft', 'diajukan', 'disetujui'])],
+        'foto_bukti'           => ['nullable', 'image', 'mimes:jpeg,png,jpg', 'max:2048'],
+        'hapus_foto_bukti'     => ['nullable', 'boolean'],
+    ]);
+
+    $fotoBukti = $catatan->foto_bukti;
+    if ($request->boolean('hapus_foto_bukti') && $fotoBukti) {
+        Storage::disk('public')->delete($fotoBukti);
+        $fotoBukti = null;
+    }
+    if ($request->hasFile('foto_bukti')) {
+        if ($fotoBukti) Storage::disk('public')->delete($fotoBukti);
+        $fotoBukti = $request->file('foto_bukti')->store('bukti_fisik/catatan', 'public');
     }
 
-    // ===================================================================
-    // CATATAN KEGIATAN
-    // ===================================================================
-    public function catatan(Request $request)
-    {
-        $q        = trim($request->get('q', ''));
-        $approved = $request->get('approved', '');
-        $kelas    = $request->get('kelas', '');
-        $jurusan  = $request->get('jurusan', '');
+    $catatan->update([
+        'user_id'              => $data['user_id'],
+        'nama_pekerjaan'       => $data['nama_pekerjaan'],
+        'perencanaan_kegiatan' => $data['perencanaan_kegiatan'] ?? null,
+        'pelaksanaan_kegiatan' => $data['pelaksanaan_kegiatan'] ?? null,
+        'catatan_instruktur'   => $data['catatan_instruktur'] ?? null,
+        'status'               => $data['status'],
+        'foto_bukti'           => $fotoBukti,
+        'validated_by_guru_id' => $data['status'] === 'disetujui' ? ($catatan->validated_by_guru_id ?? Auth::id()) : null,
+        'validated_at'         => $data['status'] === 'disetujui' ? ($catatan->validated_at ?? now()) : null,
+    ]);
 
-        $catatan = CatatanKegiatan::query()
-            ->with('user')
-            ->when($q, fn ($query) => $query->whereHas('user', fn ($u) =>
-                $u->where('name', 'like', "%{$q}%")->orWhere('nisn', 'like', "%{$q}%")))
-            ->when($kelas,   fn ($query) => $query->whereHas('user', fn ($u) => $u->where('kelas', $kelas)))
-            ->when($jurusan, fn ($query) => $query->whereHas('user', fn ($u) => $u->where('jurusan', $jurusan)))
-            ->when($approved !== '', fn ($query) => $query->where('is_approved', $approved === '1'))
-            ->latest()
-            ->paginate(15)
-            ->withQueryString();
+    return back()->with('success', 'Catatan kegiatan berhasil diperbarui.');
+}
 
-        $rekap = [
-            'total'     => CatatanKegiatan::count(),
-            'disetujui' => CatatanKegiatan::where('is_approved', true)->count(),
-            'belum'     => CatatanKegiatan::where('is_approved', false)->count(),
-        ];
+public function destroyCatatan(CatatanKegiatan $catatan)
+{
+    if ($catatan->foto_bukti) {
+        Storage::disk('public')->delete($catatan->foto_bukti);
+    }
+    $catatan->delete();
 
-        return view('admin.monitoring.catatan', array_merge(
-            compact('catatan', 'q', 'approved', 'kelas', 'jurusan', 'rekap'),
-            ['siswaList' => $this->siswaList()],
-            $this->opsiFilter()
-        ));
+    return back()->with('success', 'Catatan kegiatan berhasil dihapus.');
+}
+
+   // ===================================================================
+// ABSENSI  (mirror siswa: + filter bulan, status_validasi, foto_bukti)
+// ===================================================================
+public function absensi(Request $request)
+{
+    $q       = trim($request->get('q', ''));
+    $status  = $request->get('status', '');
+    $tanggal = $request->get('tanggal', '');
+    $bulan   = $request->get('bulan', '');
+    $kelas   = $request->get('kelas', '');
+    $jurusan = $request->get('jurusan', '');
+
+    $absensi = Absensi::query()
+        ->with('siswa')
+        ->when($q, fn ($query) => $query->whereHas('siswa', fn ($s) =>
+            $s->where('name', 'like', "%{$q}%")->orWhere('nisn', 'like', "%{$q}%")))
+        ->when($kelas,   fn ($query) => $query->whereHas('siswa', fn ($s) => $s->where('kelas', $kelas)))
+        ->when($jurusan, fn ($query) => $query->whereHas('siswa', fn ($s) => $s->where('jurusan', $jurusan)))
+        ->when($status,  fn ($query) => $query->where('status', $status))
+        ->when($tanggal, fn ($query) => $query->whereDate('tanggal', $tanggal))
+        ->when($bulan,   fn ($query) => $query->whereYear('tanggal', substr($bulan, 0, 4))
+                                              ->whereMonth('tanggal', substr($bulan, 5, 2)))
+        ->orderByDesc('tanggal')
+        ->paginate(15)
+        ->withQueryString();
+
+    $rekap = [
+        'Hadir' => Absensi::where('status', 'Hadir')->count(),
+        'Izin'  => Absensi::where('status', 'Izin')->count(),
+        'Sakit' => Absensi::where('status', 'Sakit')->count(),
+        'Alpha' => Absensi::where('status', 'Alpha')->count(),
+    ];
+
+    $tanggalDefault = $tanggal ?: date('Y-m-d');
+
+    return view('admin.monitoring.absensi', array_merge(
+        compact('absensi', 'q', 'status', 'tanggal', 'bulan', 'kelas', 'jurusan', 'rekap', 'tanggalDefault'),
+        ['siswaList' => $this->siswaList()],
+        $this->opsiFilter()
+    ));
+}
+
+public function storeAbsensi(Request $request)
+{
+    $data = $request->validate([
+        'siswa_id'           => ['required', 'exists:users,id'],
+        'tanggal'            => ['required', 'date'],
+        'status'             => ['required', Rule::in(['Hadir', 'Izin', 'Sakit', 'Alpha'])],
+        'jam_masuk'          => ['nullable', 'date_format:H:i'],
+        'jam_pulang'         => ['nullable', 'date_format:H:i'],
+        'status_validasi'    => ['required', Rule::in(['draft', 'diajukan', 'disetujui'])],
+        'catatan_instruktur' => ['nullable', 'string'],
+        'foto_bukti'         => ['nullable', 'image', 'mimes:jpeg,png,jpg', 'max:2048'],
+    ]);
+
+    $attrs = [
+        'status'               => $data['status'],
+        'jam_masuk'            => $data['jam_masuk'] ?? null,
+        'jam_pulang'           => $data['jam_pulang'] ?? null,
+        'status_validasi'      => $data['status_validasi'],
+        'catatan_instruktur'   => $data['catatan_instruktur'] ?? null,
+        'validated_by_guru_id' => $data['status_validasi'] === 'disetujui' ? Auth::id() : null,
+        'validated_at'         => $data['status_validasi'] === 'disetujui' ? now() : null,
+    ];
+    if ($request->hasFile('foto_bukti')) {
+        $attrs['foto_bukti'] = $request->file('foto_bukti')->store('bukti_fisik/absensi', 'public');
     }
 
-    public function storeCatatan(Request $request)
-    {
-        $data = $request->validate([
-            'user_id'              => ['required', 'exists:users,id'],
-            'nama_pekerjaan'       => ['required', 'string', 'max:255'],
-            'perencanaan_kegiatan' => ['nullable', 'string'],
-            'pelaksanaan_kegiatan' => ['nullable', 'string'],
-            'catatan_instruktur'   => ['nullable', 'string'],
-        ]);
-        $data['is_approved'] = $request->boolean('is_approved');
+    Absensi::updateOrCreate(
+        ['siswa_id' => $data['siswa_id'], 'tanggal' => $data['tanggal']],
+        $attrs
+    );
 
-        CatatanKegiatan::create($data);
+    return back()->with('success', 'Absensi berhasil disimpan.');
+}
 
-        return back()->with('success', 'Catatan kegiatan berhasil ditambahkan.');
+public function updateAbsensi(Request $request, Absensi $absensi)
+{
+    $data = $request->validate([
+        'siswa_id'           => ['required', 'exists:users,id'],
+        'tanggal'            => ['required', 'date'],
+        'status'             => ['required', Rule::in(['Hadir', 'Izin', 'Sakit', 'Alpha'])],
+        'jam_masuk'          => ['nullable', 'date_format:H:i'],
+        'jam_pulang'         => ['nullable', 'date_format:H:i'],
+        'status_validasi'    => ['required', Rule::in(['draft', 'diajukan', 'disetujui'])],
+        'catatan_instruktur' => ['nullable', 'string'],
+        'foto_bukti'         => ['nullable', 'image', 'mimes:jpeg,png,jpg', 'max:2048'],
+        'hapus_foto_bukti'   => ['nullable', 'boolean'],
+    ]);
+
+    $fotoBukti = $absensi->foto_bukti;
+    if ($request->boolean('hapus_foto_bukti') && $fotoBukti) {
+        Storage::disk('public')->delete($fotoBukti);
+        $fotoBukti = null;
+    }
+    if ($request->hasFile('foto_bukti')) {
+        if ($fotoBukti) Storage::disk('public')->delete($fotoBukti);
+        $fotoBukti = $request->file('foto_bukti')->store('bukti_fisik/absensi', 'public');
     }
 
-    public function updateCatatan(Request $request, CatatanKegiatan $catatan)
-    {
-        $data = $request->validate([
-            'user_id'              => ['required', 'exists:users,id'],
-            'nama_pekerjaan'       => ['required', 'string', 'max:255'],
-            'perencanaan_kegiatan' => ['nullable', 'string'],
-            'pelaksanaan_kegiatan' => ['nullable', 'string'],
-            'catatan_instruktur'   => ['nullable', 'string'],
-        ]);
-        $data['is_approved'] = $request->boolean('is_approved');
+    $absensi->update([
+        'siswa_id'             => $data['siswa_id'],
+        'tanggal'              => $data['tanggal'],
+        'status'               => $data['status'],
+        'jam_masuk'            => $data['jam_masuk'] ?? null,
+        'jam_pulang'           => $data['jam_pulang'] ?? null,
+        'status_validasi'      => $data['status_validasi'],
+        'catatan_instruktur'   => $data['catatan_instruktur'] ?? null,
+        'foto_bukti'           => $fotoBukti,
+        'validated_by_guru_id' => $data['status_validasi'] === 'disetujui' ? ($absensi->validated_by_guru_id ?? Auth::id()) : null,
+        'validated_at'         => $data['status_validasi'] === 'disetujui' ? ($absensi->validated_at ?? now()) : null,
+    ]);
 
-        $catatan->update($data);
+    return back()->with('success', 'Absensi berhasil diperbarui.');
+}
 
-        return back()->with('success', 'Catatan kegiatan berhasil diperbarui.');
+public function destroyAbsensi(Absensi $absensi)
+{
+    if ($absensi->foto_bukti) {
+        Storage::disk('public')->delete($absensi->foto_bukti);
     }
+    $absensi->delete();
 
-    public function destroyCatatan(CatatanKegiatan $catatan)
-    {
-        $catatan->delete();
+    return back()->with('success', 'Absensi berhasil dihapus.');
+}
 
-        return back()->with('success', 'Catatan kegiatan berhasil dihapus.');
-    }
-
-    // ===================================================================
-    // ABSENSI
-    // ===================================================================
-    public function absensi(Request $request)
-    {
-        $q       = trim($request->get('q', ''));
-        $status  = $request->get('status', '');
-        $tanggal = $request->get('tanggal', '');
-        $kelas   = $request->get('kelas', '');
-        $jurusan = $request->get('jurusan', '');
-
-        $absensi = Absensi::query()
-            ->with('siswa')
-            ->when($q, fn ($query) => $query->whereHas('siswa', fn ($s) =>
-                $s->where('name', 'like', "%{$q}%")->orWhere('nisn', 'like', "%{$q}%")))
-            ->when($kelas,   fn ($query) => $query->whereHas('siswa', fn ($s) => $s->where('kelas', $kelas)))
-            ->when($jurusan, fn ($query) => $query->whereHas('siswa', fn ($s) => $s->where('jurusan', $jurusan)))
-            ->when($status,  fn ($query) => $query->where('status', $status))
-            ->when($tanggal, fn ($query) => $query->whereDate('tanggal', $tanggal))
-            ->orderByDesc('tanggal')
-            ->paginate(15)
-            ->withQueryString();
-
-        $rekap = [
-            'Hadir' => Absensi::where('status', 'Hadir')->count(),
-            'Izin'  => Absensi::where('status', 'Izin')->count(),
-            'Sakit' => Absensi::where('status', 'Sakit')->count(),
-            'Alpha' => Absensi::where('status', 'Alpha')->count(),
-        ];
-
-        $tanggalDefault = $tanggal ?: date('Y-m-d');
-
-        return view('admin.monitoring.absensi', array_merge(
-            compact('absensi', 'q', 'status', 'tanggal', 'kelas', 'jurusan', 'rekap', 'tanggalDefault'),
-            ['siswaList' => $this->siswaList()],
-            $this->opsiFilter()
-        ));
-    }
-
-    public function storeAbsensi(Request $request)
-    {
-        $data = $request->validate([
-            'siswa_id'   => ['required', 'exists:users,id'],
-            'tanggal'    => ['required', 'date'],
-            'status'     => ['required', Rule::in(['Hadir', 'Izin', 'Sakit', 'Alpha'])],
-            'jam_masuk'  => ['nullable', 'date_format:H:i'],
-            'jam_pulang' => ['nullable', 'date_format:H:i'],
-        ]);
-
-        $siswa = User::findOrFail($data['siswa_id']);
-
-        Absensi::updateOrCreate(
-            ['siswa_id' => $data['siswa_id'], 'tanggal' => $data['tanggal']],
-            [
-                'instruktur_id' => $siswa->instruktur_id ?? Auth::id(),
-                'status'        => $data['status'],
-                'jam_masuk'     => $data['jam_masuk'] ?? null,
-                'jam_pulang'    => $data['jam_pulang'] ?? null,
-            ]
-        );
-
-        return back()->with('success', 'Absensi berhasil disimpan.');
-    }
-
-    public function updateAbsensi(Request $request, Absensi $absensi)
-    {
-        $data = $request->validate([
-            'siswa_id'   => ['required', 'exists:users,id'],
-            'tanggal'    => ['required', 'date'],
-            'status'     => ['required', Rule::in(['Hadir', 'Izin', 'Sakit', 'Alpha'])],
-            'jam_masuk'  => ['nullable', 'date_format:H:i'],
-            'jam_pulang' => ['nullable', 'date_format:H:i'],
-        ]);
-
-        $absensi->update([
-            'siswa_id'   => $data['siswa_id'],
-            'tanggal'    => $data['tanggal'],
-            'status'     => $data['status'],
-            'jam_masuk'  => $data['jam_masuk'] ?? null,
-            'jam_pulang' => $data['jam_pulang'] ?? null,
-        ]);
-
-        return back()->with('success', 'Absensi berhasil diperbarui.');
-    }
-
-    public function destroyAbsensi(Absensi $absensi)
-    {
-        $absensi->delete();
-
-        return back()->with('success', 'Absensi berhasil dihapus.');
-    }
 }

@@ -36,7 +36,7 @@ class NilaiController extends Controller
     public function indexSiswa()
     {
         $nilai = Nilai::where('user_id', Auth::id())
-            ->with(['instruktur', 'guru'])
+            ->with(['guru', 'user.perusahaan'])
             ->first();
 
         return view('siswa.nilai.index', compact('nilai'));

@@ -1,9 +1,9 @@
-<x-app-layout title="Edit Instruktur Industri">
+<x-app-layout title="Edit Industri">
     <div class="max-w-2xl">
-        <h2 class="text-xl font-bold text-gray-800 mb-1">Edit Instruktur Industri</h2>
-        <p class="text-sm text-gray-500 mb-6">Perbarui akun "{{ $instruktur->name }}".</p>
+        <h2 class="text-xl font-bold text-gray-800 mb-1">Edit Industri</h2>
+        <p class="text-sm text-gray-500 mb-6">Perbarui data "{{ $perusahaan->nama_perusahaan }}".</p>
 
-        <form method="POST" action="{{ route('admin.instruktur.update', $instruktur) }}"
+        <form method="POST" action="{{ route('admin.instruktur.update', $perusahaan) }}"
               class="bg-white rounded-2xl shadow-sm border border-blue-100 p-6">
             @csrf
             @method('PUT')

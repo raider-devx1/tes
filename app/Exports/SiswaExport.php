@@ -31,7 +31,7 @@ class SiswaExport extends StringValueBinder implements FromQuery, WithHeadings, 
     {
         return User::query()
             ->where('role', 'siswa_pkl')
-            ->with(['perusahaan', 'guru', 'instruktur', 'periode'])
+            ->with(['perusahaan', 'guru', 'periode'])
             ->when($this->q, function ($query) {
                 $query->where('name', 'like', "%{$this->q}%")
                       ->orWhere('nisn', 'like', "%{$this->q}%");

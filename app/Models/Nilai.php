@@ -12,7 +12,6 @@ class Nilai extends Model
 
     protected $fillable = [
         'user_id',
-        'instruktur_id',
         'guru_id',
 
         // Kolom lama instruktur (skala 1-5) — dibiarkan untuk kompatibilitas data lama
@@ -46,10 +45,15 @@ class Nilai extends Model
         return $this->belongsTo(User::class, 'user_id');
     }
 
-    // Relasi ke Instruktur Industri
-    public function instruktur(): BelongsTo
+    // Instruktur industri kini data (nama pembimbing pada Perusahaan siswa), bukan akun.
+    public function getInstrukturAttribute(): object
     {
-        return $this->belongsTo(User::class, 'instruktur_id');
+        $namaPembimbing = $this->user?->perusahaan?->pembimbing_industri;
+
+        return (object) [
+            'name' => $namaPembimbing ?: 'Belum Diatur',
+            'nip'  => '-',
+        ];
     }
 
     // Relasi ke Guru Pembimbing

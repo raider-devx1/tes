@@ -22,7 +22,7 @@ class AdminController extends Controller
         $totalSiswa      = User::where('role', 'siswa_pkl')->count();
         $siswaAktif      = User::where('role', 'siswa_pkl')->where('status_pkl', 'aktif')->count();
         $totalGuru       = User::where('role', 'guru_pembimbing')->count();
-        $totalInstruktur = User::where('role', 'instruktur_industri')->count();
+        $totalInstruktur = Perusahaan::whereNotNull('pembimbing_industri')->where('pembimbing_industri', '!=', '')->count();
         $totalIndustri   = Perusahaan::count();
 
         // ====== GRAFIK 1: KEHADIRAN SISWA ======
@@ -48,8 +48,8 @@ class AdminController extends Controller
 
         // ====== GRAFIK 4: OBSERVASI ======
         $observasiStatus = [
-            'Disetujui' => Observasi::where('is_approved', true)->count(),
-            'Belum'     => Observasi::where('is_approved', false)->count(),
+            'Disetujui' => Observasi::where('status', 'tervalidasi')->count(),
+            'Belum'     => Observasi::where('status', 'draft')->count(),
         ];
 
         // ====== GRAFIK 5: SISWA PER JURUSAN ======
@@ -127,7 +127,7 @@ class AdminController extends Controller
                     'nisn'       => $s->nisn ?? '-',
                     'nip'        => '-',
                     'email'      => $s->email,
-                    'keterangan' => 'Jurnal belum disetujui instruktur (' . $pendingPerSiswa[$s->id] . ' jurnal).',
+                    'keterangan' => 'Jurnal belum divalidasi guru (' . $pendingPerSiswa[$s->id] . ' jurnal).',
                     'kategori'   => 'warning',
                     'jenis'      => 'jurnal_pending',
                 ];
@@ -201,7 +201,7 @@ class AdminController extends Controller
 
         $pending = Jurnal::where('status_persetujuan', 'pending')->count();
         if ($pending > 0) {
-            $notif[] = ['type' => 'warning', 'icon' => '⏳', 'text' => "$pending jurnal menunggu persetujuan instruktur."];
+            $notif[] = ['type' => 'warning', 'icon' => '⏳', 'text' => "$pending jurnal menunggu validasi guru pembimbing."];
         }
 
         $gurus = User::where('role', 'guru_pembimbing')->get();

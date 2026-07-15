@@ -134,7 +134,7 @@ Route::delete('/akun-admin/{admin}', [AdminAkunController::class, 'destroy'])->n
         // ---- MASTER DATA: AKUN GURU PEMBIMBING ----
         Route::resource('guru', GuruPembimbingController::class)->except(['show']);
 // ---- MASTER DATA: AKUN INSTRUKTUR INDUSTRI ----
-        Route::resource('instruktur', InstrukturController::class)->except(['show']);
+        Route::resource('instruktur', InstrukturController::class)->parameters(['instruktur' => 'perusahaan'])->except(['show']);
 // ---- MASTER DATA: DATA SISWA PKL ----
         Route::resource('siswa', SiswaController::class)->except(['show']);
 
@@ -159,6 +159,8 @@ Route::delete('/monitoring/absensi/{absensi}', [MonitoringController::class, 'de
 Route::get('/evaluasi/observasi', [EvaluasiController::class, 'observasi'])->name('evaluasi.observasi');
 Route::post('/evaluasi/observasi', [EvaluasiController::class, 'storeObservasi'])->name('evaluasi.observasi.store');
 Route::put('/evaluasi/observasi/{observasi}', [EvaluasiController::class, 'updateObservasi'])->name('evaluasi.observasi.update');
+Route::put('/evaluasi/observasi/{observasi}/validasi', [EvaluasiController::class, 'validasiObservasi'])->name('evaluasi.observasi.validasi');
+Route::put('/evaluasi/observasi/{observasi}/batal-validasi', [EvaluasiController::class, 'batalValidasiObservasi'])->name('evaluasi.observasi.batal');
 Route::delete('/evaluasi/observasi/{observasi}', [EvaluasiController::class, 'destroyObservasi'])->name('evaluasi.observasi.destroy');
 
 Route::get('/evaluasi/penilaian', [EvaluasiController::class, 'penilaian'])->name('evaluasi.penilaian');

@@ -18,17 +18,16 @@ public function index(Request $request)
     $query = User::where('role', 'siswa_pkl')
         ->where('guru_id', Auth::id())
         ->where('status_pkl', 'aktif') // hanya siswa yang sedang aktif PKL
-        ->with(['instruktur', 'perusahaan', 'periode']);
+        ->with(['perusahaan', 'periode']);
 
-    // Filter pencarian teks: nama, NISN, kelas, jurusan, nama instruktur
+    // Filter pencarian teks: nama, NISN, kelas, jurusan
     if ($request->filled('q')) {
         $q = $request->q;
         $query->where(function ($sub) use ($q) {
             $sub->where('name', 'like', "%{$q}%")
                 ->orWhere('nisn', 'like', "%{$q}%")
                 ->orWhere('kelas', 'like', "%{$q}%")
-                ->orWhere('jurusan', 'like', "%{$q}%")
-                ->orWhereHas('instruktur', fn ($i) => $i->where('name', 'like', "%{$q}%"));
+                ->orWhere('jurusan', 'like', "%{$q}%");
         });
     }
 

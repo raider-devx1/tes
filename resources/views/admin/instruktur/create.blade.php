@@ -1,7 +1,7 @@
-<x-app-layout title="Tambah Instruktur Industri">
+<x-app-layout title="Tambah Industri">
     <div class="max-w-2xl">
-        <h2 class="text-xl font-bold text-gray-800 mb-1">Tambah Instruktur Industri</h2>
-        <p class="text-sm text-gray-500 mb-6">Buat akun instruktur dari pihak industri.</p>
+        <h2 class="text-xl font-bold text-gray-800 mb-1">Tambah Industri</h2>
+        <p class="text-sm text-gray-500 mb-6">Tambahkan data industri/tempat PKL beserta nama pembimbingnya.</p>
 
         <form method="POST" action="{{ route('admin.instruktur.store') }}"
               class="bg-white rounded-2xl shadow-sm border border-blue-100 p-6">

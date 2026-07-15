@@ -25,7 +25,6 @@ use Illuminate\Notifications\Notifiable;
     'kelas',
     'jurusan',
     'perusahaan_id',
-    'instruktur_id',
     'guru_id',
     'periode_id',
 ])]
@@ -35,11 +34,6 @@ class User extends Authenticatable
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
     protected function casts(): array
     {
         return [
@@ -57,11 +51,18 @@ class User extends Authenticatable
     }
 
     /**
-     * Relasi Pemetaan: Siswa dibimbing oleh Instruktur siapa
+     * Instruktur industri kini berupa DATA (nama pembimbing pada Perusahaan),
+     * bukan akun user. Accessor ini menjaga tampilan lama yang masih memanggil
+     * $siswa->instruktur->name atau $siswa->instruktur->nip tetap berfungsi.
      */
-    public function instruktur()
+    public function getInstrukturAttribute(): object
     {
-        return $this->belongsTo(User::class, 'instruktur_id');
+        $namaPembimbing = $this->perusahaan?->pembimbing_industri;
+
+        return (object) [
+            'name' => $namaPembimbing ?: 'Belum Diatur',
+            'nip'  => '-',
+        ];
     }
 
     /**
@@ -71,8 +72,9 @@ class User extends Authenticatable
     {
         return $this->belongsTo(User::class, 'guru_id');
     }
+
     /**
-     * Relasi ke model Nilai (Siswa memiliki 1 data nilai dari instruktur)
+     * Relasi ke model Nilai (Siswa memiliki 1 data nilai)
      */
     public function nilai()
     {
@@ -83,8 +85,9 @@ class User extends Authenticatable
     {
         return $this->belongsTo(PeriodePkl::class, 'periode_id');
     }
+
     public function dokumen()
-{
-    return $this->hasOne(\App\Models\Dokumen::class, 'siswa_id');
-}
+    {
+        return $this->hasOne(\App\Models\Dokumen::class, 'siswa_id');
+    }
 }

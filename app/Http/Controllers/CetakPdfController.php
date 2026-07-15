@@ -39,14 +39,8 @@ class CetakPdfController extends Controller
                 403,
                 'Bukan siswa bimbingan Anda.'
             );
-        } elseif ($user->role === 'instruktur_industri') {
-            abort_unless(
-                $siswa->instruktur_id == $user->id,
-                403,
-                'Bukan siswa bimbingan Anda.'
-            );
         }
-        // admin: tanpa batasan
+        // admin: tanpa batasan (instruktur tidak lagi punya akun)
 
         return $siswa;
     }
@@ -78,7 +72,7 @@ class CetakPdfController extends Controller
     public function cetakJurnal($siswa_id = null)
     {
         $siswa = $this->resolveSiswa($siswa_id);
-        $siswa->loadMissing(['perusahaan', 'instruktur', 'guru']);
+        $siswa->loadMissing(['perusahaan', 'guru']);
 
         $query = Jurnal::where('siswa_id', $siswa->id)->with('items');
 
@@ -123,7 +117,7 @@ class CetakPdfController extends Controller
     {
         $user = auth()->user();
 
-        if (!in_array($user->role, ['instruktur_industri', 'guru_pembimbing', 'admin'])) {
+        if (!in_array($user->role, ['guru_pembimbing', 'admin'])) {
             abort(403, 'Akses ditolak.');
         }
 
@@ -134,11 +128,9 @@ class CetakPdfController extends Controller
 
         $query = User::where('role', 'siswa_pkl')
             ->where('status_pkl', 'aktif')
-            ->with(['perusahaan', 'instruktur', 'guru']);
+            ->with(['perusahaan', 'guru']);
 
-        if ($user->role === 'instruktur_industri') {
-            $query->where('instruktur_id', $user->id);
-        } elseif ($user->role === 'guru_pembimbing') {
+        if ($user->role === 'guru_pembimbing') {
             $query->where('guru_id', $user->id);
         }
 
@@ -168,7 +160,7 @@ class CetakPdfController extends Controller
     {
         $siswa = $this->resolveSiswa($siswa_id);
 
-        $query = CatatanKegiatan::with(['user.perusahaan', 'user.instruktur', 'user.guru'])
+        $query = CatatanKegiatan::with(['user.perusahaan', 'user.guru'])
             ->where('user_id', $siswa->id);
 
         // Jika ada catatan_id → cetak SATU data (baris yang dipilih) saja
@@ -195,18 +187,16 @@ class CetakPdfController extends Controller
     {
         $user = auth()->user();
 
-        if (!in_array($user->role, ['instruktur_industri', 'guru_pembimbing', 'admin'])) {
+        if (!in_array($user->role, ['guru_pembimbing', 'admin'])) {
             abort(403, 'Akses ditolak.');
         }
 
-        $catatan = CatatanKegiatan::with(['user.perusahaan', 'user.instruktur', 'user.guru'])
+        $catatan = CatatanKegiatan::with(['user.perusahaan', 'user.guru'])
             ->where('is_approved', true)
             ->whereHas('user', function ($u) use ($user) {
                 $u->where('role', 'siswa_pkl')->where('status_pkl', 'aktif');
 
-                if ($user->role === 'instruktur_industri') {
-                    $u->where('instruktur_id', $user->id);
-                } elseif ($user->role === 'guru_pembimbing') {
+                if ($user->role === 'guru_pembimbing') {
                     $u->where('guru_id', $user->id);
                 }
             })
@@ -257,7 +247,7 @@ class CetakPdfController extends Controller
     {
         $siswa = $this->resolveSiswa($siswa_id);
 
-        $query = Observasi::with(['items', 'user.perusahaan', 'user.instruktur', 'user.guru'])
+        $query = Observasi::with(['items', 'user.perusahaan', 'user.guru'])
             ->where('user_id', $siswa->id);
 
         // Jika ada observasi_id → cetak SATU observasi saja
@@ -279,17 +269,15 @@ class CetakPdfController extends Controller
     {
         $user = auth()->user();
 
-        if (!in_array($user->role, ['instruktur_industri', 'guru_pembimbing', 'admin'])) {
+        if (!in_array($user->role, ['guru_pembimbing', 'admin'])) {
             abort(403, 'Akses ditolak.');
         }
 
-        $observasi = Observasi::with(['items', 'user.perusahaan', 'user.instruktur', 'user.guru'])
+        $observasi = Observasi::with(['items', 'user.perusahaan', 'user.guru'])
             ->whereHas('user', function ($u) use ($user) {
                 $u->where('role', 'siswa_pkl')->where('status_pkl', 'aktif');
 
-                if ($user->role === 'instruktur_industri') {
-                    $u->where('instruktur_id', $user->id);
-                } elseif ($user->role === 'guru_pembimbing') {
+                if ($user->role === 'guru_pembimbing') {
                     $u->where('guru_id', $user->id);
                 }
             })
@@ -353,7 +341,7 @@ class CetakPdfController extends Controller
         $data  = $this->buildNilaiData($siswa);
 
         if (!$data) {
-            return redirect()->back()->with('error', 'Cetak gagal, nilai siswa belum diinput oleh instruktur industri.');
+            return redirect()->back()->with('error', 'Cetak gagal, nilai siswa belum diinput.');
         }
 
         // Cetak satuan = daftar berisi 1 siswa
@@ -368,9 +356,7 @@ class CetakPdfController extends Controller
 
         $query = User::where('role', 'siswa_pkl');
 
-        if ($user->role === 'instruktur_industri') {
-            $query->where('instruktur_id', $user->id)->where('status_pkl', 'aktif');
-        } elseif ($user->role === 'guru_pembimbing') {
+        if ($user->role === 'guru_pembimbing') {
             $query->where('guru_id', $user->id)->where('status_pkl', 'aktif');
         } elseif ($user->role !== 'admin') {
             abort(403, 'Akses ditolak.');
@@ -429,7 +415,7 @@ private function buildAbsensiLembar(User $siswa, ?string $bulan = null): array
 public function cetakAbsensi($siswa_id = null)
 {
     $siswa = $this->resolveSiswa($siswa_id);
-    $siswa->loadMissing(['perusahaan', 'instruktur', 'guru']);
+    $siswa->loadMissing(['perusahaan', 'guru']);
 
     $query = Absensi::where('siswa_id', $siswa->id);
 
@@ -476,7 +462,7 @@ public function cetakAbsensiSemua()
 {
     $user = auth()->user();
 
-    if (!in_array($user->role, ['instruktur_industri', 'guru_pembimbing', 'admin'])) {
+    if (!in_array($user->role, ['guru_pembimbing', 'admin'])) {
         abort(403, 'Akses ditolak.');
     }
 
@@ -485,11 +471,9 @@ public function cetakAbsensiSemua()
 
     $query = User::where('role', 'siswa_pkl')
         ->where('status_pkl', 'aktif')
-        ->with(['perusahaan', 'instruktur', 'guru']);
+        ->with(['perusahaan', 'guru']);
 
-    if ($user->role === 'instruktur_industri') {
-        $query->where('instruktur_id', $user->id);
-    } elseif ($user->role === 'guru_pembimbing') {
+    if ($user->role === 'guru_pembimbing') {
         $query->where('guru_id', $user->id);
     }
 
