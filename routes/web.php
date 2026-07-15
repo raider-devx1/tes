@@ -260,6 +260,8 @@ Route::delete('/catatan/{id}', [CatatanController::class, 'destroySiswa'])->name
 
         // Lihat rekap kehadiran sendiri
         Route::get('/absensi', [AbsensiController::class, 'indexSiswa'])->name('absensi.index');
+        Route::put('/absensi/{id}',    [AbsensiController::class, 'updateSiswa'])->name('absensi.update');
+Route::delete('/absensi/{id}', [AbsensiController::class, 'destroySiswa'])->name('absensi.destroy');
         // ---- AJUKAN (submit bukti fisik) ----
 Route::put('/jurnal/{id}/ajukan',  [JurnalController::class, 'ajukanSiswa'])->name('jurnal.ajukan');
 Route::put('/catatan/{id}/ajukan', [CatatanController::class, 'ajukanSiswa'])->name('catatan.ajukan');

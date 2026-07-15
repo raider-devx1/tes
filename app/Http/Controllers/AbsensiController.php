@@ -11,6 +11,27 @@ use Illuminate\Validation\Rule;
 
 class AbsensiController extends Controller
 {
+    /**
+     * Normalisasi input jam ke format H:i:s (tanpa milidetik).
+     * Menerima "H:i" atau "H:i:s"; hasil selalu "HH:MM:SS".
+     */
+    private function normalizeJam(?string $value): ?string
+    {
+        if (blank($value)) {
+            return null;
+        }
+
+        // Ambil maksimal 8 karakter (HH:MM:SS), buang milidetik / kelebihan karakter.
+        $value = substr(trim($value), 0, 8);
+        $parts = explode(':', $value);
+
+        $jam   = str_pad((string) (int) ($parts[0] ?? 0), 2, '0', STR_PAD_LEFT);
+        $menit = str_pad((string) (int) ($parts[1] ?? 0), 2, '0', STR_PAD_LEFT);
+        $detik = str_pad((string) (int) ($parts[2] ?? 0), 2, '0', STR_PAD_LEFT);
+
+        return "{$jam}:{$menit}:{$detik}";
+    }
+
     /*
     |--------------------------------------------------------------------------
     | ROLE: SISWA PKL (mengisi & melihat rekap kehadiran sendiri)
@@ -48,16 +69,19 @@ class AbsensiController extends Controller
         $validated = $request->validate([
             'tanggal'    => ['required', 'date'],
             'status'     => ['required', Rule::in(['Hadir', 'Izin', 'Sakit', 'Alpha'])],
-            'jam_masuk'  => ['nullable', 'date_format:H:i'],
-            'jam_pulang' => ['nullable', 'date_format:H:i'],
+            'jam_masuk'  => ['nullable', 'regex:/^\d{1,2}:\d{2}(:\d{2})?$/'],
+            'jam_pulang' => ['nullable', 'regex:/^\d{1,2}:\d{2}(:\d{2})?$/'],
+        ], [
+            'jam_masuk.regex'  => 'Format jam masuk harus HH:MM atau HH:MM:SS.',
+            'jam_pulang.regex' => 'Format jam pulang harus HH:MM atau HH:MM:SS.',
         ]);
 
         Absensi::updateOrCreate(
             ['siswa_id' => Auth::id(), 'tanggal' => $validated['tanggal']],
             [
                 'status'          => $validated['status'],
-                'jam_masuk'       => $validated['jam_masuk'] ?? null,
-                'jam_pulang'      => $validated['jam_pulang'] ?? null,
+                'jam_masuk'       => $this->normalizeJam($validated['jam_masuk'] ?? null),
+                'jam_pulang'      => $this->normalizeJam($validated['jam_pulang'] ?? null),
                 'status_validasi' => 'draft',
             ]
         );
@@ -127,9 +151,62 @@ class AbsensiController extends Controller
         $absensi->update([
             'status_validasi'      => 'disetujui',
             'validated_by_guru_id' => Auth::id(),
-            'validated_at'         => now(),
+            'validated_at'         => now(), // otomatis WITA setelah timezone diubah
         ]);
 
         return back()->with('success', 'Absensi berhasil divalidasi (disetujui).');
     }
+
+    /**
+ * Siswa mengedit 1 baris absensi miliknya (hanya selama masih draft).
+ */
+public function updateSiswa(Request $request, $id)
+{
+    $absensi = Absensi::where('id', $id)->where('siswa_id', Auth::id())->firstOrFail();
+
+    // Cegah edit jika sudah diajukan / disetujui
+    if ($absensi->status_validasi !== 'draft') {
+        return back()->with('error', 'Absensi yang sudah diajukan/disetujui tidak dapat diubah.');
+    }
+
+    $validated = $request->validate([
+        'tanggal'    => ['required', 'date'],
+        'status'     => ['required', Rule::in(['Hadir', 'Izin', 'Sakit', 'Alpha'])],
+        'jam_masuk'  => ['nullable', 'regex:/^\d{1,2}:\d{2}(:\d{2})?$/'],
+        'jam_pulang' => ['nullable', 'regex:/^\d{1,2}:\d{2}(:\d{2})?$/'],
+    ], [
+        'jam_masuk.regex'  => 'Format jam masuk harus HH:MM atau HH:MM:SS.',
+        'jam_pulang.regex' => 'Format jam pulang harus HH:MM atau HH:MM:SS.',
+    ]);
+
+    $absensi->update([
+        'tanggal'    => $validated['tanggal'],
+        'status'     => $validated['status'],
+        'jam_masuk'  => $this->normalizeJam($validated['jam_masuk'] ?? null),
+        'jam_pulang' => $this->normalizeJam($validated['jam_pulang'] ?? null),
+    ]);
+
+    return back()->with('success', 'Absensi berhasil diperbarui.');
+}
+
+/**
+ * Siswa menghapus 1 baris absensi miliknya (hanya selama masih draft).
+ */
+public function destroySiswa($id)
+{
+    $absensi = Absensi::where('id', $id)->where('siswa_id', Auth::id())->firstOrFail();
+
+    if ($absensi->status_validasi !== 'draft') {
+        return back()->with('error', 'Absensi yang sudah diajukan/disetujui tidak dapat dihapus.');
+    }
+
+    // Hapus foto bukti jika ada, lalu hapus datanya
+    if ($absensi->foto_bukti) {
+        Storage::disk('public')->delete($absensi->foto_bukti);
+    }
+
+    $absensi->delete();
+
+    return back()->with('success', 'Absensi berhasil dihapus.');
+}
 }
