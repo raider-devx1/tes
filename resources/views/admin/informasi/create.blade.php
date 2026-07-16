@@ -17,6 +17,25 @@
                 @error('judul') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
             </div>
 
+          <div>
+    <label class="block text-sm font-medium text-gray-700 mb-1">Tipe Tampilan</label>
+    <select name="tipe"
+            class="w-full sm:w-72 rounded-lg border-gray-200 focus:border-[#2563EB] focus:ring-[#2563EB] text-sm">
+        <option value="panduan" {{ old('tipe') === 'panduan' ? 'selected' : '' }}>
+            Informasi / Panduan (untuk guru & siswa)
+        </option>
+        <option value="faq" {{ old('tipe') === 'faq' ? 'selected' : '' }}>
+            FAQ — tampil di halaman Welcome
+        </option>
+    </select>
+    <p class="text-xs text-gray-400 mt-1">
+        Pilih <strong>FAQ</strong> agar Judul menjadi <em>pertanyaan</em> dan Konten menjadi <em>jawaban</em> di halaman depan.
+    </p>
+    @error('tipe') 
+        <p class="text-xs text-red-500 mt-1">{{ $message }}</p> 
+    @enderror
+</div>
+
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Urutan</label>
                 <input type="number" name="urutan" value="{{ old('urutan') }}" min="0"

@@ -15,10 +15,14 @@ class AdminAkunController extends Controller
     {
         return $request->validate([
             'name'     => ['required', 'string', 'max:100'],
-            // Email = identitas login admin: wajib & unik
-            'email'    => ['required', 'email', 'max:100', Rule::unique('users', 'email')->ignore($admin?->id)],
+            // NIP = identitas login admin (sama seperti guru): wajib & unik
+            'nip'      => ['required', 'string', 'max:30', Rule::unique('users', 'nip')->ignore($admin?->id)],
+            // Email kini opsional (boleh dikosongkan), tetap unik bila diisi
+            'email'    => ['nullable', 'email', 'max:100', Rule::unique('users', 'email')->ignore($admin?->id)],
             'no_hp'    => ['nullable', 'string', 'max:20'],
             'password' => [$admin ? 'nullable' : 'required', 'string', 'min:6', 'confirmed'],
+        ], [], [
+            'nip' => 'NIP',
         ]);
     }
 
@@ -39,7 +43,8 @@ class AdminAkunController extends Controller
             ->where('role', 'admin')
             ->when($q, function ($query) use ($q) {
                 $query->where('name', 'like', "%{$q}%")
-                      ->orWhere('email', 'like', "%{$q}%");
+                      ->orWhere('email', 'like', "%{$q}%")
+                      ->orWhere('nip', 'like', "%{$q}%");
             })
             ->orderBy('name')
             ->paginate(10)

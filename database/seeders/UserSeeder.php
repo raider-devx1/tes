@@ -70,6 +70,7 @@ class UserSeeder extends Seeder
         User::create([
             'name'     => 'Admin HKI SMKN 1 Majene',
             'email'    => 'admin@smkn1majene.sch.id',
+            'nip' => '198131512505111111',
             'password' => Hash::make('password123'),
             'role'     => 'admin',
             'no_hp'    => '081200000001',

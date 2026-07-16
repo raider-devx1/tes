@@ -162,12 +162,12 @@
                                                class="block text-[11px] font-bold text-[#0047d6] hover:underline whitespace-nowrap">Lihat Bukti Fisik ↗</a>
                                         @endif
                                     </td>
-                                    <td class="px-4 py-4 text-center">
-                                        <a href="{{ route('cetak.catatan', ['catatan_id' => $item->id]) }}" target="_blank"
-                                           class="inline-flex items-center justify-center rounded-lg border-2 border-[#0047d6] px-3 py-1.5 text-xs font-bold text-[#0047d6] transition hover:bg-[#0047d6] hover:text-white">
-                                            PDF
-                                        </a>
-                                    </td>
+                                   <td class="px-4 py-4 text-center">
+    <a href="{{ route('cetak.catatan', ['siswa_id' => $item->user_id, 'catatan_id' => $item->id]) }}" target="_blank"
+       class="inline-flex items-center justify-center rounded-lg border-2 border-[#0047d6] px-3 py-1.5 text-xs font-bold text-[#0047d6] transition hover:bg-[#0047d6] hover:text-white">
+        PDF
+    </a>
+</td>
                                     <td class="px-4 py-4">
                                         <div class="flex flex-col sm:flex-row items-center justify-center gap-1.5">
                                             <button type="button"

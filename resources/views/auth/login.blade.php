@@ -64,7 +64,7 @@
                         {{-- ----- Login (NISN / NIP / Email) ----- --}}
                         <div>
                             <label class="block text-sm font-medium text-slate-700 mb-1.5">
-                                NISN / NIP / Email
+                                NISN / NIP
                             </label>
                             <input id="login" name="login" type="text" value="{{ old('login') }}"
                                    required autofocus autocomplete="username"
@@ -73,9 +73,9 @@
                             @error('login')
                                 <p class="mt-1.5 text-sm text-red-600"> {{ $message }} </p>
                             @enderror
-                            <p class="mt-1.5 text-xs text-slate-500">
-                                Siswa: <strong>NISN</strong> &middot; Guru: <strong>NIP</strong> &middot; Admin/Instruktur: <strong>Email</strong>.
-                            </p>
+                           <p class="mt-1.5 text-xs text-slate-500">
+    Siswa: <strong>NISN</strong> &middot; Guru &amp; Admin: <strong>NIP</strong>.
+</p>
                         </div>
 
                         {{-- ----- Password ----- --}}

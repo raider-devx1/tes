@@ -25,7 +25,12 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
-    return view('welcome');
+    $faq = \App\Models\Informasi::where('tipe', 'faq')
+        ->orderBy('urutan')
+        ->orderByDesc('created_at')
+        ->get();
+
+    return view('welcome', compact('faq'));
 });
 
 Route::middleware(['auth', 'verified'])->get('/dashboard', function () {

@@ -9,13 +9,12 @@ class Informasi extends Model
 {
     use HasFactory;
 
-    // Penting: Laravel salah menebak bentuk jamak "Informasi",
-    // jadi nama tabel kita set manual.
     protected $table = 'informasis';
 
     protected $fillable = [
         'judul',
         'konten',
+        'tipe',
         'urutan',
         'file',
     ];

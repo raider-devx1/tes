@@ -42,6 +42,7 @@ class InformasiController extends Controller
         $validated = $request->validate([
             'judul'  => 'required|string|max:255',
             'konten' => 'required|string',
+            'tipe'   => 'required|in:panduan,faq',
             'urutan' => 'nullable|integer|min:0',
             'file'   => 'nullable|file|max:10240|mimes:pdf,doc,docx,ppt,pptx,xls,xlsx,zip,rar,jpg,jpeg,png',
         ]);
@@ -49,6 +50,7 @@ class InformasiController extends Controller
         $informasi = new Informasi();
         $informasi->judul  = $validated['judul'];
         $informasi->konten = $validated['konten'];
+        $informasi->tipe   = $validated['tipe'];
         $informasi->urutan = $validated['urutan'] ?? 0;
 
         if ($request->hasFile('file')) {
@@ -73,12 +75,14 @@ class InformasiController extends Controller
         $validated = $request->validate([
             'judul'  => 'required|string|max:255',
             'konten' => 'required|string',
+            'tipe'   => 'required|in:panduan,faq',
             'urutan' => 'nullable|integer|min:0',
             'file'   => 'nullable|file|max:10240|mimes:pdf,doc,docx,ppt,pptx,xls,xlsx,zip,rar,jpg,jpeg,png',
         ]);
 
         $informasi->judul  = $validated['judul'];
         $informasi->konten = $validated['konten'];
+        $informasi->tipe   = $validated['tipe'];
         $informasi->urutan = $validated['urutan'] ?? 0;
 
         if ($request->hasFile('file')) {

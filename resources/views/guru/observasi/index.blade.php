@@ -1,5 +1,14 @@
 <x-app-layout>
-    <style>[x-cloak]{display:none!important;}</style>
+    <style>
+        [x-cloak]{display:none!important;}
+        /* ===== Pergantian tampilan berbasis lebar layar (sama seperti Jurnal Guru) ===== */
+        .obs-desktop{ display:none; }   /* default: HP -> tabel disembunyikan */
+        .obs-mobile { display:block; }  /* default: HP -> kartu tampil */
+        @media (min-width:1024px){      /* laptop & PC (>=1024px) */
+            .obs-desktop{ display:block; }  /* tabel tampil */
+            .obs-mobile { display:none; }   /* kartu disembunyikan */
+        }
+    </style>
 
     <x-slot name="header">
         <div class="flex items-center justify-between gap-4">
@@ -42,7 +51,6 @@
                         {{ session('success') }}
                     </div>
                 @endif
-
                 @if ($errors->any())
                     <div class="mb-4 rounded-xl border-2 border-[#cf202f] bg-[#cf202f]/10 px-4 py-3 text-sm font-semibold text-[#cf202f]">
                         <ul class="list-disc list-inside">
@@ -59,7 +67,7 @@
                         <p class="text-xs font-medium text-[#5b616e]">Buat draf &rarr; cetak &rarr; minta paraf instruktur &amp; guru &rarr; <span class="font-bold text-black">Validasi</span> (unggah foto). Setelah tervalidasi, hasil cetak menampilkan keterangan <span class="font-bold text-black">SUDAH DIVALIDASI</span>.</p>
                     </div>
                     <a href="{{ route('cetak.observasi.semua') }}" target="_blank"
-                       class="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-[#0047d6] px-6 py-3.5 text-base font-bold text-white shadow-sm transition hover:bg-[#0038aa] focus:outline-none focus:ring-4 focus:ring-[#0047d6]/30">
+                       class="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-[#cf202f] px-6 py-3.5 text-base font-bold text-white shadow-sm transition hover:bg-[#a81824] focus:outline-none focus:ring-4 focus:ring-[#cf202f]/30 shrink-0">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2M6 14h12v8H6v-8z"/>
                         </svg>
@@ -90,7 +98,10 @@
                     </div>
                 </form>
 
-                <div class="overflow-x-auto rounded-xl border-2 border-[#0047d6]/15">
+                {{-- ============================================================= --}}
+                {{-- ==========  TAMPILAN LAPTOP / PC (TABEL, >=1024px)  ========= --}}
+                {{-- ============================================================= --}}
+                <div class="obs-desktop overflow-x-auto rounded-xl border-2 border-[#0047d6]/15">
                     <table class="w-full min-w-[1300px] text-left text-sm table-fixed">
                         <thead>
                             <tr class="bg-[#0047d6] text-xs uppercase tracking-wide text-white">
@@ -185,8 +196,6 @@
                                             <span class="text-[#5b616e]">-</span>
                                         @endif
                                     </td>
-
-                                    {{-- ===== STATUS ===== --}}
                                     <td class="px-4 py-3 text-center">
                                         @if($isTervalidasi)
                                             <span class="inline-flex items-center rounded-full bg-[#05b169]/10 px-3 py-1 text-xs font-bold text-[#05b169]">Tervalidasi</span>
@@ -197,8 +206,6 @@
                                             <span class="inline-flex items-center rounded-full bg-[#d98200]/10 px-3 py-1 text-xs font-bold text-[#d98200]">Draft</span>
                                         @endif
                                     </td>
-
-                                    {{-- ===== FOTO ===== --}}
                                     <td class="px-4 py-3 text-center">
                                         @if ($obs->foto_dokumentasi || $obs->foto_lembar_observasi)
                                             <div class="flex flex-col items-center gap-1.5">
@@ -219,14 +226,10 @@
                                             <span class="text-[#5b616e]">-</span>
                                         @endif
                                     </td>
-
-                                    {{-- ===== CETAK ===== --}}
                                     <td class="px-4 py-3 text-center">
                                         <a href="{{ route('cetak.observasi', ['siswa_id' => $obs->user_id, 'observasi_id' => $obs->id]) }}" target="_blank"
                                            class="inline-flex items-center rounded-full bg-[#0047d6] px-3 py-1.5 text-xs font-bold text-white transition hover:bg-[#0038aa]">PDF</a>
                                     </td>
-
-                                    {{-- ===== AKSI ===== --}}
                                     <td class="px-4 py-3 text-center">
                                         <div class="flex flex-col items-center justify-center gap-2">
                                             <button type="button" @click="showValidasi = true"
@@ -239,9 +242,7 @@
                                                     Edit
                                                 </a>
                                                 <form method="POST" action="{{ route('guru.observasi.destroy', $obs->id) }}"
-                                                      data-confirm="Hapus observasi ini?"
-                                                      data-confirm-text="Seluruh poin permasalahan & solusi pada observasi ini akan ikut terhapus."
-                                                      data-confirm-yes="Ya, hapus">
+                                                      onsubmit="return confirm('Hapus observasi ini? Seluruh poin permasalahan & solusi pada observasi ini akan ikut terhapus.')">
                                                     @csrf
                                                     @method('DELETE')
                                                     <button type="submit"
@@ -252,7 +253,7 @@
                                             </div>
                                         </div>
 
-                                        {{-- ===== MODAL VALIDASI ===== --}}
+                                        {{-- ===== MODAL VALIDASI (desktop) ===== --}}
                                         <div x-show="showValidasi" x-cloak
                                              class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
                                              @keydown.escape.window="showValidasi = false">
@@ -278,9 +279,7 @@
                                                             Foto Dokumentasi Kegiatan <span class="text-red-500">*</span>
                                                         </label>
                                                         <input type="file" name="foto_dokumentasi" accept="image/*" capture="environment" required
-                                                               class="w-full text-sm text-gray-600 rounded-lg border border-gray-300 bg-white
-                                                                      file:mr-4 file:py-2 file:px-4 file:border-0 file:text-sm file:font-medium
-                                                                      file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                                                               class="w-full text-sm text-gray-600 rounded-lg border border-gray-300 bg-white file:mr-4 file:py-2 file:px-4 file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
                                                         <p class="mt-1 text-xs text-gray-500">Wajib. Format JPG/JPEG/PNG, maksimal 2 MB.</p>
                                                     </div>
                                                     <div>
@@ -288,9 +287,7 @@
                                                             Foto Lembar Observasi (Sudah Diparaf) <span class="text-red-500">*</span>
                                                         </label>
                                                         <input type="file" name="foto_lembar_observasi" accept="image/*" capture="environment" required
-                                                               class="w-full text-sm text-gray-600 rounded-lg border border-gray-300 bg-white
-                                                                      file:mr-4 file:py-2 file:px-4 file:border-0 file:text-sm file:font-medium
-                                                                      file:bg-green-50 file:text-green-700 hover:file:bg-green-100">
+                                                               class="w-full text-sm text-gray-600 rounded-lg border border-gray-300 bg-white file:mr-4 file:py-2 file:px-4 file:border-0 file:text-sm file:font-medium file:bg-green-50 file:text-green-700 hover:file:bg-green-100">
                                                         <p class="mt-1 text-xs text-gray-500">Wajib. Foto lembar fisik yang sudah diparaf instruktur &amp; guru pembimbing.</p>
                                                     </div>
                                                     <div class="flex justify-end gap-2 pt-2">
@@ -310,13 +307,233 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="11" class="px-4 py-8 text-center font-medium text-[#5b616e] italic">
-                                        Belum ada data observasi.
-                                    </td>
+                                    <td colspan="11" class="px-4 py-8 text-center font-medium text-[#5b616e] italic">Belum ada data observasi.</td>
                                 </tr>
                             @endforelse
                         </tbody>
                     </table>
+                </div>
+
+                {{-- ============================================================= --}}
+                {{-- ============  TAMPILAN HP (KARTU RINGKAS, <1024px)  ========= --}}
+                {{-- ============================================================= --}}
+                <div class="obs-mobile space-y-3">
+                    @forelse ($observasi as $obs)
+                        @php
+                            $poin = $obs->items;
+                            $isTervalidasi = ($obs->status ?? 'draft') === 'tervalidasi';
+                        @endphp
+                        <div class="rounded-2xl border-2 border-[#0047d6]/15 bg-white p-4 shadow-sm"
+                             x-data="{ detail: false, showValidasi: false }">
+                            {{-- Ringkas: SISWA (kiri) + AKSI (kanan) --}}
+                            <div class="flex items-center justify-between gap-3">
+                                <div class="min-w-0">
+                                    <p class="font-bold text-black truncate">{{ $obs->user->name ?? '-' }}</p>
+                                    <div class="mt-1 flex flex-wrap items-center gap-2">
+                                        <span class="text-xs font-medium text-[#5b616e]">{{ \Carbon\Carbon::parse($obs->hari_tanggal)->format('d M Y') }}</span>
+                                        @if($isTervalidasi)
+                                            <span class="inline-block rounded-full bg-[#05b169]/10 px-2.5 py-0.5 text-[11px] font-bold text-[#05b169]">Tervalidasi</span>
+                                        @else
+                                            <span class="inline-block rounded-full bg-[#d98200]/10 px-2.5 py-0.5 text-[11px] font-bold text-[#d98200]">Draft</span>
+                                        @endif
+                                    </div>
+                                </div>
+
+                                {{-- ===== TOMBOL LIHAT DETAIL DI KANAN ===== --}}
+                                <button type="button" @click="detail = true"
+                                        class="inline-flex flex-shrink-0 items-center justify-center gap-1.5 rounded-xl bg-[#0047d6] px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-[#0038aa]">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/>
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                    </svg>
+                                    Lihat Detail
+                                </button>
+                            </div>
+
+                            {{-- ===== POP-UP DETAIL: semua info tabel laptop ===== --}}
+                            <div x-show="detail" x-cloak
+                                 class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 p-0 sm:p-4"
+                                 @keydown.escape.window="detail = false">
+                                <div class="w-full sm:max-w-lg max-h-[90vh] overflow-y-auto rounded-t-2xl sm:rounded-2xl bg-white shadow-xl text-left"
+                                     @click.outside="detail = false">
+                                    <div class="sticky top-0 flex items-center justify-between border-b-2 border-[#0047d6]/15 bg-white px-5 py-3">
+                                        <h3 class="text-base font-bold text-black">Detail Observasi</h3>
+                                        <button type="button" @click="detail = false" class="text-2xl leading-none text-[#5b616e] hover:text-black">&times;</button>
+                                    </div>
+
+                                    <div class="space-y-4 px-5 py-4">
+                                        <div class="grid grid-cols-2 gap-3">
+                                            <div>
+                                                <p class="text-xs font-bold uppercase tracking-wide text-[#5b616e]">Tanggal</p>
+                                                <p class="text-sm font-medium text-black">{{ \Carbon\Carbon::parse($obs->hari_tanggal)->format('d M Y') }}</p>
+                                            </div>
+                                            <div>
+                                                <p class="text-xs font-bold uppercase tracking-wide text-[#5b616e]">Status</p>
+                                                @if($isTervalidasi)
+                                                    <span class="inline-flex items-center rounded-full bg-[#05b169]/10 px-2.5 py-1 text-xs font-bold text-[#05b169]">Tervalidasi</span>
+                                                    @if($obs->validated_at)
+                                                        <p class="mt-1 text-[10px] font-medium text-[#5b616e]">{{ \Carbon\Carbon::parse($obs->validated_at)->format('d M Y') }}</p>
+                                                    @endif
+                                                @else
+                                                    <span class="inline-flex items-center rounded-full bg-[#d98200]/10 px-2.5 py-1 text-xs font-bold text-[#d98200]">Draft</span>
+                                                @endif
+                                            </div>
+                                            <div>
+                                                <p class="text-xs font-bold uppercase tracking-wide text-[#5b616e]">Siswa</p>
+                                                <p class="text-sm font-bold text-black break-words">{{ $obs->user->name ?? '-' }}</p>
+                                            </div>
+                                            <div>
+                                                <p class="text-xs font-bold uppercase tracking-wide text-[#5b616e]">NISN</p>
+                                                <p class="text-sm font-medium text-black">{{ $obs->user->nisn ?? '-' }}</p>
+                                            </div>
+                                            <div class="col-span-2">
+                                                <p class="text-xs font-bold uppercase tracking-wide text-[#5b616e]">Pekerjaan/Projek</p>
+                                                <p class="text-sm font-medium text-black break-words">{{ $obs->pekerjaan_projek ?? '-' }}</p>
+                                            </div>
+                                        </div>
+
+                                        {{-- Permasalahan --}}
+                                        <div>
+                                            <p class="text-xs font-bold uppercase tracking-wide text-[#5b616e] mb-1">Permasalahan</p>
+                                            @if($poin && $poin->count())
+                                                <ol class="list-decimal list-inside space-y-0.5 text-sm font-medium text-black">
+                                                    @foreach($poin as $it)
+                                                        <li class="break-words">{{ $it->permasalahan }}</li>
+                                                    @endforeach
+                                                </ol>
+                                            @else
+                                                <span class="text-sm text-[#5b616e]">-</span>
+                                            @endif
+                                        </div>
+
+                                        {{-- Solusi --}}
+                                        <div>
+                                            <p class="text-xs font-bold uppercase tracking-wide text-[#5b616e] mb-1">Solusi Pemecahan</p>
+                                            @if($poin && $poin->count())
+                                                <ol class="list-decimal list-inside space-y-0.5 text-sm font-medium text-black">
+                                                    @foreach($poin as $it)
+                                                        <li class="break-words">{{ $it->solusi }}</li>
+                                                    @endforeach
+                                                </ol>
+                                            @else
+                                                <span class="text-sm text-[#5b616e]">-</span>
+                                            @endif
+                                        </div>
+
+                                        {{-- Foto --}}
+                                        <div>
+                                            <p class="text-xs font-bold uppercase tracking-wide text-[#5b616e] mb-2">Foto</p>
+                                            @if ($obs->foto_dokumentasi || $obs->foto_lembar_observasi)
+                                                <div class="flex flex-wrap gap-2">
+                                                    @if ($obs->foto_dokumentasi)
+                                                        <a href="{{ asset('storage/' . $obs->foto_dokumentasi) }}" target="_blank" rel="noopener"
+                                                           class="inline-flex items-center gap-1 rounded-full bg-[#0047d6]/10 px-3 py-1.5 text-xs font-bold text-[#0047d6] transition hover:bg-[#0047d6]/20">
+                                                            Foto Dokumentasi
+                                                        </a>
+                                                    @endif
+                                                    @if ($obs->foto_lembar_observasi)
+                                                        <a href="{{ asset('storage/' . $obs->foto_lembar_observasi) }}" target="_blank" rel="noopener"
+                                                           class="inline-flex items-center gap-1 rounded-full bg-[#05b169]/10 px-3 py-1.5 text-xs font-bold text-[#05b169] transition hover:bg-[#05b169]/20">
+                                                            Lembar Berparaf
+                                                        </a>
+                                                    @endif
+                                                </div>
+                                            @else
+                                                <p class="text-sm text-[#5b616e]">Tidak ada</p>
+                                            @endif
+                                        </div>
+                                    </div>
+
+                                    {{-- Footer aksi --}}
+                                    <div class="sticky bottom-0 space-y-2 border-t-2 border-[#0047d6]/15 bg-white px-5 py-4">
+                                        {{-- Validasi: tutup detail dulu agar modal validasi tampil penuh --}}
+                                        <button type="button" @click="detail = false; showValidasi = true"
+                                                class="flex w-full items-center justify-center gap-2 rounded-xl bg-[#05b169] px-4 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-[#049457]">
+                                            {{ $isTervalidasi ? 'Validasi Ulang' : 'Validasi' }}
+                                        </button>
+                                        <div class="flex gap-2">
+                                            <a href="{{ route('cetak.observasi', ['siswa_id' => $obs->user_id, 'observasi_id' => $obs->id]) }}" target="_blank"
+                                               class="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-[#0047d6] px-3 py-2.5 text-xs font-bold text-white transition hover:bg-[#0038aa]">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2M6 14h12v8H6v-8z"/>
+                                                </svg>
+                                                Cetak PDF
+                                            </a>
+                                            <a href="{{ route('guru.observasi.edit', $obs->id) }}"
+                                               class="flex flex-1 items-center justify-center rounded-xl bg-[#0047d6]/10 px-3 py-2.5 text-xs font-bold text-[#0047d6] transition hover:bg-[#0047d6]/20">
+                                                Edit
+                                            </a>
+                                            <form method="POST" action="{{ route('guru.observasi.destroy', $obs->id) }}"
+                                                  class="flex-1"
+                                                  onsubmit="return confirm('Hapus observasi ini? Seluruh poin permasalahan & solusi pada observasi ini akan ikut terhapus.')">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit"
+                                                        class="flex w-full items-center justify-center rounded-xl bg-[#cf202f]/10 px-3 py-2.5 text-xs font-bold text-[#cf202f] transition hover:bg-[#cf202f]/20">
+                                                    Hapus
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {{-- ===== MODAL VALIDASI (mobile) ===== --}}
+                            <div x-show="showValidasi" x-cloak
+                                 class="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4"
+                                 @keydown.escape.window="showValidasi = false">
+                                <div class="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl bg-white p-6 text-left shadow-xl"
+                                     @click.outside="showValidasi = false">
+                                    <div class="mb-4 flex items-center justify-between">
+                                        <h3 class="text-lg font-bold text-black">Validasi Lembar Observasi</h3>
+                                        <button type="button" @click="showValidasi = false"
+                                                class="text-2xl leading-none text-[#5b616e] hover:text-black">&times;</button>
+                                    </div>
+                                    <p class="mb-4 text-sm text-[#5b616e]">
+                                        Unggah foto dokumentasi kegiatan dan foto lembar observasi yang sudah diparaf
+                                        <span class="font-semibold text-black">instruktur &amp; guru pembimbing</span>.
+                                        Setelah divalidasi, hasil cetak PDF akan menampilkan keterangan
+                                        <span class="font-bold text-black">SUDAH DIVALIDASI</span>.
+                                    </p>
+                                    <form method="POST" action="{{ route('guru.observasi.validasi', $obs->id) }}"
+                                          enctype="multipart/form-data" class="space-y-4">
+                                        @csrf
+                                        @method('PUT')
+                                        <div>
+                                            <label class="block text-sm font-bold text-black mb-1">
+                                                Foto Dokumentasi Kegiatan <span class="text-red-500">*</span>
+                                            </label>
+                                            <input type="file" name="foto_dokumentasi" accept="image/*" capture="environment" required
+                                                   class="w-full text-sm text-gray-600 rounded-lg border border-gray-300 bg-white file:mr-4 file:py-2 file:px-4 file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                                            <p class="mt-1 text-xs text-gray-500">Wajib. Format JPG/JPEG/PNG, maksimal 2 MB.</p>
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-bold text-black mb-1">
+                                                Foto Lembar Observasi (Sudah Diparaf) <span class="text-red-500">*</span>
+                                            </label>
+                                            <input type="file" name="foto_lembar_observasi" accept="image/*" capture="environment" required
+                                                   class="w-full text-sm text-gray-600 rounded-lg border border-gray-300 bg-white file:mr-4 file:py-2 file:px-4 file:border-0 file:text-sm file:font-medium file:bg-green-50 file:text-green-700 hover:file:bg-green-100">
+                                            <p class="mt-1 text-xs text-gray-500">Wajib. Foto lembar fisik yang sudah diparaf instruktur &amp; guru pembimbing.</p>
+                                        </div>
+                                        <div class="flex justify-end gap-2 pt-2">
+                                            <button type="button" @click="showValidasi = false"
+                                                    class="inline-flex items-center rounded-xl border-2 border-[#0047d6]/25 bg-white px-4 py-2 text-sm font-bold text-[#0047d6] transition hover:bg-[#0047d6]/5">
+                                                Batal
+                                            </button>
+                                            <button type="submit"
+                                                    class="inline-flex items-center rounded-xl bg-[#05b169] px-5 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-[#049457]">
+                                                Simpan Validasi
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    @empty
+                        <div class="rounded-2xl border-2 border-[#0047d6]/15 bg-white px-4 py-8 text-center font-medium text-[#5b616e] italic">
+                            Belum ada data observasi.
+                        </div>
+                    @endforelse
                 </div>
 
                 <div class="mt-4">

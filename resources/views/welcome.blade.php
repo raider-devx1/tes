@@ -3,22 +3,29 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>LMS PKL - UPTD SMK Negeri 1 Majene</title>
+    <title>LMS PKL — UPTD SMK Negeri 1 Majene</title>
+
+    {{-- Logo tampil di tab / URL title --}}
+    <link rel="icon" type="image/png" href="{{ asset('images/logo.png') }}">
+    <link rel="apple-touch-icon" href="{{ asset('images/logo.png') }}">
 
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=figtree:400,500,600,700,800&display=swap" rel="stylesheet" />
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+
+    <style>[x-cloak]{display:none!important;}</style>
 </head>
 <body class="font-sans antialiased text-slate-800 bg-white">
 
+    {{-- ===== HEADER ===== --}}
     <header class="sticky top-0 z-30 bg-white/80 backdrop-blur border-b border-blue-100">
-        <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-            <div class="flex items-center gap-2.5">
-               
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <img src="{{ asset('images/logo.png') }}" alt="Logo SMK Negeri 1 Majene" class="h-10 w-10 object-contain">
                 <div class="leading-tight">
                     <span class="block font-bold text-slate-900 text-sm sm:text-base">LMS PKL</span>
-                    <span class="block text-[11px] sm:text-xs text-slate-500">SMK Negeri 1 Majene</span>
+                    <span class="block text-[11px] sm:text-xs text-[#8B5E34] font-medium">SMK Negeri 1 Majene</span>
                 </div>
             </div>
             <a href="{{ route('login') }}"
@@ -28,136 +35,109 @@
         </div>
     </header>
 
+    {{-- ===== HERO SECTION ===== --}}
     <section class="relative overflow-hidden">
         <div class="absolute inset-0 bg-gradient-to-b from-blue-50 via-white to-white"></div>
         <div class="absolute -top-24 -right-24 w-72 h-72 sm:w-96 sm:h-96 bg-blue-100 rounded-full blur-3xl opacity-60"></div>
+        <div class="absolute -bottom-24 -left-24 w-72 h-72 sm:w-96 sm:h-96 bg-[#8B5E34]/10 rounded-full blur-3xl opacity-70"></div>
 
-        <div class="relative max-w-6xl mx-auto px-4 sm:px-6 py-16 sm:py-24 md:py-32 text-center">
-            <span class="inline-block px-4 py-1.5 rounded-full bg-blue-100 text-blue-700 text-xs sm:text-sm font-semibold mb-6">
-                Kreatif, Inovatif, &amp; Profesional
+        <div class="relative max-w-3xl mx-auto px-4 sm:px-6 py-16 sm:py-24 text-center">
+            <img src="{{ asset('images/logo.png') }}" alt="Logo SMK Negeri 1 Majene"
+                 class="mx-auto h-24 w-24 sm:h-28 sm:w-28 object-contain mb-6 drop-shadow-sm">
+
+            <span class="inline-block px-4 py-1.5 rounded-full bg-[#8B5E34]/10 text-[#8B5E34] text-xs sm:text-sm font-semibold mb-6">
+                Learning Management System PKL
             </span>
-            <h1 class="text-3xl sm:text-4xl md:text-6xl font-extrabold tracking-tight text-slate-900 leading-tight">
-                Membangun Masa Depan<br class="hidden md:block">
-                <span class="text-blue-600">Bersama SMK Negeri 1 Majene</span>
+            <h1 class="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-slate-900 leading-tight">
+                <span class="text-blue-600">LMS PKL</span> SMK Negeri 1 Majene
             </h1>
-            <p class="mt-6 max-w-2xl mx-auto text-base sm:text-lg text-slate-600">
-                Platform digital pengelolaan Praktik Kerja Lapangan (PKL) untuk siswa, guru pembimbing,
-                instruktur industri, dan admin. Karena <span class="font-semibold text-slate-800">SMK BISA! SMK SIAP KERJA!</span>
+            <p class="mt-5 max-w-2xl mx-auto text-base sm:text-lg text-slate-600 leading-relaxed">
+                Platform digital untuk mengelola seluruh kegiatan Praktik Kerja Lapangan (PKL) —
+                dari jurnal harian, absensi, monitoring, hingga penilaian — dalam satu tempat untuk siswa, guru pembimbing, dan admin.
             </p>
-            <div class="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
+            <div class="mt-8">
                 <a href="{{ route('login') }}"
-                   class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-xl bg-blue-600 text-white font-medium hover:bg-blue-700 transition shadow-lg shadow-blue-600/20">
+                   class="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-xl bg-blue-600 text-white font-medium hover:bg-blue-700 transition shadow-lg shadow-blue-600/20">
                     Masuk ke Akun
                 </a>
-                <a href="#fitur"
-                   class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-xl bg-white text-blue-700 font-medium border border-blue-200 hover:bg-blue-50 transition">
-                    Lihat Fitur
-                </a>
-            </div>
-
-            <div class="mt-14 flex flex-wrap items-center justify-center gap-x-8 sm:gap-x-10 gap-y-4 text-slate-600">
-                <div class="text-center">
-                    <div class="text-xl sm:text-2xl font-extrabold text-blue-600">50+</div>
-                    <div class="text-xs sm:text-sm">Guru Berpengalaman</div>
-                </div>
-                <div class="text-center">
-                    <div class="text-xl sm:text-2xl font-extrabold text-blue-600">5</div>
-                    <div class="text-xs sm:text-sm">Program Keahlian</div>
-                </div>
-                <div class="text-center">
-                    <div class="text-xl sm:text-2xl font-extrabold text-blue-600">100%</div>
-                    <div class="text-xs sm:text-sm">Siap Kerja</div>
-                </div>
             </div>
         </div>
     </section>
 
-    <section class="max-w-6xl mx-auto px-4 sm:px-6 py-16 sm:py-20">
-        <div class="text-center mb-10 sm:mb-14">
-            <h2 class="text-2xl sm:text-3xl font-bold text-slate-900">Program Keahlian</h2>
-            <p class="mt-3 text-slate-600">Kompetensi unggulan UPTD SMK Negeri 1 Majene.</p>
+    {{-- ===== APA ITU LMS PKL (INFORMASI INTI) ===== --}}
+    <section class="max-w-4xl mx-auto px-4 sm:px-6 py-14 sm:py-16">
+        <div class="text-center mb-10">
+            <h2 class="text-2xl sm:text-3xl font-bold text-slate-900">Apa itu LMS PKL?</h2>
+            <p class="mt-3 text-base sm:text-lg text-slate-600 leading-relaxed max-w-2xl mx-auto">
+                LMS PKL adalah sistem informasi Praktik Kerja Lapangan SMK Negeri 1 Majene yang
+                menggantikan pencatatan manual menjadi digital, sehingga proses PKL lebih rapi, cepat, dan mudah dipantau.
+            </p>
         </div>
 
-        <div class="grid gap-5 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div class="grid gap-5 sm:grid-cols-3">
             @php
-                $programKeahlian = [
-                    ['Tata Busana', 'Merancang, membuat, dan mengelola produk busana yang kreatif dan bernilai jual.'],
-                    ['Kuliner', 'Mengolah dan menyajikan makanan serta minuman dengan standar industri.'],
-                    ['Kecantikan & Spa', 'Perawatan kecantikan kulit, rambut, dan pelayanan spa profesional.'],
-                    ['Perhotelan', 'Pelayanan akomodasi dan tata graha sesuai standar industri perhotelan.'],
-                    ['Teknik Jaringan Komputer & Telekomunikasi', 'Membangun, mengonfigurasi, dan memelihara jaringan komputer serta telekomunikasi.'],
+                $inti = [
+                    ['Catat Digital', 'Siswa mengisi jurnal harian dan absensi PKL secara online, kapan saja.'],
+                    ['Dipantau Guru', 'Guru pembimbing memantau dan memvalidasi kegiatan siswa dari mana saja.'],
+                    ['Nilai & Dokumen', 'Penilaian dan dokumen PKL tersimpan rapi dan otomatis direkap.'],
                 ];
             @endphp
 
-            @foreach ($programKeahlian as [$namaProgram, $deskripsiProgram])
-                <div class="p-6 rounded-2xl border border-slate-100 bg-white hover:shadow-lg hover:border-blue-100 transition">
-                    <div class="w-11 h-11 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center mb-4 font-bold">
-                         {{ substr($namaProgram, 0, 1) }} 
+            @foreach ($inti as $index => [$judul, $isi])
+                <div class="p-6 rounded-2xl border border-slate-100 bg-white hover:shadow-lg transition text-center">
+                    <div class="mx-auto w-12 h-12 rounded-xl {{ $index % 2 === 0 ? 'bg-blue-50 text-blue-600' : 'bg-[#8B5E34]/10 text-[#8B5E34]' }} flex items-center justify-center mb-4 font-bold text-lg">
+                        {{ substr($judul, 0, 1) }}
                     </div>
-                    <h3 class="font-semibold text-lg text-slate-900"> {{ $namaProgram }} </h3>
-                    <p class="mt-2 text-slate-600 text-sm leading-relaxed"> {{ $deskripsiProgram }} </p>
+                    <h3 class="font-semibold text-lg text-slate-900">{{ $judul }}</h3>
+                    <p class="mt-2 text-slate-600 text-sm leading-relaxed">{{ $isi }}</p>
                 </div>
             @endforeach
         </div>
     </section>
 
-    <section id="fitur" class="scroll-mt-20 bg-blue-50/50 border-y border-blue-100">
-        <div class="max-w-6xl mx-auto px-4 sm:px-6 py-16 sm:py-20">
-            <div class="text-center mb-10 sm:mb-14">
-                <h2 class="text-2xl sm:text-3xl font-bold text-slate-900">Fitur Utama Aplikasi PKL</h2>
-                <p class="mt-3 text-slate-600">Semua kebutuhan pengelolaan PKL dalam satu aplikasi.</p>
+    {{-- ===== FAQ SECTION ===== --}}
+    @if(isset($faq) && $faq->count())
+    <section id="faq" class="scroll-mt-20 bg-blue-50/50 border-y border-blue-100">
+        <div class="max-w-3xl mx-auto px-4 sm:px-6 py-14 sm:py-20">
+            <div class="text-center mb-10 sm:mb-12">
+                <span class="inline-block px-4 py-1.5 rounded-full bg-[#8B5E34]/10 text-[#8B5E34] text-sm font-semibold mb-4">Pertanyaan Umum</span>
+                <h2 class="text-3xl sm:text-4xl font-bold text-slate-900">Pertanyaan yang Sering Diajukan</h2>
+                <p class="mt-3 text-base sm:text-lg text-slate-600">Cari tahu lebih lanjut seputar LMS PKL SMK Negeri 1 Majene.</p>
             </div>
 
-            <div class="grid gap-5 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                @php
-                    $fitur = [
-                        ['Jurnal Harian', 'Siswa mencatat kegiatan harian, instruktur memberi persetujuan & catatan.'],
-                        ['Absensi Digital', 'Rekap kehadiran siswa lengkap dengan jam masuk dan pulang.'],
-                        ['Observasi & Monitoring', 'Guru pembimbing memantau perkembangan siswa di lapangan.'],
-                        ['Penilaian Terpadu', 'Nilai instruktur & guru otomatis direkap menjadi nilai akhir.'],
-                        ['Dokumen PKL', 'Kelola surat tugas, surat penerimaan, dan laporan akhir.'],
-                        ['Multi Peran', 'Akses berbeda untuk admin, guru, instruktur, dan siswa.'],
-                    ];
-                @endphp
-
-                @foreach ($fitur as [$judul, $isi])
-                    <div class="p-6 rounded-2xl border border-slate-100 bg-white hover:shadow-lg hover:border-blue-100 transition">
-                        <div class="w-11 h-11 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center mb-4 font-bold">
-                             {{ substr($judul, 0, 1) }} 
+            <div class="space-y-4" x-data="{ open: null }">
+                @foreach($faq as $i => $item)
+                    <div class="rounded-2xl border border-blue-100 bg-white overflow-hidden">
+                        <button type="button"
+                                @click="open === {{ $i }} ? open = null : open = {{ $i }}"
+                                class="w-full flex items-center justify-between gap-4 px-6 py-5 text-left hover:bg-blue-50/40 transition">
+                            <span class="font-semibold text-slate-900 text-lg sm:text-xl leading-snug">{{ $item->judul }}</span>
+                            <svg class="h-6 w-6 flex-shrink-0 text-[#8B5E34] transition-transform duration-200"
+                                 :class="open === {{ $i }} ? 'rotate-180' : ''"
+                                 xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                            </svg>
+                        </button>
+                        <div x-show="open === {{ $i }}" x-collapse.duration.200ms x-cloak
+                             class="px-6 pb-6 -mt-1 text-slate-700 text-base sm:text-lg leading-relaxed prose prose-lg max-w-none prose-a:text-blue-600">
+                            {!! $item->konten !!}
                         </div>
-                        <h3 class="font-semibold text-lg text-slate-900"> {{ $judul }} </h3>
-                        <p class="mt-2 text-slate-600 text-sm leading-relaxed"> {{ $isi }} </p>
                     </div>
                 @endforeach
             </div>
         </div>
     </section>
+    @endif
 
-    <section class="max-w-4xl mx-auto px-4 sm:px-6 py-16 sm:py-20 text-center">
-        <span class="inline-block px-4 py-1.5 rounded-full bg-blue-100 text-blue-700 text-xs sm:text-sm font-semibold mb-6">Visi Kami</span>
-        <p class="text-lg sm:text-xl md:text-2xl font-medium text-slate-800 leading-relaxed">
-            "Mewujudkan lembaga pendidikan yang berkarakter, berbudaya, beriman, bertaqwa, profesional,
-            berwawasan lingkungan, mampu berwirausaha dan berdaya saing global."
-        </p>
-    </section>
-
-    <section class="max-w-6xl mx-auto px-4 sm:px-6 pb-16 sm:pb-20">
-        <div class="rounded-3xl bg-blue-600 px-6 sm:px-8 py-12 sm:py-14 text-center text-white shadow-xl shadow-blue-600/20">
-            <h2 class="text-3xl font-bold">Siap memulai?</h2>
-            <p class="mt-3 text-blue-100">Masuk menggunakan akun yang telah diberikan oleh admin sekolah.</p>
-            <a href="{{ route('login') }}"
-               class="mt-8 inline-flex items-center gap-2 px-8 py-3.5 rounded-xl bg-white text-blue-700 font-medium hover:bg-blue-50 transition">
-                Masuk Sekarang
-            </a>
-        </div>
-    </section>
-
+    {{-- ===== FOOTER ===== --}}
     <footer class="border-t border-slate-100">
-        <div class="max-w-6xl mx-auto px-4 sm:px-6 py-8 text-center text-sm text-slate-500">
-            &copy; {{ date('Y') }} LMS PKL — UPTD SMK Negeri 1 Majene. Semua hak dilindungi.
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 py-8 flex flex-col sm:flex-row items-center justify-center gap-3 text-center text-sm text-slate-500">
+            <img src="{{ asset('images/logo.png') }}" alt="Logo" class="h-8 w-8 object-contain">
+            <span>&copy; {{ date('Y') }} LMS PKL — UPTD SMK Negeri 1 Majene. Semua hak dilindungi.</span>
         </div>
     </footer>
 
+    {{-- ===== TOMBOL SCROLL TO TOP ===== --}}
     <button x-data="{ show: false }"
             x-init="window.addEventListener('scroll', () => { show = window.scrollY > 300 })"
             x-show="show"

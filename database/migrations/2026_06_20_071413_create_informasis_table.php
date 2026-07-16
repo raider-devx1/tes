@@ -12,11 +12,15 @@ return new class extends Migration
             $table->id();
             $table->string('judul');
             $table->text('konten');
+
+            // Jenis tampilan:
+            //  - 'panduan' : informasi/panduan biasa (untuk guru & siswa)
+            //  - 'faq'     : tampil sebagai FAQ di halaman welcome
+            $table->string('tipe', 20)->default('panduan');
+
             $table->string('file')->nullable();      // path lampiran (WAJIB ada — dipakai controller)
             $table->integer('urutan')->default(0);   // untuk pengurutan tampilan
             $table->timestamps();
-
-            // DIHAPUS (tidak dipakai lagi): kategori
         });
     }
 

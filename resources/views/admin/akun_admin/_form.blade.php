@@ -11,28 +11,15 @@
         @enderror
     </div>
 
-    {{-- Email (dipakai untuk login admin) --}}
+    {{-- NIP (dipakai untuk login admin, sama seperti guru) --}}
     <div>
-        <label for="email" class="block text-sm font-medium text-gray-700 mb-1">
-            Email <span class="text-gray-400">(dipakai untuk login)</span>
+        <label for="nip" class="block text-sm font-medium text-gray-700 mb-1">
+            NIP <span class="text-gray-400">(dipakai untuk login)</span>
         </label>
-        <input type="email" id="email" name="email"
-               value="{{ old('email', $admin->email ?? '') }}" required
+        <input type="text" id="nip" name="nip"
+               value="{{ old('nip', $admin->nip ?? '') }}" required
                class="w-full rounded-lg border-blue-100 focus:border-[#2563EB] focus:ring-[#2563EB] text-sm">
-        @error('email')
-            <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
-        @enderror
-    </div>
-
-    {{-- No HP --}}
-    <div>
-        <label for="no_hp" class="block text-sm font-medium text-gray-700 mb-1">
-            No. HP <span class="text-gray-400">(opsional)</span>
-        </label>
-        <input type="text" id="no_hp" name="no_hp"
-               value="{{ old('no_hp', $admin->no_hp ?? '') }}"
-               class="w-full rounded-lg border-blue-100 focus:border-[#2563EB] focus:ring-[#2563EB] text-sm">
-        @error('no_hp')
+        @error('nip')
             <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
         @enderror
     </div>
@@ -46,7 +33,7 @@
             @endif
         </label>
         <input type="password" id="password" name="password"
-               autocomplete="new-password" 
+               autocomplete="new-password"
                {{ (isset($admin) && $admin->exists) ? '' : 'required' }}
                class="w-full rounded-lg border-blue-100 focus:border-[#2563EB] focus:ring-[#2563EB] text-sm">
         @error('password')

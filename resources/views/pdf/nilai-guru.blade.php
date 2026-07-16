@@ -14,7 +14,6 @@
             padding: 0;
             line-height: 1.3;
         }
-
         /* Header (RATA TENGAH sesuai format acuan) */
         .header {
             text-align: center;
@@ -30,7 +29,6 @@
             font-size: 15px;
             font-weight: bold;
         }
-
         /* Tabel Informasi Siswa (tanpa border) */
         .table-info {
             width: 100%;
@@ -49,7 +47,6 @@
             width: 15px;
             text-align: left;
         }
-
         /* Tabel Nilai (Border) */
         .table-score {
             width: 100%;
@@ -72,11 +69,6 @@
         .col-tujuan {
             width: 180px;
         }
-        .row-rata td {
-            font-weight: bold;
-            background: #f2f2f2;
-        }
-
         /* Catatan (DIBERI BORDER sesuai format acuan) */
         .catatan {
             border: 2px solid black;
@@ -84,7 +76,6 @@
             margin-bottom: 20px;
             text-align: justify;
         }
-
         /* Absen / Ketidakhadiran (DIBERI BORDER sesuai format acuan) */
         .absen-container {
             margin-bottom: 30px;
@@ -98,7 +89,6 @@
             padding: 3px 8px;
             vertical-align: top;
         }
-
         /* Tanda Tangan */
         .ttd-container {
             width: 100%;
@@ -117,7 +107,6 @@
         .clear {
             clear: both;
         }
-
         /* Footer (3 kolom + garis atas, sesuai format acuan) */
         .footer {
             position: fixed;
@@ -141,24 +130,11 @@
     </style>
 </head>
 <body>
-    @php
-        $daftarSkor = [
-            optional($nilai)->skor_soft_skill,
-            optional($nilai)->skor_hard_skill,
-            optional($nilai)->skor_pengembangan,
-            optional($nilai)->skor_kewirausahaan,
-            optional($nilai)->skor_laporan,
-            optional($nilai)->skor_presentasi,
-        ];
-        $nilaiLengkap  = $nilai && ! in_array(null, $daftarSkor, true);
-        $rataRataAkhir = $nilaiLengkap ? round(array_sum($daftarSkor) / count($daftarSkor), 2) : null;
-    @endphp
-
     <div class="header">
         <h3>UPTD SMKN 1 MAJENE</h3>
         <h4>Tahun Ajaran {{ $tahunAjaran ?? '' }}</h4>
     </div>
-
+    
     <table class="table-info">
         <tr>
             <td>Nama Peserta Didik</td>
@@ -250,11 +226,6 @@
                 <td class="col-skor">{{ optional($nilai)->skor_presentasi ?? '-' }}</td>
                 <td>{{ optional($nilai)->deskripsi_presentasi ?? '-' }}</td>
             </tr>
-            <tr class="row-rata">
-                <td>Rata-rata Nilai Akhir</td>
-                <td class="col-skor">{{ $nilaiLengkap ? $rataRataAkhir : '-' }}</td>
-                <td>{{ $nilaiLengkap ? 'Nilai lengkap' : 'Nilai belum lengkap' }}</td>
-            </tr>
         </tbody>
     </table>
 
@@ -263,45 +234,65 @@
     </div>
 
     <div class="absen-container">
-        <table class="absen-table" style="border-collapse: collapse; width: 300px;">
+        <table class="table-absen">
             <tr>
-                <td colspan="2" style="border: 2px solid black; padding: 3px 8px; vertical-align: top;"><span style="font-weight: bold;">Ketidakhadiran</span></td>
+                <td colspan="2"><span style="font-weight: bold;">Ketidakhadiran</span></td>
             </tr>
             <tr>
-                <td style="border: 2px solid black; padding: 3px 8px; vertical-align: top;">Sakit</td>
-                <td style="border: 2px solid black; padding: 3px 8px; vertical-align: top;">: {{ $sakit ?? 0 }} hari</td>
+                <td>Sakit</td>
+                <td>: {{ $sakit ?? 0 }} hari</td>
             </tr>
             <tr>
-                <td style="border: 2px solid black; padding: 3px 8px; vertical-align: top;">Ijin</td>
-                <td style="border: 2px solid black; padding: 3px 8px; vertical-align: top;">: {{ $ijin ?? 0 }} hari</td>
+                <td>Ijin</td>
+                <td>: {{ $ijin ?? 0 }} hari</td>
             </tr>
             <tr>
-                <td style="border: 2px solid black; padding: 3px 8px; vertical-align: top;">Tanpa Keterangan</td>
-                <td style="border: 2px solid black; padding: 3px 8px; vertical-align: top;">: {{ $alpa ?? 0 }} hari</td>
+                <td>Tanpa Keterangan</td>
+                <td>: {{ $alpa ?? 0 }} hari</td>
             </tr>
         </table>
     </div>
 
-    <div class="ttd-container">
-        <div class="ttd-left">
-            <p style="margin:0;">Guru Pembimbing</p>
+   <table class="ttd-container" style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+    {{-- BARIS 1: HANYA UNTUK TANGGAL DI SEBELAH KANAN --}}
+    <tr>
+        <td style="width: 50%; text-align: left; vertical-align: top;">
+            {{-- Dikosongkan agar kolom kanan berisi tanggal --}}
+            <p style="margin: 0;">&nbsp;</p>
+        </td>
+        <td style="width: 50%; text-align: left; vertical-align: top;">
+            <p style="margin: 0;">Majene, {{ \Carbon\Carbon::now()->translatedFormat('d F Y') }}</p>
+        </td>
+    </tr>
+    
+    {{-- BARIS 2: JABATAN PENANDATANGAN (SEJAJAR HORIZONTAL) --}}
+    <tr>
+        <td style="width: 50%; text-align: left; vertical-align: top; padding-top: 5px;">
+            <p style="margin: 0;">Guru Pembimbing</p>
+        </td>
+        <td style="width: 50%; text-align: left; vertical-align: top; padding-top: 5px;">
+            <p style="margin: 0;">Pembimbing Dunia Kerja,</p>
+        </td>
+    </tr>
+
+    {{-- BARIS 3: NAMA DAN NIP --}}
+    <tr>
+        <td style="width: 50%; text-align: left; vertical-align: top;">
             <br><br><br><br>
-            <p style="margin:0;">
-                <span style="font-weight:bold; text-decoration: underline;">{{ $siswa->guru->name ?? 'M. ASRI, Amd.Kom' }}</span><br>
+            <p style="margin: 0;">
+                <span style="font-weight: bold; text-decoration: underline;">{{ $siswa->guru->name ?? 'M. ASRI, Amd.Kom' }}</span><br>
                 NIP. {{ $siswa->guru->nip ?? '197609102005021007' }}
             </p>
-        </div>
-        <div class="ttd-right">
-            <p style="margin:0;">Majene, {{ \Carbon\Carbon::now()->translatedFormat('d F Y') }}</p>
-            <p style="margin:0;">Pembimbing Dunia Kerja,</p>
+        </td>
+        <td style="width: 50%; text-align: left; vertical-align: top;">
             <br><br><br><br>
-            <p style="margin:0;">
-                <span style="font-weight:bold; text-decoration: underline;">{{ $siswa->instruktur->name ?? 'MULFIANTI' }}</span><br>
+            <p style="margin: 0;">
+                <span style="font-weight: bold; text-decoration: underline;">{{ $siswa->instruktur->name ?? 'MULFIANTI' }}</span><br>
                 NIP. {{ $siswa->instruktur->nip ?? '-' }}
             </p>
-        </div>
-        <div class="clear"></div>
-    </div>
+        </td>
+    </tr>
+</table>
 
     <div class="footer">
         <table class="footer-table">
