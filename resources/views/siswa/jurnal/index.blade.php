@@ -1,11 +1,8 @@
 <x-app-layout>
     <x-slot name="header">
         <div class="flex flex-col gap-3">
-           
             <h2 class="text-xl md:text-2xl font-bold tracking-tight text-black">Jurnal Kegiatan Harian</h2>
         </div>
-         
-          
     </x-slot>
 
     <style>
@@ -37,8 +34,9 @@
     </script>
 
     <div class="py-8 md:py-12 bg-white">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-              <div class="mb-6">
+        <div class="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 2xl:px-12">
+
+            <div class="mb-6">
                 <a href="{{ route('siswa.dashboard') }}"
                    class="inline-flex items-center gap-1 rounded-xl border-2 border-[#0047d6]/25 bg-white px-4 py-2 text-sm font-bold text-[#0047d6] transition hover:bg-[#0047d6]/5">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -65,11 +63,8 @@
                             </svg>
                             Tambah Jurnal
                         </a>
-                        <a href="{{ route('cetak.jurnal.semua') }}" target="_blank"
+                        <a href="{{ route('cetak.jurnal') }}" target="_blank"
                            class="inline-flex items-center justify-center gap-1.5 rounded-xl border-2 border-[#0047d6] bg-white px-6 py-3.5 text-base font-bold text-[#0047d6] shadow-sm transition hover:bg-[#0047d6]/5 focus:outline-none focus:ring-4 focus:ring-[#0047d6]/30">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2M6 14h12v8H6v-8z"/>
-                            </svg>
                             Cetak Semua PDF
                         </a>
                     </div>
@@ -227,7 +222,8 @@
                                 </td>
                                 <td class="px-4 py-3">
                                     <div class="flex flex-wrap items-center justify-center gap-2">
-                                        <a href="{{ route('cetak.jurnal', $jurnal->id) }}" target="_blank"
+                                        
+                                        <a href="{{ route('cetak.jurnal', ['jurnal_id' => $jurnal->id]) }}" target="_blank"
                                            class="inline-flex items-center rounded-full bg-[#0047d6] px-3 py-1.5 text-xs font-bold text-white transition hover:bg-[#0038aa]">
                                             {{ $jurnal->status === 'disetujui' ? 'PDF Final' : 'Cetak Draf' }}
                                         </a>
@@ -338,7 +334,8 @@
                             $tgl   = $jurnal->hari_tanggal->format('d/m/Y');
                         @endphp
                         <div class="rounded-2xl border-2 border-[#0047d6]/15 bg-white p-4 shadow-sm"
-                             x-data="{ detail: false, openAjukan: false }">
+     x-data="{ detail: false, openAjukan: false }"
+     x-effect="document.body.style.overflow = (detail || openAjukan) ? 'hidden' : ''">
                             {{-- Ringkas: TANGGAL (kiri) + AKSI (kanan) --}}
                             <div class="flex items-center justify-between gap-3">
                                 <div class="min-w-0">
@@ -354,7 +351,6 @@
                                         <span class="text-xs font-medium text-[#5b616e]">{{ $items->count() }} pekerjaan</span>
                                     </div>
                                 </div>
-
                                 {{-- ===== TOMBOL LIHAT DETAIL DI KANAN ===== --}}
                                 <button type="button" @click="detail = true"
                                         class="inline-flex flex-shrink-0 items-center justify-center gap-1.5 rounded-xl bg-[#0047d6] px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-[#0038aa]">
@@ -368,15 +364,27 @@
 
                             {{-- ===== POP-UP DETAIL: semua info tabel laptop ===== --}}
                             <div x-show="detail" x-cloak
-                                 class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 p-0 sm:p-4"
-                                 @keydown.escape.window="detail = false">
-                                <div class="w-full sm:max-w-lg max-h-[90vh] overflow-y-auto rounded-t-2xl sm:rounded-2xl bg-white shadow-xl text-left"
-                                     @click.outside="detail = false">
+     x-transition:enter="transition ease-out duration-300"
+     x-transition:enter-start="opacity-0"
+     x-transition:enter-end="opacity-100"
+     x-transition:leave="transition ease-in duration-200"
+     x-transition:leave-start="opacity-100"
+     x-transition:leave-end="opacity-0"
+     class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 p-0 sm:p-4"
+     @keydown.escape.window="detail = false">
+                               <div x-show="detail"
+     x-transition:enter="transition ease-out duration-300"
+     x-transition:enter-start="opacity-0 translate-y-full sm:translate-y-0 sm:scale-95"
+     x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
+     x-transition:leave="transition ease-in duration-200"
+     x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
+     x-transition:leave-end="opacity-0 translate-y-full sm:translate-y-0 sm:scale-95"
+     class="w-full sm:max-w-lg max-h-[90vh] overflow-y-auto rounded-t-2xl sm:rounded-2xl bg-white shadow-xl text-left"
+     @click.outside="detail = false">
                                     <div class="sticky top-0 flex items-center justify-between border-b-2 border-[#0047d6]/15 bg-white px-5 py-3">
                                         <h3 class="text-base font-bold text-black">Detail Jurnal</h3>
                                         <button type="button" @click="detail = false" class="text-2xl leading-none text-[#5b616e] hover:text-black">&times;</button>
                                     </div>
-
                                     <div class="space-y-4 px-5 py-4">
                                         <div class="grid grid-cols-2 gap-3">
                                             <div>
@@ -394,7 +402,6 @@
                                                 @endif
                                             </div>
                                         </div>
-
                                         <div>
                                             <p class="text-xs font-bold uppercase tracking-wide text-[#5b616e] mb-1">Unit Kerja / Pekerjaan</p>
                                             @if($items->count())
@@ -407,7 +414,6 @@
                                                 <span class="text-sm text-[#5b616e]">-</span>
                                             @endif
                                         </div>
-
                                         <div>
                                             <p class="text-xs font-bold uppercase tracking-wide text-[#5b616e] mb-1">Catatan Instruktur</p>
                                             @if($jurnal->catatan_instruktur)
@@ -418,7 +424,6 @@
                                                 <p class="text-sm text-[#5b616e]">-</p>
                                             @endif
                                         </div>
-
                                         <div>
                                             <p class="text-xs font-bold uppercase tracking-wide text-[#5b616e] mb-2">Foto Kegiatan</p>
                                             @if($fotos->count())
@@ -441,16 +446,15 @@
                                             @endif
                                         </div>
                                     </div>
-
                                     <div class="sticky bottom-0 space-y-2 border-t-2 border-[#0047d6]/15 bg-white px-5 py-4">
                                         @if($jurnal->status === 'draft')
-                                            <button type="button" @click="detail = false; openAjukan = true"
-                                                    class="flex w-full items-center justify-center gap-2 rounded-xl bg-[#05b169] px-4 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-[#049a5b]">
-                                                Ajukan
-                                            </button>
+                                       <button type="button" @click="detail = false; setTimeout(() => openAjukan = true, 250)"
+        class="flex w-full items-center justify-center gap-2 rounded-xl bg-[#05b169] px-4 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-[#049a5b]">
+    Ajukan
+</button>
                                         @endif
                                         <div class="flex gap-2">
-                                            <a href="{{ route('cetak.jurnal', $jurnal->id) }}" target="_blank"
+                                            <a href="{{ route('cetak.jurnal', ['jurnal_id' => $jurnal->id]) }}" target="_blank"
                                                class="flex flex-1 items-center justify-center rounded-xl bg-[#0047d6] px-3 py-2.5 text-xs font-bold text-white transition hover:bg-[#0038aa]">
                                                 {{ $jurnal->status === 'disetujui' ? 'PDF Final' : 'Cetak Draf' }}
                                             </a>
@@ -477,11 +481,24 @@
 
                             {{-- ===== MODAL AJUKAN (mobile) ===== --}}
                             @if($jurnal->status === 'draft')
-                                <div x-show="openAjukan" x-cloak
-                                     class="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4"
-                                     @keydown.escape.window="openAjukan = false">
-                                    <div class="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl bg-white shadow-xl text-left"
-                                         @click.outside="openAjukan = false">
+                               <div x-show="openAjukan" x-cloak
+     x-transition:enter="transition ease-out duration-300"
+     x-transition:enter-start="opacity-0"
+     x-transition:enter-end="opacity-100"
+     x-transition:leave="transition ease-in duration-200"
+     x-transition:leave-start="opacity-100"
+     x-transition:leave-end="opacity-0"
+     class="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4"
+     @keydown.escape.window="openAjukan = false">
+    <div x-show="openAjukan"
+         x-transition:enter="transition ease-out duration-300 delay-[50ms]"
+         x-transition:enter-start="opacity-0 translate-y-full sm:translate-y-0 sm:scale-95"
+         x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
+         x-transition:leave-end="opacity-0 translate-y-full sm:translate-y-0 sm:scale-95"
+         class="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl bg-white shadow-xl text-left"
+         @click.outside="openAjukan = false">
                                         <div class="flex items-center justify-between border-b-2 border-[#0047d6]/15 px-5 py-3">
                                             <h3 class="text-base font-bold text-black">
                                                 Ajukan Jurnal — {{ $tgl }}

@@ -1,92 +1,79 @@
-@php
-$isAdmin = auth()->check() && auth()->user()->role === 'admin';
-@endphp
-
+@php $isAdmin = auth()->check() && auth()->user()->role === 'admin'; @endphp
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
-
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-
     <title>{{ config('app.name', 'LMS PKL') }}</title>
-
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=figtree:400,500,600,700&display=swap" rel="stylesheet" />
-
     @vite(['resources/css/app.css', 'resources/js/app.js'])
-    
+
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    
-   @if($isAdmin)
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 
-<style>
-    [x-cloak]{display:none!important;}
-    html.sidebar-terbuka .app-sidebar        { transform: translateX(0); }
-    html:not(.sidebar-terbuka) .app-sidebar  { transform: translateX(-100%); }
-    @media (min-width: 1024px) {
-        html.sidebar-terbuka .app-konten { margin-left: 16rem; }
-    }
-</style>
-<script>
-    (function () {
-        var tersimpan = localStorage.getItem('sidebarOpen');
-        var terbuka = tersimpan !== null ? tersimpan === 'true' : window.innerWidth >= 1024;
-        document.documentElement.classList.toggle('sidebar-terbuka', terbuka);
-    })();
-</script>
-@endif
+    @if($isAdmin)
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+    <style>
+        [x-cloak]{display:none!important;}
+        html.sidebar-terbuka .app-sidebar        { transform: translateX(0); }
+        html:not(.sidebar-terbuka) .app-sidebar  { transform: translateX(-100%); }
+        @media (min-width: 1024px) {
+            html.sidebar-terbuka .app-konten { margin-left: 16rem; }
+        }
+    </style>
+    <script>
+        (function () {
+            var tersimpan = localStorage.getItem('sidebarOpen');
+            var terbuka = tersimpan !== null ? tersimpan === 'true' : window.innerWidth >= 1024;
+            document.documentElement.classList.toggle('sidebar-terbuka', terbuka);
+        })();
+    </script>
+    @endif
 </head>
-
 <body class="font-sans antialiased text-gray-600 bg-slate-50/50">
-
     {{-- =================================================================== --}}
     {{-- LAYOUT ADMIN                                                        --}}
     {{-- =================================================================== --}}
     @if($isAdmin)
- <div
-x-data="{
-    sidebarOpen: localStorage.getItem('sidebarOpen') !== null
-        ? localStorage.getItem('sidebarOpen') === 'true'
-        : window.innerWidth >= 1024,
-    loaded: false
-}"
-x-init="
-    $watch('sidebarOpen', value => {
-        localStorage.setItem('sidebarOpen', value);
-        document.documentElement.classList.toggle('sidebar-terbuka', value);
-    });
-    $nextTick(() => loaded = true);
-"
-class="min-h-screen">
+    <div
+        x-data="{
+            sidebarOpen: localStorage.getItem('sidebarOpen') !== null
+                ? localStorage.getItem('sidebarOpen') === 'true'
+                : window.innerWidth >= 1024,
+            loaded: false
+        }"
+        x-init="
+            $watch('sidebarOpen', value => {
+                localStorage.setItem('sidebarOpen', value);
+                document.documentElement.classList.toggle('sidebar-terbuka', value);
+            });
+            $nextTick(() => loaded = true);"
+        class="min-h-screen">
 
         {{-- ===== SIDEBAR MINIMALIS ===== --}}
-     <aside
-class="app-sidebar fixed inset-y-0 left-0 z-40 w-64 bg-white border-r border-slate-100 transform overflow-y-auto"
-:class="[sidebarOpen ? 'translate-x-0' : '-translate-x-full', loaded ? 'transition-transform duration-300 ease-in-out' : '']">
-
-           <div class="h-16 flex items-center justify-between px-6 border-b border-slate-100">
-    <div class="flex items-center gap-3">
-        <div class="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white font-bold text-base shadow-sm shadow-blue-200">
-            P
-        </div>
-        <span class="font-bold text-slate-800 text-base tracking-tight">
-            LMS <span class="text-blue-600 font-extrabold">PKL</span>
-        </span>
-    </div>
-    <button @click="sidebarOpen = false"
-        class="p-1.5 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition-colors"
-        title="Tutup sidebar">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path d="M18 6L6 18M6 6l12 12" />
-        </svg>
-    </button>
-</div>
+        <aside
+            class="app-sidebar fixed inset-y-0 left-0 z-40 w-64 bg-white border-r border-slate-100 transform overflow-y-auto"
+            :class="[sidebarOpen ? 'translate-x-0' : '-translate-x-full', loaded ? 'transition-transform duration-300 ease-in-out' : '']">
+            <div class="h-16 flex items-center justify-between px-6 border-b border-slate-100">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white font-bold text-base shadow-sm shadow-blue-200">
+                        P
+                    </div>
+                    <span class="font-bold text-slate-800 text-base tracking-tight">
+                        LMS <span class="text-blue-600 font-extrabold">PKL</span>
+                    </span>
+                </div>
+                <button @click="sidebarOpen = false"
+                    class="p-1.5 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition-colors"
+                    title="Tutup sidebar">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M18 6L6 18M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
 
             <nav class="px-4 py-6 space-y-1.5 text-sm">
-                
                 <div class="px-3 mb-2 text-xs font-semibold text-slate-400 tracking-wider uppercase">Menu Utama</div>
 
                 {{-- Dashboard --}}
@@ -132,7 +119,7 @@ class="app-sidebar fixed inset-y-0 left-0 z-40 w-64 bg-white border-r border-sla
                             Data Siswa
                         </a>
                         <a href="{{ route('admin.guru.index') }}"
-                            class="block px-3 py-2 text-[13px] rounded-lg transition-all {{ request()->routeIs('admin.guru.*') ? 'text-blue-600 font-semibold' : 'text-slate-500 hover:text-slate-900' }}">
+                            class="block px-3 py-2 text-[13px] rounded-lg transition-all {{ request()->routeIs('admin.guru.*') ? 'text-blue-600 font-semibold' : 'text-slate-500 hover:text-slate-990' }}">
                             Data Guru Pembimbing
                         </a>
                         <a href="{{ route('admin.instruktur.index') }}"
@@ -185,7 +172,7 @@ class="app-sidebar fixed inset-y-0 left-0 z-40 w-64 bg-white border-r border-sla
                                 <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
                                 <polyline points="22 4 12 14.01 9 11.01"/>
                             </svg>
-                            Evaluasi & Nilai
+                            Evaluasi &amp; Nilai
                         </span>
                         <svg class="w-3.5 h-3.5 text-slate-400 transition-transform duration-200" :class="open && 'rotate-180'" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                             <path d="M19 9l-7 7-7-7" />
@@ -244,7 +231,7 @@ class="app-sidebar fixed inset-y-0 left-0 z-40 w-64 bg-white border-r border-sla
                 <div class="pt-4 px-3 mb-2 text-xs font-semibold text-slate-400 tracking-wider uppercase">Konfigurasi</div>
 
                 {{-- Pengaturan --}}
-                <div x-data="{ open: {{ request()->routeIs('admin.riwayat.index', 'profile.edit') ? 'true' : 'false' }} }">
+                <div x-data="{ open: {{ request()->routeIs('admin.riwayat.index', 'admin.akun-admin.*', 'profile.edit') ? 'true' : 'false' }} }">
                     <button @click="open = !open"
                         class="group w-full flex items-center justify-between px-3 py-2.5 rounded-xl font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all duration-150">
                         <span class="flex items-center gap-3">
@@ -263,10 +250,10 @@ class="app-sidebar fixed inset-y-0 left-0 z-40 w-64 bg-white border-r border-sla
                             class="block px-3 py-2 text-[13px] rounded-lg transition-all {{ request()->routeIs('admin.riwayat.index') ? 'text-blue-600 font-semibold' : 'text-slate-500 hover:text-slate-900' }}">
                             Riwayat Aktivitas
                         </a>
-                       <a href="{{ route('admin.akun-admin.index') }}"
-   class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm {{ request()->routeIs('admin.akun-admin.*') ? 'bg-blue-50 text-[#2563EB] font-medium' : 'text-gray-600 hover:bg-blue-50' }}">
-     Kelola Akun Admin
-</a>
+                        <a href="{{ route('admin.akun-admin.index') }}"
+                            class="block px-3 py-2 text-[13px] rounded-lg transition-all {{ request()->routeIs('admin.akun-admin.*') ? 'text-blue-600 font-semibold' : 'text-slate-500 hover:text-slate-900' }}">
+                            Kelola Akun Admin
+                        </a>
                         <a href="{{ route('profile.edit') }}"
                             class="block px-3 py-2 text-[13px] rounded-lg transition-all {{ request()->routeIs('profile.edit') ? 'text-blue-600 font-semibold' : 'text-slate-500 hover:text-slate-900' }}">
                             Profil Admin
@@ -281,36 +268,35 @@ class="app-sidebar fixed inset-y-0 left-0 z-40 w-64 bg-white border-r border-sla
             class="fixed inset-0 z-30 bg-slate-900/30 lg:hidden backdrop-blur-xs"></div>
 
         {{-- ===== WRAPPER ===== --}}
-     <div class="app-konten flex flex-col min-h-screen"
-:class="[sidebarOpen ? 'lg:ml-64' : 'ml-0', loaded ? 'transition-all duration-300 ease-in-out' : '']">
+        <div class="app-konten flex flex-col min-h-screen"
+            :class="[sidebarOpen ? 'lg:ml-64' : 'ml-0', loaded ? 'transition-all duration-300 ease-in-out' : '']">
 
             {{-- NAVBAR sticky --}}
             <header
-                class="sticky top-0 z-20 h-16 bg-white/80 backdrop-blur-md border-b border-slate-100 flex items-center justify-between px-6">
+                class="sticky top-0 z-20 h-16 bg-white/80 backdrop-blur-md border-b border-slate-100 flex items-center justify-between px-4 sm:px-6">
                 <div class="flex items-center gap-3">
-                   <button @click="sidebarOpen = !sidebarOpen"
-    class="p-2 rounded-xl text-slate-600 hover:bg-slate-50 transition-colors"
-    title="Buka / tutup menu">
-    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-        <path d="M4 6h16M4 12h16M4 18h16" />
-    </svg>
-</button>
+                    <button @click="sidebarOpen = !sidebarOpen"
+                        class="p-2 rounded-xl text-slate-600 hover:bg-slate-50 transition-colors"
+                        title="Buka / tutup menu">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                    </button>
                     <h1 class="text-base font-semibold text-slate-800">{{ $title ?? 'Dashboard' }}</h1>
                 </div>
-
                 <div class="flex items-center gap-2">
                     {{-- Profile dropdown --}}
                     <div x-data="{ openP: false }" class="relative">
                         <button @click="openP=!openP"
                             class="flex items-center gap-2.5 p-1.5 pr-3 rounded-xl hover:bg-slate-50 transition-all">
-                           @if(auth()->user()->foto)
-    <img src="{{ asset('storage/' . auth()->user()->foto) }}" alt="Foto profil"
-         class="w-7 h-7 rounded-lg object-cover shadow-sm">
-@else
-    <span class="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold text-xs shadow-sm shadow-blue-200">
-         {{ strtoupper(substr(auth()->user()->name, 0, 1)) }} 
-    </span>
-@endif
+                            @if(auth()->user()->foto)
+                                <img src="{{ asset('storage/' . auth()->user()->foto) }}" alt="Foto profil"
+                                     class="w-7 h-7 rounded-lg object-cover shadow-sm">
+                            @else
+                                <span class="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold text-xs shadow-sm shadow-blue-200">
+                                    {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
+                                </span>
+                            @endif
                             <span class="hidden sm:block text-sm font-medium text-slate-700">
                                 {{ auth()->user()->name ?? 'Admin' }}
                             </span>
@@ -331,25 +317,30 @@ class="app-sidebar fixed inset-y-0 left-0 z-40 w-64 bg-white border-r border-sla
 
             {{-- Header slot opsional --}}
             @isset($header)
-            <div class="px-6 pt-5">{{ $header }}</div>
+            <div class="px-4 sm:px-6 pt-5">
+                <div class="w-full max-w-[1920px] mx-auto">{{ $header }}</div>
+            </div>
             @endisset
 
             {{-- CONTENT --}}
-            <main class="flex-1 p-6">
-
-                {{ $slot }}
+            <main class="flex-1 p-4 sm:p-6">
+                <div class="w-full max-w-[1920px] mx-auto">
+                    {{ $slot }}
+                </div>
             </main>
 
             {{-- FOOTER ADMIN --}}
-            <footer class="border-t border-slate-100 px-6 py-4 text-xs text-slate-400 flex flex-col sm:flex-row justify-between gap-2 bg-white">
-                <span>© {{ date('Y') }} LMS PKL — SMK</span>
-                <span>Panel Admin · v1.0</span>
+            <footer class="border-t border-slate-100 px-4 sm:px-6 py-4 text-xs text-slate-400 bg-white">
+                <div class="w-full max-w-[1920px] mx-auto flex flex-col sm:flex-row justify-between gap-2">
+                    <span>© {{ date('Y') }} LMS PKL — SMK</span>
+                    <span>Panel Admin · v1.0</span>
+                </div>
             </footer>
         </div>
     </div>
 
     {{-- =================================================================== --}}
-    {{-- LAYOUT NON-ADMIN (Fixed Sticky Bottom & Clean Center Alignment)    --}}
+    {{-- LAYOUT NON-ADMIN (Fixed Sticky Bottom & Clean Center Alignment)     --}}
     {{-- =================================================================== --}}
     @else
     <div class="min-h-screen flex flex-col bg-slate-50">
@@ -357,7 +348,7 @@ class="app-sidebar fixed inset-y-0 left-0 z-40 w-64 bg-white border-r border-sla
 
         @isset($header)
         <header class="bg-white border-b border-slate-100">
-            <div class="max-w-7xl mx-auto py-5 px-4 sm:px-6 lg:px-8">
+            <div class="w-full max-w-[1920px] mx-auto py-5 px-4 sm:px-6 lg:px-8 2xl:px-12">
                 {{ $header }}
             </div>
         </header>
@@ -368,13 +359,12 @@ class="app-sidebar fixed inset-y-0 left-0 z-40 w-64 bg-white border-r border-sla
             {{ $slot }}
         </main>
 
-        {{-- FOOTER NON-ADMIN (Hanya Copyright Berada Tepat di Tengah) --}}
+        {{-- FOOTER NON-ADMIN --}}
         <footer class="border-t border-slate-100 bg-white w-full">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 flex items-center justify-center text-xs font-medium text-slate-400 tracking-wide text-center">
+            <div class="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 2xl:px-12 py-5 flex items-center justify-center text-xs font-medium text-slate-400 tracking-wide text-center">
                 <div class="flex items-center gap-1.5 justify-center">
                     <span>Copyright</span>
                     <span>&copy; {{ date('Y') }}</span>
-                   
                 </div>
             </div>
         </footer>
@@ -405,7 +395,6 @@ class="app-sidebar fixed inset-y-0 left-0 z-40 w-64 bg-white border-r border-sla
             const form = e.target;
             if (!(form instanceof HTMLFormElement) || !form.hasAttribute('data-confirm')) return;
             if (form.dataset.confirmed === 'true') return; // sudah dikonfirmasi
-
             e.preventDefault();
             Swal.fire({
                 title: form.getAttribute('data-confirm') || 'Apakah Anda yakin?',
@@ -426,5 +415,4 @@ class="app-sidebar fixed inset-y-0 left-0 z-40 w-64 bg-white border-r border-sla
         }, true);
     </script>
 </body>
-
 </html>
