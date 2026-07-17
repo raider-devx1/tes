@@ -110,17 +110,6 @@
                     @endforeach
                 </select>
             </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Instruktur Industri</label>
-                <select name="instruktur_id" class="w-full rounded-lg border-blue-100 focus:border-[#2563EB] focus:ring-[#2563EB] text-sm">
-                    <option value="">— Pilih Instruktur —</option>
-                    @foreach($instrukturList as $it)
-                        <option value="{{ $it->id }}" {{ old('instruktur_id', $s?->instruktur_id) == $it->id ? 'selected' : '' }}>
-                            {{ $it->name }}
-                        </option>
-                    @endforeach
-                </select>
-            </div>
         </div>
     </div>
 

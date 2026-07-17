@@ -1,11 +1,9 @@
 <x-app-layout>
     <style>
         [x-cloak]{display:none!important;}
-
         /* ===== Pergantian tampilan berbasis lebar layar (sama seperti Jurnal/Nilai Guru) ===== */
         .dok-desktop{ display:none; }   /* default: HP -> tabel disembunyikan */
         .dok-mobile { display:block; }  /* default: HP -> kartu tampil */
-
         @media (min-width:1024px){      /* laptop & PC (>=1024px) */
             .dok-desktop{ display:block; }  /* tabel tampil */
             .dok-mobile { display:none; }   /* kartu disembunyikan */
@@ -22,8 +20,8 @@
         </div>
     </x-slot>
 
-    <div class="py-8 md:py-12 bg-white">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+    <div class="py-8 md:py-12 bg-white min-h-screen">
+        <div class="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 2xl:px-12 space-y-6">
             <p class="text-sm font-medium text-[#5b616e]">Lihat &amp; unduh dokumen siswa bimbingan Anda sesuai hak akses.</p>
 
             <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -176,7 +174,9 @@
                             $stPill  = 'bg-[#cf202f]/10 text-[#cf202f]';
                         }
                     @endphp
-                    <div class="rounded-2xl border-2 border-[#0047d6]/15 bg-white p-4 shadow-sm" x-data="{ detail: false }">
+                    <div class="rounded-2xl border-2 border-[#0047d6]/15 bg-white p-4 shadow-sm"
+                         x-data="{ detail: false }"
+                         x-effect="document.body.style.overflow = detail ? 'hidden' : ''">
                         {{-- Ringkas: NAMA (kiri) + AKSI (kanan) --}}
                         <div class="flex items-center justify-between gap-3">
                             <div class="min-w-0">
@@ -186,7 +186,6 @@
                                     <span class="inline-block rounded-full px-2.5 py-0.5 text-[11px] font-bold {{ $stPill }}">{{ $stLabel }}</span>
                                 </div>
                             </div>
-
                             {{-- ===== TOMBOL LIHAT DETAIL DI KANAN ===== --}}
                             <button type="button" @click="detail = true"
                                     class="inline-flex flex-shrink-0 items-center justify-center gap-1.5 rounded-xl bg-[#0047d6] px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-[#0038aa]">
@@ -200,10 +199,23 @@
 
                         {{-- Pop-up card: SEMUA info yang tampil di tabel laptop --}}
                         <div x-show="detail" x-cloak
+                             x-transition:enter="transition ease-out duration-300"
+                             x-transition:enter-start="opacity-0"
+                             x-transition:enter-end="opacity-100"
+                             x-transition:leave="transition ease-in duration-200"
+                             x-transition:leave-start="opacity-100"
+                             x-transition:leave-end="opacity-0"
                              class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 p-0 sm:p-4"
                              @keydown.escape.window="detail = false">
-                            <div class="w-full sm:max-w-lg max-h-[90vh] overflow-y-auto rounded-t-2xl sm:rounded-2xl bg-white shadow-xl text-left"
-                                 @click.outside="detail = false" x-transition>
+                            <div x-show="detail"
+                                 x-transition:enter="transition ease-out duration-300"
+                                 x-transition:enter-start="opacity-0 translate-y-full sm:translate-y-0 sm:scale-95"
+                                 x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
+                                 x-transition:leave="transition ease-in duration-200"
+                                 x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
+                                 x-transition:leave-end="opacity-0 translate-y-full sm:translate-y-0 sm:scale-95"
+                                 class="w-full sm:max-w-lg max-h-[90vh] overflow-y-auto rounded-t-2xl sm:rounded-2xl bg-white shadow-xl text-left"
+                                 @click.outside="detail = false">
                                 <div class="sticky top-0 flex items-center justify-between border-b-2 border-[#0047d6]/15 bg-white px-5 py-3">
                                     <h3 class="text-base font-bold text-black">Detail Dokumen</h3>
                                     <button type="button" @click="detail = false" class="text-2xl leading-none text-[#5b616e] hover:text-black">&times;</button>
@@ -227,7 +239,6 @@
                                             <span class="mt-1 inline-block rounded-full px-3 py-1 text-xs font-bold {{ $stPill }}">{{ $stLabel }}</span>
                                         </div>
                                     </div>
-
                                     {{-- ===== DOKUMEN (aksi) ===== --}}
                                     <div>
                                         <p class="text-xs font-bold uppercase tracking-wide text-[#5b616e] mb-2">Dokumen</p>
@@ -236,7 +247,6 @@
                                 </div>
                             </div>
                         </div>
-
                     </div>
                 @empty
                     <div class="rounded-2xl border-2 border-[#0047d6]/15 bg-white px-4 py-8 text-center font-medium text-[#5b616e] italic">
@@ -246,7 +256,7 @@
             </div>
 
             <div class="mt-2">
-                {!! $siswa->links() !!}
+                {!! $siswa->withQueryString()->links() !!}
             </div>
         </div>
     </div>

@@ -26,13 +26,12 @@
         Responsif OTOMATIS (sama seperti halaman Jurnal Guru):
         - >=1024px (laptop & PC): .nilai-desktop tampil (tabel penuh), kartu disembunyikan.
         - <1024px (HP & tablet kecil): .nilai-mobile tampil (kartu ringkas), tabel disembunyikan.
+        - Lebar konten penuh kiri-kanan, dibatasi maksimal 1920px agar tetap rapi di layar besar.
         - Modal "Beri Nilai" ditaruh di blok .nilai-modals (selalu di DOM) dan dipanggil via event Alpine,
           sehingga bisa dibuka baik dari tabel (laptop), kartu (HP), maupun dari modal detail (HP).
     --}}
-
     <div class="py-6 md:py-10 bg-slate-50 min-h-screen">
-        <div class="w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 space-y-6">
-
+        <div class="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 space-y-6">
             {{-- ===== ALERT ===== --}}
             @if (session('success'))
                 <div class="rounded-xl border-2 border-[#05b169] bg-[#05b169]/10 px-4 py-3 text-sm font-semibold text-black">
@@ -128,13 +127,11 @@
                                             </svg>
                                             Template Kosong
                                         </a>
-
                                         {{-- Beri nilai (buka modal via event) --}}
                                         <button type="button" @click="$dispatch('open-nilai-{{ $s->id }}')"
                                                 class="inline-flex items-center gap-1.5 rounded-lg bg-[#0047d6] px-3 py-1.5 text-xs font-bold text-white shadow-sm transition hover:bg-[#0038aa]">
                                             Beri Nilai
                                         </button>
-
                                         {{-- PDF Guru (cetak MERAH + ikon print) --}}
                                         @if($nilaiLengkap)
                                             <a href="{{ route('cetak.nilai.guru', $s->id) }}" target="_blank" title="Cetak Format Penilaian Guru"
@@ -173,7 +170,9 @@
                         ];
                         $nilaiLengkap = $s->nilai && ! in_array(null, $daftarSkor, true);
                     @endphp
-                    <div class="rounded-2xl border-2 border-[#0047d6]/15 bg-white p-4 shadow-sm" x-data="{ detail: false }">
+                    <div class="rounded-2xl border-2 border-[#0047d6]/15 bg-white p-4 shadow-sm"
+                         x-data="{ detail: false }"
+                         x-effect="document.body.style.overflow = detail ? 'hidden' : ''">
                         {{-- Ringkas: NAMA (kiri) + AKSI (kanan) --}}
                         <div class="flex items-center justify-between gap-3">
                             <div class="min-w-0">
@@ -189,7 +188,6 @@
                                     @endif
                                 </div>
                             </div>
-
                             {{-- ===== AKSI DI KANAN: Lihat Detail + Beri Nilai ===== --}}
                             <div class="flex flex-shrink-0 flex-col gap-2">
                                 <button type="button" @click="detail = true"
@@ -209,10 +207,23 @@
 
                         {{-- Pop-up card: SEMUA info yang tampil di tabel laptop --}}
                         <div x-show="detail" x-cloak
+                             x-transition:enter="transition ease-out duration-300"
+                             x-transition:enter-start="opacity-0"
+                             x-transition:enter-end="opacity-100"
+                             x-transition:leave="transition ease-in duration-200"
+                             x-transition:leave-start="opacity-100"
+                             x-transition:leave-end="opacity-0"
                              class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 p-0 sm:p-4"
-                             @click.outside="detail = false" @keydown.escape.window="detail = false">
-                            <div class="w-full sm:max-w-lg max-h-[90vh] overflow-y-auto rounded-t-2xl sm:rounded-2xl bg-white shadow-xl text-left"
-                                 x-transition>
+                             @keydown.escape.window="detail = false">
+                            <div x-show="detail"
+                                 x-transition:enter="transition ease-out duration-300"
+                                 x-transition:enter-start="opacity-0 translate-y-full sm:translate-y-0 sm:scale-95"
+                                 x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
+                                 x-transition:leave="transition ease-in duration-200"
+                                 x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
+                                 x-transition:leave-end="opacity-0 translate-y-full sm:translate-y-0 sm:scale-95"
+                                 class="w-full sm:max-w-lg max-h-[90vh] overflow-y-auto rounded-t-2xl sm:rounded-2xl bg-white shadow-xl text-left"
+                                 @click.outside="detail = false">
                                 <div class="sticky top-0 flex items-center justify-between border-b-2 border-[#0047d6]/15 bg-white px-5 py-3">
                                     <h3 class="text-base font-bold text-black">Detail Penilaian</h3>
                                     <button type="button" @click="detail = false" class="text-2xl leading-none text-[#5b616e] hover:text-black">&times;</button>
@@ -284,7 +295,6 @@
                                 </div>
                             </div>
                         </div>
-
                     </div>
                 @empty
                     <div class="rounded-2xl border-2 border-[#0047d6]/15 bg-white px-4 py-8 text-center font-medium text-[#5b616e] italic">
@@ -295,7 +305,7 @@
 
             {{-- ===== PAGINATION ===== --}}
             <div class="mt-4">
-                {!! $siswa->links() !!}
+                {!! $siswa->withQueryString()->links() !!}
             </div>
         </div>
     </div>
@@ -308,6 +318,7 @@
             <div x-data="{ open: false }" x-show="open" x-cloak
                  @open-nilai-{{ $s->id }}.window="open = true"
                  @keydown.escape.window="open = false"
+                 x-effect="document.body.style.overflow = open ? 'hidden' : ''"
                  class="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-0">
                 <div x-show="open" x-transition.opacity class="fixed inset-0 bg-gray-900/50 backdrop-blur-sm" @click="open = false"></div>
                 <div x-show="open"
@@ -385,7 +396,7 @@
                                     <label class="block text-sm font-bold text-black mb-1">6. Pemaparan presentasi (0-100)</label>
                                     <input type="number" name="skor_presentasi" min="0" max="100" class="block w-full rounded-lg border-gray-300 shadow-sm focus:ring-[#0047d6] sm:text-sm mb-2" value="{{ optional($s->nilai)->skor_presentasi ?? '' }}" required>
                                     <label class="block text-xs font-medium text-gray-600 mb-1">Deskripsi</label>
-                                    <textarea name="deskripsi_presentasi" rows="3" class="block w-full rounded-lg border-gray-300 shadow-sm focus:ring-[#0047d6] sm:text-sm" required>{{ optional($s->nilai)->deskripsi_presentasi ?? 'Mampu memaparkan hasil PKL dengan percaya diri, sistematis, and komunikatif serta menjawab pertanyaan dengan baik saat presentasi.' }}</textarea>
+                                    <textarea name="deskripsi_presentasi" rows="3" class="block w-full rounded-lg border-gray-300 shadow-sm focus:ring-[#0047d6] sm:text-sm" required>{{ optional($s->nilai)->deskripsi_presentasi ?? 'Mampu memaparkan hasil PKL dengan percaya diri, sistematis, dan komunikatif serta menjawab pertanyaan dengan baik saat presentasi.' }}</textarea>
                                 </div>
                                 <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
                                     <label class="block text-sm font-bold text-blue-900 mb-1">Catatan Akhir Penilaian</label>

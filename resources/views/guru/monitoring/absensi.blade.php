@@ -279,7 +279,9 @@
                         $extBukti = $a->foto_bukti ? pathinfo($a->foto_bukti, PATHINFO_EXTENSION) : '';
                     @endphp
 
-                    <div x-data="{ detail: false }" class="rounded-2xl border-2 border-[#0047d6]/15 bg-white p-4 shadow-sm">
+                   <div x-data="{ detail: false }"
+     x-effect="document.body.style.overflow = detail ? 'hidden' : ''"
+     class="rounded-2xl border-2 border-[#0047d6]/15 bg-white p-4 shadow-sm">
                         {{-- Ringkas: NAMA + AKSI --}}
                         <div class="flex items-center justify-between gap-3">
                             <div class="min-w-0">
@@ -300,11 +302,24 @@
                         </div>
 
                         {{-- Pop-up card: SEMUA info yang tampil di tabel laptop --}}
-                        <div x-show="detail" x-cloak
-                             class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 p-0 sm:p-4"
-                             @keydown.escape.window="detail = false">
-                            <div class="w-full sm:max-w-lg max-h-[90vh] overflow-y-auto rounded-t-2xl sm:rounded-2xl bg-white shadow-xl text-left"
-                                 @click.outside="detail = false">
+                      <div x-show="detail" x-cloak
+     x-transition:enter="transition ease-out duration-300"
+     x-transition:enter-start="opacity-0"
+     x-transition:enter-end="opacity-100"
+     x-transition:leave="transition ease-in duration-200"
+     x-transition:leave-start="opacity-100"
+     x-transition:leave-end="opacity-0"
+     class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 p-0 sm:p-4"
+     @keydown.escape.window="detail = false">
+                          <div x-show="detail"
+     x-transition:enter="transition ease-out duration-300"
+     x-transition:enter-start="opacity-0 translate-y-full sm:translate-y-0 sm:scale-95"
+     x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
+     x-transition:leave="transition ease-in duration-200"
+     x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
+     x-transition:leave-end="opacity-0 translate-y-full sm:translate-y-0 sm:scale-95"
+     class="w-full sm:max-w-lg max-h-[90vh] overflow-y-auto rounded-t-2xl sm:rounded-2xl bg-white shadow-xl text-left"
+     @click.outside="detail = false">
 
                                 <div class="sticky top-0 flex items-center justify-between border-b-2 border-[#0047d6]/15 bg-white px-5 py-3">
                                     <h3 class="text-base font-bold text-black">Detail Absensi</h3>
