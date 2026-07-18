@@ -80,7 +80,7 @@
                             </div>
 
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Foto Dokumentasi (opsional)</label>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Foto Dokumentasi <span class="text-[#cf202f]">*</span></label>
                                 <template x-if="item.existing_dokumentasi">
                                     <p class="mb-1 text-xs text-[#7c828a]">
                                         Foto saat ini:
@@ -90,7 +90,9 @@
                                     </p>
                                 </template>
                                 <input type="file" :name="`items[${index}][dokumentasi]`" accept="image/*"
+                                       :required="!item.existing_dokumentasi"
                                        class="block w-full text-sm text-gray-600 file:mr-3 file:rounded-lg file:border-0 file:bg-[#eef0f3] file:px-3 file:py-2 file:text-sm file:font-semibold file:text-[#0a0b0d]">
+                                <p class="mt-1 text-xs text-[#7c828a]">Wajib ada foto. Jika sudah ada foto lama, boleh dibiarkan; unggah hanya bila ingin mengganti.</p>
                             </div>
                         </div>
                     </template>

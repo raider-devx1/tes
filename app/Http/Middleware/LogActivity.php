@@ -70,7 +70,7 @@ class LogActivity
         };
 
         // Buang prefix role di depan
-        $rolePrefixes = ['admin', 'guru', 'siswa', 'instruktur'];
+       $rolePrefixes = ['admin', 'guru', 'siswa'];
         if (count($parts) > 1 && in_array($parts[0], $rolePrefixes, true)) {
             array_shift($parts);
         }

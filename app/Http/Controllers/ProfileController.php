@@ -32,7 +32,7 @@ class ProfileController extends Controller
         $data = $request->validated();
 
         // Pengaman: siswa & guru tidak boleh mengubah email walau kirim POST langsung.
-        if (! in_array($user->role, ['instruktur_industri', 'admin'], true)) {
+        if (! in_array($user->role, ['admin'], true)) {
             unset($data['email']);
         }
 

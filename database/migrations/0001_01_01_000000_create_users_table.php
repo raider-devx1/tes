@@ -19,7 +19,7 @@ return new class extends Migration
             $table->rememberToken();
 
             // --- Role sistem ---
-            $table->enum('role', ['admin', 'guru_pembimbing', 'siswa_pkl', 'instruktur_industri'])
+           $table->enum('role', ['admin', 'guru_pembimbing', 'siswa_pkl'])
                   ->default('siswa_pkl');
 
             // --- Identitas umum ---
@@ -40,7 +40,7 @@ return new class extends Migration
             $table->string('jabatan')->nullable();
 
             // --- Relasi pemetaan (self-reference: guru & instruktur) ---
-            $table->foreignId('instruktur_id')->nullable()->constrained('users')->nullOnDelete();
+           
             $table->foreignId('guru_id')->nullable()->constrained('users')->nullOnDelete();
 
             // Catatan: perusahaan_id & periode_id TANPA ->constrained() di sini,

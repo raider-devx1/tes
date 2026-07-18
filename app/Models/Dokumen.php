@@ -33,7 +33,7 @@ class Dokumen extends Model
         'laporan_akhir' => [
             'label'    => 'Laporan PKL Final',
             'upload'   => ['siswa_pkl', 'admin'],
-            'lihat'    => ['siswa_pkl', 'guru_pembimbing', 'admin', 'instruktur_industri'],
+           'lihat'    => ['siswa_pkl', 'guru_pembimbing', 'admin'],
             'download' => ['guru_pembimbing', 'admin'],
         ],
     ];
@@ -54,8 +54,6 @@ class Dokumen extends Model
             'admin'               => true,
             'siswa_pkl'           => $siswa->id === $user->id,
             'guru_pembimbing'     => (int) $siswa->guru_id === $user->id
-                                     && $siswa->status_pkl === 'aktif',
-            'instruktur_industri' => (int) $siswa->instruktur_id === $user->id
                                      && $siswa->status_pkl === 'aktif',
             default               => false,
         };

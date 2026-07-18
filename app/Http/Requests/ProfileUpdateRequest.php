@@ -22,7 +22,7 @@ class ProfileUpdateRequest extends FormRequest
         ];
 
         // Email hanya divalidasi (dan boleh diubah) oleh instruktur & admin.
-        if (in_array($this->user()->role, ['instruktur_industri', 'admin'], true)) {
+        if (in_array($this->user()->role, ['admin'], true)) {
             $rules['email'] = [
                 'required',
                 'string',

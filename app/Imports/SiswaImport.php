@@ -33,10 +33,7 @@ class SiswaImport implements ToModel, WithHeadingRow, WithValidation, SkipsEmpty
                 ->value('id');
         }
 
-        // Instruktur industri (dipisah dari pembimbing)
-        $instrukturId = !empty($row['instruktur'])
-            ? User::where('role', 'instruktur_industri')->where('name', $row['instruktur'])->value('id')
-            : null;
+
 
         // Periode PKL
         $periodeId = !empty($row['periode'])
@@ -55,7 +52,7 @@ class SiswaImport implements ToModel, WithHeadingRow, WithValidation, SkipsEmpty
             'periode_id'    => $periodeId,
             'perusahaan_id' => $perusahaanId,
             'guru_id'       => $guruId,
-            'instruktur_id' => $instrukturId,
+           
             'role'          => 'siswa_pkl',
         ]);
     }
@@ -88,7 +85,7 @@ class SiswaImport implements ToModel, WithHeadingRow, WithValidation, SkipsEmpty
                 },
             ],
 
-            'instruktur' => ['nullable', Rule::exists('users', 'name')->where('role', 'instruktur_industri')],
+          
             'periode'    => ['nullable', Rule::exists('periode_pkls', 'nama')],
         ];
     }
@@ -101,7 +98,7 @@ class SiswaImport implements ToModel, WithHeadingRow, WithValidation, SkipsEmpty
             'nisn.unique'       => 'NISN :input sudah terdaftar.',
             'status_pkl.in'     => 'Status PKL ":input" tidak valid (pakai: belum / aktif / selesai).',
             'tempat_pkl.exists' => 'Tempat PKL ":input" belum terdaftar di Master Data Industri. Tambahkan industrinya dulu.',
-            'instruktur.exists' => 'Instruktur ":input" belum terdaftar di Master Data Instruktur. Tambahkan instrukturnya dulu.',
+           
             'periode.exists'    => 'Periode ":input" belum terdaftar di Master Data Periode.',
         ];
     }

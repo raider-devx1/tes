@@ -11,7 +11,6 @@ class Absensi extends Model
 
     protected $fillable = [
         'siswa_id',
-        'instruktur_id',
         'tanggal',
         'status',            // Hadir | Izin | Sakit | Alpha
         'jam_masuk',
@@ -33,10 +32,7 @@ class Absensi extends Model
         return $this->belongsTo(User::class, 'siswa_id');
     }
 
-    public function instruktur()
-    {
-        return $this->belongsTo(User::class, 'instruktur_id');
-    }
+   
 
     public function validator()
     {

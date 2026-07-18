@@ -7,7 +7,7 @@
         </h2>
 
         <p class="mt-1 text-sm text-gray-600">
-            @if(in_array($role, ['instruktur_industri', 'admin'], true))
+            @if(in_array($role, ['admin'], true))
                 Perbarui informasi nama, email, dan foto akun Anda.
             @else
                 Perbarui nama dan foto akun Anda.
@@ -57,7 +57,7 @@
             <x-input-error class="mt-2" :messages="$errors->get('name')" />
         </div>
 
-        @if(in_array($role, ['instruktur_industri', 'admin'], true))
+        @if(in_array($role, ['admin'], true))
             <div>
                 <x-input-label for="email" :value="__('Email')" />
                 <x-text-input id="email" name="email" type="email" class="mt-1 block w-full" :value="old('email', $user->email)" required autocomplete="username" />

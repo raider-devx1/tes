@@ -13,7 +13,7 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade'); // siswa yang dinilai
 
             // Penilai
-            $table->foreignId('instruktur_id')->nullable()->constrained('users')->nullOnDelete();
+           
             $table->foreignId('guru_id')->nullable()->constrained('users')->nullOnDelete();
 
             // Komponen instruktur (skala 1-5) — kolom lama, disimpan untuk kompatibilitas data lama

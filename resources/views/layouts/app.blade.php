@@ -9,9 +9,7 @@
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=figtree:400,500,600,700&display=swap" rel="stylesheet" />
     @vite(['resources/css/app.css', 'resources/js/app.js'])
-
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
     @if($isAdmin)
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
     <style>
@@ -48,9 +46,23 @@
                 localStorage.setItem('sidebarOpen', value);
                 document.documentElement.classList.toggle('sidebar-terbuka', value);
             });
-            $nextTick(() => loaded = true);"
-        class="min-h-screen">
+            $nextTick(() => loaded = true);
 
+            // === Auto-close sidebar di mode MOBILE setelah halaman termuat penuh ===
+            // Saat sebuah menu ditekan, kita hanya menandai (flag) di sessionStorage,
+            // lalu navigasi berjalan normal. Setelah halaman TUJUAN selesai dimuat
+            // sepenuhnya, sidebar akan menutup sendiri dengan animasi halus.
+            // Di tampilan laptop / PC ( >= 1024px ) tidak ada perubahan sama sekali.
+            if (window.innerWidth < 1024 && sessionStorage.getItem('tutupSetelahLoad') === 'true') {
+                sessionStorage.removeItem('tutupSetelahLoad');
+                // Pastikan sidebar tampil terbuka dulu saat halaman baru muncul...
+                sidebarOpen = true;
+                // ...lalu tutup halus setelah halaman benar-benar termuat penuh.
+                window.addEventListener('load', () => {
+                    setTimeout(() => { sidebarOpen = false; }, 450);
+                });
+            }"
+        class="min-h-screen">
         {{-- ===== SIDEBAR MINIMALIS ===== --}}
         <aside
             class="app-sidebar fixed inset-y-0 left-0 z-40 w-64 bg-white border-r border-slate-100 transform overflow-y-auto"
@@ -72,10 +84,11 @@
                     </svg>
                 </button>
             </div>
-
-            <nav class="px-4 py-6 space-y-1.5 text-sm">
+            {{-- Saat salah satu link di dalam <nav> ditekan pada mode mobile, tandai agar
+                 sidebar menutup halus SETELAH halaman tujuan termuat penuh (lihat x-init) --}}
+            <nav class="px-4 py-6 space-y-1.5 text-sm"
+                @click="if ($event.target.closest('a') && window.innerWidth < 1024) sessionStorage.setItem('tutupSetelahLoad', 'true')">
                 <div class="px-3 mb-2 text-xs font-semibold text-slate-400 tracking-wider uppercase">Menu Utama</div>
-
                 {{-- Dashboard --}}
                 <a href="{{ route('admin.dashboard') }}"
                     class="group flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium transition-all duration-150 {{ request()->routeIs('admin.dashboard') ? 'bg-blue-50 text-blue-600' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }}">
@@ -85,7 +98,6 @@
                     </svg>
                     Dashboard
                 </a>
-
                 {{-- Notifikasi Sistem --}}
                 <a href="{{ route('admin.notifikasi.index') }}"
                     class="group flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium transition-all duration-150 {{ request()->routeIs('admin.notifikasi.*') ? 'bg-blue-50 text-blue-600' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }}">
@@ -95,9 +107,7 @@
                     </svg>
                     Notifikasi Sistem
                 </a>
-
                 <div class="pt-4 px-3 mb-2 text-xs font-semibold text-slate-400 tracking-wider uppercase">Manajemen</div>
-
                 {{-- Master Data --}}
                 <div x-data="{ open: {{ request()->routeIs('admin.siswa.*', 'admin.guru.*', 'admin.instruktur.*', 'admin.periode.*') ? 'true' : 'false' }} }">
                     <button @click="open = !open"
@@ -119,7 +129,7 @@
                             Data Siswa
                         </a>
                         <a href="{{ route('admin.guru.index') }}"
-                            class="block px-3 py-2 text-[13px] rounded-lg transition-all {{ request()->routeIs('admin.guru.*') ? 'text-blue-600 font-semibold' : 'text-slate-500 hover:text-slate-990' }}">
+                            class="block px-3 py-2 text-[13px] rounded-lg transition-all {{ request()->routeIs('admin.guru.*') ? 'text-blue-600 font-semibold' : 'text-slate-500 hover:text-slate-900' }}">
                             Data Guru Pembimbing
                         </a>
                         <a href="{{ route('admin.instruktur.index') }}"
@@ -132,7 +142,6 @@
                         </a>
                     </div>
                 </div>
-
                 {{-- Monitoring PKL --}}
                 <div x-data="{ open: {{ request()->routeIs('admin.monitoring.*') ? 'true' : 'false' }} }">
                     <button @click="open = !open"
@@ -162,7 +171,6 @@
                         </a>
                     </div>
                 </div>
-
                 {{-- Evaluasi & Nilai --}}
                 <div x-data="{ open: {{ request()->routeIs('admin.evaluasi.*') ? 'true' : 'false' }} }">
                     <button @click="open = !open"
@@ -189,7 +197,6 @@
                         </a>
                     </div>
                 </div>
-
                 {{-- Dokumen --}}
                 <div x-data="{ open: {{ request()->routeIs('admin.dokumen.*') ? 'true' : 'false' }} }">
                     <button @click="open = !open"
@@ -216,7 +223,6 @@
                         </a>
                     </div>
                 </div>
-
                 {{-- Informasi Umum PKL --}}
                 <a href="{{ route('admin.informasi.index') }}"
                     class="group flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium transition-all duration-150 {{ request()->routeIs('admin.informasi.*') ? 'bg-blue-50 text-blue-600' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }}">
@@ -227,9 +233,7 @@
                     </svg>
                     Informasi Umum
                 </a>
-
                 <div class="pt-4 px-3 mb-2 text-xs font-semibold text-slate-400 tracking-wider uppercase">Konfigurasi</div>
-
                 {{-- Pengaturan --}}
                 <div x-data="{ open: {{ request()->routeIs('admin.riwayat.index', 'admin.akun-admin.*', 'profile.edit') ? 'true' : 'false' }} }">
                     <button @click="open = !open"
@@ -262,15 +266,12 @@
                 </div>
             </nav>
         </aside>
-
         {{-- Overlay mobile --}}
         <div x-show="sidebarOpen" @click="sidebarOpen=false" x-transition.opacity
             class="fixed inset-0 z-30 bg-slate-900/30 lg:hidden backdrop-blur-xs"></div>
-
         {{-- ===== WRAPPER ===== --}}
         <div class="app-konten flex flex-col min-h-screen"
             :class="[sidebarOpen ? 'lg:ml-64' : 'ml-0', loaded ? 'transition-all duration-300 ease-in-out' : '']">
-
             {{-- NAVBAR sticky --}}
             <header
                 class="sticky top-0 z-20 h-16 bg-white/80 backdrop-blur-md border-b border-slate-100 flex items-center justify-between px-4 sm:px-6">
@@ -314,38 +315,33 @@
                     </div>
                 </div>
             </header>
-
             {{-- Header slot opsional --}}
             @isset($header)
             <div class="px-4 sm:px-6 pt-5">
                 <div class="w-full max-w-[1920px] mx-auto">{{ $header }}</div>
             </div>
             @endisset
-
             {{-- CONTENT --}}
             <main class="flex-1 p-4 sm:p-6">
                 <div class="w-full max-w-[1920px] mx-auto">
                     {{ $slot }}
                 </div>
             </main>
-
             {{-- FOOTER ADMIN --}}
             <footer class="border-t border-slate-100 px-4 sm:px-6 py-4 text-xs text-slate-400 bg-white">
                 <div class="w-full max-w-[1920px] mx-auto flex flex-col sm:flex-row justify-between gap-2">
-                    <span>© {{ date('Y') }} LMS PKL — SMK</span>
-                    <span>Panel Admin · v1.0</span>
+                    <span>&copy; {{ date('Y') }} LMS PKL &mdash; SMK</span>
+                    <span>Panel Admin &middot; v1.0</span>
                 </div>
             </footer>
         </div>
     </div>
-
     {{-- =================================================================== --}}
     {{-- LAYOUT NON-ADMIN (Fixed Sticky Bottom & Clean Center Alignment)     --}}
     {{-- =================================================================== --}}
     @else
     <div class="min-h-screen flex flex-col bg-slate-50">
         @include('layouts.navigation')
-
         @isset($header)
         <header class="bg-white border-b border-slate-100">
             <div class="w-full max-w-[1920px] mx-auto py-5 px-4 sm:px-6 lg:px-8 2xl:px-12">
@@ -353,12 +349,10 @@
             </div>
         </header>
         @endisset
-
         {{-- Menggunakan flex-1 mendorong footer agar selalu menempel di bawah --}}
         <main class="flex-1">
             {{ $slot }}
         </main>
-
         {{-- FOOTER NON-ADMIN --}}
         <footer class="border-t border-slate-100 bg-white w-full">
             <div class="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 2xl:px-12 py-5 flex items-center justify-center text-xs font-medium text-slate-400 tracking-wide text-center">
@@ -370,9 +364,7 @@
         </footer>
     </div>
     @endif
-
     @stack('scripts')
-
     {{-- SweetAlert global: flash message + konfirmasi form --}}
     <script>
         // 1) Flash message (berlaku untuk semua role)
@@ -389,7 +381,6 @@
             text: @json(session('error'))
         }));
         @endif
-
         // 2) Konfirmasi untuk SETIAP <form data-confirm="...">
         document.addEventListener('submit', function (e) {
             const form = e.target;

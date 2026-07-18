@@ -65,19 +65,19 @@ class UserSeeder extends Seeder
         ]);
 
         /* ============================================================
-         | 2. ADMIN  (login pakai email)
+         | 2. ADMIN  (login pakai NISN, bukan email lagi)
          ============================================================ */
         User::create([
             'name'     => 'Admin HKI SMKN 1 Majene',
-            'email'    => 'admin@smkn1majene.sch.id',
-            'nip' => '198131512505111111',
+            'nisn'     => 'admin',                       // <- login admin pakai NISN ini (mis. "admin" / password123)
+            'nip'      => '198131512505111111',
             'password' => Hash::make('password123'),
             'role'     => 'admin',
             'no_hp'    => '081200000001',
         ]);
 
         /* ============================================================
-         | 3. GURU PEMBIMBING (3 akun) — login pakai NIP (tanpa email)
+         | 3. GURU PEMBIMBING (3 akun) - login pakai NIP (tanpa email)
          ============================================================ */
         $guru1 = User::create([
             'name' => 'Pak Budi (Guru)',
@@ -96,35 +96,13 @@ class UserSeeder extends Seeder
         ]);
 
         /* ============================================================
-         | 4. INSTRUKTUR INDUSTRI (3 akun, masing-masing 1 perusahaan) — login pakai email
-         ============================================================ */
-        $ins1 = User::create([
-            'name' => 'Pak Anton (Semen Tonasa)', 'email' => 'anton@tonasa.com',
-            'password' => Hash::make('password123'), 'role' => 'instruktur_industri',
-            'jabatan' => 'Supervisor Produksi', 'no_hp' => '081222220001',
-            'perusahaan_id' => $pt1->id,
-        ]);
-        $ins2 = User::create([
-            'name' => 'Mbak Rina (Telkom)', 'email' => 'rina@telkom.co.id',
-            'password' => Hash::make('password123'), 'role' => 'instruktur_industri',
-            'jabatan' => 'Staff IT Support', 'no_hp' => '081222220002',
-            'perusahaan_id' => $pt2->id,
-        ]);
-        $ins3 = User::create([
-            'name' => 'Pak Joko (Kominfo)', 'email' => 'joko@kominfo.go.id',
-            'password' => Hash::make('password123'), 'role' => 'instruktur_industri',
-            'jabatan' => 'Kepala Seksi Infrastruktur', 'no_hp' => '081222220003',
-            'perusahaan_id' => $pt3->id,
-        ]);
-
-        /* ============================================================
-         | 5. 20 SISWA PKL + SEMUA DATA PENDUKUNG — login pakai NISN
+         | 5. 20 SISWA PKL + SEMUA DATA PENDUKUNG - login pakai NISN
          ============================================================ */
         $gurus = [$guru1, $guru2, $guru3];
         $industri = [
-            ['ins' => $ins1, 'pt' => $pt1],
-            ['ins' => $ins2, 'pt' => $pt2],
-            ['ins' => $ins3, 'pt' => $pt3],
+            ['pt' => $pt1],
+            ['pt' => $pt2],
+            ['pt' => $pt3],
         ];
 
         $namaList = [
@@ -164,7 +142,6 @@ class UserSeeder extends Seeder
                 'kelas'         => $kelas,
                 'jurusan'       => $jurusanMap[$kelas],
                 'perusahaan_id' => $ind['pt']->id,
-                'instruktur_id' => $ind['ins']->id,
                 'guru_id'       => $guru->id,
                 'periode_id'    => $periode->id,
             ]);
@@ -178,7 +155,7 @@ class UserSeeder extends Seeder
                     'hari_tanggal'       => now()->subDays($j)->toDateString(),
                     'catatan_instruktur' => $st === 'disetujui' ? 'Kerja bagus.' : ($st === 'revisi' ? 'Mohon diperbaiki.' : null),
                     'status_persetujuan' => $st,
-                    'disetujui_oleh'     => $st === 'pending' ? null : $ind['ins']->id,
+                    'disetujui_oleh'     => $st === 'pending' ? null : $guru->id,
                 ]);
 
                 for ($k = 1; $k <= $j; $k++) {
@@ -223,7 +200,6 @@ class UserSeeder extends Seeder
             foreach ($statusAbsen as $idx => $stAbs) {
                 Absensi::create([
                     'siswa_id'      => $siswa->id,
-                    'instruktur_id' => $ind['ins']->id,
                     'tanggal'       => now()->subDays($idx)->toDateString(),
                     'status'        => $stAbs,
                     'jam_masuk'     => $stAbs === 'Hadir' ? '07:30:00' : null,
@@ -261,7 +237,6 @@ class UserSeeder extends Seeder
 
             Nilai::create([
                 'user_id'                 => $siswa->id,
-                'instruktur_id'           => $ind['ins']->id,
                 'guru_id'                 => $lengkap ? $guru->id : null,
                 'soft_skill'              => $soft,
                 'hard_skill'              => $hard,
@@ -269,32 +244,23 @@ class UserSeeder extends Seeder
                 'kewirausahaan'           => $kwu,
                 'rata_rata'               => $rata,
                 'catatan_rekomendasi'     => 'Direkomendasikan untuk pengembangan lebih lanjut.',
-
                 // --- Backup Lama ---
                 'nilai_guru'              => $rataGuru,
                 'nilai_laporan'           => $skor_laporan,
-
                 // --- Komponen Penilaian Guru ---
                 'skor_soft_skill'         => $skor_soft_skill,
                 'deskripsi_soft_skill'    => $lengkap ? 'Menunjukkan kemampuan komunikasi, kerja sama tim, dan disiplin yang sangat baik.' : null,
-
                 'skor_hard_skill'         => $skor_hard_skill,
                 'deskripsi_hard_skill'    => $lengkap ? 'Mampu menerapkan kompetensi keahlian sesuai bidang PKL dengan sangat baik.' : null,
-
                 'skor_pengembangan'       => $skor_pengembangan,
                 'deskripsi_pengembangan'  => $lengkap ? 'Cepat memahami keterampilan baru dan beradaptasi mandiri.' : null,
-
                 'skor_kewirausahaan'      => $skor_kewirausahaan,
                 'deskripsi_kewirausahaan' => $lengkap ? 'Mampu melihat dan memahami peluang budaya wirausaha.' : null,
-
                 'skor_laporan'            => $skor_laporan,
                 'deskripsi_laporan'       => $lengkap ? 'Penulisan laporan rapi, tata bahasa baku dan mudah dipahami.' : null,
-
                 'skor_presentasi'         => $skor_presentasi,
                 'deskripsi_presentasi'    => $lengkap ? 'Materi presentasi disampaikan dengan sangat lugas dan profesional.' : null,
-
                 'catatan_guru'            => $lengkap ? 'SANGAT BAIK. Terus pertahankan dan tingkatkan kemampuan secara konsisten.' : null,
-
                 'nilai_akhir'             => $nilaiAkhir,
             ]);
 

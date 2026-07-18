@@ -31,9 +31,7 @@ return new class extends Migration
         // ---------- ABSENSIS ----------
         Schema::table('absensis', function (Blueprint $table) {
             // Instruktur tidak lagi punya akun -> instruktur_id boleh kosong
-            if (Schema::hasColumn('absensis', 'instruktur_id')) {
-                $table->unsignedBigInteger('instruktur_id')->nullable()->change();
-            }
+            
             if (! Schema::hasColumn('absensis', 'status_validasi')) {
                 // pakai nama 'status_validasi' agar tidak bentrok dgn kolom 'status' (Hadir/Izin/Sakit/Alpha)
                 $table->enum('status_validasi', ['draft', 'diajukan', 'disetujui'])

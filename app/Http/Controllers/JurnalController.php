@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
 
 class JurnalController extends Controller
 {
@@ -37,11 +38,15 @@ class JurnalController extends Controller
             'hari_tanggal'        => 'required|date',
             'items'               => 'required|array|min:1',
             'items.*.unit_kerja'  => 'required|string',
-            'items.*.dokumentasi' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            'items.*.dokumentasi' => 'required|image|mimes:jpeg,png,jpg|max:2048',
         ], [
-            'items.required'              => 'Minimal harus ada 1 pekerjaan / unit kerja.',
-            'items.min'                   => 'Minimal harus ada 1 pekerjaan / unit kerja.',
-            'items.*.unit_kerja.required' => 'Unit kerja / pekerjaan wajib diisi pada setiap poin.',
+            'items.required'               => 'Minimal harus ada 1 pekerjaan / unit kerja.',
+            'items.min'                    => 'Minimal harus ada 1 pekerjaan / unit kerja.',
+            'items.*.unit_kerja.required'  => 'Unit kerja / pekerjaan wajib diisi pada setiap poin.',
+            'items.*.dokumentasi.required' => 'Foto dokumentasi wajib diunggah pada setiap pekerjaan.',
+            'items.*.dokumentasi.image'    => 'File dokumentasi harus berupa gambar.',
+            'items.*.dokumentasi.mimes'    => 'Format foto harus jpeg, png, atau jpg.',
+            'items.*.dokumentasi.max'      => 'Ukuran foto maksimal 2MB.',
         ]);
 
         DB::transaction(function () use ($request, $validated) {
@@ -81,7 +86,7 @@ class JurnalController extends Controller
     {
         $jurnal = Jurnal::where('id', $id)->where('siswa_id', Auth::id())->firstOrFail();
 
-        $validated = $request->validate([
+        $validator = Validator::make($request->all(), [
             'hari_tanggal'        => 'required|date',
             'items'               => 'required|array|min:1',
             'items.*.unit_kerja'  => 'required|string',
@@ -90,7 +95,26 @@ class JurnalController extends Controller
             'items.required'              => 'Minimal harus ada 1 pekerjaan / unit kerja.',
             'items.min'                   => 'Minimal harus ada 1 pekerjaan / unit kerja.',
             'items.*.unit_kerja.required' => 'Unit kerja / pekerjaan wajib diisi pada setiap poin.',
+            'items.*.dokumentasi.image'   => 'File dokumentasi harus berupa gambar.',
+            'items.*.dokumentasi.mimes'   => 'Format foto harus jpeg, png, atau jpg.',
+            'items.*.dokumentasi.max'     => 'Ukuran foto maksimal 2MB.',
         ]);
+
+        // Wajib ada foto: boleh dari foto lama (existing_dokumentasi) ATAU unggahan baru.
+        $validator->after(function ($validator) use ($request) {
+            foreach ($request->input('items', []) as $i => $item) {
+                $adaLama = !empty($item['existing_dokumentasi']);
+                $adaBaru = $request->hasFile("items.$i.dokumentasi");
+                if (! $adaLama && ! $adaBaru) {
+                    $validator->errors()->add(
+                        "items.$i.dokumentasi",
+                        'Foto dokumentasi wajib ada pada Pekerjaan ' . ($i + 1) . '. Unggah foto baru atau pertahankan foto lama.'
+                    );
+                }
+            }
+        });
+
+        $validated = $validator->validate();
 
         DB::transaction(function () use ($request, $validated, $jurnal) {
             // Setelah diedit, kembali ke draft (harus diajukan & divalidasi ulang)
