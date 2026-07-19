@@ -238,14 +238,14 @@
                                             @foreach($daftarFoto as $indexFoto => $pekerjaan)
                                                 <div class="flex flex-wrap items-center gap-1.5">
                                                     <span class="text-xs font-semibold text-black">Foto {{ $indexFoto + 1 }}</span>
-                                                    <a href="{{ asset('storage/' . $pekerjaan->dokumentasi) }}" target="_blank"
+                                                    <a href="{{ asset('storage/' . $pekerjaan->dokumentasi) }}" download target="_blank"
                                                        class="inline-flex items-center rounded-full bg-[#0047d6] px-2.5 py-1 text-xs font-bold text-white transition hover:bg-[#0038aa]">Lihat</a>
                                                 </div>
                                             @endforeach
                                             @if($item->foto_bukti)
                                                 <div class="flex flex-wrap items-center gap-1.5 border-t border-[#0047d6]/10 pt-1.5">
                                                     <span class="text-xs font-semibold text-[#d98200]">Bukti Fisik</span>
-                                                    <a href="{{ asset('storage/' . $item->foto_bukti) }}" target="_blank"
+                                                    <a href="{{ asset('storage/' . $item->foto_bukti) }}" download target="_blank"
                                                        class="inline-flex items-center rounded-full bg-[#d98200] px-2.5 py-1 text-xs font-bold text-white transition hover:opacity-90">Lihat</a>
                                                 </div>
                                             @endif
@@ -417,7 +417,7 @@
                                     <div>
                                         <label class="mb-1 block text-[11px] font-bold uppercase tracking-wide text-[#5b616e]">Foto Dokumentasi (opsional)</label>
                                         <template x-if="it.dokumentasi_url">
-                                            <a :href="it.dokumentasi_url" target="_blank" class="mb-1 inline-block text-[11px] font-bold text-[#0047d6] hover:underline">Lihat foto saat ini</a>
+                                            <a :href="it.dokumentasi_url" download target="_blank" class="mb-1 inline-block text-[11px] font-bold text-[#0047d6] hover:underline">Lihat foto saat ini</a>
                                         </template>
                                         <input type="file" :name="'items[' + i + '][dokumentasi]'" accept="image/*"
                                                class="block w-full text-sm text-gray-600 file:mr-3 file:rounded-lg file:border-0 file:bg-[#eef0f3] file:px-3 file:py-2 file:text-sm file:font-semibold file:text-[#0a0b0d]">
@@ -435,7 +435,7 @@
                         <label class="mb-1 block text-xs font-bold uppercase tracking-wide text-black">Foto Bukti Fisik (lembar berparaf, opsional)</label>
                         <template x-if="form.foto_bukti_url">
                             <div class="mb-1 flex items-center gap-3">
-                                <a :href="form.foto_bukti_url" target="_blank" class="text-[11px] font-bold text-[#0047d6] hover:underline">Lihat bukti saat ini</a>
+                                <a :href="form.foto_bukti_url" download target="_blank" class="text-[11px] font-bold text-[#0047d6] hover:underline">Lihat bukti saat ini</a>
                                 <label class="inline-flex items-center gap-1 text-[11px] font-semibold text-[#cf202f]">
                                     <input type="checkbox" name="hapus_foto_bukti" value="1"> Hapus foto
                                 </label>
@@ -506,7 +506,7 @@
                                     <li class="font-medium text-black break-words">
                                         <span x-text="it.unit_kerja"></span>
                                         <template x-if="it.dokumentasi_url">
-                                            <a :href="it.dokumentasi_url" target="_blank"
+                                            <a :href="it.dokumentasi_url" download target="_blank"
                                                class="ml-1 inline-flex items-center rounded-full bg-[#0047d6] px-2 py-0.5 text-[11px] font-bold text-white transition hover:bg-[#0038aa]">Foto</a>
                                         </template>
                                     </li>
@@ -531,7 +531,7 @@
                     <div>
                         <p class="text-[11px] font-bold uppercase tracking-wide text-[#5b616e] mb-1">Foto Bukti Fisik</p>
                         <template x-if="detail.foto_bukti_url">
-                            <a :href="detail.foto_bukti_url" target="_blank"
+                            <a :href="detail.foto_bukti_url" download target="_blank"
                                class="inline-flex items-center gap-1 rounded-xl bg-[#d98200] px-4 py-2 text-sm font-bold text-white transition hover:opacity-90">Lihat Bukti Fisik</a>
                         </template>
                         <template x-if="!detail.foto_bukti_url">
@@ -613,7 +613,7 @@
                     <div>
                         <label class="mb-1 block text-xs font-bold uppercase tracking-wide text-black">Foto Bukti Fisik (opsional)</label>
                         <template x-if="validasi.foto_bukti_url">
-                            <a :href="validasi.foto_bukti_url" target="_blank" class="mb-1 inline-block text-[11px] font-bold text-[#0047d6] hover:underline">Lihat bukti saat ini</a>
+                            <a :href="validasi.foto_bukti_url" download target="_blank" class="mb-1 inline-block text-[11px] font-bold text-[#0047d6] hover:underline">Lihat bukti saat ini</a>
                         </template>
                         <input type="file" name="foto_bukti" accept="image/*"
                                class="block w-full text-sm text-gray-600 file:mr-3 file:rounded-lg file:border-0 file:bg-[#eef0f3] file:px-3 file:py-2 file:text-sm file:font-semibold file:text-[#0a0b0d]">

@@ -201,7 +201,7 @@
                                             @foreach($fotos as $k => $it)
                                                 <div class="flex flex-wrap items-center justify-center gap-1.5">
                                                     <span class="text-xs font-semibold text-black">Foto {{ $k + 1 }}</span>
-                                                    <a href="{{ asset('storage/'.$it->dokumentasi) }}" target="_blank"
+                                                    <a href="{{ asset('storage/'.$it->dokumentasi) }}" download target="_blank"
                                                        class="inline-flex items-center rounded-full bg-[#0047d6] px-2.5 py-1 text-xs font-bold text-white transition hover:bg-[#0038aa]">
                                                         Lihat
                                                     </a>
@@ -222,11 +222,11 @@
                                     <div x-data="{ openValidasi: false }" class="flex flex-col items-center gap-1.5">
                                         @if($jurnal->foto_bukti)
                                             @php $extBukti = pathinfo($jurnal->foto_bukti, PATHINFO_EXTENSION); @endphp
-                                            <a href="{{ asset('storage/'.$jurnal->foto_bukti) }}" target="_blank" rel="noopener"
+                                            <a href="{{ asset('storage/'.$jurnal->foto_bukti) }}" download target="_blank" rel="noopener"
                                                class="inline-flex w-full items-center justify-center gap-1 rounded-full bg-[#0047d6] px-3 py-1.5 text-xs font-bold text-white transition hover:bg-[#0038aa]">
                                                 Lihat Bukti
                                             </a>
-                                            <a href="{{ asset('storage/'.$jurnal->foto_bukti) }}"
+                                            <a href="{{ asset('storage/'.$jurnal->foto_bukti) }}" download
                                                download="bukti-jurnal-{{ $jurnal->siswa->nisn ?? $jurnal->id }}-{{ $jurnal->id . '.' . $extBukti }}"
                                                class="inline-flex w-full items-center justify-center gap-1 rounded-full border-2 border-[#0047d6] bg-white px-3 py-1.5 text-xs font-bold text-[#0047d6] transition hover:bg-[#0047d6]/5">
                                                 Download Bukti
@@ -425,7 +425,7 @@
                                         @if($fotos->count())
                                             <div class="flex flex-wrap gap-2">
                                                 @foreach($fotos as $k => $it)
-                                                    <a href="{{ asset('storage/'.$it->dokumentasi) }}" target="_blank"
+                                                    <a href="{{ asset('storage/'.$it->dokumentasi) }}" download target="_blank"
                                                        class="inline-flex items-center rounded-full bg-[#0047d6] px-3 py-1.5 text-xs font-bold text-white transition hover:bg-[#0038aa]">
                                                         Foto {{ $k + 1 }}
                                                     </a>
@@ -440,11 +440,11 @@
                                         <div>
                                             <p class="text-xs font-bold uppercase tracking-wide text-[#5b616e] mb-1">Bukti Fisik</p>
                                             <div class="flex flex-wrap gap-2">
-                                                <a href="{{ asset('storage/'.$jurnal->foto_bukti) }}" target="_blank" rel="noopener"
+                                                <a href="{{ asset('storage/'.$jurnal->foto_bukti) }}" download target="_blank" rel="noopener"
                                                    class="inline-flex items-center gap-1 rounded-full bg-[#0047d6] px-3 py-1.5 text-xs font-bold text-white transition hover:bg-[#0038aa]">
                                                     Lihat Bukti
                                                 </a>
-                                                <a href="{{ asset('storage/'.$jurnal->foto_bukti) }}"
+                                                <a href="{{ asset('storage/'.$jurnal->foto_bukti) }}" download
                                                    download="bukti-jurnal-{{ $jurnal->siswa->nisn ?? $jurnal->id }}-{{ $jurnal->id . '.' . $extBukti }}"
                                                    class="inline-flex items-center gap-1 rounded-full border-2 border-[#0047d6] bg-white px-3 py-1.5 text-xs font-bold text-[#0047d6] transition hover:bg-[#0047d6]/5">
                                                     Download Bukti

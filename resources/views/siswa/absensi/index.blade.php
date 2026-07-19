@@ -262,8 +262,8 @@
                                         <span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-bold {{ $svBadge }}">{{ $svLabel }}</span>
                                         @if($a->foto_bukti)
                                             <div class="mt-1">
-                                                <a href="{{ asset('storage/'.$a->foto_bukti) }}" target="_blank" rel="noopener"
-                                                   class="text-xs font-bold text-[#0047d6] underline hover:text-[#0038aa]">Lihat Bukti Fisik</a>
+                                                <a href="{{ asset('storage/'.$a->foto_bukti) }}" download target="_blank" rel="noopener"
+                                                   class="text-xs font-bold text-[#0047d6] underline hover:text-[#0038aa]">Download Bukti Fisik</a>
                                             </div>
                                         @endif
                                     </td>
@@ -375,7 +375,7 @@
                                                              role="dialog" aria-modal="true">
                                                             <div class="absolute inset-0 bg-black/50" @click="openAjukan = false"></div>
                                                             <div class="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-xl text-left"
-                                                                 x-data="{ fileName: '', pilih(event){ const file = event.target.files[0]; if(!file) return; const dt = new DataTransfer(); dt.items.add(file); this.$refs.finalInput.files = dt.files; this.fileName = file.name; } }">
+                                                                 x-data="{ fileName: '', async pilih(event){ let file = event.target.files[0]; if(!file) return; if(file.type.startsWith('image/')) file = await window.kompresGambar(file); const dt = new DataTransfer(); dt.items.add(file); this.$refs.finalInput.files = dt.files; this.fileName = file.name; } }">
                                                                 <div class="flex items-center justify-between mb-4">
                                                                     <h3 class="text-lg font-bold text-black">Ajukan Bukti Fisik</h3>
                                                                     <button type="button" @click="openAjukan = false" aria-label="Tutup" class="text-[#5b616e] hover:text-black text-xl leading-none">&times;</button>
@@ -400,8 +400,8 @@
                                                                                 Galeri
                                                                             </button>
                                                                         </div>
-                                                                        <input type="file" accept="image/*" capture="environment" x-ref="kamera" class="hidden" @change="pilih($event)">
-                                                                        <input type="file" accept="image/*" x-ref="galeri" class="hidden" @change="pilih($event)">
+                                                                        <input type="file" accept="image/*" capture="environment" x-ref="kamera" class="hidden" @change="pilih($event)" data-no-compress>
+                                                                        <input type="file" accept="image/*" x-ref="galeri" class="hidden" @change="pilih($event)" data-no-compress>
                                                                         <p class="mt-2 text-xs font-semibold text-[#05b169]" x-show="fileName" x-cloak>
                                                                             Terpilih: <span x-text="fileName"></span>
                                                                         </p>
@@ -533,8 +533,8 @@
                                             <p class="text-xs font-bold uppercase tracking-wide text-[#5b616e] mb-1">Validasi</p>
                                             <span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-bold {{ $svBadge }}">{{ $svLabel }}</span>
                                             @if($a->foto_bukti)
-                                                <a href="{{ asset('storage/'.$a->foto_bukti) }}" target="_blank" rel="noopener"
-                                                   class="mt-2 inline-flex items-center text-[11px] font-bold text-[#0047d6] underline hover:text-[#0038aa]">Lihat Bukti Fisik</a>
+                                                <a href="{{ asset('storage/'.$a->foto_bukti) }}" download target="_blank" rel="noopener"
+                                                   class="mt-2 inline-flex items-center text-[11px] font-bold text-[#0047d6] underline hover:text-[#0038aa]">Download Bukti Fisik</a>
                                             @endif
                                         </div>
                                     </div>
@@ -664,7 +664,7 @@
                                          x-transition:leave-end="opacity-0 translate-y-full sm:translate-y-0 sm:scale-95"
                                          class="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl bg-white shadow-xl text-left"
                                          @click.outside="openAjukan = false"
-                                         x-data="{ fileName: '', pilih(event){ const file = event.target.files[0]; if(!file) return; const dt = new DataTransfer(); dt.items.add(file); this.$refs.finalInput.files = dt.files; this.fileName = file.name; } }">
+                                         x-data="{ fileName: '', async pilih(event){ let file = event.target.files[0]; if(!file) return; if(file.type.startsWith('image/')) file = await window.kompresGambar(file); const dt = new DataTransfer(); dt.items.add(file); this.$refs.finalInput.files = dt.files; this.fileName = file.name; } }">
                                         <div class="flex items-center justify-between border-b-2 border-[#0047d6]/15 px-5 py-3">
                                             <h3 class="text-lg font-bold text-black">Ajukan Bukti Fisik</h3>
                                             <button type="button" @click="openAjukan = false" aria-label="Tutup" class="text-[#5b616e] hover:text-black text-xl leading-none">&times;</button>
@@ -689,8 +689,8 @@
                                                         Galeri
                                                     </button>
                                                 </div>
-                                                <input type="file" accept="image/*" capture="environment" x-ref="kamera" class="hidden" @change="pilih($event)">
-                                                <input type="file" accept="image/*" x-ref="galeri" class="hidden" @change="pilih($event)">
+                                                <input type="file" accept="image/*" capture="environment" x-ref="kamera" class="hidden" @change="pilih($event)" data-no-compress>
+                                                <input type="file" accept="image/*" x-ref="galeri" class="hidden" @change="pilih($event)" data-no-compress>
                                                 <p class="mt-2 text-xs font-semibold text-[#05b169]" x-show="fileName" x-cloak>
                                                     Terpilih: <span x-text="fileName"></span>
                                                 </p>

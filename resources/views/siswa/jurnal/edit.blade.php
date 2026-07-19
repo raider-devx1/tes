@@ -84,8 +84,8 @@
                                 <template x-if="item.existing_dokumentasi">
                                     <p class="mb-1 text-xs text-[#7c828a]">
                                         Foto saat ini:
-                                        <a :href="'{{ asset('storage') }}/' + item.existing_dokumentasi" target="_blank"
-                                           class="font-semibold text-[#0052ff] hover:underline">Lihat</a>
+                                        <a :href="'{{ asset('storage') }}/' + item.existing_dokumentasi" download target="_blank"
+                                           class="font-semibold text-[#0052ff] hover:underline">Download</a>
                                         — unggah baru untuk mengganti.
                                     </p>
                                 </template>

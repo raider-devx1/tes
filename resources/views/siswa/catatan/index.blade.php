@@ -199,15 +199,8 @@
                                                                                @change="preview = URL.createObjectURL($event.target.files[0])"
                                                                                class="block w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-[#0047d6] file:text-white hover:file:bg-[#0038aa] file:cursor-pointer">
                                                                         <p class="mt-1 text-xs text-[#5b616e]">Di HP, kamera belakang akan langsung aktif. Maks 2MB (jpg/png).</p>
-                                                                        <template x-if="preview">
-                                                                            <img :src="preview" class="mt-3 h-40 rounded-lg border object-cover" alt="Preview bukti">
-                                                                        </template>
-                                                                        @if($item->foto_bukti)
-                                                                            <div class="mt-3">
-                                                                                <p class="text-xs text-[#5b616e] mb-1">Bukti sebelumnya:</p>
-                                                                                <img src="{{ asset('storage/' . $item->foto_bukti) }}" class="h-32 rounded-lg border object-cover" alt="Bukti lama">
-                                                                            </div>
-                                                                        @endif
+                                                                       
+                                                                       
                                                                     </div>
                                                                 </div>
                                                                 <div class="flex justify-end gap-2 border-t px-5 py-3">
@@ -358,11 +351,11 @@
                                             <p class="text-xs font-bold uppercase tracking-wide text-[#5b616e] mb-1">Bukti Fisik</p>
                                             @if($item->foto_bukti)
                                                 <div class="flex flex-wrap gap-2">
-                                                    <a href="{{ asset('storage/' . $item->foto_bukti) }}" target="_blank" rel="noopener"
+                                                    <a href="{{ asset('storage/' . $item->foto_bukti) }}" download target="_blank" rel="noopener"
                                                        class="inline-flex items-center rounded-full bg-[#05b169] px-3 py-1.5 text-xs font-bold text-white transition hover:bg-[#049458]">
                                                         Lihat Bukti
                                                     </a>
-                                                    <a href="{{ asset('storage/' . $item->foto_bukti) }}"
+                                                    <a href="{{ asset('storage/' . $item->foto_bukti) }}" download
                                                        download="bukti-{{ $item->user->nisn ?? $item->user_id }}-{{ $item->id . '.' . $extBukti }}"
                                                        class="inline-flex items-center rounded-full border-2 border-[#05b169] bg-white px-3 py-1.5 text-xs font-bold text-[#05b169] transition hover:bg-[#05b169]/5">
                                                         Download Bukti

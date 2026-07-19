@@ -170,11 +170,11 @@
 
                                         @if($a->foto_bukti)
                                             <div class="flex flex-wrap items-center justify-center gap-2">
-                                                <a href="{{ asset('storage/'.$a->foto_bukti) }}" target="_blank" rel="noopener"
+                                                <a href="{{ asset('storage/'.$a->foto_bukti) }}" download target="_blank" rel="noopener"
                                                    class="inline-flex items-center gap-1 rounded-lg border-2 border-[#0047d6]/25 bg-white px-3 py-1.5 text-xs font-bold text-[#0047d6] transition hover:bg-[#0047d6]/5">
                                                     Lihat Bukti
                                                 </a>
-                                                <a href="{{ asset('storage/'.$a->foto_bukti) }}"
+                                                <a href="{{ asset('storage/'.$a->foto_bukti) }}" download
                                                    download="bukti-absensi-{{ $a->siswa->nisn ?? $a->id }}-{{ $a->id . '.' . $extBukti }}"
                                                    class="inline-flex items-center gap-1 rounded-lg border-2 border-[#05b169]/40 bg-white px-3 py-1.5 text-xs font-bold text-[#05b169] transition hover:bg-[#05b169]/5">
                                                     Download
@@ -372,11 +372,11 @@
                                         <div>
                                             <p class="text-xs font-bold uppercase tracking-wide text-[#5b616e] mb-1">Bukti Fisik</p>
                                             <div class="flex flex-wrap gap-2">
-                                                <a href="{{ asset('storage/'.$a->foto_bukti) }}" target="_blank" rel="noopener"
+                                                <a href="{{ asset('storage/'.$a->foto_bukti) }}" download target="_blank" rel="noopener"
                                                    class="inline-flex items-center gap-1 rounded-full bg-[#0047d6] px-3 py-1.5 text-xs font-bold text-white transition hover:bg-[#0038aa]">
                                                     Lihat Bukti
                                                 </a>
-                                                <a href="{{ asset('storage/'.$a->foto_bukti) }}"
+                                                <a href="{{ asset('storage/'.$a->foto_bukti) }}" download
                                                    download="bukti-absensi-{{ $a->siswa->nisn ?? $a->id }}-{{ $a->id . '.' . $extBukti }}"
                                                    class="inline-flex items-center gap-1 rounded-full border-2 border-[#05b169]/40 bg-white px-3 py-1.5 text-xs font-bold text-[#05b169] transition hover:bg-[#05b169]/5">
                                                     Download Bukti

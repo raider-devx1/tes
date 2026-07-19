@@ -351,7 +351,7 @@
                                            class="block w-full text-sm text-gray-700 file:mr-3 file:rounded-lg file:border-0 file:bg-[#0047d6] file:px-4 file:py-2 file:text-white file:font-bold">
                                     @if(optional($s->nilai)->foto_lembar_instruktur)
                                         <p class="text-xs mt-2">
-                                            <a href="{{ asset('storage/'.$s->nilai->foto_lembar_instruktur) }}" target="_blank" class="font-bold text-[#0047d6] underline">Lihat foto yang sudah diunggah</a>
+                                            <a href="{{ asset('storage/'.$s->nilai->foto_lembar_instruktur) }}" download target="_blank" class="font-bold text-[#0047d6] underline">Lihat foto yang sudah diunggah</a>
                                             <span class="text-[#5b616e]"> (kosongkan bila tidak ingin mengganti)</span>
                                         </p>
                                     @endif

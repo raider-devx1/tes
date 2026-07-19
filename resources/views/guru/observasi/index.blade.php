@@ -210,13 +210,13 @@
                                         @if ($obs->foto_dokumentasi || $obs->foto_lembar_observasi)
                                             <div class="flex flex-col items-center gap-1.5">
                                                 @if ($obs->foto_dokumentasi)
-                                                    <a href="{{ asset('storage/' . $obs->foto_dokumentasi) }}" target="_blank" rel="noopener"
+                                                    <a href="{{ asset('storage/' . $obs->foto_dokumentasi) }}" download target="_blank" rel="noopener"
                                                        class="inline-flex items-center gap-1 rounded-full bg-[#0047d6]/10 px-3 py-1.5 text-xs font-bold text-[#0047d6] transition hover:bg-[#0047d6]/20">
                                                         Foto Dokumentasi
                                                     </a>
                                                 @endif
                                                 @if ($obs->foto_lembar_observasi)
-                                                    <a href="{{ asset('storage/' . $obs->foto_lembar_observasi) }}" target="_blank" rel="noopener"
+                                                    <a href="{{ asset('storage/' . $obs->foto_lembar_observasi) }}" download target="_blank" rel="noopener"
                                                        class="inline-flex items-center gap-1 rounded-full bg-[#05b169]/10 px-3 py-1.5 text-xs font-bold text-[#05b169] transition hover:bg-[#05b169]/20">
                                                         Lembar Berparaf
                                                     </a>
@@ -447,13 +447,13 @@
                                             @if ($obs->foto_dokumentasi || $obs->foto_lembar_observasi)
                                                 <div class="flex flex-wrap gap-2">
                                                     @if ($obs->foto_dokumentasi)
-                                                        <a href="{{ asset('storage/' . $obs->foto_dokumentasi) }}" target="_blank" rel="noopener"
+                                                        <a href="{{ asset('storage/' . $obs->foto_dokumentasi) }}" download target="_blank" rel="noopener"
                                                            class="inline-flex items-center gap-1 rounded-full bg-[#0047d6]/10 px-3 py-1.5 text-xs font-bold text-[#0047d6] transition hover:bg-[#0047d6]/20">
                                                             Foto Dokumentasi
                                                         </a>
                                                     @endif
                                                     @if ($obs->foto_lembar_observasi)
-                                                        <a href="{{ asset('storage/' . $obs->foto_lembar_observasi) }}" target="_blank" rel="noopener"
+                                                        <a href="{{ asset('storage/' . $obs->foto_lembar_observasi) }}" download target="_blank" rel="noopener"
                                                            class="inline-flex items-center gap-1 rounded-full bg-[#05b169]/10 px-3 py-1.5 text-xs font-bold text-[#05b169] transition hover:bg-[#05b169]/20">
                                                             Lembar Berparaf
                                                         </a>

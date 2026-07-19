@@ -165,7 +165,7 @@
                                         @if($item->foto_dokumentasi || $item->foto_lembar_observasi)
                                             <div class="flex flex-col items-center gap-1.5">
                                                 @if($item->foto_dokumentasi)
-                                                    <a href="{{ asset('storage/' . $item->foto_dokumentasi) }}" target="_blank" rel="noopener"
+                                                    <a href="{{ asset('storage/' . $item->foto_dokumentasi) }}" download target="_blank" rel="noopener"
                                                        class="inline-flex w-full items-center justify-center gap-1 rounded-full bg-[#0047d6]/10 px-3 py-1.5 text-xs font-bold text-[#0047d6] transition hover:bg-[#0047d6]/20">
                                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                                                             <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
@@ -175,7 +175,7 @@
                                                     </a>
                                                 @endif
                                                 @if($item->foto_lembar_observasi)
-                                                    <a href="{{ asset('storage/' . $item->foto_lembar_observasi) }}" target="_blank" rel="noopener"
+                                                    <a href="{{ asset('storage/' . $item->foto_lembar_observasi) }}" download target="_blank" rel="noopener"
                                                        class="inline-flex w-full items-center justify-center gap-1 rounded-full bg-[#05b169]/10 px-3 py-1.5 text-xs font-bold text-[#05b169] transition hover:bg-[#05b169]/20">
                                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                                                             <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
@@ -316,13 +316,13 @@
                                             @if($item->foto_dokumentasi || $item->foto_lembar_observasi)
                                                 <div class="flex flex-wrap gap-2">
                                                     @if($item->foto_dokumentasi)
-                                                        <a href="{{ asset('storage/' . $item->foto_dokumentasi) }}" target="_blank" rel="noopener"
+                                                        <a href="{{ asset('storage/' . $item->foto_dokumentasi) }}" download target="_blank" rel="noopener"
                                                            class="inline-flex items-center gap-1 rounded-full bg-[#0047d6]/10 px-3 py-1.5 text-xs font-bold text-[#0047d6] transition hover:bg-[#0047d6]/20">
                                                             Foto Dokumentasi
                                                         </a>
                                                     @endif
                                                     @if($item->foto_lembar_observasi)
-                                                        <a href="{{ asset('storage/' . $item->foto_lembar_observasi) }}" target="_blank" rel="noopener"
+                                                        <a href="{{ asset('storage/' . $item->foto_lembar_observasi) }}" download target="_blank" rel="noopener"
                                                            class="inline-flex items-center gap-1 rounded-full bg-[#05b169]/10 px-3 py-1.5 text-xs font-bold text-[#05b169] transition hover:bg-[#05b169]/20">
                                                             Lembar Berparaf
                                                         </a>

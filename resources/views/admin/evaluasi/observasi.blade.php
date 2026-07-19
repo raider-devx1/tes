@@ -208,11 +208,11 @@
                                         @if ($obs->foto_dokumentasi || $obs->foto_lembar_observasi)
                                             <div class="flex flex-col items-center justify-center gap-1.5">
                                                 @if ($obs->foto_dokumentasi)
-                                                    <a href="{{ asset('storage/' . $obs->foto_dokumentasi) }}" target="_blank" rel="noopener"
+                                                    <a href="{{ asset('storage/' . $obs->foto_dokumentasi) }}" download target="_blank" rel="noopener"
                                                        class="inline-flex items-center justify-center rounded-full bg-[#0047d6]/10 px-2.5 py-1 text-xs font-bold text-[#0047d6] transition hover:bg-[#0047d6]/20 w-24">Dokumentasi</a>
                                                 @endif
                                                 @if ($obs->foto_lembar_observasi)
-                                                    <a href="{{ asset('storage/' . $obs->foto_lembar_observasi) }}" target="_blank" rel="noopener"
+                                                    <a href="{{ asset('storage/' . $obs->foto_lembar_observasi) }}" download target="_blank" rel="noopener"
                                                        class="inline-flex items-center justify-center rounded-full bg-[#05b169]/10 px-2.5 py-1 text-xs font-bold text-[#05b169] transition hover:bg-[#05b169]/20 w-24">Lembar</a>
                                                 @endif
                                             </div>
@@ -415,7 +415,7 @@
                             <p class="text-[11px] font-bold uppercase tracking-wide text-[#5b616e] mb-1">Foto</p>
                             <div class="grid grid-cols-2 gap-2">
                                 <template x-if="detailData.foto_dokumentasi_url">
-                                    <a :href="detailData.foto_dokumentasi_url" target="_blank" class="block">
+                                    <a :href="detailData.foto_dokumentasi_url" download target="_blank" class="block">
                                        
                                         <span  class="inline-flex items-center gap-1 rounded-xl bg-[#d98200] px-4 py-2 text-sm font-bold text-white transition hover:opacity-90">Lihat Dokumentasi</span>
                                     </a>

@@ -21,7 +21,15 @@ class LogActivity
 
         $user = Auth::user() ?? $userBefore;
 
-        if ($user && in_array($request->method(), $this->trackedMethods, true)) {
+        // Hanya catat aksi yang MENGUBAH data (POST/PUT/PATCH/DELETE) dan
+        // yang BERHASIL (status < 400). Request GET (buka dashboard, baca
+        // jurnal, dsb.) serta submit yang gagal validasi tidak dicatat,
+        // sehingga volume tabel activity_logs jauh lebih hemat.
+        if (
+            $user
+            && in_array($request->method(), $this->trackedMethods, true)
+            && $response->getStatusCode() < 400
+        ) {
             ActivityLog::create([
                 'user_id'     => $user->id,
                 'description' => $this->describe($request),

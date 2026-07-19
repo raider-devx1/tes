@@ -98,15 +98,6 @@
                     </svg>
                     Dashboard
                 </a>
-                {{-- Notifikasi Sistem --}}
-                <a href="{{ route('admin.notifikasi.index') }}"
-                    class="group flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium transition-all duration-150 {{ request()->routeIs('admin.notifikasi.*') ? 'bg-blue-50 text-blue-600' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }}">
-                    <svg class="w-4 h-4 {{ request()->routeIs('admin.notifikasi.*') ? 'text-blue-600' : 'text-slate-400 group-hover:text-slate-600' }}" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-                        <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-                    </svg>
-                    Notifikasi Sistem
-                </a>
                 <div class="pt-4 px-3 mb-2 text-xs font-semibold text-slate-400 tracking-wider uppercase">Manajemen</div>
                 {{-- Master Data --}}
                 <div x-data="{ open: {{ request()->routeIs('admin.siswa.*', 'admin.guru.*', 'admin.instruktur.*', 'admin.periode.*') ? 'true' : 'false' }} }">

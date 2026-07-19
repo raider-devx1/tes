@@ -172,11 +172,11 @@
                                         </a>
 
                                         @if($item->foto_bukti)
-                                            <a href="{{ asset('storage/' . $item->foto_bukti) }}" target="_blank" rel="noopener"
+                                            <a href="{{ asset('storage/' . $item->foto_bukti) }}" download target="_blank" rel="noopener"
                                                class="inline-flex items-center justify-center rounded-xl bg-[#0047d6] px-3 py-1.5 text-xs font-bold text-white transition hover:bg-[#0038aa]">
                                                 Lihat Bukti
                                             </a>
-                                            <a href="{{ asset('storage/' . $item->foto_bukti) }}"
+                                            <a href="{{ asset('storage/' . $item->foto_bukti) }}" download
                                                download="bukti-{{ $item->user->nisn ?? $item->user_id }}-{{ $item->id . '.' . $extBukti }}"
                                                class="inline-flex items-center justify-center rounded-xl border-2 border-[#0047d6] bg-white px-3 py-1.5 text-xs font-bold text-[#0047d6] transition hover:bg-[#0047d6]/5">
                                                 Download Bukti
@@ -354,11 +354,11 @@
                                         <p class="text-xs font-bold uppercase tracking-wide text-[#5b616e] mb-1">Bukti Fisik</p>
                                         @if($item->foto_bukti)
                                             <div class="flex flex-wrap gap-2">
-                                                <a href="{{ asset('storage/' . $item->foto_bukti) }}" target="_blank" rel="noopener"
+                                                <a href="{{ asset('storage/' . $item->foto_bukti) }}" download target="_blank" rel="noopener"
                                                    class="inline-flex items-center rounded-full bg-[#05b169] px-3 py-1.5 text-xs font-bold text-white transition hover:bg-[#049458]">
                                                     Lihat Bukti
                                                 </a>
-                                                <a href="{{ asset('storage/' . $item->foto_bukti) }}"
+                                                <a href="{{ asset('storage/' . $item->foto_bukti) }}" download
                                                    download="bukti-{{ $item->user->nisn ?? $item->user_id }}-{{ $item->id . '.' . $extBukti }}"
                                                    class="inline-flex items-center rounded-full border-2 border-[#05b169] bg-white px-3 py-1.5 text-xs font-bold text-[#05b169] transition hover:bg-[#05b169]/5">
                                                     Download Bukti

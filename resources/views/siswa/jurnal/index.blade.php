@@ -20,9 +20,13 @@
         document.addEventListener('alpine:init', () => {
             Alpine.data('fotoBuktiPicker', () => ({
                 fileName: '',
-                pilih(event) {
-                    const file = event.target.files[0];
+                async pilih(event) {
+                    let file = event.target.files[0];
                     if (!file) return;
+                    // Kompres dulu sebelum disalin ke input utama
+                    if (file.type.startsWith('image/')) {
+                        file = await window.kompresGambar(file);
+                    }
                     // Salin file ke input utama yang bernama "foto_bukti"
                     const dt = new DataTransfer();
                     dt.items.add(file);
@@ -194,7 +198,7 @@
                                             @foreach($fotos as $k => $it)
                                                 <div class="flex flex-wrap items-center justify-center gap-1.5">
                                                     <span class="text-xs font-semibold text-black">Foto {{ $k + 1 }}</span>
-                                                    <a href="{{ asset('storage/'.$it->dokumentasi) }}" target="_blank"
+                                                    <a href="{{ asset('storage/'.$it->dokumentasi) }}" download target="_blank"
                                                        class="inline-flex items-center rounded-full bg-[#0047d6] px-2.5 py-1 text-xs font-bold text-white transition hover:bg-[#0038aa]">
                                                         Lihat
                                                     </a>
@@ -214,9 +218,9 @@
                                         <span class="inline-flex items-center rounded-full bg-[#5b616e] px-3 py-1 text-xs font-bold text-white">Draft</span>
                                     @endif
                                     @if($jurnal->foto_bukti)
-                                        <a href="{{ asset('storage/'.$jurnal->foto_bukti) }}" target="_blank"
+                                        <a href="{{ asset('storage/'.$jurnal->foto_bukti) }}" download target="_blank"
                                            class="mt-1.5 inline-flex items-center text-[11px] font-bold text-[#0047d6] hover:underline">
-                                            Lihat Bukti Fisik
+                                            Download Bukti Fisik
                                         </a>
                                     @endif
                                 </td>
@@ -274,8 +278,8 @@
                                                                     Foto Bukti Fisik (lembar berparaf)
                                                                 </label>
                                                                 <input type="file" name="foto_bukti" x-ref="finalInput" accept="image/*" class="hidden">
-                                                                <input type="file" x-ref="kamera" accept="image/*" capture="environment" class="hidden" @change="pilih($event)">
-                                                                <input type="file" x-ref="galeri" accept="image/*" class="hidden" @change="pilih($event)">
+                                                                <input type="file" x-ref="kamera" accept="image/*" capture="environment" class="hidden" @change="pilih($event)" data-no-compress>
+                                                                <input type="file" x-ref="galeri" accept="image/*" class="hidden" @change="pilih($event)" data-no-compress>
                                                                 <div class="flex flex-wrap gap-2">
                                                                     <button type="button" @click="$refs.kamera.click()"
                                                                             class="inline-flex items-center gap-1.5 rounded-xl bg-[#0047d6] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#0038aa]">
@@ -429,7 +433,7 @@
                                             @if($fotos->count())
                                                 <div class="flex flex-wrap gap-2">
                                                     @foreach($fotos as $k => $it)
-                                                        <a href="{{ asset('storage/'.$it->dokumentasi) }}" target="_blank"
+                                                        <a href="{{ asset('storage/'.$it->dokumentasi) }}" download target="_blank"
                                                            class="inline-flex items-center rounded-full bg-[#0047d6] px-3 py-1.5 text-xs font-bold text-white transition hover:bg-[#0038aa]">
                                                             Foto {{ $k + 1 }}
                                                         </a>
@@ -439,9 +443,9 @@
                                                 <p class="text-sm text-[#5b616e]">Tidak ada</p>
                                             @endif
                                             @if($jurnal->foto_bukti)
-                                                <a href="{{ asset('storage/'.$jurnal->foto_bukti) }}" target="_blank"
+                                                <a href="{{ asset('storage/'.$jurnal->foto_bukti) }}" download target="_blank"
                                                    class="mt-2 inline-flex items-center text-[11px] font-bold text-[#0047d6] hover:underline">
-                                                    Lihat Bukti Fisik
+                                                    Download Bukti Fisik
                                                 </a>
                                             @endif
                                         </div>
@@ -523,8 +527,8 @@
                                                     Foto Bukti Fisik (lembar berparaf)
                                                 </label>
                                                 <input type="file" name="foto_bukti" x-ref="finalInput" accept="image/*" class="hidden">
-                                                <input type="file" x-ref="kamera" accept="image/*" capture="environment" class="hidden" @change="pilih($event)">
-                                                <input type="file" x-ref="galeri" accept="image/*" class="hidden" @change="pilih($event)">
+                                                <input type="file" x-ref="kamera" accept="image/*" capture="environment" class="hidden" @change="pilih($event)" data-no-compress>
+                                                <input type="file" x-ref="galeri" accept="image/*" class="hidden" @change="pilih($event)" data-no-compress>
                                                 <div class="flex flex-wrap gap-2">
                                                     <button type="button" @click="$refs.kamera.click()"
                                                             class="inline-flex items-center gap-1.5 rounded-xl bg-[#0047d6] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#0038aa]">

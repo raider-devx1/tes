@@ -135,7 +135,7 @@
                                 <td class="px-4 py-3 text-center">
                                     <span class="inline-block px-2.5 py-1 rounded-full text-xs font-semibold {{ $svBadge }}">{{ $svLabel }}</span>
                                     @if($a->foto_bukti)
-                                        <a href="{{ asset('storage/' . $a->foto_bukti) }}" target="_blank"
+                                        <a href="{{ asset('storage/' . $a->foto_bukti) }}" download target="_blank"
                                            class="mt-1 block text-[11px] font-bold text-[#2563EB] hover:underline">Bukti</a>
                                     @endif
                                 </td>
@@ -314,7 +314,7 @@
                     <template x-if="detailData.foto_bukti_url">
                         <div>
                             <p class="text-[11px] font-semibold uppercase tracking-wide text-gray-400">Bukti Fisik</p>
-                            <a :href="detailData.foto_bukti_url" target="_blank" class="mt-1 inline-block">
+                            <a :href="detailData.foto_bukti_url" download target="_blank" class="mt-1 inline-block">
                                 <img :src="detailData.foto_bukti_url" alt="Bukti" class="max-h-48 rounded-lg border border-blue-100 object-cover">
                             </a>
                         </div>
@@ -410,7 +410,7 @@
                         <label class="mb-1 block text-xs font-semibold text-gray-600">Foto Bukti Fisik (opsional)</label>
                         <template x-if="form.foto_bukti_url">
                             <div class="mb-1 flex items-center gap-3">
-                                <a :href="form.foto_bukti_url" target="_blank" class="text-[11px] font-bold text-[#2563EB] hover:underline">Lihat bukti saat ini</a>
+                                <a :href="form.foto_bukti_url" download target="_blank" class="text-[11px] font-bold text-[#2563EB] hover:underline">Lihat bukti saat ini</a>
                                 <label class="inline-flex items-center gap-1 text-[11px] font-semibold text-red-600">
                                     <input type="checkbox" name="hapus_foto_bukti" value="1"> Hapus foto
                                 </label>

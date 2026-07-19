@@ -150,7 +150,7 @@
                                     <td class="px-4 py-4 text-center">
                                         <span class="inline-flex items-center justify-center rounded-full px-3 py-1 text-xs font-bold {{ $badge }} mb-2">{{ $label }}</span>
                                         @if($item->foto_bukti)
-                                            <a href="{{ asset('storage/' . $item->foto_bukti) }}" target="_blank"
+                                            <a href="{{ asset('storage/' . $item->foto_bukti) }}" download target="_blank"
                                                class="block text-[11px] font-bold text-[#0047d6] hover:underline whitespace-nowrap">Lihat Bukti Fisik &#8599;</a>
                                         @endif
                                     </td>
@@ -319,7 +319,7 @@
                     <template x-if="detailData.foto_bukti_url">
                         <div>
                             <p class="text-[11px] font-bold uppercase tracking-wide text-[#5b616e]">Bukti Fisik</p>
-                            <a :href="detailData.foto_bukti_url" target="_blank" class="mt-1 inline-block">
+                            <a :href="detailData.foto_bukti_url" download target="_blank" class="mt-1 inline-block">
                                 <img :src="detailData.foto_bukti_url" alt="Bukti" class="max-h-48 rounded-lg border-2 border-[#0047d6]/15 object-cover">
                             </a>
                         </div>
@@ -408,7 +408,7 @@
                         <label class="mb-1 block text-xs font-bold uppercase tracking-wide text-black">Foto Bukti Fisik (opsional)</label>
                         <template x-if="form.foto_bukti_url">
                             <div class="mb-1 flex items-center gap-3">
-                                <a :href="form.foto_bukti_url" target="_blank" class="text-[11px] font-bold text-[#0047d6] hover:underline">Lihat bukti saat ini</a>
+                                <a :href="form.foto_bukti_url" download target="_blank" class="text-[11px] font-bold text-[#0047d6] hover:underline">Lihat bukti saat ini</a>
                                 <label class="inline-flex items-center gap-1 text-[11px] font-semibold text-[#cf202f]">
                                     <input type="checkbox" name="hapus_foto_bukti" value="1"> Hapus foto
                                 </label>

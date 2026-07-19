@@ -104,9 +104,6 @@ Route::get('/akun-admin/{admin}/edit', [AdminAkunController::class, 'edit'])->na
 Route::put('/akun-admin/{admin}', [AdminAkunController::class, 'update'])->name('akun-admin.update');
 Route::delete('/akun-admin/{admin}', [AdminAkunController::class, 'destroy'])->name('akun-admin.destroy');
 
-// ---- NOTIFIKASI SISTEM ----
-        Route::get('/notifikasi', [AdminController::class, 'notifikasi'])->name('notifikasi.index');
-
 // ---- BULK: ubah status PKL semua siswa dalam satu periode ----
         Route::post('/periode/update-status-siswa', [PeriodePklController::class, 'updateStatusSiswa'])
             ->name('periode.update-status-siswa');
