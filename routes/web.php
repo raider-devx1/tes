@@ -308,4 +308,5 @@ Route::post('/absensi',            [AbsensiController::class, 'storeSiswa'])->na
 
 });
 
+
 require __DIR__ . '/auth.php';
