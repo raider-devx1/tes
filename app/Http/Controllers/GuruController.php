@@ -107,6 +107,10 @@ public function index(Request $request)
         ->where('status_pkl', 'aktif')
         ->pluck('id');
 
+    // Tandai otomatis Alpha (logika controller, menggantikan scheduler).
+    User::whereIn('id', $siswaIds)->get()
+        ->each(fn ($s) => Absensi::sinkronkanAlpa($s));
+
     $absensi = Absensi::with('siswa')
         ->whereIn('siswa_id', $siswaIds)
         ->when($request->filled('q'), function ($query) use ($request) {
@@ -131,7 +135,55 @@ public function index(Request $request)
 
     $siswas = User::where('role', 'siswa_pkl')->where('guru_id', Auth::id())->where('status_pkl', 'aktif')->orderBy('name')->get();
 
-    return view('guru.monitoring.absensi', compact('absensi', 'rekap', 'siswas'));
+    // Daftar usulan jam kerja industri yang menunggu validasi guru.
+    $usulanJam = $siswas->where('status_jam_usulan', 'diajukan')->values();
+
+    // Pengaturan jam global admin (referensi untuk guru).
+    $jamAdmin = [
+        'masuk'  => \App\Models\Pengaturan::ambil('absensi_jam_masuk', '08:00'),
+        'pulang' => \App\Models\Pengaturan::ambil('absensi_jam_pulang', '16:00'),
+    ];
+
+    return view('guru.monitoring.absensi', compact('absensi', 'rekap', 'siswas', 'usulanJam', 'jamAdmin'));
+}
+
+/**
+ * Guru membuka / menutup absensi siswa BIMBINGANNYA tanpa mengikuti jadwal jam.
+ *  - mode "semua" : semua siswa bimbingan guru ini.
+ *  - mode "nisn"  : satu siswa (dicocokkan NISN & harus bimbingannya).
+ *  - aksi "buka"  : terbuka bebas waktu; "tutup" : kembali ikut jadwal.
+ */
+public function bukaAbsensi(Request $request)
+{
+    $mode = $request->input('mode') === 'nisn' ? 'nisn' : 'semua';
+    $buka = $request->input('aksi') === 'buka';
+
+    $base = User::where('role', 'siswa_pkl')->where('guru_id', Auth::id());
+
+    if ($mode === 'semua') {
+        (clone $base)->update(['absensi_dibuka' => $buka]);
+
+        return back()->with('success', $buka
+            ? 'Absensi DIBUKA untuk semua siswa bimbingan Anda (bebas waktu).'
+            : 'Absensi ditutup untuk semua siswa bimbingan Anda. Kembali mengikuti jadwal.');
+    }
+
+    $nisn = trim((string) $request->input('nisn', ''));
+    if ($nisn === '') {
+        return back()->with('error', 'NISN wajib diisi untuk membuka/menutup absensi per siswa.');
+    }
+
+    $siswa = (clone $base)->where('nisn', $nisn)->first();
+    if (! $siswa) {
+        return back()->with('error', "Siswa bimbingan dengan NISN {$nisn} tidak ditemukan.");
+    }
+
+    $siswa->absensi_dibuka = $buka;
+    $siswa->save();
+
+    return back()->with('success', $buka
+        ? "Absensi untuk {$siswa->name} (NISN {$nisn}) DIBUKA (bebas waktu)."
+        : "Absensi untuk {$siswa->name} (NISN {$nisn}) ditutup (kembali ikut jadwal).");
 }
 
 }

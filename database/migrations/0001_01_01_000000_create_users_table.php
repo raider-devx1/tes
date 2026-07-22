@@ -33,8 +33,24 @@ return new class extends Migration
             $table->string('kelas')->nullable();
             $table->string('jurusan')->nullable();
 
+            // --- Jam kerja industri siswa (absensi) ---
+            // Jam khusus industri yang berlaku setelah disetujui guru pembimbing.
+            $table->time('jam_masuk_industri')->nullable();
+            $table->time('jam_pulang_industri')->nullable();
+            // Usulan jam dari siswa (bila jam admin tak sesuai template industrinya).
+            $table->time('jam_masuk_usulan')->nullable();
+            $table->time('jam_pulang_usulan')->nullable();
+            $table->enum('status_jam_usulan', ['none', 'diajukan', 'disetujui'])->default('none');
+            $table->string('catatan_jam_usulan')->nullable();
+
+            // --- Pembukaan absensi manual (per-siswa) ---
+            // true = absensi siswa ini dibuka bebas waktu (oleh admin/guru), mengabaikan jadwal jam.
+            $table->boolean('absensi_dibuka')->default(false);
+
             // --- Khusus Guru Pembimbing ---
             $table->string('nip', 30)->nullable()->unique();   // identitas login guru
+            $table->boolean('is_wakasek')->default(false);     // penanda Wakasek: boleh memvalidasi lembar observasi guru lain & lembarnya sendiri
+            $table->boolean('is_admin')->default(false);       // penanda: guru pembimbing ini juga boleh mengakses panel admin
 
             // --- Khusus Instruktur Industri ---
             $table->string('jabatan')->nullable();

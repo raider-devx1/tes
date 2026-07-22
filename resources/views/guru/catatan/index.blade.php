@@ -1,16 +1,4 @@
-<x-app-layout>
-    <x-slot name="header">
-        <div class="flex items-center justify-between gap-4">
-            <h2 class="text-xl md:text-2xl font-bold tracking-tight text-black">
-                Catatan Kegiatan Siswa Bimbingan
-            </h2>
-            <a href="{{ route('guru.dashboard') }}"
-               class="inline-flex items-center gap-1 rounded-xl border-2 border-[#0047d6]/25 bg-white px-4 py-2 text-sm font-bold text-[#0047d6] transition hover:bg-[#0047d6]/5">
-                Kembali ke Dashboard
-            </a>
-        </div>
-    </x-slot>
-
+<x-app-layout title="Catatan Kegiatan">
     <style>
         [x-cloak]{display:none!important;}
 
@@ -31,6 +19,18 @@
     --}}
     <div class="py-6 md:py-10 bg-slate-50 min-h-screen">
         <div class="w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 space-y-6">
+
+            {{-- ===== HEADER ===== --}}
+            <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                <div>
+                    <h2 class="text-xl md:text-2xl font-bold tracking-tight text-black">Catatan Kegiatan Siswa Bimbingan</h2>
+                    <p class="text-sm font-medium text-[#5b616e] mt-1">Pantau dan kelola catatan kegiatan siswa bimbingan Anda.</p>
+                </div>
+                <a href="{{ route('guru.dashboard') }}"
+                   class="inline-flex items-center justify-center gap-1 rounded-xl border-2 border-[#0047d6]/25 bg-white px-4 py-2 text-sm font-bold text-[#0047d6] transition hover:bg-[#0047d6]/5">
+                    Kembali ke Dashboard
+                </a>
+            </div>
 
             {{-- ===== ALERT ===== --}}
             @if (session('success'))
@@ -95,7 +95,7 @@
                 <div>
                     <label class="block text-xs font-bold uppercase tracking-wide text-black mb-1">Status</label>
                     <select name="status"
-                            class="rounded-xl border-2 border-[#0047d6]/25 bg-white px-3 py-2.5 text-sm font-medium text-black focus:border-[#0047d6] focus:ring-2 focus:ring-[#0047d6]/30">
+                            class="rounded-xl border-2 border-[#0047d6]/25 bg-white pl-3 pr-10  py-2.5 text-sm font-medium text-black focus:border-[#0047d6] focus:ring-2 focus:ring-[#0047d6]/30">
                         <option value="">Semua Status</option>
                         <option value="draft" @selected(request('status') === 'draft')>Draft</option>
                         <option value="diajukan" @selected(request('status') === 'diajukan')>Diajukan</option>

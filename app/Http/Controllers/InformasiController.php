@@ -13,7 +13,7 @@ class InformasiController extends Controller
      * =========================================================== */
     public function index()
     {
-        $informasi = Informasi::orderBy('urutan')->orderByDesc('created_at')->get();
+        $informasi = Informasi::orderBy('urutan')->orderByDesc('created_at')->paginate(15);
 
         return view('informasi.index', [
             'informasi' => $informasi,
@@ -25,7 +25,7 @@ class InformasiController extends Controller
      * =========================================================== */
     public function adminIndex()
     {
-        $informasi = Informasi::orderBy('urutan')->orderByDesc('created_at')->get();
+        $informasi = Informasi::orderBy('urutan')->orderByDesc('created_at')->paginate(15);
 
         return view('admin.informasi.index', [
             'informasi' => $informasi,

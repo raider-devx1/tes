@@ -19,6 +19,7 @@ use App\Http\Controllers\PeriodePklController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RiwayatController;
 use App\Http\Controllers\SiswaController;
+use App\Http\Controllers\WakasekController;
 use App\Models\Jurnal;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
@@ -73,6 +74,7 @@ Route::get('/cetak/nilai-semua', [CetakPdfController::class, 'cetakNilaiSemua'])
 // Route untuk cetak Nilai khusus PDF Guru
 // Cetak format Penilaian Guru (siswa: tanpa id -> otomatis dirinya; guru/admin: sertakan id)
 Route::get('/cetak-nilai-guru/{siswa_id?}', [CetakPdfController::class, 'cetakNilaiGuruSatuan'])->name('cetak.nilai.guru');
+Route::get('/cetak-nilai-guru-semua', [CetakPdfController::class, 'cetakNilaiGuruSemua'])->name('cetak.nilai.guru.semua');
 
 // Cetak TEMPLATE KOSONG untuk diisi instruktur
 // Cetak template kosong penilaian (untuk diisi instruktur) — pakai ulang view pdf.nilai
@@ -135,6 +137,12 @@ Route::delete('/akun-admin/{admin}', [AdminAkunController::class, 'destroy'])->n
 
         // ---- MASTER DATA: AKUN GURU PEMBIMBING ----
         Route::resource('guru', GuruPembimbingController::class)->except(['show']);
+        // ---- AKSI: TETAPKAN / BATALKAN WAKASEK ----
+        Route::put('/guru/{guru}/jadikan-wakasek', [GuruPembimbingController::class, 'jadikanWakasek'])->name('guru.jadikan-wakasek');
+        Route::put('/guru/{guru}/batalkan-wakasek', [GuruPembimbingController::class, 'batalkanWakasek'])->name('guru.batalkan-wakasek');
+        // ---- AKSI: TETAPKAN / BATALKAN AKSES ADMIN ----
+        Route::put('/guru/{guru}/jadikan-admin', [GuruPembimbingController::class, 'jadikanAdmin'])->name('guru.jadikan-admin');
+        Route::put('/guru/{guru}/batalkan-admin', [GuruPembimbingController::class, 'batalkanAdmin'])->name('guru.batalkan-admin');
 // ---- MASTER DATA: AKUN INSTRUKTUR INDUSTRI ----
         Route::resource('instruktur', InstrukturController::class)->parameters(['instruktur' => 'perusahaan'])->except(['show']);
 // ---- MASTER DATA: DATA SISWA PKL ----
@@ -153,6 +161,8 @@ Route::put('/monitoring/catatan/{catatan}', [MonitoringController::class, 'updat
 Route::delete('/monitoring/catatan/{catatan}', [MonitoringController::class, 'destroyCatatan'])->name('monitoring.catatan.destroy');
 
 Route::get('/monitoring/absensi', [MonitoringController::class, 'absensi'])->name('monitoring.absensi');
+Route::post('/monitoring/absensi/pengaturan', [MonitoringController::class, 'pengaturanAbsensi'])->name('monitoring.absensi.pengaturan');
+Route::post('/monitoring/absensi/buka', [MonitoringController::class, 'bukaAbsensi'])->name('monitoring.absensi.buka');
 Route::post('/monitoring/absensi', [MonitoringController::class, 'storeAbsensi'])->name('monitoring.absensi.store');
 Route::put('/monitoring/absensi/{absensi}', [MonitoringController::class, 'updateAbsensi'])->name('monitoring.absensi.update');
 Route::delete('/monitoring/absensi/{absensi}', [MonitoringController::class, 'destroyAbsensi'])->name('monitoring.absensi.destroy');
@@ -216,6 +226,10 @@ Route::middleware(['role:guru_pembimbing'])->prefix('guru')->name('guru.')->grou
 
     // ---- MONITORING + VALIDASI ABSENSI ----
     Route::get('/monitoring/absensi', [GuruController::class, 'monitoringAbsensi'])->name('monitoring.absensi');
+    Route::post('/monitoring/absensi/buka', [GuruController::class, 'bukaAbsensi'])->name('monitoring.absensi.buka');
+    // Validasi & edit jam kerja industri siswa oleh guru pembimbing (letakkan sebelum rute generic).
+    Route::put('/monitoring/absensi/jam/{siswa}/validasi', [AbsensiController::class, 'validasiJamByGuru'])->name('absensi.jam.validasi');
+    Route::put('/monitoring/absensi/jam/{siswa}', [AbsensiController::class, 'updateJamByGuru'])->name('absensi.jam.update');
     Route::put('/monitoring/absensi/{id}/validasi', [AbsensiController::class, 'validasiByGuru'])->name('absensi.validasi');
 
     // ---- MONITORING + VALIDASI CATATAN KEGIATAN ----
@@ -230,6 +244,13 @@ Route::get('/observasi/{id}/edit', [ObservasiController::class, 'editGuru'])->na
 Route::put('/observasi/{id}', [ObservasiController::class, 'updateGuru'])->name('observasi.update');
 Route::delete('/observasi/{id}', [ObservasiController::class, 'destroyGuru'])->name('observasi.destroy');
 Route::put('/observasi/{id}/validasi', [ObservasiController::class, 'validasiGuru'])->name('observasi.validasi');
+// ---- AJUKAN VALIDASI (alur baru: guru mengajukan seperti siswa) ----
+Route::put('/observasi/{id}/ajukan', [ObservasiController::class, 'ajukanGuru'])->name('observasi.ajukan');
+
+// ---- WAKASEK: VALIDASI LEMBAR OBSERVASI (hanya guru yang ditetapkan admin) ----
+Route::get('/wakasek/observasi', [WakasekController::class, 'observasi'])->name('wakasek.observasi');
+Route::put('/wakasek/observasi/{id}/validasi', [WakasekController::class, 'validasi'])->name('wakasek.observasi.validasi');
+Route::put('/wakasek/observasi/{id}/batal', [WakasekController::class, 'batal'])->name('wakasek.observasi.batal');
 
     Route::get('/nilai', [NilaiController::class, 'indexGuru'])->name('nilai.index');
     Route::post('/nilai', [NilaiController::class, 'storeGuru'])->name('nilai.store');
@@ -277,8 +298,9 @@ Route::put('/jurnal/{id}/ajukan',  [JurnalController::class, 'ajukanSiswa'])->na
 Route::put('/catatan/{id}/ajukan', [CatatanController::class, 'ajukanSiswa'])->name('catatan.ajukan');
 
 // Absensi: siswa mengelola & mengajukan absensinya sendiri
+// (Pengajuan jam kerja industri; letakkan sebelum rute /absensi/{id}.)
+Route::put('/absensi/jam/ajukan',  [AbsensiController::class, 'ajukanJamSiswa'])->name('absensi.jam.ajukan');
 Route::post('/absensi',            [AbsensiController::class, 'storeSiswa'])->name('absensi.store');
-Route::put('/absensi/{id}/ajukan', [AbsensiController::class, 'ajukanSiswa'])->name('absensi.ajukan');
 
     });
 

@@ -30,6 +30,7 @@ class EvaluasiController extends Controller
     private function siswaList()
     {
         return User::where('role', 'siswa_pkl')
+            ->where('status_pkl', '!=', 'selesai')
             ->orderBy('name')
             ->get(['id', 'name', 'nisn']);
     }
@@ -50,7 +51,7 @@ public function observasi(Request $request)
     [$kelasList, $jurusanList] = $this->opsiFilter();
 
     $query = Observasi::with(['user', 'guru', 'items'])
-        ->whereHas('user', fn ($u) => $u->where('role', 'siswa_pkl'))
+        ->whereHas('user', fn ($u) => $u->where('role', 'siswa_pkl')->where('status_pkl', '!=', 'selesai'))
         ->when($request->filled('q'), function ($q) use ($request) {
             $cari = trim($request->q);
             $q->whereHas('user', fn ($u) => $u
@@ -72,7 +73,7 @@ public function observasi(Request $request)
 
     $observasi = (clone $query)->paginate(15)->withQueryString();
 
-    $baseRekap = Observasi::whereHas('user', fn ($u) => $u->where('role', 'siswa_pkl'));
+    $baseRekap = Observasi::whereHas('user', fn ($u) => $u->where('role', 'siswa_pkl')->where('status_pkl', '!=', 'selesai'));
     $rekap = [
         'total'     => (clone $baseRekap)->count(),
         'disetujui' => (clone $baseRekap)->where('status', 'tervalidasi')->count(),
@@ -258,13 +259,14 @@ public function destroyObservasi(Observasi $observasi)
         $jurusan = $request->get('jurusan');
         $status  = $request->get('status'); // 'sudah' | 'belum'
 
-        $total = User::where('role', 'siswa_pkl')->count();
-        $sudah = User::where('role', 'siswa_pkl')
+        $total = User::where('role', 'siswa_pkl')->where('status_pkl', '!=', 'selesai')->count();
+        $sudah = User::where('role', 'siswa_pkl')->where('status_pkl', '!=', 'selesai')
             ->whereHas('nilai', fn ($n) => $n->whereNotNull('nilai_akhir'))->count();
 
         $rekap = ['total' => $total, 'sudah' => $sudah, 'belum' => $total - $sudah];
 
         $siswa = User::where('role', 'siswa_pkl')
+            ->where('status_pkl', '!=', 'selesai')
             ->with(['nilai', 'guru'])
             ->when($q !== '', fn ($query) => $query->where(fn ($u) =>
                 $u->where('name', 'like', "%{$q}%")->orWhere('nisn', 'like', "%{$q}%")))

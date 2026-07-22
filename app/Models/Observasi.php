@@ -15,8 +15,9 @@ class Observasi extends Model
         'guru_id',
         'hari_tanggal',
         'pekerjaan_projek',
-        'status',                 // draft | tervalidasi
-        'foto_dokumentasi',       // foto kegiatan/kunjungan (diunggah saat validasi)
+        'status',                 // draft | diajukan | tervalidasi
+        'diajukan_at',            // waktu guru mengajukan (menunggu divalidasi wakasek)
+        'foto_dokumentasi',       // foto kegiatan/kunjungan (diunggah saat mengajukan)
         'foto_lembar_observasi',  // foto lembar fisik yang sudah diparaf instruktur & guru
         'validated_by_guru_id',
         'validated_at',
@@ -24,6 +25,7 @@ class Observasi extends Model
 
     protected $casts = [
         'hari_tanggal' => 'date',
+        'diajukan_at'  => 'datetime',
         'validated_at' => 'datetime',
     ];
 
@@ -61,5 +63,17 @@ class Observasi extends Model
     public function getIsTervalidasiAttribute(): bool
     {
         return $this->status === 'tervalidasi';
+    }
+
+    /** True bila lembar observasi sedang menunggu divalidasi wakasek. */
+    public function getIsDiajukanAttribute(): bool
+    {
+        return $this->status === 'diajukan';
+    }
+
+    /** True bila lembar observasi masih draft (belum diajukan). */
+    public function getIsDraftAttribute(): bool
+    {
+        return ($this->status ?? 'draft') === 'draft';
     }
 }

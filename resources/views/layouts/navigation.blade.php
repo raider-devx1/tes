@@ -25,6 +25,15 @@
                         </svg>
                         Informasi PKL
                     </x-nav-link>
+                    @if(auth()->check() && auth()->user()->is_wakasek)
+                        <x-nav-link :href="route('guru.wakasek.observasi')" :active="request()->routeIs('guru.wakasek.observasi')" class="gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path d="M9 12l2 2 4-4"/>
+                                <circle cx="12" cy="12" r="10"/>
+                            </svg>
+                            Validasi Wakasek
+                        </x-nav-link>
+                    @endif
                 </div>
             </div>
             <div class="hidden sm:flex sm:items-center sm:ms-6">
@@ -90,6 +99,11 @@
             <x-responsive-nav-link :href="route('informasi.index')" :active="request()->routeIs('informasi.index')">
                 Informasi PKL
             </x-responsive-nav-link>
+            @if(auth()->check() && auth()->user()->is_wakasek)
+                <x-responsive-nav-link :href="route('guru.wakasek.observasi')" :active="request()->routeIs('guru.wakasek.observasi')">
+                    Validasi Wakasek
+                </x-responsive-nav-link>
+            @endif
         </div>
         <div class="pt-4 pb-3 border-t border-slate-100 px-3">
             <div class="px-3 flex items-center gap-3 mb-3">

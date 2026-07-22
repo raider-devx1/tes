@@ -32,7 +32,7 @@
             </div>
 
             {{-- ===== KARTU INFORMASI ===== --}}
-            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <div class="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
                 <div class="bg-white rounded-2xl shadow-sm border border-blue-100 p-4">
                     <p class="text-xs font-medium text-gray-500">Total Guru</p>
                     <p class="mt-2 text-2xl font-bold text-gray-800">{{ $rekap['total'] }}</p>
@@ -48,6 +48,10 @@
                 <div class="bg-white rounded-2xl shadow-sm border border-blue-100 p-4">
                     <p class="text-xs font-medium text-gray-500">Siswa Dibimbing</p>
                     <p class="mt-2 text-2xl font-bold text-[#2563EB]">{{ $rekap['siswa_dibimbing'] }}</p>
+                </div>
+                <div class="bg-white rounded-2xl shadow-sm border border-purple-100 p-4">
+                    <p class="text-xs font-medium text-gray-500">Wakasek</p>
+                    <p class="mt-2 text-2xl font-bold text-purple-600">{{ $rekap['wakasek'] ?? 0 }}</p>
                 </div>
             </div>
 
@@ -80,11 +84,45 @@
                             @forelse($guru as $g)
                                 <tr class="border-b border-blue-50 hover:bg-blue-50/40">
                                     <td class="py-3 px-3 text-center text-gray-500">{{ $guru->firstItem() + $loop->index }}</td>
-                                    <td class="py-3 px-3 font-medium text-gray-800">{{ $g->name }}</td>
+                                    <td class="py-3 px-3 font-medium text-gray-800">
+                                        {{ $g->name }}
+                                        @if($g->is_wakasek)
+                                            <span class="ml-1 inline-flex items-center rounded-full bg-purple-100 px-2 py-0.5 text-[11px] font-bold text-purple-700 align-middle">Wakasek</span>
+                                        @endif
+                                        @if($g->is_admin)
+                                            <span class="ml-1 inline-flex items-center rounded-full bg-indigo-100 px-2 py-0.5 text-[11px] font-bold text-indigo-700 align-middle">Admin</span>
+                                        @endif
+                                    </td>
                                     <td class="py-3 px-3 text-gray-600">{{ $g->nip }}</td>
                                     <td class="py-3 px-3 text-gray-600">{{ $g->no_hp ?? '-' }}</td>
                                     <td class="py-3 px-3">
                                         <div class="flex items-center justify-end gap-2">
+                                            @if($g->is_wakasek)
+                                                <form method="POST" action="{{ route('admin.guru.batalkan-wakasek', $g) }}"
+                                                      onsubmit="return confirm('Batalkan status Wakasek untuk guru ini?')">
+                                                    @csrf @method('PUT')
+                                                    <button type="submit" class="text-xs px-3 py-1.5 rounded-lg bg-amber-50 text-amber-700 hover:bg-amber-100">Batalkan Wakasek</button>
+                                                </form>
+                                            @else
+                                                <form method="POST" action="{{ route('admin.guru.jadikan-wakasek', $g) }}"
+                                                      onsubmit="return confirm('Jadikan guru ini sebagai Wakasek?')">
+                                                    @csrf @method('PUT')
+                                                    <button type="submit" class="text-xs px-3 py-1.5 rounded-lg bg-purple-50 text-purple-700 hover:bg-purple-100">Jadikan Wakasek</button>
+                                                </form>
+                                            @endif
+                                            @if($g->is_admin)
+                                                <form method="POST" action="{{ route('admin.guru.batalkan-admin', $g) }}"
+                                                      onsubmit="return confirm('Batalkan akses admin untuk guru ini?')">
+                                                    @csrf @method('PUT')
+                                                    <button type="submit" class="text-xs px-3 py-1.5 rounded-lg bg-amber-50 text-amber-700 hover:bg-amber-100">Batalkan Admin</button>
+                                                </form>
+                                            @else
+                                                <form method="POST" action="{{ route('admin.guru.jadikan-admin', $g) }}"
+                                                      onsubmit="return confirm('Jadikan guru ini juga sebagai Admin?')">
+                                                    @csrf @method('PUT')
+                                                    <button type="submit" class="text-xs px-3 py-1.5 rounded-lg bg-indigo-50 text-indigo-700 hover:bg-indigo-100">Jadikan Admin</button>
+                                                </form>
+                                            @endif
                                             <a href="{{ route('admin.guru.edit', $g) }}" class="text-xs px-3 py-1.5 rounded-lg bg-blue-50 text-[#2563EB] hover:bg-blue-100">Edit</a>
                                             <button type="button"
                                                     @click="konfirmHapus(@js(route('admin.guru.destroy', $g)), @js($g->name))"
@@ -116,7 +154,15 @@
                                 <tr class="hover:bg-blue-50/40 transition">
                                     <td class="px-3 py-4 text-center text-gray-500">{{ $guru->firstItem() + $loop->index }}</td>
                                     <td class="px-3 py-4">
-                                        <div class="font-medium text-gray-800 leading-snug break-words">{{ $g->name }}</div>
+                                        <div class="font-medium text-gray-800 leading-snug break-words">
+                                            {{ $g->name }}
+                                            @if($g->is_wakasek)
+                                                <span class="ml-1 inline-flex items-center rounded-full bg-purple-100 px-2 py-0.5 text-[10px] font-bold text-purple-700 align-middle">Wakasek</span>
+                                            @endif
+                                            @if($g->is_admin)
+                                                <span class="ml-1 inline-flex items-center rounded-full bg-indigo-100 px-2 py-0.5 text-[10px] font-bold text-indigo-700 align-middle">Admin</span>
+                                            @endif
+                                        </div>
                                         <div class="text-[11px] text-gray-400 mt-0.5 font-mono">NIP: {{ $g->nip }}</div>
                                     </td>
                                     <td class="px-3 py-4 text-center">
@@ -125,8 +171,14 @@
                                                     'nama' => $g->name,
                                                     'nip' => $g->nip,
                                                     'no_hp' => $g->no_hp ?? '-',
+                                                    'is_wakasek' => (bool) $g->is_wakasek,
+                                                    'is_admin' => (bool) $g->is_admin,
                                                     'edit_url' => route('admin.guru.edit', $g),
                                                     'destroy_url' => route('admin.guru.destroy', $g),
+                                                    'jadikan_url' => route('admin.guru.jadikan-wakasek', $g),
+                                                    'batalkan_url' => route('admin.guru.batalkan-wakasek', $g),
+                                                    'jadikan_admin_url' => route('admin.guru.jadikan-admin', $g),
+                                                    'batalkan_admin_url' => route('admin.guru.batalkan-admin', $g),
                                                 ]))"
                                                 class="inline-flex items-center justify-center gap-1 rounded-lg bg-[#2563EB] px-3 py-2 text-xs font-semibold text-white transition active:scale-95 hover:bg-blue-700">
                                             Lihat Detail
@@ -186,6 +238,36 @@
                             <p class="text-[11px] font-bold uppercase tracking-wide text-gray-400">No. HP</p>
                             <p class="mt-0.5 text-sm font-medium text-gray-800" x-text="detailData.no_hp"></p>
                         </div>
+                    </div>
+                    <div>
+                        <p class="text-[11px] font-bold uppercase tracking-wide text-gray-400">Status Wakasek</p>
+                        <p class="mt-0.5 text-sm font-medium" :class="detailData.is_wakasek ? 'text-purple-700' : 'text-gray-500'"
+                           x-text="detailData.is_wakasek ? 'Wakasek (dapat memvalidasi observasi)' : 'Bukan Wakasek'"></p>
+                        <form method="POST" x-show="!detailData.is_wakasek" :action="detailData.jadikan_url" class="mt-2"
+                              onsubmit="return confirm('Jadikan guru ini sebagai Wakasek?')">
+                            @csrf @method('PUT')
+                            <button type="submit" class="w-full rounded-xl bg-purple-50 px-3 py-2.5 text-sm font-semibold text-purple-700 transition hover:bg-purple-100">Jadikan Wakasek</button>
+                        </form>
+                        <form method="POST" x-show="detailData.is_wakasek" x-cloak :action="detailData.batalkan_url" class="mt-2"
+                              onsubmit="return confirm('Batalkan status Wakasek untuk guru ini?')">
+                            @csrf @method('PUT')
+                            <button type="submit" class="w-full rounded-xl bg-amber-50 px-3 py-2.5 text-sm font-semibold text-amber-700 transition hover:bg-amber-100">Batalkan Wakasek</button>
+                        </form>
+                    </div>
+                    <div>
+                        <p class="text-[11px] font-bold uppercase tracking-wide text-gray-400">Akses Admin</p>
+                        <p class="mt-0.5 text-sm font-medium" :class="detailData.is_admin ? 'text-indigo-700' : 'text-gray-500'"
+                           x-text="detailData.is_admin ? 'Dapat mengakses panel admin' : 'Tidak punya akses admin'"></p>
+                        <form method="POST" x-show="!detailData.is_admin" :action="detailData.jadikan_admin_url" class="mt-2"
+                              onsubmit="return confirm('Jadikan guru ini juga sebagai Admin?')">
+                            @csrf @method('PUT')
+                            <button type="submit" class="w-full rounded-xl bg-indigo-50 px-3 py-2.5 text-sm font-semibold text-indigo-700 transition hover:bg-indigo-100">Jadikan Admin</button>
+                        </form>
+                        <form method="POST" x-show="detailData.is_admin" x-cloak :action="detailData.batalkan_admin_url" class="mt-2"
+                              onsubmit="return confirm('Batalkan akses admin untuk guru ini?')">
+                            @csrf @method('PUT')
+                            <button type="submit" class="w-full rounded-xl bg-amber-50 px-3 py-2.5 text-sm font-semibold text-amber-700 transition hover:bg-amber-100">Batalkan Admin</button>
+                        </form>
                     </div>
                 </div>
 

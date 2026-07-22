@@ -41,11 +41,14 @@ class GuruPembimbingController extends Controller
         $guruAdaBimbingan   = $guruIdsDenganBimbingan->count();
         $totalSiswaDibimbing = User::where('role', 'siswa_pkl')->whereNotNull('guru_id')->count();
 
+        $totalWakasek = User::where('role', 'guru_pembimbing')->where('is_wakasek', true)->count();
+
         $rekap = [
             'total'           => $totalGuru,
             'ada_bimbingan'   => $guruAdaBimbingan,
             'tanpa_bimbingan' => max($totalGuru - $guruAdaBimbingan, 0),
             'siswa_dibimbing' => $totalSiswaDibimbing,
+            'wakasek'         => $totalWakasek,
         ];
 
         $guru = User::query()
@@ -103,6 +106,59 @@ class GuruPembimbingController extends Controller
     {
         $guru->delete();
         return back()->with('success', 'Akun guru pembimbing berhasil dihapus.');
+    }
+
+    /**
+     * Tetapkan guru pembimbing sebagai Wakasek.
+     * Wakasek berhak memvalidasi lembar observasi guru lain
+     * dan boleh memvalidasi lembar observasinya sendiri.
+     */
+    public function jadikanWakasek(User $guru)
+    {
+        abort_unless($guru->role === 'guru_pembimbing', 404);
+
+        $guru->update(['is_wakasek' => true]);
+
+        return back()->with('success', "\"{$guru->name}\" kini ditetapkan sebagai Wakasek dan dapat memvalidasi lembar observasi.");
+    }
+
+    /**
+     * Batalkan status Wakasek pada guru pembimbing.
+     * Setelah dibatalkan, guru tersebut harus kembali mengajukan validasi
+     * lembar observasinya ke Wakasek lain yang sudah ditetapkan admin.
+     */
+    public function batalkanWakasek(User $guru)
+    {
+        abort_unless($guru->role === 'guru_pembimbing', 404);
+
+        $guru->update(['is_wakasek' => false]);
+
+        return back()->with('success', "Status Wakasek untuk \"{$guru->name}\" telah dibatalkan.");
+    }
+
+    /**
+     * Tetapkan guru pembimbing agar juga dapat mengakses panel admin.
+     * Guru tetap login sebagai guru, namun mendapat kartu & akses ke halaman admin.
+     */
+    public function jadikanAdmin(User $guru)
+    {
+        abort_unless($guru->role === 'guru_pembimbing', 404);
+
+        $guru->update(['is_admin' => true]);
+
+        return back()->with('success', "\"{$guru->name}\" kini juga dapat mengakses panel admin.");
+    }
+
+    /**
+     * Batalkan akses admin pada guru pembimbing.
+     */
+    public function batalkanAdmin(User $guru)
+    {
+        abort_unless($guru->role === 'guru_pembimbing', 404);
+
+        $guru->update(['is_admin' => false]);
+
+        return back()->with('success', "Akses admin untuk \"{$guru->name}\" telah dibatalkan.");
     }
 
     // =====================================================

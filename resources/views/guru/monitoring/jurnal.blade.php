@@ -94,7 +94,7 @@
                 <div>
                     <label class="block text-xs font-bold uppercase tracking-wide text-black mb-1">Status</label>
                     <select name="status"
-                            class="rounded-xl border-2 border-[#0047d6]/25 bg-white px-3 py-2.5 text-sm font-medium text-black focus:border-[#0047d6] focus:ring-2 focus:ring-[#0047d6]/30">
+                            class="rounded-xl border-2 border-[#0047d6]/25 bg-white pl-3 pr-10  py-2.5 text-sm font-medium text-black focus:border-[#0047d6] focus:ring-2 focus:ring-[#0047d6]/30">
                         <option value="">Semua</option>
                         <option value="disetujui" @selected(request('status') === 'disetujui')>Disetujui</option>
                         <option value="diajukan" @selected(request('status') === 'diajukan')>Diajukan</option>

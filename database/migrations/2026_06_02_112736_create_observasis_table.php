@@ -15,8 +15,13 @@ return new class extends Migration
             $table->date('hari_tanggal');                     // Hari / tanggal monitoring
             $table->string('pekerjaan_projek')->nullable();   // Header PDF
 
-            // Status lembar observasi: draft (baru dibuat) -> tervalidasi (sudah diparaf & divalidasi)
-            $table->enum('status', ['draft', 'tervalidasi'])->default('draft');
+            // Status lembar observasi: draft -> diajukan (menunggu divalidasi Wakasek) -> tervalidasi
+            // Guru pembimbing kini hanya "mengajukan" (seperti siswa). Validasi dilakukan oleh Wakasek;
+            // Wakasek boleh memvalidasi lembar observasinya sendiri secara langsung.
+            $table->enum('status', ['draft', 'diajukan', 'tervalidasi'])->default('draft');
+
+            // Waktu guru mengajukan lembar observasi untuk divalidasi Wakasek
+            $table->timestamp('diajukan_at')->nullable();
 
             // Foto dokumentasi kegiatan/kunjungan (diunggah saat validasi, jadi nullable)
             $table->string('foto_dokumentasi')->nullable();

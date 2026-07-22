@@ -27,6 +27,7 @@ class ObservasiController extends Controller
         $rekap = [
             'total'       => (clone $baseQuery)->count(),
             'draft'       => (clone $baseQuery)->where('status', 'draft')->count(),
+            'menunggu'    => (clone $baseQuery)->where('status', 'diajukan')->count(),
             'tervalidasi' => (clone $baseQuery)->where('status', 'tervalidasi')->count(),
         ];
 
@@ -39,7 +40,10 @@ class ObservasiController extends Controller
             ->paginate(15)
             ->withQueryString();
 
-        return view('guru.observasi.index', compact('observasi', 'q', 'rekap'));
+        // Guru yang berstatus Wakasek boleh memvalidasi lembar observasinya sendiri.
+        $isWakasek = (bool) (Auth::user()->is_wakasek ?? false);
+
+        return view('guru.observasi.index', compact('observasi', 'q', 'rekap', 'isWakasek'));
     }
 
     public function createGuru()
@@ -211,6 +215,72 @@ class ObservasiController extends Controller
 
         return redirect()->route('guru.observasi.index')
             ->with('success', 'Lembar observasi berhasil divalidasi. Hasil cetak kini menampilkan keterangan "SUDAH DIVALIDASI".');
+    }
+
+    /**
+     * AJUKAN VALIDASI oleh Guru Pembimbing (alur baru).
+     *
+     * Guru mengunggah foto dokumentasi kegiatan + foto lembar observasi yang
+     * sudah diparaf instruktur & guru pembimbing, lalu MENGAJUKAN (seperti siswa).
+     *   - Guru biasa  : status -> diajukan (menunggu divalidasi Wakasek).
+     *   - Guru Wakasek: boleh langsung validasi sendiri -> status tervalidasi.
+     */
+    public function ajukanGuru(Request $request, $id)
+    {
+        $observasi = Observasi::where('id', $id)
+            ->where('guru_id', Auth::id())
+            ->firstOrFail();
+
+        $request->validate([
+            'foto_dokumentasi'      => 'required|image|mimes:jpeg,png,jpg|max:2048',
+            'foto_lembar_observasi' => 'required|image|mimes:jpeg,png,jpg|max:2048',
+        ], [
+            'foto_dokumentasi.required'      => 'Foto dokumentasi kegiatan/kunjungan wajib diunggah.',
+            'foto_dokumentasi.image'         => 'Foto dokumentasi harus berupa gambar.',
+            'foto_dokumentasi.mimes'         => 'Format foto dokumentasi harus JPG, JPEG, atau PNG.',
+            'foto_dokumentasi.max'           => 'Ukuran foto dokumentasi maksimal 2 MB.',
+            'foto_lembar_observasi.required' => 'Foto lembar observasi yang sudah diparaf wajib diunggah.',
+            'foto_lembar_observasi.image'    => 'Foto lembar observasi harus berupa gambar.',
+            'foto_lembar_observasi.mimes'    => 'Format foto lembar observasi harus JPG, JPEG, atau PNG.',
+            'foto_lembar_observasi.max'      => 'Ukuran foto lembar observasi maksimal 2 MB.',
+        ]);
+
+        // Hapus foto lama bila mengajukan ulang.
+        if ($observasi->foto_dokumentasi && Storage::disk('public')->exists($observasi->foto_dokumentasi)) {
+            Storage::disk('public')->delete($observasi->foto_dokumentasi);
+        }
+        if ($observasi->foto_lembar_observasi && Storage::disk('public')->exists($observasi->foto_lembar_observasi)) {
+            Storage::disk('public')->delete($observasi->foto_lembar_observasi);
+        }
+
+        $fotoDokumentasiPath = $request->file('foto_dokumentasi')->store('observasi/dokumentasi', 'public');
+        $fotoLembarPath      = $request->file('foto_lembar_observasi')->store('observasi/lembar', 'public');
+
+        $isWakasek = (bool) (Auth::user()->is_wakasek ?? false);
+
+        $data = [
+            'foto_dokumentasi'      => $fotoDokumentasiPath,
+            'foto_lembar_observasi' => $fotoLembarPath,
+            'diajukan_at'           => now(),
+        ];
+
+        if ($isWakasek) {
+            // Wakasek boleh memvalidasi lembar observasinya sendiri secara langsung.
+            $data['status']               = 'tervalidasi';
+            $data['validated_by_guru_id'] = Auth::id();
+            $data['validated_at']         = now();
+            $pesan = 'Lembar observasi berhasil divalidasi (Anda berstatus Wakasek). Hasil cetak kini menampilkan keterangan "SUDAH DIVALIDASI".';
+        } else {
+            // Guru biasa: menunggu divalidasi oleh Wakasek.
+            $data['status']               = 'diajukan';
+            $data['validated_by_guru_id'] = null;
+            $data['validated_at']         = null;
+            $pesan = 'Lembar observasi berhasil diajukan. Status: menunggu divalidasi oleh Wakasek.';
+        }
+
+        $observasi->update($data);
+
+        return redirect()->route('guru.observasi.index')->with('success', $pesan);
     }
 
     public function destroyGuru($id)

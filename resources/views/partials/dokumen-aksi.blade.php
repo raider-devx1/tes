@@ -47,7 +47,7 @@
                         @endif
                         @if($bolehUnduh)
                             <a href="{{ $urlUnduh }}"
-                               class="px-3 py-1 rounded bg-[#2563EB] text-white hover:opacity-90">Download PDF</a>
+                               class="px-3 py-1 rounded bg-[#2563EB] text-white hover:opacity-90">Download</a>
                         @endif
                         @unless($bolehLihat || $bolehUnduh)
                             <span class="text-gray-400 italic">Tidak ada akses</span>

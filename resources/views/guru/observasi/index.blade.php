@@ -1,4 +1,4 @@
-<x-app-layout>
+<x-app-layout title="Lembar Observasi">
     <style>
         [x-cloak]{display:none!important;}
         /* ===== Pergantian tampilan berbasis lebar layar (sama seperti Jurnal Guru) ===== */
@@ -10,34 +10,52 @@
         }
     </style>
 
-    <x-slot name="header">
-        <div class="flex items-center justify-between gap-4">
-            <h2 class="text-xl md:text-2xl font-bold tracking-tight text-black">
-                Lembar Observasi
-            </h2>
-            <div class="flex items-center gap-2">
-                <a href="{{ route('guru.observasi.create') }}"
-                   class="inline-flex items-center rounded-xl bg-[#0047d6] px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-[#0038aa] focus:outline-none focus:ring-4 focus:ring-[#0047d6]/30">
-                    Tambah Observasi
-                </a>
-                <a href="{{ route('guru.dashboard') }}"
-                   class="inline-flex items-center gap-1 rounded-xl border-2 border-[#0047d6]/25 bg-white px-4 py-2 text-sm font-bold text-[#0047d6] transition hover:bg-[#0047d6]/5">
-                    Kembali ke Dashboard
-                </a>
-            </div>
-        </div>
-    </x-slot>
-
     <div class="py-8 md:py-12 bg-white min-h-screen">
         <div class="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 2xl:px-12">
-            <div class="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
+            {{-- ===== HEADER ===== --}}
+            <div class="mb-6 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                <div>
+                    <h2 class="text-xl md:text-2xl font-bold tracking-tight text-black">Lembar Observasi</h2>
+                    <p class="text-sm font-medium text-[#5b616e] mt-1">Buat dan kelola lembar observasi siswa bimbingan Anda.</p>
+                </div>
+                <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                    <a href="{{ route('guru.observasi.create') }}"
+                       class="inline-flex items-center justify-center rounded-xl bg-[#0047d6] px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-[#0038aa] focus:outline-none focus:ring-4 focus:ring-[#0047d6]/30">
+                        Tambah Observasi
+                    </a>
+                    <a href="{{ route('guru.dashboard') }}"
+                       class="inline-flex items-center justify-center gap-1 rounded-xl border-2 border-[#0047d6]/25 bg-white px-4 py-2 text-sm font-bold text-[#0047d6] transition hover:bg-[#0047d6]/5">
+                        Kembali ke Dashboard
+                    </a>
+                </div>
+            </div>
+
+            @if($isWakasek)
+                <div class="mb-6 flex flex-col gap-2 rounded-2xl border-2 border-purple-300 bg-purple-50 px-5 py-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+                    <div class="flex items-start gap-3">
+                        <span class="inline-flex items-center rounded-full bg-purple-600 px-3 py-1 text-xs font-bold text-white">WAKASEK</span>
+                        <p class="text-sm font-medium text-purple-900">
+                            Anda ditetapkan sebagai <span class="font-bold">Wakasek</span>, sehingga lembar observasi Anda dapat langsung <span class="font-bold">tervalidasi</span> tanpa menunggu.
+                        </p>
+                    </div>
+                    <a href="{{ route('guru.wakasek.observasi') }}"
+                       class="inline-flex flex-shrink-0 items-center justify-center rounded-xl bg-purple-600 px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-purple-700">
+                        Validasi Observasi (Wakasek)
+                    </a>
+                </div>
+            @endif
+            <div class="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4 sm:gap-4">
                 <div class="rounded-2xl border-2 border-[#0047d6]/15 bg-white p-5 shadow-sm">
                     <p class="text-xs font-bold uppercase tracking-wide text-[#5b616e]">Total Observasi</p>
                     <p class="mt-1 text-3xl font-bold text-black">{{ $rekap['total'] }}</p>
                 </div>
-                <div class="rounded-2xl border-2 border-[#d98200]/30 bg-[#d98200]/5 p-5 shadow-sm">
+                <div class="rounded-2xl border-2 border-[#5b616e]/20 bg-[#5b616e]/5 p-5 shadow-sm">
                     <p class="text-xs font-bold uppercase tracking-wide text-[#5b616e]">Draft</p>
-                    <p class="mt-1 text-3xl font-bold text-[#d98200]">{{ $rekap['draft'] }}</p>
+                    <p class="mt-1 text-3xl font-bold text-[#5b616e]">{{ $rekap['draft'] }}</p>
+                </div>
+                <div class="rounded-2xl border-2 border-[#d98200]/30 bg-[#d98200]/5 p-5 shadow-sm">
+                    <p class="text-xs font-bold uppercase tracking-wide text-[#5b616e]">Menunggu Divalidasi</p>
+                    <p class="mt-1 text-3xl font-bold text-[#d98200]">{{ $rekap['menunggu'] ?? 0 }}</p>
                 </div>
                 <div class="rounded-2xl border-2 border-[#05b169]/30 bg-[#05b169]/5 p-5 shadow-sm">
                     <p class="text-xs font-bold uppercase tracking-wide text-[#5b616e]">Tervalidasi</p>
@@ -64,7 +82,7 @@
                 <div class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                     <div>
                         <h3 class="text-lg font-bold tracking-tight text-black">Lembar Observasi Siswa Bimbingan</h3>
-                        <p class="text-xs font-medium text-[#5b616e]">Buat draf &rarr; cetak &rarr; minta paraf instruktur &amp; guru &rarr; <span class="font-bold text-black">Validasi</span> (unggah foto). Setelah tervalidasi, hasil cetak menampilkan keterangan <span class="font-bold text-black">SUDAH DIVALIDASI</span>.</p>
+                        <p class="text-xs font-medium text-[#5b616e]">Buat draf &rarr; cetak &rarr; minta paraf instruktur &amp; guru &rarr; <span class="font-bold text-black">Ajukan</span> (unggah foto). @if($isWakasek)Karena Anda Wakasek, pengajuan langsung <span class="font-bold text-black">tervalidasi</span>.@else Lembar lalu berstatus <span class="font-bold text-black">menunggu divalidasi</span> oleh Wakasek. Setelah divalidasi, hasil cetak menampilkan <span class="font-bold text-black">SUDAH DIVALIDASI</span>.@endif</p>
                     </div>
                     <a href="{{ route('cetak.observasi.semua') }}" target="_blank"
                        class="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-[#cf202f] px-6 py-3.5 text-base font-bold text-white shadow-sm transition hover:bg-[#a81824] focus:outline-none focus:ring-4 focus:ring-[#cf202f]/30 shrink-0">
@@ -123,6 +141,10 @@
                                 @php
                                     $poin = $obs->items;
                                     $isTervalidasi = ($obs->status ?? 'draft') === 'tervalidasi';
+                                    $isDiajukan    = ($obs->status ?? 'draft') === 'diajukan';
+                                    $aksiLabel = $isWakasek
+                                        ? ($isTervalidasi ? 'Validasi Ulang' : 'Validasi')
+                                        : (($isTervalidasi || $isDiajukan) ? 'Ajukan Ulang' : 'Ajukan');
                                 @endphp
                                 <tr class="align-top transition hover:bg-[#0047d6]/5" x-data="{ open: false, showValidasi: false }" x-effect="document.body.style.overflow = showValidasi ? 'hidden' : ''">
                                     <td class="px-4 py-3 text-center font-semibold text-black">
@@ -202,8 +224,10 @@
                                             @if($obs->validated_at)
                                                 <p class="mt-1 text-[10px] font-medium text-[#5b616e]">{{ \Carbon\Carbon::parse($obs->validated_at)->format('d M Y') }}</p>
                                             @endif
+                                        @elseif($isDiajukan)
+                                            <span class="inline-flex items-center rounded-full bg-[#d98200]/10 px-3 py-1 text-xs font-bold text-[#d98200]">Menunggu Divalidasi</span>
                                         @else
-                                            <span class="inline-flex items-center rounded-full bg-[#d98200]/10 px-3 py-1 text-xs font-bold text-[#d98200]">Draft</span>
+                                            <span class="inline-flex items-center rounded-full bg-[#5b616e]/10 px-3 py-1 text-xs font-bold text-[#5b616e]">Draft</span>
                                         @endif
                                     </td>
                                     <td class="px-4 py-3 text-center">
@@ -234,7 +258,7 @@
                                         <div class="flex flex-col items-center justify-center gap-2">
                                             <button type="button" @click="showValidasi = true"
                                                     class="inline-flex w-full items-center justify-center rounded-full bg-[#05b169] px-3 py-1.5 text-xs font-bold text-white transition hover:bg-[#049457]">
-                                                {{ $isTervalidasi ? 'Validasi Ulang' : 'Validasi' }}
+                                                {{ $aksiLabel }}
                                             </button>
                                             <div class="flex items-center justify-center gap-2">
                                                 <a href="{{ route('guru.observasi.edit', $obs->id) }}"
@@ -272,17 +296,20 @@
                                                  class="w-full sm:max-w-lg max-h-[90vh] overflow-y-auto rounded-t-2xl sm:rounded-2xl bg-white p-6 text-left shadow-xl"
                                                  @click.outside="showValidasi = false">
                                                 <div class="mb-4 flex items-center justify-between">
-                                                    <h3 class="text-lg font-bold text-black">Validasi Lembar Observasi</h3>
+                                                    <h3 class="text-lg font-bold text-black">{{ $isWakasek ? 'Validasi Lembar Observasi' : 'Ajukan Lembar Observasi' }}</h3>
                                                     <button type="button" @click="showValidasi = false"
                                                             class="text-2xl leading-none text-[#5b616e] hover:text-black">&times;</button>
                                                 </div>
                                                 <p class="mb-4 text-sm text-[#5b616e]">
                                                     Unggah foto dokumentasi kegiatan dan foto lembar observasi yang sudah diparaf
                                                     <span class="font-semibold text-black">instruktur &amp; guru pembimbing</span>.
-                                                    Setelah divalidasi, hasil cetak PDF akan menampilkan keterangan
-                                                    <span class="font-bold text-black">SUDAH DIVALIDASI</span>.
+                                                    @if($isWakasek)
+                                                        Karena Anda berstatus <span class="font-bold text-black">Wakasek</span>, lembar akan langsung <span class="font-bold text-black">tervalidasi</span> dan hasil cetak menampilkan <span class="font-bold text-black">SUDAH DIVALIDASI</span>.
+                                                    @else
+                                                        Setelah diajukan, lembar berstatus <span class="font-bold text-black">menunggu divalidasi</span> oleh Wakasek yang ditetapkan admin.
+                                                    @endif
                                                 </p>
-                                                <form method="POST" action="{{ route('guru.observasi.validasi', $obs->id) }}"
+                                                <form method="POST" action="{{ route('guru.observasi.ajukan', $obs->id) }}"
                                                       enctype="multipart/form-data" class="space-y-4">
                                                     @csrf
                                                     @method('PUT')
@@ -309,7 +336,7 @@
                                                         </button>
                                                         <button type="submit"
                                                                 class="inline-flex items-center rounded-xl bg-[#05b169] px-5 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-[#049457]">
-                                                            Simpan Validasi
+                                                            {{ $isWakasek ? 'Simpan & Validasi' : 'Ajukan Sekarang' }}
                                                         </button>
                                                     </div>
                                                 </form>
@@ -334,6 +361,10 @@
                         @php
                             $poin = $obs->items;
                             $isTervalidasi = ($obs->status ?? 'draft') === 'tervalidasi';
+                            $isDiajukan    = ($obs->status ?? 'draft') === 'diajukan';
+                            $aksiLabel = $isWakasek
+                                ? ($isTervalidasi ? 'Validasi Ulang' : 'Validasi')
+                                : (($isTervalidasi || $isDiajukan) ? 'Ajukan Ulang' : 'Ajukan');
                         @endphp
                         <div class="rounded-2xl border-2 border-[#0047d6]/15 bg-white p-4 shadow-sm"
                              x-data="{ detail: false, showValidasi: false }"
@@ -346,8 +377,10 @@
                                         <span class="text-xs font-medium text-[#5b616e]">{{ \Carbon\Carbon::parse($obs->hari_tanggal)->format('d M Y') }}</span>
                                         @if($isTervalidasi)
                                             <span class="inline-block rounded-full bg-[#05b169]/10 px-2.5 py-0.5 text-[11px] font-bold text-[#05b169]">Tervalidasi</span>
+                                        @elseif($isDiajukan)
+                                            <span class="inline-block rounded-full bg-[#d98200]/10 px-2.5 py-0.5 text-[11px] font-bold text-[#d98200]">Menunggu Divalidasi</span>
                                         @else
-                                            <span class="inline-block rounded-full bg-[#d98200]/10 px-2.5 py-0.5 text-[11px] font-bold text-[#d98200]">Draft</span>
+                                            <span class="inline-block rounded-full bg-[#5b616e]/10 px-2.5 py-0.5 text-[11px] font-bold text-[#5b616e]">Draft</span>
                                         @endif
                                     </div>
                                 </div>
@@ -398,8 +431,10 @@
                                                     @if($obs->validated_at)
                                                         <p class="mt-1 text-[10px] font-medium text-[#5b616e]">{{ \Carbon\Carbon::parse($obs->validated_at)->format('d M Y') }}</p>
                                                     @endif
+                                                @elseif($isDiajukan)
+                                                    <span class="inline-flex items-center rounded-full bg-[#d98200]/10 px-2.5 py-1 text-xs font-bold text-[#d98200]">Menunggu Divalidasi</span>
                                                 @else
-                                                    <span class="inline-flex items-center rounded-full bg-[#d98200]/10 px-2.5 py-1 text-xs font-bold text-[#d98200]">Draft</span>
+                                                    <span class="inline-flex items-center rounded-full bg-[#5b616e]/10 px-2.5 py-1 text-xs font-bold text-[#5b616e]">Draft</span>
                                                 @endif
                                             </div>
                                             <div>
@@ -469,7 +504,7 @@
                                         {{-- Validasi: tutup detail dulu agar modal validasi tampil penuh --}}
                                         <button type="button" @click="detail = false; showValidasi = true"
                                                 class="flex w-full items-center justify-center gap-2 rounded-xl bg-[#05b169] px-4 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-[#049457]">
-                                            {{ $isTervalidasi ? 'Validasi Ulang' : 'Validasi' }}
+                                            {{ $aksiLabel }}
                                         </button>
                                         <div class="flex gap-2">
                                             <a href="{{ route('cetak.observasi', ['siswa_id' => $obs->user_id, 'observasi_id' => $obs->id]) }}" target="_blank"
@@ -518,17 +553,20 @@
                                      class="w-full sm:max-w-lg max-h-[90vh] overflow-y-auto rounded-t-2xl sm:rounded-2xl bg-white p-6 text-left shadow-xl"
                                      @click.outside="showValidasi = false">
                                     <div class="mb-4 flex items-center justify-between">
-                                        <h3 class="text-lg font-bold text-black">Validasi Lembar Observasi</h3>
+                                        <h3 class="text-lg font-bold text-black">{{ $isWakasek ? 'Validasi Lembar Observasi' : 'Ajukan Lembar Observasi' }}</h3>
                                         <button type="button" @click="showValidasi = false"
                                                 class="text-2xl leading-none text-[#5b616e] hover:text-black">&times;</button>
                                     </div>
                                     <p class="mb-4 text-sm text-[#5b616e]">
                                         Unggah foto dokumentasi kegiatan dan foto lembar observasi yang sudah diparaf
                                         <span class="font-semibold text-black">instruktur &amp; guru pembimbing</span>.
-                                        Setelah divalidasi, hasil cetak PDF akan menampilkan keterangan
-                                        <span class="font-bold text-black">SUDAH DIVALIDASI</span>.
+                                        @if($isWakasek)
+                                            Karena Anda berstatus <span class="font-bold text-black">Wakasek</span>, lembar akan langsung <span class="font-bold text-black">tervalidasi</span> dan hasil cetak menampilkan <span class="font-bold text-black">SUDAH DIVALIDASI</span>.
+                                        @else
+                                            Setelah diajukan, lembar berstatus <span class="font-bold text-black">menunggu divalidasi</span> oleh Wakasek yang ditetapkan admin.
+                                        @endif
                                     </p>
-                                    <form method="POST" action="{{ route('guru.observasi.validasi', $obs->id) }}"
+                                    <form method="POST" action="{{ route('guru.observasi.ajukan', $obs->id) }}"
                                           enctype="multipart/form-data" class="space-y-4">
                                         @csrf
                                         @method('PUT')

@@ -5,7 +5,7 @@
     <title>Penilaian PKL Siswa - Guru</title>
     <style>
         @page {
-            margin: 25px 30px 55px 30px;
+            margin: 25px 30px 40px 30px;
         }
         body {
             font-family: "Times New Roman", Times, serif;
@@ -13,6 +13,13 @@
             margin: 0;
             padding: 0;
             line-height: 1.3;
+        }
+        /* 1 siswa = 1 halaman (berlaku untuk cetak satuan maupun cetak semua) */
+        .page {
+            page-break-after: always;
+        }
+        .page:last-child {
+            page-break-after: auto;
         }
         /* Header (RATA TENGAH sesuai format acuan) */
         .header {
@@ -94,25 +101,9 @@
             width: 100%;
             margin-top: 20px;
         }
-        .ttd-left {
-            float: left;
-            width: 45%;
-            text-align: left;
-        }
-        .ttd-right {
-            float: right;
-            width: 45%;
-            text-align: left;
-        }
-        .clear {
-            clear: both;
-        }
-        /* Footer (3 kolom + garis atas, sesuai format acuan) */
-        .footer {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
+        /* Footer per halaman (mengikuti tiap siswa) */
+        .page-footer {
+            margin-top: 25px;
             font-size: 11px;
             font-style: italic;
             font-weight: bold;
@@ -130,178 +121,180 @@
     </style>
 </head>
 <body>
-    <div class="header">
-        <h3>UPTD SMKN 1 MAJENE</h3>
-        <h4>Tahun Ajaran {{ $tahunAjaran ?? '' }}</h4>
-    </div>
-    
-    <table class="table-info">
-        <tr>
-            <td>Nama Peserta Didik</td>
-            <td class="titik-dua">:</td>
-            <td>{{ $siswa->name ?? '' }}</td>
-        </tr>
-        <tr>
-            <td>NISN</td>
-            <td class="titik-dua">:</td>
-            <td>{{ $siswa->nisn ?? '-' }}</td>
-        </tr>
-        <tr>
-            <td>Kelas</td>
-            <td class="titik-dua">:</td>
-            <td>{{ $siswa->kelas ?? '-' }}</td>
-        </tr>
-        <tr>
-            <td>Program Keahlian</td>
-            <td class="titik-dua">:</td>
-            <td>{{ $siswa->program_keahlian ?? 'Teknik Jaringan Komputer dan Telekomunikasi' }}</td>
-        </tr>
-        <tr>
-            <td>Konsentrasi Keahlian</td>
-            <td class="titik-dua">:</td>
-            <td>{{ $siswa->konsentrasi_keahlian ?? 'Teknik Komputer dan Jaringan' }}</td>
-        </tr>
-        <tr>
-            <td>Tempat PKL</td>
-            <td class="titik-dua">:</td>
-            <td>{{ $namaPerusahaan ?? '' }}</td>
-        </tr>
-        <tr>
-            <td>Tanggal PKL</td>
-            <td class="titik-dua">:</td>
-            <td>
-                Mulai: {{ $tanggalMulaiFormat ?? '' }}
-                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-                Selesai: {{ $tanggalSelesaiFormat ?? '' }}
-            </td>
-        </tr>
-        <tr>
-            <td>Nama Instruktur</td>
-            <td class="titik-dua">:</td>
-            <td>{{ $siswa->instruktur->name ?? 'MULFIANTI' }}</td>
-        </tr>
-        <tr>
-            <td>Nama Pembimbing</td>
-            <td class="titik-dua">:</td>
-            <td>{{ $siswa->guru->name ?? 'M. ASRI, Amd.Kom' }}</td>
-        </tr>
-    </table>
+    @foreach ($lembar as $row)
+        @php extract($row); @endphp
+        <div class="page">
+            <div class="header">
+                <h3>UPTD SMKN 1 MAJENE</h3>
+                <h4>Tahun Ajaran {{ $tahunAjaran ?? '' }}</h4>
+            </div>
 
-    <table class="table-score">
-        <thead>
-            <tr>
-                <th class="col-tujuan">Tujuan Pembelajaran</th>
-                <th class="col-skor">Skor</th>
-                <th>Deskripsi</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td>Internalisasi dan penerapan soft skill</td>
-                <td class="col-skor">{{ optional($nilai)->skor_soft_skill ?? '-' }}</td>
-                <td>{{ optional($nilai)->deskripsi_soft_skill ?? '-' }}</td>
-            </tr>
-            <tr>
-                <td>Penerapan hard skill</td>
-                <td class="col-skor">{{ optional($nilai)->skor_hard_skill ?? '-' }}</td>
-                <td>{{ optional($nilai)->deskripsi_hard_skill ?? '-' }}</td>
-            </tr>
-            <tr>
-                <td>Peningkatan dan pengembangan hard skill</td>
-                <td class="col-skor">{{ optional($nilai)->skor_pengembangan ?? '-' }}</td>
-                <td>{{ optional($nilai)->deskripsi_pengembangan ?? '-' }}</td>
-            </tr>
-            <tr>
-                <td>Penyiapan dan kemandirian kewirausahaan</td>
-                <td class="col-skor">{{ optional($nilai)->skor_kewirausahaan ?? '-' }}</td>
-                <td>{{ optional($nilai)->deskripsi_kewirausahaan ?? '-' }}</td>
-            </tr>
-            <tr>
-                <td>Penulisan laporan</td>
-                <td class="col-skor">{{ optional($nilai)->skor_laporan ?? '-' }}</td>
-                <td>{{ optional($nilai)->deskripsi_laporan ?? '-' }}</td>
-            </tr>
-            <tr>
-                <td>Pemaparan presentasi</td>
-                <td class="col-skor">{{ optional($nilai)->skor_presentasi ?? '-' }}</td>
-                <td>{{ optional($nilai)->deskripsi_presentasi ?? '-' }}</td>
-            </tr>
-        </tbody>
-    </table>
+            <table class="table-info">
+                <tr>
+                    <td>Nama Peserta Didik</td>
+                    <td class="titik-dua">:</td>
+                    <td>{{ $siswa->name ?? '' }}</td>
+                </tr>
+                <tr>
+                    <td>NISN</td>
+                    <td class="titik-dua">:</td>
+                    <td>{{ $siswa->nisn ?? '-' }}</td>
+                </tr>
+                <tr>
+                    <td>Kelas</td>
+                    <td class="titik-dua">:</td>
+                    <td>{{ $siswa->kelas ?? '-' }}</td>
+                </tr>
+                <tr>
+                    <td>Program Keahlian</td>
+                    <td class="titik-dua">:</td>
+                    <td>{{ $siswa->program_keahlian ?? 'Teknik Jaringan Komputer dan Telekomunikasi' }}</td>
+                </tr>
+                <tr>
+                    <td>Konsentrasi Keahlian</td>
+                    <td class="titik-dua">:</td>
+                    <td>{{ $siswa->konsentrasi_keahlian ?? 'Teknik Komputer dan Jaringan' }}</td>
+                </tr>
+                <tr>
+                    <td>Tempat PKL</td>
+                    <td class="titik-dua">:</td>
+                    <td>{{ $namaPerusahaan ?? '' }}</td>
+                </tr>
+                <tr>
+                    <td>Tanggal PKL</td>
+                    <td class="titik-dua">:</td>
+                    <td>
+                        Mulai: {{ $tanggalMulaiFormat ?? '' }}
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                        Selesai: {{ $tanggalSelesaiFormat ?? '' }}
+                    </td>
+                </tr>
+                <tr>
+                    <td>Nama Instruktur</td>
+                    <td class="titik-dua">:</td>
+                    <td>{{ $siswa->instruktur->name ?? 'MULFIANTI' }}</td>
+                </tr>
+                <tr>
+                    <td>Nama Pembimbing</td>
+                    <td class="titik-dua">:</td>
+                    <td>{{ $siswa->guru->name ?? 'M. ASRI, Amd.Kom' }}</td>
+                </tr>
+            </table>
 
-    <div class="catatan">
-        <span style="font-weight: bold;">Catatan:</span> {{ optional($nilai)->catatan_guru ?? '-' }}
-    </div>
+            <table class="table-score">
+                <thead>
+                    <tr>
+                        <th class="col-tujuan">Tujuan Pembelajaran</th>
+                        <th class="col-skor">Skor</th>
+                        <th>Deskripsi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Internalisasi dan penerapan soft skill</td>
+                        <td class="col-skor">{{ optional($nilai)->skor_soft_skill ?? '-' }}</td>
+                        <td>{{ optional($nilai)->deskripsi_soft_skill ?? '-' }}</td>
+                    </tr>
+                    <tr>
+                        <td>Penerapan hard skill</td>
+                        <td class="col-skor">{{ optional($nilai)->skor_hard_skill ?? '-' }}</td>
+                        <td>{{ optional($nilai)->deskripsi_hard_skill ?? '-' }}</td>
+                    </tr>
+                    <tr>
+                        <td>Peningkatan dan pengembangan hard skill</td>
+                        <td class="col-skor">{{ optional($nilai)->skor_pengembangan ?? '-' }}</td>
+                        <td>{{ optional($nilai)->deskripsi_pengembangan ?? '-' }}</td>
+                    </tr>
+                    <tr>
+                        <td>Penyiapan dan kemandirian kewirausahaan</td>
+                        <td class="col-skor">{{ optional($nilai)->skor_kewirausahaan ?? '-' }}</td>
+                        <td>{{ optional($nilai)->deskripsi_kewirausahaan ?? '-' }}</td>
+                    </tr>
+                    <tr>
+                        <td>Penulisan laporan</td>
+                        <td class="col-skor">{{ optional($nilai)->skor_laporan ?? '-' }}</td>
+                        <td>{{ optional($nilai)->deskripsi_laporan ?? '-' }}</td>
+                    </tr>
+                    <tr>
+                        <td>Pemaparan presentasi</td>
+                        <td class="col-skor">{{ optional($nilai)->skor_presentasi ?? '-' }}</td>
+                        <td>{{ optional($nilai)->deskripsi_presentasi ?? '-' }}</td>
+                    </tr>
+                </tbody>
+            </table>
 
-    <div class="absen-container">
-        <table class="table-absen">
-            <tr>
-                <td colspan="2"><span style="font-weight: bold;">Ketidakhadiran</span></td>
-            </tr>
-            <tr>
-                <td>Sakit</td>
-                <td>: {{ $sakit ?? 0 }} hari</td>
-            </tr>
-            <tr>
-                <td>Ijin</td>
-                <td>: {{ $ijin ?? 0 }} hari</td>
-            </tr>
-            <tr>
-                <td>Tanpa Keterangan</td>
-                <td>: {{ $alpa ?? 0 }} hari</td>
-            </tr>
-        </table>
-    </div>
+            <div class="catatan">
+                <span style="font-weight: bold;">Catatan:</span> {{ optional($nilai)->catatan_guru ?? '-' }}
+            </div>
 
-   <table class="ttd-container" style="width: 100%; border-collapse: collapse; margin-top: 20px;">
-    {{-- BARIS 1: HANYA UNTUK TANGGAL DI SEBELAH KANAN --}}
-    <tr>
-        <td style="width: 50%; text-align: left; vertical-align: top;">
-            {{-- Dikosongkan agar kolom kanan berisi tanggal --}}
-            <p style="margin: 0;">&nbsp;</p>
-        </td>
-        <td style="width: 50%; text-align: left; vertical-align: top;">
-            <p style="margin: 0;">Majene, {{ \Carbon\Carbon::now()->translatedFormat('d F Y') }}</p>
-        </td>
-    </tr>
-    
-    {{-- BARIS 2: JABATAN PENANDATANGAN (SEJAJAR HORIZONTAL) --}}
-    <tr>
-        <td style="width: 50%; text-align: left; vertical-align: top; padding-top: 5px;">
-            <p style="margin: 0;">Guru Pembimbing</p>
-        </td>
-        <td style="width: 50%; text-align: left; vertical-align: top; padding-top: 5px;">
-            <p style="margin: 0;">Pembimbing Dunia Kerja,</p>
-        </td>
-    </tr>
+            <div class="absen-container">
+                <table class="table-absen">
+                    <tr>
+                        <td colspan="2"><span style="font-weight: bold;">Ketidakhadiran</span></td>
+                    </tr>
+                    <tr>
+                        <td>Sakit</td>
+                        <td>: {{ $sakit ?? 0 }} hari</td>
+                    </tr>
+                    <tr>
+                        <td>Ijin</td>
+                        <td>: {{ $ijin ?? 0 }} hari</td>
+                    </tr>
+                    <tr>
+                        <td>Tanpa Keterangan</td>
+                        <td>: {{ $alpa ?? 0 }} hari</td>
+                    </tr>
+                </table>
+            </div>
 
-    {{-- BARIS 3: NAMA DAN NIP --}}
-    <tr>
-        <td style="width: 50%; text-align: left; vertical-align: top;">
-            <br><br><br><br>
-            <p style="margin: 0;">
-                <span style="font-weight: bold; text-decoration: underline;">{{ $siswa->guru->name ?? 'M. ASRI, Amd.Kom' }}</span><br>
-                NIP. {{ $siswa->guru->nip ?? '197609102005021007' }}
-            </p>
-        </td>
-        <td style="width: 50%; text-align: left; vertical-align: top;">
-            <br><br><br><br>
-            <p style="margin: 0;">
-                <span style="font-weight: bold; text-decoration: underline;">{{ $siswa->instruktur->name ?? 'MULFIANTI' }}</span><br>
-                NIP. {{ $siswa->instruktur->nip ?? '-' }}
-            </p>
-        </td>
-    </tr>
-</table>
+            <table class="ttd-container" style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+                {{-- BARIS 1: HANYA UNTUK TANGGAL DI SEBELAH KANAN --}}
+                <tr>
+                    <td style="width: 50%; text-align: left; vertical-align: top;">
+                        <p style="margin: 0;">&nbsp;</p>
+                    </td>
+                    <td style="width: 50%; text-align: left; vertical-align: top;">
+                        <p style="margin: 0;">Majene, {{ \Carbon\Carbon::now()->translatedFormat('d F Y') }}</p>
+                    </td>
+                </tr>
+                {{-- BARIS 2: JABATAN PENANDATANGAN (SEJAJAR HORIZONTAL) --}}
+                <tr>
+                    <td style="width: 50%; text-align: left; vertical-align: top; padding-top: 5px;">
+                        <p style="margin: 0;">Guru Pembimbing</p>
+                    </td>
+                    <td style="width: 50%; text-align: left; vertical-align: top; padding-top: 5px;">
+                        <p style="margin: 0;">Pembimbing Dunia Kerja,</p>
+                    </td>
+                </tr>
+                {{-- BARIS 3: NAMA DAN NIP --}}
+                <tr>
+                    <td style="width: 50%; text-align: left; vertical-align: top;">
+                        <br><br><br><br>
+                        <p style="margin: 0;">
+                            <span style="font-weight: bold; text-decoration: underline;">{{ $siswa->guru->name ?? 'M. ASRI, Amd.Kom' }}</span><br>
+                            NIP. {{ $siswa->guru->nip ?? '197609102005021007' }}
+                        </p>
+                    </td>
+                    <td style="width: 50%; text-align: left; vertical-align: top;">
+                        <br><br><br><br>
+                        <p style="margin: 0;">
+                            <span style="font-weight: bold; text-decoration: underline;">{{ $siswa->instruktur->name ?? 'MULFIANTI' }}</span><br>
+                            NIP. {{ $siswa->instruktur->nip ?? '-' }}
+                        </p>
+                    </td>
+                </tr>
+            </table>
 
-    <div class="footer">
-        <table class="footer-table">
-            <tr>
-                <td style="text-align:left; width:33%;">{{ $siswa->name ?? '' }} - {{ $siswa->kelas ?? 'TKJ' }}</td>
-                <td style="text-align:center; width:34%;">1</td>
-                <td style="text-align:right; width:33%;">Dicetak dari e-Rapor SMK v.8.0.3</td>
-            </tr>
-        </table>
-    </div>
+            <div class="page-footer">
+                <table class="footer-table">
+                    <tr>
+                        <td style="text-align:left; width:33%;">{{ $siswa->name ?? '' }} - {{ $siswa->kelas ?? 'TKJ' }}</td>
+                        <td style="text-align:center; width:34%;">1</td>
+                        <td style="text-align:right; width:33%;">Dicetak dari e-Rapor SMK v.8.0.3</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    @endforeach
 </body>
 </html>

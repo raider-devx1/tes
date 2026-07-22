@@ -27,3 +27,13 @@ Schedule::call(function () {
     ->dailyAt('01:00')          // setiap hari jam 1 malam
     ->name('bersihkan-activity-logs')
     ->withoutOverlapping();     // cegah tumpang tindih jika proses sebelumnya belum selesai
+
+/*
+|--------------------------------------------------------------------------
+| Catatan: Penandaan Otomatis ALPHA
+|--------------------------------------------------------------------------
+| Tidak lagi memakai scheduler/console. Penandaan "Alpha" kini dilakukan
+| lewat logika di controller (Absensi::sinkronkanAlpa) yang berjalan saat
+| halaman absensi dibuka: bila batas jam masuk & pulang sudah lewat dan
+| siswa tidak absen sama sekali, baris otomatis ditandai Alpha.
+*/

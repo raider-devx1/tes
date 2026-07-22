@@ -34,6 +34,10 @@
                         </div>
                     @endforelse
 
+                    @if (method_exists($informasi, 'links'))
+                        <div class="mt-6">{{ $informasi->links() }}</div>
+                    @endif
+
                 </div>
             </div>
         </div>

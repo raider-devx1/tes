@@ -70,7 +70,7 @@
                 <tr><td class="label">Tempat PKL</td><td class="colon">:</td><td> {{ $dunia_kerja ?? '' }} </td></tr>
                 <tr>
                     <td class="label">Tanggal Observasi</td><td class="colon">:</td>
-                    <td> {{ ($isTemplate || empty($tanggal_observasi)) ? '.....................' : \Carbon\Carbon::parse($tanggal_observasi)->format('d F Y') }} </td>
+                    <td> {{ $tanggal_cetak ?? '' }}  </td>
                 </tr>
                 <tr><td class="label">Nama Instruktur</td><td class="colon">:</td><td> {{ $nama_instruktur ?? '' }} </td></tr>
                 <tr><td class="label">Nama Pembimbing</td><td class="colon">:</td><td> {{ $nama_guru ?? '' }} </td></tr>
@@ -110,9 +110,9 @@
 
             <table class="hadir">
                 <tr><td class="judul-hadir" colspan="2">Kehadiran :</td></tr>
-                <tr><td>Sakit</td><td>:  {{ $isTemplate ? '' : ($kehadiranArr['sakit'] ?? 0) }}  Hari</td></tr>
-                <tr><td>Ijin</td><td>:  {{ $isTemplate ? '' : ($kehadiranArr['izin'] ?? 0) }}  Hari</td></tr>
-                <tr><td>Tanpa Keterangan</td><td>:  {{ $isTemplate ? '' : ($kehadiranArr['alpha'] ?? 0) }}  Hari</td></tr>
+                <tr><td>Sakit</td><td>:  {{ $kehadiranArr['sakit'] ?? 0 }}  Hari</td></tr>
+                <tr><td>Ijin</td><td>:  {{ $kehadiranArr['izin'] ?? 0 }}  Hari</td></tr>
+                <tr><td>Tanpa Keterangan</td><td>:  {{ $kehadiranArr['alpha'] ?? 0 }}  Hari</td></tr>
             </table>
 
             <table class="footer">
@@ -123,7 +123,7 @@
                         <div class="nama-ttd">  {{ $nama_instruktur ?? '' }}  </div>
                     </td>
                     <td>
-                        Majene,  {{ $isTemplate ? '.....................' : ($tanggal_cetak ?? '') }}  <br>
+                        .....................,  {{ $tanggal_cetak ?? '' }}  <br>
                         Guru Pembimbing,
                         <div class="nama-ttd"> {{ $nama_guru ?? '' }}  </div>
                         <div class="nip-ttd">NIP.  {{ $nip_guru ?? '' }} </div>

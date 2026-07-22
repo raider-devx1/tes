@@ -1,4 +1,10 @@
-@php $isAdmin = auth()->check() && auth()->user()->role === 'admin'; @endphp
+@php
+    $authUser = auth()->user();
+    // Admin asli SELALU pakai cangkang admin. Guru pembimbing yang ditetapkan admin
+    // hanya memakai cangkang admin (sidebar + seluruh menu) saat membuka halaman admin/*,
+    // sehingga di halaman guru miliknya sendiri tetap tampil cangkang guru seperti biasa.
+    $isAdmin = $authUser && ($authUser->role === 'admin' || ($authUser->is_admin && request()->routeIs('admin.*')));
+@endphp
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
@@ -88,6 +94,16 @@
                  sidebar menutup halus SETELAH halaman tujuan termuat penuh (lihat x-init) --}}
             <nav class="px-4 py-6 space-y-1.5 text-sm"
                 @click="if ($event.target.closest('a') && window.innerWidth < 1024) sessionStorage.setItem('tutupSetelahLoad', 'true')">
+                @if($authUser && $authUser->is_admin && $authUser->role === 'guru_pembimbing')
+                    {{-- Guru pembimbing yang ditetapkan admin: tombol kembali ke dashboard guru miliknya --}}
+                    <a href="{{ route('guru.dashboard') }}"
+                        class="group flex items-center gap-3 px-3 py-2.5 mb-3 rounded-xl font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 transition-all duration-150">
+                        <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path d="M19 12H5M12 19l-7-7 7-7"/>
+                        </svg>
+                        Kembali ke Dashboard Guru
+                    </a>
+                @endif
                 <div class="px-3 mb-2 text-xs font-semibold text-slate-400 tracking-wider uppercase">Menu Utama</div>
                 {{-- Dashboard --}}
                 <a href="{{ route('admin.dashboard') }}"

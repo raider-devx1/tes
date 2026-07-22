@@ -1,16 +1,4 @@
-<x-app-layout>
-    <x-slot name="header">
-        <div class="flex items-center justify-between gap-4">
-            <h2 class="text-xl md:text-2xl font-bold tracking-tight text-black">
-                Rekap &amp; Penilaian (Guru Pembimbing)
-            </h2>
-            <a href="{{ route('guru.dashboard') }}"
-               class="inline-flex items-center gap-1 rounded-xl border-2 border-[#0047d6]/25 bg-white px-4 py-2 text-sm font-bold text-[#0047d6] transition hover:bg-[#0047d6]/5">
-                Kembali ke Dashboard
-            </a>
-        </div>
-    </x-slot>
-
+<x-app-layout title="Rekap & Penilaian">
     <style>
         [x-cloak]{display:none!important;}
         /* ===== Pergantian tampilan berbasis lebar layar (tanpa bergantung Tailwind lg:) ===== */
@@ -32,6 +20,18 @@
     --}}
     <div class="py-6 md:py-10 bg-slate-50 min-h-screen">
         <div class="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 space-y-6">
+            {{-- ===== HEADER ===== --}}
+            <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                <div>
+                    <h2 class="text-xl md:text-2xl font-bold tracking-tight text-black">Rekap &amp; Penilaian (Guru Pembimbing)</h2>
+                    <p class="text-sm font-medium text-[#5b616e] mt-1">Beri nilai siswa bimbingan Anda dan cetak lembar penilaian PKL.</p>
+                </div>
+                <a href="{{ route('guru.dashboard') }}"
+                   class="inline-flex items-center justify-center gap-1 rounded-xl border-2 border-[#0047d6]/25 bg-white px-4 py-2 text-sm font-bold text-[#0047d6] transition hover:bg-[#0047d6]/5">
+                    Kembali ke Dashboard
+                </a>
+            </div>
+
             {{-- ===== ALERT ===== --}}
             @if (session('success'))
                 <div class="rounded-xl border-2 border-[#05b169] bg-[#05b169]/10 px-4 py-3 text-sm font-semibold text-black">
@@ -41,6 +41,16 @@
             @if (session('error'))
                 <div class="rounded-xl border-2 border-[#cf202f] bg-[#cf202f]/10 px-4 py-3 text-sm font-semibold text-black">
                     {{ session('error') }}
+                </div>
+            @endif
+            @if ($errors->any())
+                <div class="rounded-xl border-2 border-[#cf202f] bg-[#cf202f]/10 px-4 py-3 text-sm font-semibold text-black">
+                    <p class="mb-1 font-bold">Penilaian gagal disimpan. Periksa kembali:</p>
+                    <ul class="list-disc pl-5 space-y-0.5">
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
                 </div>
             @endif
 
@@ -58,6 +68,24 @@
                     <p class="text-xs font-bold uppercase tracking-wide text-[#5b616e]">Belum Dinilai</p>
                     <p class="mt-1 text-3xl font-bold text-[#d98200]">{{ $rekap['belum_dinilai'] ?? 0 }}</p>
                 </div>
+            </div>
+
+            {{-- ===== CETAK SEMUA PDF ===== --}}
+            <div class="rounded-2xl border-2 border-[#0047d6]/15 bg-white p-4 sm:p-6 shadow-sm flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                    <h3 class="text-lg font-bold tracking-tight text-black">Cetak Semua Penilaian</h3>
+                    <p class="text-xs font-medium text-[#5b616e]">
+                        Tombol <span class="font-bold text-black">Cetak Semua PDF</span> mencetak penilaian seluruh siswa bimbingan Anda dalam format <span class="font-bold text-black">PDF Guru</span> (1 siswa per halaman). Hanya siswa dengan nilai lengkap yang disertakan.
+                    </p>
+                </div>
+
+                <a href="{{ route('cetak.nilai.guru.semua') }}" target="_blank"
+                   class="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-[#cf202f] px-6 py-3.5 text-base font-bold text-white shadow-sm transition hover:bg-[#a81824] focus:outline-none focus:ring-4 focus:ring-[#cf202f]/30 shrink-0">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2M6 14h12v8H6v-8z"/>
+                    </svg>
+                    Cetak Semua PDF
+                </a>
             </div>
 
             {{-- ============================================================= --}}

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Absensi;
 use App\Models\CatatanKegiatan;
 use App\Models\Jurnal;
+use App\Models\Pengaturan;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -28,7 +29,7 @@ class MonitoringController extends Controller
     /** Daftar siswa PKL untuk dropdown form tambah/edit. */
     private function siswaList()
     {
-        return User::where('role', 'siswa_pkl')->orderBy('name')->get(['id', 'name', 'nisn']);
+        return User::where('role', 'siswa_pkl')->where('status_pkl', '!=', 'selesai')->orderBy('name')->get(['id', 'name', 'nisn']);
     }
 
     // ===================================================================
@@ -44,6 +45,7 @@ public function jurnal(Request $request)
 
     $jurnal = Jurnal::query()
         ->with(['siswa', 'items'])
+        ->whereHas('siswa', fn ($s) => $s->where('status_pkl', '!=', 'selesai'))
         ->when($q, fn ($query) => $query->whereHas('siswa', fn ($s) =>
             $s->where('name', 'like', "%{$q}%")->orWhere('nisn', 'like', "%{$q}%")))
         ->when($kelas,   fn ($query) => $query->whereHas('siswa', fn ($s) => $s->where('kelas', $kelas)))
@@ -54,11 +56,12 @@ public function jurnal(Request $request)
         ->paginate(15)
         ->withQueryString();
 
+    $rekapBase = fn () => Jurnal::whereHas('siswa', fn ($s) => $s->where('status_pkl', '!=', 'selesai'));
     $rekap = [
-        'total'     => Jurnal::count(),
-        'disetujui' => Jurnal::where('status', 'disetujui')->count(),
-        'diajukan'  => Jurnal::where('status', 'diajukan')->count(),
-        'draft'     => Jurnal::where('status', 'draft')->count(),
+        'total'     => $rekapBase()->count(),
+        'disetujui' => $rekapBase()->where('status', 'disetujui')->count(),
+        'diajukan'  => $rekapBase()->where('status', 'diajukan')->count(),
+        'draft'     => $rekapBase()->where('status', 'draft')->count(),
     ];
 
     return view('admin.monitoring.jurnal', array_merge(
@@ -236,6 +239,7 @@ public function catatan(Request $request)
 
     $catatan = CatatanKegiatan::query()
         ->with('user')
+        ->whereHas('user', fn ($u) => $u->where('status_pkl', '!=', 'selesai'))
         ->when($q, fn ($query) => $query->whereHas('user', fn ($u) =>
             $u->where('name', 'like', "%{$q}%")->orWhere('nisn', 'like', "%{$q}%")))
         ->when($kelas,   fn ($query) => $query->whereHas('user', fn ($u) => $u->where('kelas', $kelas)))
@@ -245,11 +249,12 @@ public function catatan(Request $request)
         ->paginate(15)
         ->withQueryString();
 
+    $rekapBase = fn () => CatatanKegiatan::whereHas('user', fn ($u) => $u->where('status_pkl', '!=', 'selesai'));
     $rekap = [
-        'total'     => CatatanKegiatan::count(),
-        'disetujui' => CatatanKegiatan::where('status', 'disetujui')->count(),
-        'diajukan'  => CatatanKegiatan::where('status', 'diajukan')->count(),
-        'draft'     => CatatanKegiatan::where('status', 'draft')->count(),
+        'total'     => $rekapBase()->count(),
+        'disetujui' => $rekapBase()->where('status', 'disetujui')->count(),
+        'diajukan'  => $rekapBase()->where('status', 'diajukan')->count(),
+        'draft'     => $rekapBase()->where('status', 'draft')->count(),
     ];
 
     return view('admin.monitoring.catatan', array_merge(
@@ -335,6 +340,10 @@ public function destroyCatatan(CatatanKegiatan $catatan)
 // ===================================================================
 public function absensi(Request $request)
 {
+    // Tandai otomatis Alpha (logika controller, menggantikan scheduler).
+    User::where('role', 'siswa_pkl')->where('status_pkl', 'aktif')->get()
+        ->each(fn ($s) => Absensi::sinkronkanAlpa($s));
+
     $q       = trim($request->get('q', ''));
     $status  = $request->get('status', '');
     $tanggal = $request->get('tanggal', '');
@@ -344,6 +353,7 @@ public function absensi(Request $request)
 
     $absensi = Absensi::query()
         ->with('siswa')
+        ->whereHas('siswa', fn ($s) => $s->where('status_pkl', '!=', 'selesai'))
         ->when($q, fn ($query) => $query->whereHas('siswa', fn ($s) =>
             $s->where('name', 'like', "%{$q}%")->orWhere('nisn', 'like', "%{$q}%")))
         ->when($kelas,   fn ($query) => $query->whereHas('siswa', fn ($s) => $s->where('kelas', $kelas)))
@@ -356,20 +366,106 @@ public function absensi(Request $request)
         ->paginate(15)
         ->withQueryString();
 
+    $rekapBase = fn () => Absensi::whereHas('siswa', fn ($s) => $s->where('status_pkl', '!=', 'selesai'));
     $rekap = [
-        'Hadir' => Absensi::where('status', 'Hadir')->count(),
-        'Izin'  => Absensi::where('status', 'Izin')->count(),
-        'Sakit' => Absensi::where('status', 'Sakit')->count(),
-        'Alpha' => Absensi::where('status', 'Alpha')->count(),
+        'Hadir' => $rekapBase()->where('status', 'Hadir')->count(),
+        'Izin'  => $rekapBase()->where('status', 'Izin')->count(),
+        'Sakit' => $rekapBase()->where('status', 'Sakit')->count(),
+        'Alpha' => $rekapBase()->where('status', 'Alpha')->count(),
     ];
 
     $tanggalDefault = $tanggal ?: date('Y-m-d');
 
+    // Pengaturan jam & batas absensi yang berlaku untuk SEMUA siswa.
+    $pengaturanAbsensi = [
+        'jam_masuk'    => Pengaturan::ambil('absensi_jam_masuk', '08:00'),
+        'jam_pulang'   => Pengaturan::ambil('absensi_jam_pulang', '16:00'),
+        'durasi_menit' => (int) Pengaturan::ambil('absensi_durasi_menit', 30),
+    ];
+
+    // Status buka-paksa absensi global (true = absensi selalu terbuka, bebas waktu).
+    $paksaBuka = Pengaturan::ambil('absensi_paksa_buka', '0') === '1';
+
+    // Siswa yang absensinya dibuka manual per-orang (di luar buka global).
+    $dibukaList = User::where('role', 'siswa_pkl')->where('absensi_dibuka', true)
+        ->orderBy('name')->get(['id', 'name', 'nisn']);
+
     return view('admin.monitoring.absensi', array_merge(
-        compact('absensi', 'q', 'status', 'tanggal', 'bulan', 'kelas', 'jurusan', 'rekap', 'tanggalDefault'),
-        ['siswaList' => $this->siswaList()],
+        compact('absensi', 'q', 'status', 'tanggal', 'bulan', 'kelas', 'jurusan', 'rekap', 'tanggalDefault', 'pengaturanAbsensi', 'paksaBuka'),
+        ['siswaList' => $this->siswaList(), 'dibukaList' => $dibukaList],
         $this->opsiFilter()
     ));
+}
+
+/**
+ * Admin menyimpan pengaturan absensi GLOBAL untuk semua siswa:
+ *  - jam masuk, jam pulang, dan batas (durasi menit) jendela absensi.
+ * Nilai disimpan pada tabel pengaturans dan dipakai sebagai default jam siswa
+ * (kecuali siswa memiliki jam khusus industri yang sudah disetujui guru).
+ */
+public function pengaturanAbsensi(Request $request)
+{
+    $data = $request->validate([
+        'absensi_jam_masuk'    => ['required', 'date_format:H:i'],
+        'absensi_jam_pulang'   => ['required', 'date_format:H:i'],
+        'absensi_durasi_menit' => ['required', 'integer', 'min:1', 'max:1440'],
+    ], [
+        'absensi_jam_masuk.required'    => 'Jam masuk wajib diisi.',
+        'absensi_jam_masuk.date_format' => 'Format jam masuk harus HH:MM.',
+        'absensi_jam_pulang.required'   => 'Jam pulang wajib diisi.',
+        'absensi_jam_pulang.date_format'=> 'Format jam pulang harus HH:MM.',
+        'absensi_durasi_menit.required' => 'Batas absensi (menit) wajib diisi.',
+    ]);
+
+    Pengaturan::simpan('absensi_jam_masuk', $data['absensi_jam_masuk']);
+    Pengaturan::simpan('absensi_jam_pulang', $data['absensi_jam_pulang']);
+    Pengaturan::simpan('absensi_durasi_menit', (string) $data['absensi_durasi_menit']);
+
+    return back()->with('success', 'Pengaturan absensi berhasil disimpan.');
+}
+
+/**
+ * Admin membuka / menutup absensi tanpa mengikuti jadwal jam.
+ *  - mode "semua" : buka/tutup untuk SEMUA siswa (flag global absensi_paksa_buka).
+ *  - mode "nisn"  : buka/tutup untuk SATU siswa (dicocokkan berdasarkan NISN).
+ *  - aksi "buka"  : absensi terbuka bebas waktu; "tutup" : kembali ikut jadwal.
+ */
+public function bukaAbsensi(Request $request)
+{
+    $mode = $request->input('mode') === 'nisn' ? 'nisn' : 'semua';
+    $buka = $request->input('aksi') === 'buka';
+
+    if ($mode === 'semua') {
+        Pengaturan::simpan('absensi_paksa_buka', $buka ? '1' : '0');
+
+        // Saat menutup global, matikan juga pembukaan per-siswa agar semua
+        // benar-benar kembali mengikuti jadwal.
+        if (! $buka) {
+            User::where('role', 'siswa_pkl')->update(['absensi_dibuka' => false]);
+        }
+
+        return back()->with('success', $buka
+            ? 'Absensi DIBUKA untuk semua siswa (bebas waktu, tidak mengikuti jadwal).'
+            : 'Absensi ditutup untuk semua siswa. Kembali mengikuti jadwal jam.');
+    }
+
+    // mode "nisn": cocokkan NISN dengan data siswa PKL.
+    $nisn = trim((string) $request->input('nisn', ''));
+    if ($nisn === '') {
+        return back()->with('error', 'NISN wajib diisi untuk membuka/menutup absensi per siswa.');
+    }
+
+    $siswa = User::where('role', 'siswa_pkl')->where('nisn', $nisn)->first();
+    if (! $siswa) {
+        return back()->with('error', "Siswa dengan NISN {$nisn} tidak ditemukan.");
+    }
+
+    $siswa->absensi_dibuka = $buka;
+    $siswa->save();
+
+    return back()->with('success', $buka
+        ? "Absensi untuk {$siswa->name} (NISN {$nisn}) DIBUKA (bebas waktu)."
+        : "Absensi untuk {$siswa->name} (NISN {$nisn}) ditutup (kembali ikut jadwal).");
 }
 
 public function storeAbsensi(Request $request)

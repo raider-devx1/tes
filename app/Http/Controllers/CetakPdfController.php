@@ -393,7 +393,7 @@ private function rekapAbsensi($absensis): array
 }
 
 /** Bangun data lembar absensi: 1 siswa = 1 lembar, semua absensi jadi baris bernomor urut. */
-private function buildAbsensiLembar(User $siswa, ?string $bulan = null): array
+private function buildAbsensiLembar(User $siswa, ?string $bulan = null, ?string $status = null): array
 {
     $query = Absensi::where('siswa_id', $siswa->id);
 
@@ -401,6 +401,11 @@ private function buildAbsensiLembar(User $siswa, ?string $bulan = null): array
     if ($bulan) {
         $query->whereYear('tanggal', substr($bulan, 0, 4))
               ->whereMonth('tanggal', substr($bulan, 5, 2));
+    }
+
+    // Filter berdasarkan status kehadiran (Hadir/Izin/Sakit/Alpha).
+    if ($status) {
+        $query->where('status', $status);
     }
 
     $absensis = $query->orderBy('tanggal', 'asc')->get();
@@ -466,8 +471,13 @@ public function cetakAbsensiSemua()
         abort(403, 'Akses ditolak.');
     }
 
-    // Jika ada filter bulan (YYYY-MM) → batasi ke bulan itu, jika tidak → semua data.
-    $bulan = request()->filled('bulan') ? request('bulan') : null;
+    // Filter opsional dari halaman admin/guru:
+    //  - bulan  (YYYY-MM)
+    //  - kelas  (rekap per kelas)
+    //  - status (rekap berdasarkan status kehadiran: Hadir/Izin/Sakit/Alpha)
+    $bulan  = request()->filled('bulan')  ? request('bulan')  : null;
+    $kelas  = request()->filled('kelas')  ? request('kelas')  : null;
+    $status = request()->filled('status') ? request('status') : null;
 
     $query = User::where('role', 'siswa_pkl')
         ->where('status_pkl', 'aktif')
@@ -477,12 +487,17 @@ public function cetakAbsensiSemua()
         $query->where('guru_id', $user->id);
     }
 
+    // Filter cetak rekap per kelas.
+    if ($kelas) {
+        $query->where('kelas', $kelas);
+    }
+
     $siswas = $query->orderBy('name')->get();
 
     // Hanya sertakan siswa yang punya absensi (1 siswa = 1 halaman)
     $lembar = [];
     foreach ($siswas as $siswa) {
-        $data = $this->buildAbsensiLembar($siswa, $bulan);
+        $data = $this->buildAbsensiLembar($siswa, $bulan, $status);
         if ($data['absensis']->isNotEmpty()) {
             $lembar[] = $data;
         }
@@ -491,11 +506,19 @@ public function cetakAbsensiSemua()
     abort_if(empty($lembar), 404, 'Tidak ada data absensi untuk dicetak.');
 
     $pengaturan = $this->getPengaturan();
+    // Info filter untuk ditampilkan pada header PDF.
+    $filterInfo = array_filter([
+        'Bulan'  => $bulan,
+        'Kelas'  => $kelas,
+        'Status' => $status,
+    ]);
 
-    $pdf = Pdf::loadView('pdf.absensi', compact('lembar', 'pengaturan'))
+    $pdf = Pdf::loadView('pdf.absensi', compact('lembar', 'pengaturan', 'filterInfo'))
               ->setPaper('a4', 'portrait');
 
-    return $pdf->stream('Absensi_PKL_Semua'.($bulan ? '_'.$bulan : '').'.pdf');
+    $suffix = ($bulan ? '_'.$bulan : '').($kelas ? '_'.str_replace(' ', '', $kelas) : '').($status ? '_'.$status : '');
+
+    return $pdf->stream('Absensi_PKL_Rekap'.$suffix.'.pdf');
 }
 
    /**
@@ -510,9 +533,9 @@ public function cetakAbsensiSemua()
         $absensi = Absensi::where('siswa_id', $siswa->id)->get(); 
         
         // Menghitung status absensi (case-insensitive & handle berbagai enum)
-        $sakit = $absensi->where('status', 'Sakit')->count() + $absensi->where('status', 'sakit')->count();
-        $ijin  = $absensi->where('status', 'Izin')->count() + $absensi->where('status', 'izin')->count() + $absensi->where('status', 'Ijin')->count();
-        $alpa  = $absensi->where('status', 'Alpa')->count() + $absensi->where('status', 'alpa')->count() + $absensi->where('status', 'Tanpa Keterangan')->count();
+        $sakit = $absensi->filter(fn ($a) => strtolower($a->status) === 'sakit')->count();
+        $ijin  = $absensi->filter(fn ($a) => in_array(strtolower($a->status), ['izin', 'ijin'], true))->count();
+        $alpa  = $absensi->filter(fn ($a) => in_array(strtolower($a->status), ['alpha', 'alpa', 'tanpa keterangan'], true))->count();
 
         // Mengambil data Periode PKL
         $periodePkl = PeriodePkl::where('id', $siswa->periode_pkl_id)->first();
@@ -560,9 +583,84 @@ public function cetakAbsensiSemua()
         ];
 
         // Memuat view PDF dengan data yang sudah lengkap
-        $pdf = Pdf::loadView('pdf.nilai-guru', $data)->setPaper('a4', 'portrait');
+        $pdf = Pdf::loadView('pdf.nilai-guru', ['lembar' => [$data]])->setPaper('a4', 'portrait');
         
         return $pdf->stream('Nilai_PKL_Guru_'.$siswa->name.'.pdf');
+    }
+
+    // ====== 4b. NILAI GURU - CETAK SEMUA (format PDF Guru, 1 siswa = 1 halaman) ======
+    public function cetakNilaiGuruSemua()
+    {
+        $user = auth()->user();
+
+        $query = User::where('role', 'siswa_pkl');
+
+        if ($user->role === 'guru_pembimbing') {
+            $query->where('guru_id', $user->id);
+        } elseif ($user->role !== 'admin') {
+            abort(403, 'Akses ditolak.');
+        }
+
+        $siswas = $query->orderBy('name')->get();
+
+        $lembar = [];
+        foreach ($siswas as $siswa) {
+            $nilai = Nilai::where('user_id', $siswa->id)->first();
+
+            // Hanya sertakan siswa dengan nilai LENGKAP (6 komponen skor terisi)
+            $skorLengkap = $nilai
+                && $nilai->skor_soft_skill !== null
+                && $nilai->skor_hard_skill !== null
+                && $nilai->skor_pengembangan !== null
+                && $nilai->skor_kewirausahaan !== null
+                && $nilai->skor_laporan !== null
+                && $nilai->skor_presentasi !== null;
+
+            if (! $skorLengkap) {
+                continue;
+            }
+
+            // Rekap ketidakhadiran (case-insensitive & handle berbagai enum)
+            $absensi = Absensi::where('siswa_id', $siswa->id)->get();
+            $sakit = $absensi->filter(fn ($a) => strtolower($a->status) === 'sakit')->count();
+            $ijin  = $absensi->filter(fn ($a) => in_array(strtolower($a->status), ['izin', 'ijin'], true))->count();
+            $alpa  = $absensi->filter(fn ($a) => in_array(strtolower($a->status), ['alpha', 'alpa', 'tanpa keterangan'], true))->count();
+
+            // Periode PKL + fallback (sama seperti cetakNilaiGuruSatuan)
+            $periodePkl = PeriodePkl::where('id', $siswa->periode_pkl_id)->first();
+            $periode = $siswa->periodePkl ?? $siswa->periode_pkl ?? $periodePkl ?? (method_exists(PeriodePkl::class, 'aktif') ? PeriodePkl::aktif() : null);
+
+            $mulaiPkl = ($periode && $periode->tanggal_mulai)
+                ? \Carbon\Carbon::parse($periode->tanggal_mulai)
+                : \Carbon\Carbon::now();
+
+            $tahunAjaran = ($periode->tahun_ajaran ?? null) ?? ($mulaiPkl->format('Y') . '/' . $mulaiPkl->copy()->addYear()->format('Y'));
+            $namaPerusahaan = $siswa->perusahaan->nama_perusahaan ?? optional(optional($periode)->perusahaan)->nama_perusahaan ?? optional(optional($periode)->perusahaan)->nama ?? '-';
+
+            $tanggalMulaiFormat = ($periode && $periode->tanggal_mulai)
+                ? \Carbon\Carbon::parse($periode->tanggal_mulai)->translatedFormat('d F Y')
+                : '-';
+            $tanggalSelesaiFormat = ($periode && $periode->tanggal_selesai)
+                ? \Carbon\Carbon::parse($periode->tanggal_selesai)->translatedFormat('d F Y')
+                : '-';
+
+            $lembar[] = [
+                'siswa'                => $siswa,
+                'nilai'                => $nilai,
+                'sakit'                => $sakit,
+                'ijin'                 => $ijin,
+                'alpa'                 => $alpa,
+                'tahunAjaran'          => $tahunAjaran,
+                'namaPerusahaan'       => $namaPerusahaan,
+                'tanggalMulaiFormat'   => $tanggalMulaiFormat,
+                'tanggalSelesaiFormat' => $tanggalSelesaiFormat,
+            ];
+        }
+
+        abort_if(empty($lembar), 404, 'Belum ada nilai siswa lengkap yang bisa dicetak.');
+
+        $pdf = Pdf::loadView('pdf.nilai-guru', ['lembar' => $lembar])->setPaper('a4', 'portrait');
+        return $pdf->stream('Nilai_PKL_Guru_Semua.pdf');
     }
 
     // ====== 4c. NILAI - CETAK TEMPLATE KOSONG (untuk diisi instruktur saat observasi) ======
@@ -590,7 +688,7 @@ public function cetakTemplatePenilaianKosong($siswa_id = null)
         'nip_guru'          => $siswa->guru->nip ?? '-',
         'tanggal_cetak'     => Carbon::now()->locale('id')->translatedFormat('d F Y'),
         'nilai'             => new Nilai(),  // objek kosong -> semua skor kosong
-        'kehadiran'         => [],
+        'kehadiran'         => $this->rekapAbsensi(Absensi::where('siswa_id', $siswa->id)->get()),
         'isTemplate'        => true,         // tandai sebagai template kosong
     ];
 

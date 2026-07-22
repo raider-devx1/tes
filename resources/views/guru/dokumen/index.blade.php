@@ -1,4 +1,4 @@
-<x-app-layout>
+<x-app-layout title="Dokumen Siswa">
     <style>
         [x-cloak]{display:none!important;}
         /* ===== Pergantian tampilan berbasis lebar layar (sama seperti Jurnal/Nilai Guru) ===== */
@@ -10,19 +10,19 @@
         }
     </style>
 
-    <x-slot name="header">
-        <div class="flex items-center justify-between gap-4">
-            <h2 class="text-xl md:text-2xl font-bold tracking-tight text-black">Dokumen Siswa Bimbingan</h2>
-            <a href="{{ route('guru.dashboard') }}"
-               class="inline-flex items-center gap-1 rounded-xl border-2 border-[#0047d6]/25 bg-white px-4 py-2 text-sm font-bold text-[#0047d6] transition hover:bg-[#0047d6]/5">
-                Kembali ke Dashboard
-            </a>
-        </div>
-    </x-slot>
-
     <div class="py-8 md:py-12 bg-white min-h-screen">
         <div class="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 2xl:px-12 space-y-6">
-            <p class="text-sm font-medium text-[#5b616e]">Lihat &amp; unduh dokumen siswa bimbingan Anda sesuai hak akses.</p>
+            {{-- ===== HEADER ===== --}}
+            <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                <div>
+                    <h2 class="text-xl md:text-2xl font-bold tracking-tight text-black">Dokumen Siswa Bimbingan</h2>
+                    <p class="text-sm font-medium text-[#5b616e] mt-1">Lihat &amp; unduh dokumen siswa bimbingan Anda sesuai hak akses.</p>
+                </div>
+                <a href="{{ route('guru.dashboard') }}"
+                   class="inline-flex items-center justify-center gap-1 rounded-xl border-2 border-[#0047d6]/25 bg-white px-4 py-2 text-sm font-bold text-[#0047d6] transition hover:bg-[#0047d6]/5">
+                    Kembali ke Dashboard
+                </a>
+            </div>
 
             <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 <div class="rounded-2xl border-2 border-[#0047d6]/15 bg-white p-5 shadow-sm">
@@ -86,7 +86,7 @@
                 <div>
                     <label class="block text-xs font-bold uppercase tracking-wide text-black mb-1">Status Dokumen</label>
                     <select name="status"
-                            class="rounded-xl border-2 border-[#0047d6]/25 bg-white px-3 py-2.5 text-sm font-medium text-black focus:border-[#0047d6] focus:ring-2 focus:ring-[#0047d6]/30">
+                            class="rounded-xl border-2 border-[#0047d6]/25 bg-white pl-3 pr-10  py-2.5 text-sm font-medium text-black focus:border-[#0047d6] focus:ring-2 focus:ring-[#0047d6]/30">
                         <option value="">Semua</option>
                         <option value="lengkap" @selected(request('status') === 'lengkap')>Lengkap</option>
                         <option value="sebagian" @selected(request('status') === 'sebagian')>Sebagian</option>
