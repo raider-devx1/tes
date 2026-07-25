@@ -26,7 +26,7 @@
                     // Kompres + validasi maksimal 3 MB sebelum disalin ke input utama
                     const hasil = await window.prosesFotoMaks3MB(file);
                     if (!hasil.ok) {
-                        alert(hasil.pesan);
+                        window.swalPeringatan(hasil.pesan);
                         event.target.value = '';
                         // Kosongkan juga input utama supaya tidak ada file lama tertinggal
                         this.$refs.finalInput.value = '';
@@ -243,7 +243,7 @@
                                                 Edit
                                             </a>
                                             <form method="POST" action="{{ route('siswa.jurnal.destroy', $jurnal->id) }}"
-                                                  onsubmit="return confirm('Hapus jurnal {{ $tgl }}? Data yang dihapus tidak dapat dikembalikan.')">
+                                                  data-confirm="Konfirmasi" data-confirm-text="Hapus jurnal {{ $tgl }}? Data yang dihapus tidak dapat dikembalikan.">
                                                 @csrf
                                                 @method('DELETE')
                                                 <button type="submit" class="text-xs px-3 py-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 font-medium">Hapus</button>
@@ -466,7 +466,7 @@
                                                 </a>
                                                 <form method="POST" action="{{ route('siswa.jurnal.destroy', $jurnal->id) }}"
                                                       class="flex-1"
-                                                      onsubmit="return confirm('Hapus jurnal {{ $tgl }}? Data yang dihapus tidak dapat dikembalikan.')">
+                                                      data-confirm="Konfirmasi" data-confirm-text="Hapus jurnal {{ $tgl }}? Data yang dihapus tidak dapat dikembalikan.">
                                                     @csrf
                                                     @method('DELETE')
                                                     <button type="submit"

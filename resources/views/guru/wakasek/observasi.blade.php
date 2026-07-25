@@ -122,7 +122,7 @@
                                     </button>
                                     @if($isDiajukan)
                                         <form method="POST" action="{{ route('guru.wakasek.observasi.validasi', $obs->id) }}"
-                                              onsubmit="return confirm('Validasi lembar observasi ini? Setelah divalidasi, hasil cetak akan menampilkan SUDAH DIVALIDASI.')">
+                                              data-confirm="Konfirmasi" data-confirm-text="Validasi lembar observasi ini? Setelah divalidasi, hasil cetak akan menampilkan SUDAH DIVALIDASI.">
                                             @csrf @method('PUT')
                                             <button type="submit"
                                                     class="inline-flex items-center justify-center rounded-xl bg-[#05b169] px-4 py-2 text-xs font-bold text-white transition hover:bg-[#049457]">
@@ -131,7 +131,7 @@
                                         </form>
                                     @elseif($isTervalidasi)
                                         <form method="POST" action="{{ route('guru.wakasek.observasi.batal', $obs->id) }}"
-                                              onsubmit="return confirm('Batalkan validasi lembar observasi ini? Status akan kembali menunggu divalidasi.')">
+                                              data-confirm="Konfirmasi" data-confirm-text="Batalkan validasi lembar observasi ini? Status akan kembali menunggu divalidasi.">
                                             @csrf @method('PUT')
                                             <button type="submit"
                                                     class="inline-flex items-center justify-center rounded-xl bg-[#cf202f]/10 px-4 py-2 text-xs font-bold text-[#cf202f] transition hover:bg-[#cf202f]/20">
@@ -233,7 +233,7 @@
                                         </a>
                                         @if($isDiajukan)
                                             <form method="POST" action="{{ route('guru.wakasek.observasi.validasi', $obs->id) }}"
-                                                  onsubmit="return confirm('Validasi lembar observasi ini?')">
+                                                  data-confirm="Konfirmasi" data-confirm-text="Validasi lembar observasi ini?">
                                                 @csrf @method('PUT')
                                                 <button type="submit"
                                                         class="flex w-full items-center justify-center rounded-xl bg-[#05b169] px-4 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-[#049457]">
@@ -242,7 +242,7 @@
                                             </form>
                                         @elseif($isTervalidasi)
                                             <form method="POST" action="{{ route('guru.wakasek.observasi.batal', $obs->id) }}"
-                                                  onsubmit="return confirm('Batalkan validasi lembar observasi ini?')">
+                                                  data-confirm="Konfirmasi" data-confirm-text="Batalkan validasi lembar observasi ini?">
                                                 @csrf @method('PUT')
                                                 <button type="submit"
                                                         class="flex w-full items-center justify-center rounded-xl bg-[#cf202f]/10 px-4 py-3 text-sm font-bold text-[#cf202f] transition hover:bg-[#cf202f]/20">

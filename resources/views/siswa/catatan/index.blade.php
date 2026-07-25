@@ -218,7 +218,7 @@
                                                     Edit
                                                 </a>
                                                 <form method="POST" action="{{ route('siswa.catatan.destroy', $item) }}"
-                                                      onsubmit="return confirm('Hapus catatan ini? Data yang dihapus tidak dapat dikembalikan.')">
+                                                      data-confirm="Konfirmasi" data-confirm-text="Hapus catatan ini? Data yang dihapus tidak dapat dikembalikan.">
                                                     @csrf
                                                     @method('DELETE')
                                                     <button class="w-full text-xs px-3 py-1.5 rounded-xl bg-red-50 text-red-600 hover:bg-red-100 font-bold">Hapus</button>
@@ -391,7 +391,7 @@
                                                 </a>
                                                 <form method="POST" action="{{ route('siswa.catatan.destroy', $item) }}"
                                                       class="flex-1"
-                                                      onsubmit="return confirm('Hapus catatan ini? Data yang dihapus tidak dapat dikembalikan.')">
+                                                      data-confirm="Konfirmasi" data-confirm-text="Hapus catatan ini? Data yang dihapus tidak dapat dikembalikan.">
                                                     @csrf
                                                     @method('DELETE')
                                                     <button type="submit"

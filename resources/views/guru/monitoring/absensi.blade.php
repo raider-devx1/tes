@@ -106,109 +106,162 @@
                     </p>
                 </div>
 
+                {{-- Data siswa bimbingan untuk pencarian cepat via NISN (UX mobile) --}}
                 @php
-                    $jamBadge = fn($st) => match($st) {
-                        'diajukan'  => ['bg-[#d98200] text-white', 'Menunggu Validasi'],
-                        'disetujui' => ['bg-[#05b169] text-white', 'Jam Khusus Disetujui'],
-                        default     => ['bg-[#5b616e]/15 text-[#5b616e]', 'Mengikuti Jam Admin'],
-                    };
+                    $updateJamUrlTemplate = route('guru.absensi.jam.update', ['siswa' => '__ID__']);
+                    $siswaJamList = ($siswas ?? collect())->map(function ($s) {
+                        $st = $s->status_jam_usulan ?? 'none';
+                        return [
+                            'id'          => $s->id,
+                            'nisn'        => (string) ($s->nisn ?? ''),
+                            'name'        => $s->name,
+                            'kelas'       => $s->kelas ?? '-',
+                            'jm'          => substr($s->jamMasukEfektif(), 0, 5),
+                            'jp'          => substr($s->jamPulangEfektif(), 0, 5),
+                            'status'      => $st,
+                            'statusLabel' => match ($st) {
+                                'diajukan'  => 'Menunggu Validasi',
+                                'disetujui' => 'Jam Khusus Disetujui',
+                                default     => 'Mengikuti Jam Admin',
+                            },
+                        ];
+                    })->values();
                 @endphp
 
-                {{-- Prioritaskan yang mengajukan --}}
-                @if(($usulanJam ?? collect())->count())
-                    <div class="mb-4 rounded-xl border-2 border-[#d98200]/30 bg-[#d98200]/5 p-3">
-                        <p class="text-sm font-bold text-[#d98200] mb-2">Pengajuan menunggu validasi ({{ $usulanJam->count() }})</p>
-                        <div class="grid gap-3 md:grid-cols-2">
-                            @foreach($usulanJam as $s)
-                                <div class="rounded-xl border-2 border-[#0047d6]/15 bg-white p-4">
-                                    <div class="flex items-start justify-between gap-2">
-                                        <div class="min-w-0">
-                                            <p class="font-bold text-black truncate">{{ $s->name }}</p>
-                                            <p class="text-xs font-medium text-[#5b616e]">{{ $s->kelas ?? '-' }} · {{ $s->nisn ?? '-' }}</p>
-                                        </div>
-                                        <span class="inline-block rounded-full bg-[#d98200] px-2.5 py-1 text-[11px] font-bold text-white whitespace-nowrap">Diajukan</span>
-                                    </div>
-                                    <div class="mt-2 grid grid-cols-2 gap-2 text-xs">
-                                        <div class="rounded-lg bg-slate-50 p-2"><p class="font-bold uppercase tracking-wide text-[#5b616e]">Jam Admin</p><p class="font-bold text-black">{{ substr($jamAdmin['masuk'],0,5) }} – {{ substr($jamAdmin['pulang'],0,5) }}</p></div>
-                                        <div class="rounded-lg bg-[#0047d6]/5 p-2"><p class="font-bold uppercase tracking-wide text-[#5b616e]">Diajukan</p><p class="font-bold text-[#0047d6]">{{ substr($s->jam_masuk_usulan,0,5) }} – {{ substr($s->jam_pulang_usulan,0,5) }}</p></div>
-                                    </div>
-                                    @if($s->catatan_jam_usulan)
-                                        <p class="mt-2 rounded-lg border-l-4 border-[#d98200] bg-[#d98200]/5 p-2 text-xs font-medium italic text-black">“{{ $s->catatan_jam_usulan }}”</p>
-                                    @endif
-                                    <div class="mt-3 flex flex-wrap gap-2">
-                                        <form method="POST" action="{{ route('guru.absensi.jam.validasi', $s->id) }}" class="flex-1">
-                                            @csrf @method('PUT')
-                                            <input type="hidden" name="aksi" value="setuju">
-                                            <button type="submit" class="w-full rounded-xl bg-[#05b169] px-4 py-2 text-sm font-bold text-white transition hover:bg-[#049a5b]">Setujui</button>
-                                        </form>
-                                        <form method="POST" action="{{ route('guru.absensi.jam.validasi', $s->id) }}" class="flex-1">
-                                            @csrf @method('PUT')
-                                            <input type="hidden" name="aksi" value="tolak">
-                                            <button type="submit" class="w-full rounded-xl border-2 border-[#cf202f]/40 bg-white px-4 py-2 text-sm font-bold text-[#cf202f] transition hover:bg-[#cf202f]/5">Tolak</button>
-                                        </form>
-                                    </div>
-                                </div>
-                            @endforeach
-                        </div>
-                    </div>
-                @endif
-
-                {{-- Daftar semua siswa bimbingan + edit jam mandiri --}}
-                <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                    @forelse(($siswas ?? collect()) as $s)
-                        @php
-                            [$jbClass, $jbLabel] = $jamBadge($s->status_jam_usulan ?? 'none');
-                            $jmEf = substr($s->jamMasukEfektif(), 0, 5);
-                            $jpEf = substr($s->jamPulangEfektif(), 0, 5);
-                        @endphp
-                        <div x-data="{ openEdit: false }" x-effect="document.body.style.overflow = openEdit ? 'hidden' : ''"
-                             class="rounded-xl border-2 border-[#0047d6]/15 bg-white p-4">
-                            <div class="flex items-start justify-between gap-2">
-                                <div class="min-w-0">
-                                    <p class="font-bold text-black truncate">{{ $s->name }}</p>
-                                    <p class="text-xs font-medium text-[#5b616e]">{{ $s->kelas ?? '-' }} · {{ $s->nisn ?? '-' }}</p>
-                                </div>
-                                <span class="inline-block rounded-full px-2.5 py-1 text-[11px] font-bold whitespace-nowrap {{ $jbClass }}">{{ $jbLabel }}</span>
-                            </div>
-                            <p class="mt-2 text-sm font-bold text-black">Jam berlaku: <span class="text-[#0047d6]">{{ $jmEf }} – {{ $jpEf }}</span></p>
-                            <button type="button" @click="openEdit = true"
-                                    class="mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-xl border-2 border-[#0047d6]/25 bg-white px-4 py-2 text-sm font-bold text-[#0047d6] transition hover:bg-[#0047d6]/5">
-                                Edit Jam Kerja
+                <div class="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+                    {{-- ===== TOMBOL: LIHAT PENGAJUAN MENUNGGU VALIDASI ===== --}}
+                    @if(($usulanJam ?? collect())->count())
+                        <div x-data="{ openUsulan: false }" x-effect="document.body.style.overflow = openUsulan ? 'hidden' : ''" class="w-full sm:w-auto">
+                            <button type="button" @click="openUsulan = true"
+                                    class="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl border-2 border-[#d98200] bg-[#d98200]/5 px-4 py-2.5 text-sm font-bold text-[#d98200] transition hover:bg-[#d98200]/10">
+                                <span class="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-[#d98200] px-1.5 text-[11px] font-bold text-white">{{ $usulanJam->count() }}</span>
+                                Lihat Pengajuan Menunggu Validasi
                             </button>
 
                             <template x-teleport="body">
-                                <div x-show="openEdit" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4" @keydown.escape.window="openEdit=false">
-                                    <div class="absolute inset-0 bg-black/50" @click="openEdit=false"></div>
-                                    <div class="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-xl text-left">
-                                        <div class="flex items-center justify-between mb-4">
-                                            <h3 class="text-lg font-bold text-black">Edit Jam Kerja — {{ $s->name }}</h3>
-                                            <button type="button" @click="openEdit=false" class="text-2xl leading-none text-[#5b616e] hover:text-black">&times;</button>
+                                <div x-show="openUsulan" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4" @keydown.escape.window="openUsulan=false">
+                                    <div class="absolute inset-0 bg-black/50" @click="openUsulan=false"></div>
+                                    <div class="relative flex max-h-[85vh] w-full max-w-3xl flex-col rounded-2xl bg-white shadow-xl">
+                                        <div class="flex items-center justify-between border-b border-gray-100 px-5 py-4">
+                                            <div>
+                                                <h3 class="text-base font-bold text-black">Pengajuan Jam Menunggu Validasi</h3>
+                                                <p class="text-xs font-medium text-[#5b616e]">Total {{ $usulanJam->count() }} siswa mengajukan perubahan jam kerja.</p>
+                                            </div>
+                                            <button type="button" @click="openUsulan=false" class="text-2xl leading-none text-[#5b616e] hover:text-black">&times;</button>
                                         </div>
-                                        <p class="mb-4 text-xs font-medium text-[#5b616e]">Jam yang Anda simpan langsung berlaku sebagai jam kerja industri siswa (status disetujui).</p>
-                                        <form method="POST" action="{{ route('guru.absensi.jam.update', $s->id) }}" class="space-y-4">
-                                            @csrf @method('PUT')
-                                            <div class="grid grid-cols-2 gap-3">
-                                                <div>
-                                                    <label class="block text-xs font-bold uppercase tracking-wide text-black mb-1">Jam Masuk</label>
-                                                    <x-jam-picker name="jam_masuk_industri" :value="$jmEf" required />
-                                                </div>
-                                                <div>
-                                                    <label class="block text-xs font-bold uppercase tracking-wide text-black mb-1">Jam Pulang</label>
-                                                    <x-jam-picker name="jam_pulang_industri" :value="$jpEf" required />
-                                                </div>
+                                        <div class="overflow-y-auto px-5 py-4">
+                                            <div class="grid gap-3 md:grid-cols-2">
+                                                @foreach($usulanJam as $s)
+                                                    <div class="rounded-xl border-2 border-[#0047d6]/15 bg-white p-4">
+                                                        <div class="flex items-start justify-between gap-2">
+                                                            <div class="min-w-0">
+                                                                <p class="font-bold text-black truncate">{{ $s->name }}</p>
+                                                                <p class="text-xs font-medium text-[#5b616e]">{{ $s->kelas ?? '-' }} · {{ $s->nisn ?? '-' }}</p>
+                                                            </div>
+                                                            <span class="inline-block rounded-full bg-[#d98200] px-2.5 py-1 text-[11px] font-bold text-white whitespace-nowrap">Diajukan</span>
+                                                        </div>
+                                                        <div class="mt-2 grid grid-cols-2 gap-2 text-xs">
+                                                            <div class="rounded-lg bg-slate-50 p-2"><p class="font-bold uppercase tracking-wide text-[#5b616e]">Jam Admin</p><p class="font-bold text-black">{{ substr($jamAdmin['masuk'],0,5) }} – {{ substr($jamAdmin['pulang'],0,5) }}</p></div>
+                                                            <div class="rounded-lg bg-[#0047d6]/5 p-2"><p class="font-bold uppercase tracking-wide text-[#5b616e]">Diajukan</p><p class="font-bold text-[#0047d6]">{{ substr($s->jam_masuk_usulan,0,5) }} – {{ substr($s->jam_pulang_usulan,0,5) }}</p></div>
+                                                        </div>
+                                                        @if($s->catatan_jam_usulan)
+                                                            <p class="mt-2 rounded-lg border-l-4 border-[#d98200] bg-[#d98200]/5 p-2 text-xs font-medium italic text-black">“{{ $s->catatan_jam_usulan }}”</p>
+                                                        @endif
+                                                        <div class="mt-3 flex flex-wrap gap-2">
+                                                            <form method="POST" action="{{ route('guru.absensi.jam.validasi', $s->id) }}" class="flex-1">
+                                                                @csrf @method('PUT')
+                                                                <input type="hidden" name="aksi" value="setuju">
+                                                                <button type="submit" class="w-full rounded-xl bg-[#05b169] px-4 py-2 text-sm font-bold text-white transition hover:bg-[#049a5b]">Setujui</button>
+                                                            </form>
+                                                            <form method="POST" action="{{ route('guru.absensi.jam.validasi', $s->id) }}" class="flex-1">
+                                                                @csrf @method('PUT')
+                                                                <input type="hidden" name="aksi" value="tolak">
+                                                                <button type="submit" class="w-full rounded-xl border-2 border-[#cf202f]/40 bg-white px-4 py-2 text-sm font-bold text-[#cf202f] transition hover:bg-[#cf202f]/5">Tolak</button>
+                                                            </form>
+                                                        </div>
+                                                    </div>
+                                                @endforeach
                                             </div>
-                                            <div class="flex justify-end gap-2 pt-2">
-                                                <button type="button" @click="openEdit=false" class="rounded-xl border-2 border-[#0047d6]/25 bg-white px-4 py-2 text-sm font-bold text-[#0047d6] transition hover:bg-[#0047d6]/5">Batal</button>
-                                                <button type="submit" class="rounded-xl bg-[#0047d6] px-4 py-2 text-sm font-bold text-white transition hover:bg-[#0038aa]">Simpan Jam</button>
-                                            </div>
-                                        </form>
+                                        </div>
                                     </div>
                                 </div>
                             </template>
                         </div>
-                    @empty
+                    @endif
+
+                    {{-- ===== TOMBOL: CARI & EDIT JAM KERJA via NISN ===== --}}
+                    @if(($siswas ?? collect())->isEmpty())
                         <p class="text-sm font-medium text-[#5b616e] italic">Belum ada siswa bimbingan.</p>
-                    @endforelse
+                    @else
+                        <div x-data="jamFinder(@js($siswaJamList), '{{ $updateJamUrlTemplate }}')" x-effect="document.body.style.overflow = open ? 'hidden' : ''" class="w-full sm:w-auto">
+                            <button type="button" @click="bukaModal()"
+                                    class="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-[#0047d6] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#0038aa]">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z"/></svg>
+                                Cari &amp; Edit Jam Kerja Siswa
+                            </button>
+
+                            <template x-teleport="body">
+                                <div x-show="open" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4" @keydown.escape.window="tutupModal()">
+                                    <div class="absolute inset-0 bg-black/50" @click="tutupModal()"></div>
+                                    <div class="relative flex max-h-[85vh] w-full max-w-md flex-col rounded-2xl bg-white shadow-xl">
+                                        <div class="flex items-center justify-between border-b border-gray-100 px-5 py-4">
+                                            <h3 class="text-base font-bold text-black">Cari &amp; Edit Jam Kerja Siswa</h3>
+                                            <button type="button" @click="tutupModal()" class="text-2xl leading-none text-[#5b616e] hover:text-black">&times;</button>
+                                        </div>
+                                        <div class="overflow-y-auto px-5 py-4 space-y-4 text-left">
+                                            <div>
+                                                <label class="mb-1 block text-xs font-bold uppercase tracking-wide text-black">NISN Siswa</label>
+                                                <div class="flex gap-2">
+                                                    <input type="text" x-model="nisn" @keydown.enter.prevent="cari()" inputmode="numeric" placeholder="Masukkan NISN siswa..."
+                                                           class="w-full rounded-xl border-2 border-[#0047d6]/25 bg-white px-4 py-2.5 text-sm font-medium text-black placeholder-[#a8acb3] focus:border-[#0047d6] focus:ring-2 focus:ring-[#0047d6]/30">
+                                                    <button type="button" @click="cari()" class="shrink-0 rounded-xl bg-[#0047d6] px-4 py-2.5 text-sm font-bold text-white hover:bg-[#0038aa]">Cari</button>
+                                                </div>
+                                                <p x-show="pesanError" x-cloak x-text="pesanError" class="mt-1 text-xs font-bold text-[#cf202f]"></p>
+                                                <p class="mt-1 text-xs font-medium text-[#5b616e]">Masukkan NISN siswa bimbingan Anda untuk menampilkan &amp; mengubah jam kerjanya.</p>
+                                            </div>
+
+                                            <template x-if="siswa">
+                                                <div class="space-y-4">
+                                                    <div class="rounded-xl border-2 border-[#0047d6]/15 bg-slate-50 p-4">
+                                                        <div class="flex items-start justify-between gap-2">
+                                                            <div class="min-w-0">
+                                                                <p class="font-bold text-black truncate" x-text="siswa.name"></p>
+                                                                <p class="text-xs font-medium text-[#5b616e]"><span x-text="siswa.kelas"></span> · <span x-text="siswa.nisn"></span></p>
+                                                            </div>
+                                                            <span class="inline-block rounded-full bg-[#0047d6]/10 px-2.5 py-1 text-[11px] font-bold text-[#0047d6] whitespace-nowrap" x-text="siswa.statusLabel"></span>
+                                                        </div>
+                                                        <p class="mt-2 text-sm font-bold text-black">Jam berlaku saat ini: <span class="text-[#0047d6]" x-text="siswa.jm + ' – ' + siswa.jp"></span></p>
+                                                    </div>
+
+                                                    <form :action="actionUrl" method="POST" class="space-y-4">
+                                                        @csrf
+                                                        @method('PUT')
+                                                        <p class="text-xs font-medium text-[#5b616e]">Jam yang Anda simpan langsung berlaku sebagai jam kerja industri siswa (status disetujui).</p>
+                                                        <div class="grid grid-cols-2 gap-3">
+                                                            <div>
+                                                                <label class="block text-xs font-bold uppercase tracking-wide text-black mb-1">Jam Masuk</label>
+                                                                <input type="time" name="jam_masuk_industri" x-model="form.jm" required
+                                                                       class="w-full rounded-xl border-2 border-[#0047d6]/25 bg-white px-3 py-2.5 text-sm font-medium text-black focus:border-[#0047d6] focus:ring-2 focus:ring-[#0047d6]/30">
+                                                            </div>
+                                                            <div>
+                                                                <label class="block text-xs font-bold uppercase tracking-wide text-black mb-1">Jam Pulang</label>
+                                                                <input type="time" name="jam_pulang_industri" x-model="form.jp" required
+                                                                       class="w-full rounded-xl border-2 border-[#0047d6]/25 bg-white px-3 py-2.5 text-sm font-medium text-black focus:border-[#0047d6] focus:ring-2 focus:ring-[#0047d6]/30">
+                                                            </div>
+                                                        </div>
+                                                        <div class="flex justify-end gap-2 pt-2">
+                                                            <button type="button" @click="tutupModal()" class="rounded-xl border-2 border-[#0047d6]/25 bg-white px-4 py-2 text-sm font-bold text-[#0047d6] hover:bg-[#0047d6]/5">Batal</button>
+                                                            <button type="submit" class="rounded-xl bg-[#0047d6] px-4 py-2 text-sm font-bold text-white hover:bg-[#0038aa]">Simpan Jam</button>
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                            </template>
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    @endif
                 </div>
             </div>
 
@@ -462,4 +515,49 @@
             <div class="mt-4">{!! $absensi->links() !!}</div>
         </div>
     </div>
+
+    {{-- ===== Alpine: pencarian & edit jam kerja siswa via NISN ===== --}}
+    <script>
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('jamFinder', (list, urlTemplate) => ({
+                open: false,
+                nisn: '',
+                siswa: null,
+                pesanError: '',
+                form: { jm: '', jp: '' },
+                list: Array.isArray(list) ? list : [],
+                urlTemplate: urlTemplate || '',
+                get actionUrl() {
+                    return this.siswa ? this.urlTemplate.replace('__ID__', this.siswa.id) : '';
+                },
+                bukaModal() {
+                    this.open = true;
+                    this.nisn = '';
+                    this.siswa = null;
+                    this.pesanError = '';
+                },
+                tutupModal() {
+                    this.open = false;
+                },
+                cari() {
+                    const n = (this.nisn || '').trim();
+                    if (!n) {
+                        this.siswa = null;
+                        this.pesanError = 'Masukkan NISN terlebih dahulu.';
+                        return;
+                    }
+                    const found = this.list.find((x) => String(x.nisn) === n);
+                    if (!found) {
+                        this.siswa = null;
+                        this.pesanError = 'NISN tidak ditemukan atau bukan siswa bimbingan Anda.';
+                        return;
+                    }
+                    this.pesanError = '';
+                    this.siswa = found;
+                    this.form.jm = found.jm || '';
+                    this.form.jp = found.jp || '';
+                },
+            }));
+        });
+    </script>
 </x-app-layout>

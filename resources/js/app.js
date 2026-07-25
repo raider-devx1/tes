@@ -74,6 +74,20 @@ window.kompresGambar = async function (file, opsi = {}) {
     return new File([blob], namaBaru, { type: 'image/jpeg', lastModified: Date.now() });
 };
 
+// ===== Helper notifikasi modern (SweetAlert) pengganti alert() bawaan browser =====
+window.swalPeringatan = function (pesan, judul) {
+    if (window.Swal) {
+        return window.Swal.fire({
+            icon: 'warning',
+            title: judul || 'Perhatian',
+            text: pesan,
+            confirmButtonText: 'Mengerti',
+            confirmButtonColor: '#0047d6',
+        });
+    }
+    window.alert(pesan);
+};
+
 // ===== Validasi batas 3 MB + kompres =====
 // Mengembalikan { ok, file, pesan }.
 // - Kalau bukan gambar: diteruskan apa adanya (ok = true).
@@ -134,7 +148,7 @@ document.addEventListener('change', async function (e) {
                 const hasil = await window.prosesFotoMaks3MB(f);
                 if (!hasil.ok) {
                     // Foto terlalu besar -> tolak, kosongkan input, beri peringatan.
-                    alert(hasil.pesan);
+                    window.swalPeringatan(hasil.pesan);
                     input.value = '';
                     input.dispatchEvent(new Event('input', { bubbles: true }));
                     return;

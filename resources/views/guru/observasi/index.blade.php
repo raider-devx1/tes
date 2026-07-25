@@ -266,7 +266,7 @@
                                                     Edit
                                                 </a>
                                                 <form method="POST" action="{{ route('guru.observasi.destroy', $obs->id) }}"
-                                                      onsubmit="return confirm('Hapus observasi ini? Seluruh poin permasalahan & solusi pada observasi ini akan ikut terhapus.')">
+                                                      data-confirm="Konfirmasi" data-confirm-text="Hapus observasi ini? Seluruh poin permasalahan & solusi pada observasi ini akan ikut terhapus.">
                                                     @csrf
                                                     @method('DELETE')
                                                     <button type="submit"
@@ -520,7 +520,7 @@
                                             </a>
                                             <form method="POST" action="{{ route('guru.observasi.destroy', $obs->id) }}"
                                                   class="flex-1"
-                                                  onsubmit="return confirm('Hapus observasi ini? Seluruh poin permasalahan & solusi pada observasi ini akan ikut terhapus.')">
+                                                  data-confirm="Konfirmasi" data-confirm-text="Hapus observasi ini? Seluruh poin permasalahan & solusi pada observasi ini akan ikut terhapus.">
                                                 @csrf
                                                 @method('DELETE')
                                                 <button type="submit"

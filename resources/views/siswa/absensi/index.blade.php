@@ -217,7 +217,7 @@
                                 <button type="button" @click="openAbsen=false" class="text-[#5b616e] hover:text-black text-xl leading-none">&times;</button>
                             </div>
                             <form method="POST" action="{{ route('siswa.absensi.store') }}" enctype="multipart/form-data" class="space-y-4"
-                                  @submit="if (!terbuka) { $event.preventDefault(); alert('Halaman absensi sudah tertutup.'); }">
+                                  @submit="if (!terbuka) { $event.preventDefault(); window.swalPeringatan('Halaman absensi sudah tertutup.'); }">
                                 @csrf
                                 <div>
                                     <label class="block text-xs font-bold uppercase tracking-wide text-black mb-1">Status Kehadiran</label>
@@ -242,7 +242,7 @@
                                     </label>
                                     <input type="file" name="foto_bukti" accept="image/*" required
                                            class="w-full rounded-xl border-2 border-[#0047d6]/25 bg-white px-3 py-2.5 text-sm font-medium text-black file:mr-3 file:rounded-lg file:border-0 file:bg-[#0047d6] file:px-3 file:py-1.5 file:text-white">
-                                    <p class="mt-1 text-[11px] font-medium text-[#5b616e]">Format jpg/jpeg/png, maksimal 2MB.</p>
+                                    <p class="mt-1 text-[11px] font-medium text-[#5b616e]">Format jpg/jpeg/png, maksimal 3MB.</p>
                                 </div>
 
                                 <div>

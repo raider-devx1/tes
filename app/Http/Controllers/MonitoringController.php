@@ -398,11 +398,104 @@ public function absensi(Request $request)
         ->orderBy('name')
         ->get(['id', 'name', 'nisn', 'absensi_dibuka', 'absensi_dibuka_masuk', 'absensi_dibuka_pulang']);
 
+    // Data jam kerja industri per siswa (untuk pencarian & edit via NISN oleh admin).
+    $siswaJam = User::where('role', 'siswa_pkl')
+        ->where('status_pkl', '!=', 'selesai')
+        ->orderBy('name')
+        ->get(['id', 'name', 'nisn', 'kelas', 'jam_masuk_industri', 'jam_pulang_industri', 'jam_masuk_usulan', 'jam_pulang_usulan', 'status_jam_usulan', 'catatan_jam_usulan']);
+
+    // Pengajuan jam yang masih menunggu validasi admin.
+    $usulanJam = $siswaJam->where('status_jam_usulan', 'diajukan')->values();
+
+    // Jam global admin sebagai acuan tampilan.
+    $jamAdmin = [
+        'masuk'  => $pengaturanAbsensi['jam_masuk'],
+        'pulang' => $pengaturanAbsensi['jam_pulang'],
+    ];
+
     return view('admin.monitoring.absensi', array_merge(
-        compact('absensi', 'q', 'status', 'tanggal', 'bulan', 'kelas', 'jurusan', 'rekap', 'tanggalDefault', 'pengaturanAbsensi', 'paksaBuka', 'paksaMasuk', 'paksaPulang'),
+        compact('absensi', 'q', 'status', 'tanggal', 'bulan', 'kelas', 'jurusan', 'rekap', 'tanggalDefault', 'pengaturanAbsensi', 'paksaBuka', 'paksaMasuk', 'paksaPulang', 'siswaJam', 'usulanJam', 'jamAdmin'),
         ['siswaList' => $this->siswaList(), 'dibukaList' => $dibukaList],
         $this->opsiFilter()
     ));
+}
+
+/**
+ * Admin menyimpan / mengubah jam kerja industri seorang siswa secara langsung.
+ * Jam yang disimpan langsung berlaku sebagai jam khusus (status disetujui).
+ */
+public function updateJamAbsensi(Request $request, $siswa)
+{
+    $siswa = User::where('id', $siswa)->where('role', 'siswa_pkl')->firstOrFail();
+
+    $validated = $request->validate([
+        'jam_masuk_industri'  => ['required', 'regex:/^\d{1,2}:\d{2}(:\d{2})?$/'],
+        'jam_pulang_industri' => ['required', 'regex:/^\d{1,2}:\d{2}(:\d{2})?$/'],
+    ], [
+        'jam_masuk_industri.required'  => 'Jam masuk wajib diisi.',
+        'jam_pulang_industri.required' => 'Jam pulang wajib diisi.',
+        'jam_masuk_industri.regex'     => 'Format jam masuk harus HH:MM.',
+        'jam_pulang_industri.regex'    => 'Format jam pulang harus HH:MM.',
+    ]);
+
+    $siswa->update([
+        'jam_masuk_industri'  => $this->normalizeJam($validated['jam_masuk_industri']),
+        'jam_pulang_industri' => $this->normalizeJam($validated['jam_pulang_industri']),
+        'status_jam_usulan'   => 'disetujui',
+        'jam_masuk_usulan'    => null,
+        'jam_pulang_usulan'   => null,
+        'catatan_jam_usulan'  => null,
+    ]);
+
+    return back()->with('success', "Jam kerja industri {$siswa->name} berhasil diperbarui.");
+}
+
+/**
+ * Admin menyetujui / menolak pengajuan jam kerja industri siswa.
+ */
+public function validasiJamAbsensi(Request $request, $siswa)
+{
+    $siswa = User::where('id', $siswa)->where('role', 'siswa_pkl')->firstOrFail();
+    $aksi  = $request->input('aksi') === 'tolak' ? 'tolak' : 'setuju';
+
+    if ($aksi === 'tolak') {
+        $siswa->update([
+            'status_jam_usulan'  => 'none',
+            'jam_masuk_usulan'   => null,
+            'jam_pulang_usulan'  => null,
+            'catatan_jam_usulan' => null,
+        ]);
+
+        return back()->with('success', "Pengajuan jam {$siswa->name} ditolak. Siswa kembali memakai jam admin.");
+    }
+
+    $siswa->update([
+        'jam_masuk_industri'  => $this->normalizeJam($siswa->jam_masuk_usulan),
+        'jam_pulang_industri' => $this->normalizeJam($siswa->jam_pulang_usulan),
+        'status_jam_usulan'   => 'disetujui',
+        'jam_masuk_usulan'    => null,
+        'jam_pulang_usulan'   => null,
+        'catatan_jam_usulan'  => null,
+    ]);
+
+    return back()->with('success', "Pengajuan jam {$siswa->name} disetujui dan diterapkan.");
+}
+
+/** Normalisasi string jam ke format HH:MM:SS. */
+private function normalizeJam(?string $value): ?string
+{
+    if (blank($value)) {
+        return null;
+    }
+
+    $value = substr(trim($value), 0, 8);
+    $parts = explode(':', $value);
+
+    $jam   = str_pad((string) (int) ($parts[0] ?? 0), 2, '0', STR_PAD_LEFT);
+    $menit = str_pad((string) (int) ($parts[1] ?? 0), 2, '0', STR_PAD_LEFT);
+    $detik = str_pad((string) (int) ($parts[2] ?? 0), 2, '0', STR_PAD_LEFT);
+
+    return "{$jam}:{$menit}:{$detik}";
 }
 
 /**

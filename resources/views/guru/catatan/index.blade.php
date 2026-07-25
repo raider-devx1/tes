@@ -212,7 +212,7 @@
                                                         </div>
                                                         <div class="flex justify-end gap-2 border-t-2 border-[#0047d6]/15 px-5 py-3">
                                                             <form action="{{ route('guru.catatan.validasi', $item->id) }}" method="POST"
-                                                                  onsubmit="return confirm('Tolak pengajuan ini? Catatan dikembalikan ke siswa (draft).')">
+                                                                  data-confirm="Konfirmasi" data-confirm-text="Tolak pengajuan ini? Catatan dikembalikan ke siswa (draft).">
                                                                 @csrf @method('PUT')
                                                                 <input type="hidden" name="aksi" value="tolak">
                                                                 <button type="submit" class="rounded-xl bg-[#cf202f]/10 px-4 py-2 text-sm font-bold text-[#cf202f] hover:bg-[#cf202f]/20">Tolak</button>
@@ -374,7 +374,7 @@
                                     @if($item->status === 'diajukan')
                                         <div class="flex gap-2">
                                             <form action="{{ route('guru.catatan.validasi', $item->id) }}" method="POST" class="flex-1"
-                                                  onsubmit="return confirm('Tolak pengajuan ini? Catatan dikembalikan ke siswa (draft).')">
+                                                  data-confirm="Konfirmasi" data-confirm-text="Tolak pengajuan ini? Catatan dikembalikan ke siswa (draft).">
                                                 @csrf @method('PUT')
                                                 <input type="hidden" name="aksi" value="tolak">
                                                 <button type="submit" class="w-full rounded-xl bg-[#cf202f]/10 px-4 py-2.5 text-sm font-bold text-[#cf202f] hover:bg-[#cf202f]/20">Tolak</button>

@@ -103,26 +103,26 @@
                                         <div class="flex items-center justify-end gap-2">
                                             @if($g->is_wakasek)
                                                 <form method="POST" action="{{ route('admin.guru.batalkan-wakasek', $g) }}"
-                                                      onsubmit="return confirm('Batalkan status Wakasek untuk guru ini?')">
+                                                      data-confirm="Konfirmasi" data-confirm-text="Batalkan status Wakasek untuk guru ini?">
                                                     @csrf @method('PUT')
                                                     <button type="submit" class="text-xs px-3 py-1.5 rounded-lg bg-amber-50 text-amber-700 hover:bg-amber-100">Batalkan Wakasek</button>
                                                 </form>
                                             @else
                                                 <form method="POST" action="{{ route('admin.guru.jadikan-wakasek', $g) }}"
-                                                      onsubmit="return confirm('Jadikan guru ini sebagai Wakasek?')">
+                                                      data-confirm="Konfirmasi" data-confirm-text="Jadikan guru ini sebagai Wakasek?">
                                                     @csrf @method('PUT')
                                                     <button type="submit" class="text-xs px-3 py-1.5 rounded-lg bg-purple-50 text-purple-700 hover:bg-purple-100">Jadikan Wakasek</button>
                                                 </form>
                                             @endif
                                             @if($g->is_admin)
                                                 <form method="POST" action="{{ route('admin.guru.batalkan-admin', $g) }}"
-                                                      onsubmit="return confirm('Batalkan akses admin untuk guru ini?')">
+                                                      data-confirm="Konfirmasi" data-confirm-text="Batalkan akses admin untuk guru ini?">
                                                     @csrf @method('PUT')
                                                     <button type="submit" class="text-xs px-3 py-1.5 rounded-lg bg-amber-50 text-amber-700 hover:bg-amber-100">Batalkan Admin</button>
                                                 </form>
                                             @else
                                                 <form method="POST" action="{{ route('admin.guru.jadikan-admin', $g) }}"
-                                                      onsubmit="return confirm('Jadikan guru ini juga sebagai Admin?')">
+                                                      data-confirm="Konfirmasi" data-confirm-text="Jadikan guru ini juga sebagai Admin?">
                                                     @csrf @method('PUT')
                                                     <button type="submit" class="text-xs px-3 py-1.5 rounded-lg bg-indigo-50 text-indigo-700 hover:bg-indigo-100">Jadikan Admin</button>
                                                 </form>
@@ -248,12 +248,12 @@
                         <p class="mt-0.5 text-sm font-medium" :class="detailData.is_wakasek ? 'text-purple-700' : 'text-gray-500'"
                            x-text="detailData.is_wakasek ? 'Wakasek (dapat memvalidasi observasi)' : 'Bukan Wakasek'"></p>
                         <form method="POST" x-show="!detailData.is_wakasek" :action="detailData.jadikan_url" class="mt-2"
-                              onsubmit="return confirm('Jadikan guru ini sebagai Wakasek?')">
+                              data-confirm="Konfirmasi" data-confirm-text="Jadikan guru ini sebagai Wakasek?">
                             @csrf @method('PUT')
                             <button type="submit" class="w-full rounded-xl bg-purple-50 px-3 py-2.5 text-sm font-semibold text-purple-700 transition hover:bg-purple-100">Jadikan Wakasek</button>
                         </form>
                         <form method="POST" x-show="detailData.is_wakasek" x-cloak :action="detailData.batalkan_url" class="mt-2"
-                              onsubmit="return confirm('Batalkan status Wakasek untuk guru ini?')">
+                              data-confirm="Konfirmasi" data-confirm-text="Batalkan status Wakasek untuk guru ini?">
                             @csrf @method('PUT')
                             <button type="submit" class="w-full rounded-xl bg-amber-50 px-3 py-2.5 text-sm font-semibold text-amber-700 transition hover:bg-amber-100">Batalkan Wakasek</button>
                         </form>
@@ -263,12 +263,12 @@
                         <p class="mt-0.5 text-sm font-medium" :class="detailData.is_admin ? 'text-indigo-700' : 'text-gray-500'"
                            x-text="detailData.is_admin ? 'Dapat mengakses panel admin' : 'Tidak punya akses admin'"></p>
                         <form method="POST" x-show="!detailData.is_admin" :action="detailData.jadikan_admin_url" class="mt-2"
-                              onsubmit="return confirm('Jadikan guru ini juga sebagai Admin?')">
+                              data-confirm="Konfirmasi" data-confirm-text="Jadikan guru ini juga sebagai Admin?">
                             @csrf @method('PUT')
                             <button type="submit" class="w-full rounded-xl bg-indigo-50 px-3 py-2.5 text-sm font-semibold text-indigo-700 transition hover:bg-indigo-100">Jadikan Admin</button>
                         </form>
                         <form method="POST" x-show="detailData.is_admin" x-cloak :action="detailData.batalkan_admin_url" class="mt-2"
-                              onsubmit="return confirm('Batalkan akses admin untuk guru ini?')">
+                              data-confirm="Konfirmasi" data-confirm-text="Batalkan akses admin untuk guru ini?">
                             @csrf @method('PUT')
                             <button type="submit" class="w-full rounded-xl bg-amber-50 px-3 py-2.5 text-sm font-semibold text-amber-700 transition hover:bg-amber-100">Batalkan Admin</button>
                         </form>
