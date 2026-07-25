@@ -31,6 +31,8 @@
             faseServer: '{{ $jendela['fase'] }}',
             terbukaServer: {{ $jendela['terbuka'] ? 'true' : 'false' }},
             paksa: {{ ($jendela['paksa'] ?? false) ? 'true' : 'false' }},
+            masukPaksa: {{ ($jendela['masuk_paksa'] ?? false) ? 'true' : 'false' }},
+            pulangPaksa: {{ ($jendela['pulang_paksa'] ?? false) ? 'true' : 'false' }},
             sudahHadir: {{ ($absensiHariIni && $absensiHariIni->status === 'Hadir' && $absensiHariIni->jam_masuk) ? 'true' : 'false' }},
             sudahPulang: {{ ($absensiHariIni && $absensiHariIni->jam_pulang) ? 'true' : 'false' }}
          })"
@@ -289,7 +291,6 @@
                                 <th class="px-4 py-3 text-center font-bold w-24">Masuk</th>
                                 <th class="px-4 py-3 text-center font-bold w-24">Pulang</th>
                                 <th class="px-4 py-3 text-center font-bold w-48">Validasi</th>
-                                <th class="px-4 py-3 text-center font-bold w-40">Aksi</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-[#0047d6]/10">
@@ -312,21 +313,9 @@
                                             <div class="mt-1"><a href="{{ asset('storage/'.$a->foto_bukti) }}" download target="_blank" rel="noopener" class="text-xs font-bold text-[#0047d6] underline hover:text-[#0038aa]">Lihat Bukti</a></div>
                                         @endif
                                     </td>
-                                    <td class="px-4 py-3">
-                                        <div class="flex items-center justify-center gap-2">
-                                            @if(($a->status_validasi ?? 'draft') === 'draft')
-                                                <form method="POST" action="{{ route('siswa.absensi.destroy', $a->id) }}" onsubmit="return confirm('Hapus absensi ini?')">
-                                                    @csrf @method('DELETE')
-                                                    <button type="submit" class="inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-bold text-white transition hover:opacity-90" style="background-color:#cf202f;">Hapus</button>
-                                                </form>
-                                            @else
-                                                <span class="text-xs font-medium text-[#5b616e]">—</span>
-                                            @endif
-                                        </div>
-                                    </td>
                                 </tr>
                             @empty
-                                <tr><td colspan="7" class="px-4 py-10 text-center text-sm font-medium text-[#5b616e]">Belum ada data absensi.</td></tr>
+                                <tr><td colspan="6" class="px-4 py-10 text-center text-sm font-medium text-[#5b616e]">Belum ada data absensi.</td></tr>
                             @endforelse
                         </tbody>
                     </table>
@@ -354,12 +343,6 @@
                                 <span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-bold {{ $svBadge }}">{{ $svLabel }}</span>
                                 @if($a->foto_bukti)<a href="{{ asset('storage/'.$a->foto_bukti) }}" download target="_blank" rel="noopener" class="text-xs font-bold text-[#0047d6] underline">Lihat Bukti</a>@endif
                             </div>
-                            @if(($a->status_validasi ?? 'draft') === 'draft')
-                                <form method="POST" action="{{ route('siswa.absensi.destroy', $a->id) }}" class="mt-3" onsubmit="return confirm('Hapus absensi ini?')">
-                                    @csrf @method('DELETE')
-                                    <button type="submit" class="w-full rounded-xl px-4 py-2 text-xs font-bold text-white" style="background-color:#cf202f;">Hapus</button>
-                                </form>
-                            @endif
                         </div>
                     @empty
                         <div class="rounded-xl border-2 border-[#0047d6]/15 p-6 text-center text-sm font-medium text-[#5b616e]">Belum ada data absensi.</div>
@@ -387,6 +370,8 @@
                 fase: cfg.faseServer,
                 terbuka: cfg.terbukaServer,
                 paksa: cfg.paksa,
+                masukPaksa: cfg.masukPaksa,
+                pulangPaksa: cfg.pulangPaksa,
                 sudahHadir: cfg.sudahHadir,
                 sudahPulang: cfg.sudahPulang,
                 status: 'Hadir',
@@ -409,12 +394,25 @@
                     this.fase = fase; this.terbuka = terbuka;
                     const hhmm = String(Math.floor(n / 60)).padStart(2, '0') + ':' + String(n % 60).padStart(2, '0');
                     this.nowJam = hhmm;
-                    if (this.paksa) {
-                        // Absensi dibuka manual oleh admin: selalu terbuka, tanpa jadwal.
-                        this.terbuka = true;
-                        this.fase = this.sudahHadir ? 'pulang' : 'masuk';
-                        this.statusLabel = 'Absensi DIBUKA oleh admin';
-                        this.countdownLabel = 'Absensi dibuka manual oleh admin (bebas waktu).';
+                    // Buka-paksa TERPISAH untuk masuk / pulang. Fase yang tidak
+                    // dibuka-paksa tetap mengikuti jadwal jam.
+                    if (this.masukPaksa || this.pulangPaksa) {
+                        const masukOpen  = (n >= m && n <= m + d) || this.masukPaksa;
+                        const pulangOpen = (n >= p && n <= p + d) || this.pulangPaksa;
+                        if (masukOpen && pulangOpen) {
+                            this.terbuka = true;
+                            this.fase = this.sudahHadir ? 'pulang' : 'masuk';
+                        } else if (masukOpen) {
+                            this.terbuka = true; this.fase = 'masuk';
+                        } else if (pulangOpen) {
+                            this.terbuka = true; this.fase = 'pulang';
+                        } else {
+                            this.terbuka = false; this.fase = 'tutup';
+                        }
+                        this.statusLabel = this.terbuka ? 'Absensi DIBUKA oleh admin' : 'Absensi TERTUTUP';
+                        this.countdownLabel = this.terbuka
+                            ? ('Dibuka oleh admin (bebas waktu) — fase ' + (this.fase === 'masuk' ? 'masuk' : 'pulang') + '.')
+                            : 'Belum ada fase yang dibuka.';
                         return;
                     }
                     if (terbuka) {

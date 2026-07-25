@@ -5,6 +5,7 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AdminAkunController;
 use App\Http\Controllers\CatatanController;
 use App\Http\Controllers\CetakPdfController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DokumenController;
 use App\Http\Controllers\EvaluasiController;
 use App\Http\Controllers\GuruController;
@@ -25,31 +26,9 @@ use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    $faq = \App\Models\Informasi::where('tipe', 'faq')
-        ->orderBy('urutan')
-        ->orderByDesc('created_at')
-        ->get();
+Route::get('/', [DashboardController::class, 'welcome']);
 
-    return view('welcome', compact('faq'));
-});
-
-Route::middleware(['auth', 'verified'])->get('/dashboard', function () {
-    $role = auth()->user()->role;
-
-    if ($role === 'admin') {
-        return redirect()->route('admin.dashboard');
-    }
-    if ($role === 'guru_pembimbing') {
-        return redirect()->route('guru.dashboard');
-    }
-    if ($role === 'siswa_pkl') {
-        return redirect()->route('siswa.dashboard');
-    }
-   
-
-    return abort(403);
-})->name('dashboard');
+Route::middleware(['auth', 'verified'])->get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
 Route::middleware(['auth', 'verified'])->group(function () {
 
@@ -136,6 +115,7 @@ Route::delete('/akun-admin/{admin}', [AdminAkunController::class, 'destroy'])->n
         Route::post('/guru/import', [GuruPembimbingController::class, 'import'])->name('guru.import');
 
         // ---- MASTER DATA: AKUN GURU PEMBIMBING ----
+        Route::delete('/guru/hapus-semua', [GuruPembimbingController::class, 'destroyAll'])->name('guru.hapus-semua');
         Route::resource('guru', GuruPembimbingController::class)->except(['show']);
         // ---- AKSI: TETAPKAN / BATALKAN WAKASEK ----
         Route::put('/guru/{guru}/jadikan-wakasek', [GuruPembimbingController::class, 'jadikanWakasek'])->name('guru.jadikan-wakasek');
@@ -144,8 +124,14 @@ Route::delete('/akun-admin/{admin}', [AdminAkunController::class, 'destroy'])->n
         Route::put('/guru/{guru}/jadikan-admin', [GuruPembimbingController::class, 'jadikanAdmin'])->name('guru.jadikan-admin');
         Route::put('/guru/{guru}/batalkan-admin', [GuruPembimbingController::class, 'batalkanAdmin'])->name('guru.batalkan-admin');
 // ---- MASTER DATA: AKUN INSTRUKTUR INDUSTRI ----
+        Route::get('/instruktur/export/excel', [InstrukturController::class, 'exportExcel'])->name('instruktur.export.excel');
+        Route::get('/instruktur/export/pdf', [InstrukturController::class, 'exportPdf'])->name('instruktur.export.pdf');
+        Route::get('/instruktur/template', [InstrukturController::class, 'template'])->name('instruktur.template');
+        Route::post('/instruktur/import', [InstrukturController::class, 'import'])->name('instruktur.import');
+        Route::delete('/instruktur/hapus-semua', [InstrukturController::class, 'destroyAll'])->name('instruktur.hapus-semua');
         Route::resource('instruktur', InstrukturController::class)->parameters(['instruktur' => 'perusahaan'])->except(['show']);
 // ---- MASTER DATA: DATA SISWA PKL ----
+        Route::delete('/siswa/hapus-periode', [SiswaController::class, 'destroyByPeriode'])->name('siswa.hapus-periode');
         Route::resource('siswa', SiswaController::class)->except(['show']);
 
 
@@ -197,26 +183,7 @@ Route::delete('/evaluasi/penilaian/{nilai}', [EvaluasiController::class, 'destro
 // ============================================================
 Route::middleware(['role:guru_pembimbing'])->prefix('guru')->name('guru.')->group(function () {
 
-    Route::get('/dashboard', function () {
-        $guruId = Auth::id();
-
-        $stats = User::where('role', 'siswa_pkl')
-            ->where('guru_id', $guruId)
-            ->selectRaw("
-                COUNT(*) as bimbingan,
-                SUM(CASE WHEN status_pkl = 'aktif' THEN 1 ELSE 0 END) as aktif,
-                SUM(CASE WHEN status_pkl = 'belum' THEN 1 ELSE 0 END) as belum,
-                SUM(CASE WHEN status_pkl = 'selesai' THEN 1 ELSE 0 END) as selesai
-            ")
-            ->first();
-
-        return view('guru.dashboard', [
-            'siswaBimbingan' => $stats->bimbingan ?? 0,
-            'siswaAktif'     => $stats->aktif ?? 0,
-            'siswaBelum'     => $stats->belum ?? 0,
-            'siswaSelesai'   => $stats->selesai ?? 0,
-        ]);
-    })->name('dashboard');
+    Route::get('/dashboard', [DashboardController::class, 'guru'])->name('dashboard');
 
     Route::get('/siswa', [GuruController::class, 'index'])->name('siswa.index');
 
@@ -263,11 +230,7 @@ Route::put('/wakasek/observasi/{id}/batal', [WakasekController::class, 'batal'])
     // 3. SISWA PKL
     // ============================================================
     Route::middleware(['role:siswa_pkl'])->prefix('siswa')->name('siswa.')->group(function () {
-        Route::get('/dashboard', function () {
-            $jumlahJurnal    = Jurnal::where('siswa_id', Auth::id())->count();
-            $jurnalDisetujui = Jurnal::where('siswa_id', Auth::id())->where('status_persetujuan', 'disetujui')->count();
-            return view('siswa.dashboard', compact('jumlahJurnal', 'jurnalDisetujui'));
-        })->name('dashboard');
+        Route::get('/dashboard', [DashboardController::class, 'siswa'])->name('dashboard');
 
        Route::get('/jurnal', [JurnalController::class, 'indexSiswa'])->name('jurnal.index');
 Route::get('/jurnal/tambah', [JurnalController::class, 'createSiswa'])->name('jurnal.create');

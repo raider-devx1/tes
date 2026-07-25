@@ -1,64 +1,71 @@
 @php
     use App\Models\Jurnal;
     use App\Models\Observasi;
-    use App\Models\Absency; // Sesuaikan jika ada typo pada nama model Absensi asli Anda
-    use App\Models\Absensi;
-    use App\Models\CatatanKegiatan;
     use App\Models\User;
+    use Illuminate\Support\Facades\Cache;
 
     $me          = auth()->user();
     $hariIni     = \Carbon\Carbon::today();
     $tanggalIndo = $hariIni->locale('id')->translatedFormat('d F Y'); // contoh: 05 Juli 2026
     $bulanIndo   = $hariIni->locale('id')->translatedFormat('F');      // contoh: Juli
 
-    $notifikasi = [];
+    // Cache notifikasi per-user per-hari (TTL 60 detik) agar query TIDAK berjalan
+    // pada SETIAP load dashboard. Mengurangi beban DB saat banyak user online.
+    // Staleness maksimal 60 detik (mis. reminder jurnal hilang <= 1 menit setelah diisi).
+    $notifikasi = Cache::remember(
+        "notif_dashboard:{$me->id}:{$hariIni->toDateString()}",
+        60,
+        function () use ($me, $hariIni, $tanggalIndo, $bulanIndo) {
+            $notifikasi = [];
 
-    /* ================= SISWA PKL ================= */
-    if ($me->role === 'siswa_pkl') {
-        $sudahIsiJurnalHariIni = Jurnal::where('siswa_id', $me->id)
-            ->whereDate('hari_tanggal', $hariIni)
-            ->exists();
+            /* ================= SISWA PKL ================= */
+            if ($me->role === 'siswa_pkl') {
+                $sudahIsiJurnalHariIni = Jurnal::where('siswa_id', $me->id)
+                    ->whereDate('hari_tanggal', $hariIni)
+                    ->exists();
 
-        if (! $sudahIsiJurnalHariIni) {
-            $notifikasi[] = [
-                'key'      => 'siswa-jurnal-' . $hariIni->toDateString(),
-                'warna'    => 'kuning',
-                'judul'    => 'Jurnal Hari Ini Belum Diisi',
-                'pesan'    => "Anda belum mengisi jurnal kegiatan PKL untuk tanggal {$tanggalIndo}. "
-                            . "Silakan isi jurnal untuk diverifikasi oleh instruktur.",
-                'aksi_url' => route('siswa.jurnal.create'),
-                'aksi'     => 'Isi Sekarang',
-            ];
+                if (! $sudahIsiJurnalHariIni) {
+                    $notifikasi[] = [
+                        'key'      => 'siswa-jurnal-' . $hariIni->toDateString(),
+                        'warna'    => 'kuning',
+                        'judul'    => 'Jurnal Hari Ini Belum Diisi',
+                        'pesan'    => "Anda belum mengisi jurnal kegiatan PKL untuk tanggal {$tanggalIndo}. "
+                                    . "Silakan isi jurnal untuk diverifikasi oleh instruktur.",
+                        'aksi_url' => route('siswa.jurnal.create'),
+                        'aksi'     => 'Isi Sekarang',
+                    ];
+                }
+            }
+
+            /* ============== GURU PEMBIMBING ============== */
+            if ($me->role === 'guru_pembimbing') {
+                $siswaAktifIds = User::where('role', 'siswa_pkl')
+                    ->where('guru_id', $me->id)
+                    ->where('status_pkl', 'aktif')
+                    ->pluck('id');
+
+                $sudahDiobservasiIds = Observasi::where('guru_id', $me->id)
+                    ->whereMonth('created_at', $hariIni->month)
+                    ->whereYear('created_at', $hariIni->year)
+                    ->pluck('user_id');
+
+                $belumObservasi = $siswaAktifIds->diff($sudahDiobservasiIds)->count();
+
+                if ($belumObservasi > 0) {
+                    $notifikasi[] = [
+                        'key'      => 'guru-observasi-' . $hariIni->format('Y-m'),
+                        'warna'    => 'kuning',
+                        'judul'    => 'Monitoring PKL Belum Dilakukan',
+                        'pesan'    => "Masih terdapat {$belumObservasi} siswa yang belum mendapatkan observasi bulan {$bulanIndo}.",
+                        'aksi_url' => route('guru.observasi.index'),
+                        'aksi'     => 'Lihat Daftar',
+                    ];
+                }
+            }
+
+            return $notifikasi;
         }
-    }
-
-    /* ============== GURU PEMBIMBING ============== */
-    if ($me->role === 'guru_pembimbing') {
-        $siswaAktifIds = User::where('role', 'siswa_pkl')
-            ->where('guru_id', $me->id)
-            ->where('status_pkl', 'aktif')
-            ->pluck('id');
-
-        $sudahDiobservasiIds = Observasi::where('guru_id', $me->id)
-            ->whereMonth('created_at', $hariIni->month)
-            ->whereYear('created_at', $hariIni->year)
-            ->pluck('user_id');
-
-        $belumObservasi = $siswaAktifIds->diff($sudahDiobservasiIds)->count();
-
-        if ($belumObservasi > 0) {
-            $notifikasi[] = [
-                'key'      => 'guru-observasi-' . $hariIni->format('Y-m'),
-                'warna'    => 'kuning',
-                'judul'    => 'Monitoring PKL Belum Dilakukan',
-                'pesan'    => "Masih terdapat {$belumObservasi} siswa yang belum mendapatkan observasi bulan {$bulanIndo}.",
-                'aksi_url' => route('guru.observasi.index'),
-                'aksi'     => 'Lihat Daftar',
-            ];
-        }
-    }
-
-    
+    );
 
     $jumlahNotif = count($notifikasi);
 @endphp

@@ -152,13 +152,13 @@ public function ajukanSiswa(Request $request, $id)
 
     $validated = $request->validate([
         'catatan_instruktur' => 'required|string',
-        'foto_bukti'         => 'required|image|mimes:jpeg,png,jpg|max:2048',
+        'foto_bukti'         => 'required|image|mimes:jpeg,png,jpg|max:3072',
     ], [
         'catatan_instruktur.required' => 'Catatan/nilai dari instruktur wajib diketik ulang.',
         'foto_bukti.required'         => 'Foto bukti fisik lembar berparaf wajib diunggah.',
         'foto_bukti.image'            => 'File harus berupa gambar.',
         'foto_bukti.mimes'            => 'Format foto harus jpeg, png, atau jpg.',
-        'foto_bukti.max'              => 'Ukuran foto maksimal 2MB.',
+        'foto_bukti.max'              => 'Ukuran foto maksimal 3MB.',
     ]);
 
     if ($catatan->foto_bukti) {

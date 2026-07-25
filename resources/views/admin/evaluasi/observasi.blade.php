@@ -488,13 +488,13 @@
                     @method('PUT')
                     <div>
                         <label class="block text-sm font-bold text-black mb-1">Foto Dokumentasi Kegiatan <span class="text-red-500">*</span></label>
-                        <input type="file" name="foto_dokumentasi" accept="image/*" capture="environment" required
+                        <input type="file" name="foto_dokumentasi" accept="image/*" required
                                class="block w-full text-sm text-gray-700 file:mr-3 file:rounded-lg file:border-0 file:bg-[#0047d6] file:px-4 file:py-2 file:text-white file:font-bold">
-                        <p class="mt-1 text-xs text-gray-500">Wajib. Format JPG/JPEG/PNG, maksimal 2 MB.</p>
+                        <p class="mt-1 text-xs text-gray-500">Wajib. Format JPG/JPEG/PNG, maksimal 3 MB.</p>
                     </div>
                     <div>
                         <label class="block text-sm font-bold text-black mb-1">Foto Lembar Observasi (Sudah Diparaf) <span class="text-red-500">*</span></label>
-                        <input type="file" name="foto_lembar_observasi" accept="image/*" capture="environment" required
+                        <input type="file" name="foto_lembar_observasi" accept="image/*" required
                                class="block w-full text-sm text-gray-700 file:mr-3 file:rounded-lg file:border-0 file:bg-[#05b169] file:px-4 file:py-2 file:text-white file:font-bold">
                         <p class="mt-1 text-xs text-gray-500">Wajib. Foto lembar fisik yang sudah diparaf instruktur &amp; guru pembimbing.</p>
                     </div>

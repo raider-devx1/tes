@@ -19,12 +19,14 @@ class SiswaExport extends StringValueBinder implements FromQuery, WithHeadings, 
 {
     protected string $q;
     protected string $status;
+    protected string $periode;
 
-    public function __construct(?string $q = '', ?string $status = '')
+    public function __construct(?string $q = '', ?string $status = '', ?string $periode = '')
     {
         // Terima null dari controller lalu normalkan jadi string kosong
         $this->q = (string) $q;
         $this->status = (string) $status;
+        $this->periode = (string) $periode;
     }
 
     public function query(): Builder
@@ -37,6 +39,7 @@ class SiswaExport extends StringValueBinder implements FromQuery, WithHeadings, 
                       ->orWhere('nisn', 'like', "%{$this->q}%");
             })
             ->when($this->status, fn ($query) => $query->where('status_pkl', $this->status))
+            ->when($this->periode, fn ($query) => $query->where('periode_id', $this->periode))
             ->orderBy('name');
     }
 

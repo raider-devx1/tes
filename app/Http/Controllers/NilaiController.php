@@ -118,12 +118,12 @@ class NilaiController extends Controller
             'skor_presentasi'         => 'required|numeric|between:0,100',
             'deskripsi_presentasi'    => 'required|string',
             'catatan_guru'            => 'nullable|string',
-            'foto_lembar_instruktur'  => $aturanFoto . '|image|mimes:jpeg,png,jpg|max:2048',
+            'foto_lembar_instruktur'  => $aturanFoto . '|image|mimes:jpeg,png,jpg|max:3072',
         ], [
             'foto_lembar_instruktur.required' => 'Foto lembar penilaian instruktur wajib diunggah.',
             'foto_lembar_instruktur.image'    => 'File harus berupa gambar (JPG/JPEG/PNG).',
             'foto_lembar_instruktur.mimes'    => 'Format foto harus JPG, JPEG, atau PNG.',
-            'foto_lembar_instruktur.max'      => 'Ukuran foto maksimal 2 MB.',
+            'foto_lembar_instruktur.max'      => 'Ukuran foto maksimal 3 MB.',
         ]);
 
         $nilai->guru_id = Auth::id();

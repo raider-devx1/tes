@@ -45,7 +45,11 @@ return new class extends Migration
 
             // --- Pembukaan absensi manual (per-siswa) ---
             // true = absensi siswa ini dibuka bebas waktu (oleh admin/guru), mengabaikan jadwal jam.
+            // Flag lama (membuka MASUK & PULANG sekaligus). Dipertahankan untuk kompatibilitas mundur.
             $table->boolean('absensi_dibuka')->default(false);
+            // Pembukaan absensi TERPISAH per-fase: hanya masuk, hanya pulang, atau keduanya.
+            $table->boolean('absensi_dibuka_masuk')->default(false);
+            $table->boolean('absensi_dibuka_pulang')->default(false);
 
             // --- Khusus Guru Pembimbing ---
             $table->string('nip', 30)->nullable()->unique();   // identitas login guru

@@ -78,10 +78,10 @@ public function storeJurnal(Request $request)
         'hari_tanggal'        => ['required', 'date'],
         'status'              => ['required', Rule::in(['draft', 'diajukan', 'disetujui'])],
         'catatan_instruktur'  => ['nullable', 'string'],
-        'foto_bukti'          => ['nullable', 'image', 'mimes:jpeg,png,jpg', 'max:2048'],
+        'foto_bukti'          => ['nullable', 'image', 'mimes:jpeg,png,jpg', 'max:3072'],
         'items'               => ['required', 'array', 'min:1'],
         'items.*.unit_kerja'  => ['required', 'string'],
-        'items.*.dokumentasi' => ['nullable', 'image', 'mimes:jpeg,png,jpg', 'max:2048'],
+        'items.*.dokumentasi' => ['nullable', 'image', 'mimes:jpeg,png,jpg', 'max:3072'],
     ], [
         'items.required'              => 'Minimal harus ada 1 unit kerja / pekerjaan.',
         'items.min'                   => 'Minimal harus ada 1 unit kerja / pekerjaan.',
@@ -130,13 +130,13 @@ public function updateJurnal(Request $request, Jurnal $jurnal)
         'hari_tanggal'                 => ['required', 'date'],
         'status'                       => ['required', Rule::in(['draft', 'diajukan', 'disetujui'])],
         'catatan_instruktur'           => ['nullable', 'string'],
-        'foto_bukti'                   => ['nullable', 'image', 'mimes:jpeg,png,jpg', 'max:2048'],
+        'foto_bukti'                   => ['nullable', 'image', 'mimes:jpeg,png,jpg', 'max:3072'],
         'hapus_foto_bukti'             => ['nullable', 'boolean'],
         'items'                        => ['nullable', 'array'],
         'items.*.id'                   => ['nullable', 'integer'],
         'items.*.unit_kerja'           => ['nullable', 'string'],
         'items.*.existing_dokumentasi' => ['nullable', 'string'],
-        'items.*.dokumentasi'          => ['nullable', 'image', 'mimes:jpeg,png,jpg', 'max:2048'],
+        'items.*.dokumentasi'          => ['nullable', 'image', 'mimes:jpeg,png,jpg', 'max:3072'],
     ]);
 
     DB::transaction(function () use ($request, $data, $jurnal) {
@@ -273,7 +273,7 @@ public function storeCatatan(Request $request)
         'pelaksanaan_kegiatan' => ['nullable', 'string'],
         'catatan_instruktur'   => ['nullable', 'string'],
         'status'               => ['required', Rule::in(['draft', 'diajukan', 'disetujui'])],
-        'foto_bukti'           => ['nullable', 'image', 'mimes:jpeg,png,jpg', 'max:2048'],
+        'foto_bukti'           => ['nullable', 'image', 'mimes:jpeg,png,jpg', 'max:3072'],
     ]);
 
     if ($request->hasFile('foto_bukti')) {
@@ -296,7 +296,7 @@ public function updateCatatan(Request $request, CatatanKegiatan $catatan)
         'pelaksanaan_kegiatan' => ['nullable', 'string'],
         'catatan_instruktur'   => ['nullable', 'string'],
         'status'               => ['required', Rule::in(['draft', 'diajukan', 'disetujui'])],
-        'foto_bukti'           => ['nullable', 'image', 'mimes:jpeg,png,jpg', 'max:2048'],
+        'foto_bukti'           => ['nullable', 'image', 'mimes:jpeg,png,jpg', 'max:3072'],
         'hapus_foto_bukti'     => ['nullable', 'boolean'],
     ]);
 
@@ -383,15 +383,23 @@ public function absensi(Request $request)
         'durasi_menit' => (int) Pengaturan::ambil('absensi_durasi_menit', 30),
     ];
 
-    // Status buka-paksa absensi global (true = absensi selalu terbuka, bebas waktu).
-    $paksaBuka = Pengaturan::ambil('absensi_paksa_buka', '0') === '1';
+    // Status buka-paksa absensi global, kini TERPISAH untuk fase masuk & pulang.
+    // Flag lama absensi_paksa_buka (bila masih '1') dianggap membuka keduanya.
+    $legacyGlobal = Pengaturan::ambil('absensi_paksa_buka', '0') === '1';
+    $paksaMasuk   = $legacyGlobal || Pengaturan::ambil('absensi_paksa_buka_masuk', '0') === '1';
+    $paksaPulang  = $legacyGlobal || Pengaturan::ambil('absensi_paksa_buka_pulang', '0') === '1';
+    $paksaBuka    = $paksaMasuk || $paksaPulang;
 
     // Siswa yang absensinya dibuka manual per-orang (di luar buka global).
-    $dibukaList = User::where('role', 'siswa_pkl')->where('absensi_dibuka', true)
-        ->orderBy('name')->get(['id', 'name', 'nisn']);
+    $dibukaList = User::where('role', 'siswa_pkl')
+        ->where(fn ($q) => $q->where('absensi_dibuka', true)
+            ->orWhere('absensi_dibuka_masuk', true)
+            ->orWhere('absensi_dibuka_pulang', true))
+        ->orderBy('name')
+        ->get(['id', 'name', 'nisn', 'absensi_dibuka', 'absensi_dibuka_masuk', 'absensi_dibuka_pulang']);
 
     return view('admin.monitoring.absensi', array_merge(
-        compact('absensi', 'q', 'status', 'tanggal', 'bulan', 'kelas', 'jurusan', 'rekap', 'tanggalDefault', 'pengaturanAbsensi', 'paksaBuka'),
+        compact('absensi', 'q', 'status', 'tanggal', 'bulan', 'kelas', 'jurusan', 'rekap', 'tanggalDefault', 'pengaturanAbsensi', 'paksaBuka', 'paksaMasuk', 'paksaPulang'),
         ['siswaList' => $this->siswaList(), 'dibukaList' => $dibukaList],
         $this->opsiFilter()
     ));
@@ -432,21 +440,45 @@ public function pengaturanAbsensi(Request $request)
  */
 public function bukaAbsensi(Request $request)
 {
-    $mode = $request->input('mode') === 'nisn' ? 'nisn' : 'semua';
-    $buka = $request->input('aksi') === 'buka';
+    $mode   = $request->input('mode') === 'nisn' ? 'nisn' : 'semua';
+    $buka   = $request->input('aksi') === 'buka';
+    $target = in_array($request->input('target'), ['masuk', 'pulang'], true)
+        ? $request->input('target')
+        : 'semua';
+
+    $labelTarget = [
+        'masuk'  => 'Absen MASUK',
+        'pulang' => 'Absen PULANG',
+        'semua'  => 'Absensi (masuk & pulang)',
+    ][$target];
+
+    $kenaMasuk  = $target === 'masuk'  || $target === 'semua';
+    $kenaPulang = $target === 'pulang' || $target === 'semua';
 
     if ($mode === 'semua') {
-        Pengaturan::simpan('absensi_paksa_buka', $buka ? '1' : '0');
+        if ($kenaMasuk) {
+            Pengaturan::simpan('absensi_paksa_buka_masuk', $buka ? '1' : '0');
+        }
+        if ($kenaPulang) {
+            Pengaturan::simpan('absensi_paksa_buka_pulang', $buka ? '1' : '0');
+        }
 
-        // Saat menutup global, matikan juga pembukaan per-siswa agar semua
-        // benar-benar kembali mengikuti jadwal.
-        if (! $buka) {
-            User::where('role', 'siswa_pkl')->update(['absensi_dibuka' => false]);
+        // Flag lama (membuka kedua fase sekaligus) tidak dipakai lagi; matikan
+        // agar tidak "mengunci" kedua fase tetap terbuka.
+        Pengaturan::simpan('absensi_paksa_buka', '0');
+
+        // Saat menutup SEMUA, kembalikan juga pembukaan per-siswa ke jadwal.
+        if (! $buka && $target === 'semua') {
+            User::where('role', 'siswa_pkl')->update([
+                'absensi_dibuka'        => false,
+                'absensi_dibuka_masuk'  => false,
+                'absensi_dibuka_pulang' => false,
+            ]);
         }
 
         return back()->with('success', $buka
-            ? 'Absensi DIBUKA untuk semua siswa (bebas waktu, tidak mengikuti jadwal).'
-            : 'Absensi ditutup untuk semua siswa. Kembali mengikuti jadwal jam.');
+            ? "{$labelTarget} DIBUKA untuk semua siswa (bebas waktu). Fase lain tetap mengikuti jadwal."
+            : "{$labelTarget} ditutup untuk semua siswa (kembali mengikuti jadwal jam).");
     }
 
     // mode "nisn": cocokkan NISN dengan data siswa PKL.
@@ -460,12 +492,19 @@ public function bukaAbsensi(Request $request)
         return back()->with('error', "Siswa dengan NISN {$nisn} tidak ditemukan.");
     }
 
-    $siswa->absensi_dibuka = $buka;
+    if ($kenaMasuk) {
+        $siswa->absensi_dibuka_masuk = $buka;
+    }
+    if ($kenaPulang) {
+        $siswa->absensi_dibuka_pulang = $buka;
+    }
+    // Flag lama tidak dipakai lagi untuk buka per-siswa; pastikan mati.
+    $siswa->absensi_dibuka = false;
     $siswa->save();
 
     return back()->with('success', $buka
-        ? "Absensi untuk {$siswa->name} (NISN {$nisn}) DIBUKA (bebas waktu)."
-        : "Absensi untuk {$siswa->name} (NISN {$nisn}) ditutup (kembali ikut jadwal).");
+        ? "{$labelTarget} untuk {$siswa->name} (NISN {$nisn}) DIBUKA (bebas waktu)."
+        : "{$labelTarget} untuk {$siswa->name} (NISN {$nisn}) ditutup (kembali ikut jadwal).");
 }
 
 public function storeAbsensi(Request $request)
@@ -478,7 +517,7 @@ public function storeAbsensi(Request $request)
         'jam_pulang'         => ['nullable', 'date_format:H:i'],
         'status_validasi'    => ['required', Rule::in(['draft', 'diajukan', 'disetujui'])],
         'catatan_instruktur' => ['nullable', 'string'],
-        'foto_bukti'         => ['nullable', 'image', 'mimes:jpeg,png,jpg', 'max:2048'],
+        'foto_bukti'         => ['nullable', 'image', 'mimes:jpeg,png,jpg', 'max:3072'],
     ]);
 
     $attrs = [
@@ -512,7 +551,7 @@ public function updateAbsensi(Request $request, Absensi $absensi)
         'jam_pulang'         => ['nullable', 'date_format:H:i'],
         'status_validasi'    => ['required', Rule::in(['draft', 'diajukan', 'disetujui'])],
         'catatan_instruktur' => ['nullable', 'string'],
-        'foto_bukti'         => ['nullable', 'image', 'mimes:jpeg,png,jpg', 'max:2048'],
+        'foto_bukti'         => ['nullable', 'image', 'mimes:jpeg,png,jpg', 'max:3072'],
         'hapus_foto_bukti'   => ['nullable', 'boolean'],
     ]);
 

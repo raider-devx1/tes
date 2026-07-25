@@ -8,6 +8,7 @@ use App\Imports\GuruImport;
 use App\Models\User;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 use Maatwebsite\Excel\Facades\Excel;
@@ -106,6 +107,33 @@ class GuruPembimbingController extends Controller
     {
         $guru->delete();
         return back()->with('success', 'Akun guru pembimbing berhasil dihapus.');
+    }
+
+    /**
+     * Hapus SEMUA akun guru pembimbing sekaligus (kecuali akun sendiri).
+     * - jurnals.disetujui_oleh dilepas dulu (FK RESTRICT) agar tidak gagal.
+     * - guru_id pada siswa dilepas otomatis.
+     * - lembar observasi milik guru ikut terhapus (FK cascade).
+     */
+    public function destroyAll()
+    {
+        $guruIds = User::where('role', 'guru_pembimbing')
+            ->where('id', '!=', auth()->id())
+            ->pluck('id');
+
+        if ($guruIds->isEmpty()) {
+            return back()->with('error', 'Tidak ada akun guru pembimbing yang bisa dihapus.');
+        }
+
+        DB::transaction(function () use ($guruIds) {
+            \App\Models\Jurnal::whereIn('disetujui_oleh', $guruIds)->update(['disetujui_oleh' => null]);
+
+            User::where('role', 'siswa_pkl')->whereIn('guru_id', $guruIds)->update(['guru_id' => null]);
+
+            User::whereIn('id', $guruIds)->delete();
+        });
+
+        return back()->with('success', "Berhasil menghapus {$guruIds->count()} akun guru pembimbing. Lembar observasi milik guru ikut terhapus; penilaian & bimbingan siswa dilepas otomatis.");
     }
 
     /**

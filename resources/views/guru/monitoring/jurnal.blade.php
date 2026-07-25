@@ -74,7 +74,7 @@
                     </p>
                 </div>
 
-                <a href="{{ route('cetak.jurnal.semua') }}" target="_blank"
+                <a href="{{ route('cetak.jurnal.semua', array_filter(['tanggal' => request('tanggal')])) }}" target="_blank"
                    class="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-[#cf202f] px-6 py-3.5 text-base font-bold text-white shadow-sm transition hover:bg-[#a81824] focus:outline-none focus:ring-4 focus:ring-[#cf202f]/30 shrink-0">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2M6 14h12v8H6v-8z"/>
@@ -222,10 +222,7 @@
                                     <div x-data="{ openValidasi: false }" class="flex flex-col items-center gap-1.5">
                                         @if($jurnal->foto_bukti)
                                             @php $extBukti = pathinfo($jurnal->foto_bukti, PATHINFO_EXTENSION); @endphp
-                                            <a href="{{ asset('storage/'.$jurnal->foto_bukti) }}" download target="_blank" rel="noopener"
-                                               class="inline-flex w-full items-center justify-center gap-1 rounded-full bg-[#0047d6] px-3 py-1.5 text-xs font-bold text-white transition hover:bg-[#0038aa]">
-                                                Lihat Bukti
-                                            </a>
+                                          
                                             <a href="{{ asset('storage/'.$jurnal->foto_bukti) }}" download
                                                download="bukti-jurnal-{{ $jurnal->siswa->nisn ?? $jurnal->id }}-{{ $jurnal->id . '.' . $extBukti }}"
                                                class="inline-flex w-full items-center justify-center gap-1 rounded-full border-2 border-[#0047d6] bg-white px-3 py-1.5 text-xs font-bold text-[#0047d6] transition hover:bg-[#0047d6]/5">

@@ -45,9 +45,30 @@ class CetakPdfController extends Controller
         return $siswa;
     }
 
+    /** Cache pengaturan selama satu request (hindari query berulang di loop "Cetak Semua"). */
+    private ?array $pengaturanCache = null;
+
+    /** Cache periode PKL aktif selama satu request. */
+    private bool $periodeAktifResolved = false;
+    private $periodeAktifCache = null;
+
     private function getPengaturan(): array
     {
-        return Pengaturan::pluck('nilai', 'kunci')->toArray();
+        // Memoize: data pengaturan tidak berubah selama satu request.
+        // Sebelumnya endpoint "Cetak Semua" memanggil query ini BERULANG untuk
+        // setiap siswa (N query). Kini cukup dijalankan sekali per request.
+        return $this->pengaturanCache ??= Pengaturan::pluck('nilai', 'kunci')->toArray();
+    }
+
+    /** Ambil periode PKL aktif (di-cache sekali per request). */
+    private function periodeAktif()
+    {
+        if (! $this->periodeAktifResolved) {
+            $this->periodeAktifCache = PeriodePkl::aktif();
+            $this->periodeAktifResolved = true;
+        }
+
+        return $this->periodeAktifCache;
     }
 
     // ====== 1. JURNAL (FK: siswa_id) ======
@@ -303,11 +324,19 @@ class CetakPdfController extends Controller
             return null;
         }
 
-        // Rekap kehadiran otomatis dari tabel absensi
+        // Rekap kehadiran otomatis dari tabel absensi.
+        // Sebelumnya 3 query COUNT terpisah per siswa; kini cukup 1 query
+        // beragregasi (GROUP BY status) sehingga jauh lebih hemat, terutama
+        // pada endpoint "Cetak Semua" yang memproses banyak siswa.
+        $rekapStatus = Absensi::where('siswa_id', $siswa->id)
+            ->selectRaw('status, COUNT(*) as jml')
+            ->groupBy('status')
+            ->pluck('jml', 'status');
+
         $kehadiran = [
-            'sakit' => Absensi::where('siswa_id', $siswa->id)->where('status', 'Sakit')->count(),
-            'izin'  => Absensi::where('siswa_id', $siswa->id)->where('status', 'Izin')->count(),
-            'alpha' => Absensi::where('siswa_id', $siswa->id)->where('status', 'Alpha')->count(),
+            'sakit' => (int) ($rekapStatus['Sakit'] ?? 0),
+            'izin'  => (int) ($rekapStatus['Izin'] ?? 0),
+            'alpha' => (int) ($rekapStatus['Alpha'] ?? 0),
         ];
 
         // Tanggal observasi terakhir (jika ada)
@@ -316,7 +345,7 @@ class CetakPdfController extends Controller
         )->hari_tanggal;
 
         $pengaturan  = $this->getPengaturan();
-        $tahunAjaran = optional(PeriodePkl::aktif())->tahun_ajaran ?? '2025/2026';
+        $tahunAjaran = optional($this->periodeAktif())->tahun_ajaran ?? '2025/2026';
 
         return [
             'nama_sekolah'      => $pengaturan['nama_sekolah'] ?? 'UPTD SMKN 1 MAJENE',
@@ -542,8 +571,8 @@ public function cetakAbsensiSemua()
 
         // --- PROSES LOGIKA VARIABEL UNTUK BLADE DI SINI ---
         // Menggunakan fallback jika relasi di model atau pencarian query yang aktif
-        // PERBAIKAN 1: Tambahkan fallback ke PeriodePkl::aktif() jika relasi kosong
-        $periode = $siswa->periodePkl ?? $siswa->periode_pkl ?? $periodePkl ?? (method_exists(PeriodePkl::class, 'aktif') ? PeriodePkl::aktif() : null);
+        // PERBAIKAN 1: Tambahkan fallback ke $this->periodeAktif() jika relasi kosong
+        $periode = $siswa->periodePkl ?? $siswa->periode_pkl ?? $periodePkl ?? (method_exists(PeriodePkl::class, 'aktif') ? $this->periodeAktif() : null);
         
         $mulaiPkl = ($periode && $periode->tanggal_mulai)
             ? \Carbon\Carbon::parse($periode->tanggal_mulai)
@@ -628,7 +657,7 @@ public function cetakAbsensiSemua()
 
             // Periode PKL + fallback (sama seperti cetakNilaiGuruSatuan)
             $periodePkl = PeriodePkl::where('id', $siswa->periode_pkl_id)->first();
-            $periode = $siswa->periodePkl ?? $siswa->periode_pkl ?? $periodePkl ?? (method_exists(PeriodePkl::class, 'aktif') ? PeriodePkl::aktif() : null);
+            $periode = $siswa->periodePkl ?? $siswa->periode_pkl ?? $periodePkl ?? (method_exists(PeriodePkl::class, 'aktif') ? $this->periodeAktif() : null);
 
             $mulaiPkl = ($periode && $periode->tanggal_mulai)
                 ? \Carbon\Carbon::parse($periode->tanggal_mulai)
@@ -669,7 +698,7 @@ public function cetakTemplatePenilaianKosong($siswa_id = null)
     $siswa = $this->resolveSiswa($siswa_id);
 
     $pengaturan  = $this->getPengaturan();
-    $tahunAjaran = optional(PeriodePkl::aktif())->tahun_ajaran ?? '2025/2026';
+    $tahunAjaran = optional($this->periodeAktif())->tahun_ajaran ?? '2025/2026';
 
     $tanggalObservasi = optional(
         Observasi::where('user_id', $siswa->id)->orderBy('hari_tanggal', 'desc')->first()

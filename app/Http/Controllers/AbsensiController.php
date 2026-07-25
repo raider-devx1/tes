@@ -66,33 +66,50 @@ class AbsensiController extends Controller
         $pulangStart = \Carbon\Carbon::parse($tanggal . ' ' . $jamPulang, $tz);
         $pulangEnd   = (clone $pulangStart)->addMinutes($durasi);
 
-        $fase    = 'tutup'; // masuk | pulang | tutup | bebas
-        $terbuka = false;
+        // Jendela terjadwal per fase.
+        $masukJadwal  = $now->betweenIncluded($masukStart, $masukEnd);
+        $pulangJadwal = $now->betweenIncluded($pulangStart, $pulangEnd);
 
-        if ($now->betweenIncluded($masukStart, $masukEnd)) {
-            $fase = 'masuk';
-            $terbuka = true;
-        } elseif ($now->betweenIncluded($pulangStart, $pulangEnd)) {
-            $fase = 'pulang';
-            $terbuka = true;
+        // Admin dapat MEMBUKA absensi tanpa mengikuti jadwal, kini TERPISAH untuk
+        // fase MASUK dan fase PULANG. Sumber: flag global (tabel pengaturans)
+        // ATAU per-siswa (kolom users). Bila hanya satu fase yang dibuka-paksa,
+        // fase lainnya tetap mengikuti jadwal jam.
+        // Kompatibilitas mundur: flag lama absensi_paksa_buka / users.absensi_dibuka
+        // dianggap membuka KEDUA fase (masuk & pulang).
+        $legacyGlobal = Pengaturan::ambil('absensi_paksa_buka', '0') === '1';
+        $legacySiswa  = $siswa ? (bool) $siswa->absensi_dibuka : false;
+
+        $masukPaksa = $legacyGlobal || $legacySiswa
+            || Pengaturan::ambil('absensi_paksa_buka_masuk', '0') === '1'
+            || ($siswa ? (bool) $siswa->absensi_dibuka_masuk : false);
+
+        $pulangPaksa = $legacyGlobal || $legacySiswa
+            || Pengaturan::ambil('absensi_paksa_buka_pulang', '0') === '1'
+            || ($siswa ? (bool) $siswa->absensi_dibuka_pulang : false);
+
+        $masukTerbuka  = $masukJadwal  || $masukPaksa;
+        $pulangTerbuka = $pulangJadwal || $pulangPaksa;
+
+        if ($masukTerbuka && $pulangTerbuka) {
+            $fase = 'bebas';  $terbuka = true;
+        } elseif ($masukTerbuka) {
+            $fase = 'masuk';  $terbuka = true;
+        } elseif ($pulangTerbuka) {
+            $fase = 'pulang'; $terbuka = true;
+        } else {
+            $fase = 'tutup';  $terbuka = false;
         }
 
-        // Admin dapat MEMBUKA absensi secara global tanpa mengikuti jadwal jam.
-        // Bila diaktifkan, absensi selalu terbuka (fase "bebas"); bila dimatikan,
-        // absensi kembali mengikuti jadwal jam masuk/pulang di atas.
-        // Buka-paksa global (semua siswa) ATAU buka-paksa per-siswa (kolom users.absensi_dibuka).
-        $paksaGlobal = Pengaturan::ambil('absensi_paksa_buka', '0') === '1';
-        $paksaSiswa  = $siswa ? (bool) $siswa->absensi_dibuka : false;
-        $paksaBuka   = $paksaGlobal || $paksaSiswa;
-        if ($paksaBuka && ! $terbuka) {
-            $terbuka = true;
-            $fase    = 'bebas';
-        }
+        $paksaBuka = $masukPaksa || $pulangPaksa;
 
         return [
             'terbuka'      => $terbuka,
             'fase'         => $fase,
             'paksa'        => $paksaBuka,
+            'masuk_paksa'  => $masukPaksa,
+            'pulang_paksa' => $pulangPaksa,
+            'masuk_terbuka'  => $masukTerbuka,
+            'pulang_terbuka' => $pulangTerbuka,
             'durasi'       => $durasi,
             'jam_masuk'    => $masukStart->format('H:i'),
             'jam_pulang'   => $pulangStart->format('H:i'),
@@ -236,12 +253,12 @@ class AbsensiController extends Controller
         $validated = $request->validate([
             'status'             => ['required', Rule::in(['Hadir', 'Izin', 'Sakit'])],
             'catatan_instruktur' => ['nullable', 'string', 'max:1000'],
-            'foto_bukti'         => [$fotoRule, 'image', 'mimes:jpeg,png,jpg', 'max:2048'],
+            'foto_bukti'         => [$fotoRule, 'image', 'mimes:jpeg,png,jpg', 'max:3072'],
         ], [
             'foto_bukti.required' => $labelFoto,
             'foto_bukti.image'    => 'File harus berupa gambar.',
             'foto_bukti.mimes'    => 'Format foto harus jpeg, png, atau jpg.',
-            'foto_bukti.max'      => 'Ukuran foto maksimal 2MB.',
+            'foto_bukti.max'      => 'Ukuran foto maksimal 3MB.',
         ]);
 
         if ($request->hasFile('foto_bukti')) {

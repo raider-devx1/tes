@@ -181,17 +181,17 @@ public function updateObservasi(Request $request, Observasi $observasi)
 public function validasiObservasi(Request $request, Observasi $observasi)
 {
     $request->validate([
-        'foto_dokumentasi'      => 'required|image|mimes:jpeg,png,jpg|max:2048',
-        'foto_lembar_observasi' => 'required|image|mimes:jpeg,png,jpg|max:2048',
+        'foto_dokumentasi'      => 'required|image|mimes:jpeg,png,jpg|max:3072',
+        'foto_lembar_observasi' => 'required|image|mimes:jpeg,png,jpg|max:3072',
     ], [
         'foto_dokumentasi.required'      => 'Foto dokumentasi kegiatan/kunjungan wajib diunggah.',
         'foto_dokumentasi.image'         => 'Foto dokumentasi harus berupa gambar.',
         'foto_dokumentasi.mimes'         => 'Format foto dokumentasi harus JPG, JPEG, atau PNG.',
-        'foto_dokumentasi.max'           => 'Ukuran foto dokumentasi maksimal 2 MB.',
+        'foto_dokumentasi.max'           => 'Ukuran foto dokumentasi maksimal 3 MB.',
         'foto_lembar_observasi.required' => 'Foto lembar observasi yang sudah diparaf wajib diunggah.',
         'foto_lembar_observasi.image'    => 'Foto lembar observasi harus berupa gambar.',
         'foto_lembar_observasi.mimes'    => 'Format foto lembar observasi harus JPG, JPEG, atau PNG.',
-        'foto_lembar_observasi.max'      => 'Ukuran foto lembar observasi maksimal 2 MB.',
+        'foto_lembar_observasi.max'      => 'Ukuran foto lembar observasi maksimal 3 MB.',
     ]);
 
     // Hapus foto lama bila validasi ulang
@@ -325,7 +325,7 @@ public function destroyObservasi(Observasi $observasi)
             'skor_presentasi'         => 'required|numeric|between:0,100',
             'deskripsi_presentasi'    => 'required|string',
             'catatan_guru'            => 'nullable|string',
-            'foto_lembar_instruktur'  => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            'foto_lembar_instruktur'  => 'nullable|image|mimes:jpeg,png,jpg|max:3072',
         ];
     }
 

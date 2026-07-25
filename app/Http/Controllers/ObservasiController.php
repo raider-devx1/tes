@@ -181,17 +181,17 @@ class ObservasiController extends Controller
             ->firstOrFail();
 
         $request->validate([
-            'foto_dokumentasi'      => 'required|image|mimes:jpeg,png,jpg|max:2048',
-            'foto_lembar_observasi' => 'required|image|mimes:jpeg,png,jpg|max:2048',
+            'foto_dokumentasi'      => 'required|image|mimes:jpeg,png,jpg|max:3072',
+            'foto_lembar_observasi' => 'required|image|mimes:jpeg,png,jpg|max:3072',
         ], [
             'foto_dokumentasi.required'      => 'Foto dokumentasi kegiatan/kunjungan wajib diunggah.',
             'foto_dokumentasi.image'         => 'Foto dokumentasi harus berupa gambar.',
             'foto_dokumentasi.mimes'         => 'Format foto dokumentasi harus JPG, JPEG, atau PNG.',
-            'foto_dokumentasi.max'           => 'Ukuran foto dokumentasi maksimal 2 MB.',
+            'foto_dokumentasi.max'           => 'Ukuran foto dokumentasi maksimal 3 MB.',
             'foto_lembar_observasi.required' => 'Foto lembar observasi yang sudah diparaf wajib diunggah.',
             'foto_lembar_observasi.image'    => 'Foto lembar observasi harus berupa gambar.',
             'foto_lembar_observasi.mimes'    => 'Format foto lembar observasi harus JPG, JPEG, atau PNG.',
-            'foto_lembar_observasi.max'      => 'Ukuran foto lembar observasi maksimal 2 MB.',
+            'foto_lembar_observasi.max'      => 'Ukuran foto lembar observasi maksimal 3 MB.',
         ]);
 
         // Hapus foto lama bila ada (validasi ulang)
@@ -232,17 +232,17 @@ class ObservasiController extends Controller
             ->firstOrFail();
 
         $request->validate([
-            'foto_dokumentasi'      => 'required|image|mimes:jpeg,png,jpg|max:2048',
-            'foto_lembar_observasi' => 'required|image|mimes:jpeg,png,jpg|max:2048',
+            'foto_dokumentasi'      => 'required|image|mimes:jpeg,png,jpg|max:3072',
+            'foto_lembar_observasi' => 'required|image|mimes:jpeg,png,jpg|max:3072',
         ], [
             'foto_dokumentasi.required'      => 'Foto dokumentasi kegiatan/kunjungan wajib diunggah.',
             'foto_dokumentasi.image'         => 'Foto dokumentasi harus berupa gambar.',
             'foto_dokumentasi.mimes'         => 'Format foto dokumentasi harus JPG, JPEG, atau PNG.',
-            'foto_dokumentasi.max'           => 'Ukuran foto dokumentasi maksimal 2 MB.',
+            'foto_dokumentasi.max'           => 'Ukuran foto dokumentasi maksimal 3 MB.',
             'foto_lembar_observasi.required' => 'Foto lembar observasi yang sudah diparaf wajib diunggah.',
             'foto_lembar_observasi.image'    => 'Foto lembar observasi harus berupa gambar.',
             'foto_lembar_observasi.mimes'    => 'Format foto lembar observasi harus JPG, JPEG, atau PNG.',
-            'foto_lembar_observasi.max'      => 'Ukuran foto lembar observasi maksimal 2 MB.',
+            'foto_lembar_observasi.max'      => 'Ukuran foto lembar observasi maksimal 3 MB.',
         ]);
 
         // Hapus foto lama bila mengajukan ulang.

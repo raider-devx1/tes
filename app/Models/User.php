@@ -35,6 +35,8 @@ use Illuminate\Notifications\Notifiable;
     'catatan_jam_usulan',
     // --- Pembukaan absensi manual (per-siswa) ---
     'absensi_dibuka',
+    'absensi_dibuka_masuk',
+    'absensi_dibuka_pulang',
     // --- Relasi ---
     'perusahaan_id',
     'guru_id',
@@ -54,6 +56,8 @@ class User extends Authenticatable
             'is_wakasek' => 'boolean',
             'is_admin' => 'boolean',
             'absensi_dibuka' => 'boolean',
+            'absensi_dibuka_masuk' => 'boolean',
+            'absensi_dibuka_pulang' => 'boolean',
         ];
     }
 

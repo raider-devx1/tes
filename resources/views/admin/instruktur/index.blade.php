@@ -8,13 +8,31 @@
             {{-- ===== HEADER + AKSI ===== --}}
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
                 <div>
-                    <h2 class="text-xl font-bold text-gray-800">Master Data &mdash; Industri &amp; Pembimbing</h2>
+                    <h2 class="text-xl font-bold text-gray-800">Master Data Industri &amp; Pembimbing</h2>
                     <p class="text-sm text-gray-500">Kelola data industri/tempat PKL beserta nama pembimbing (instruktur) industrinya. Instruktur tidak lagi memiliki akun login.</p>
                 </div>
-                <a href="{{ route('admin.instruktur.create') }}"
-                   class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#2563EB] text-white text-sm font-medium hover:bg-blue-700 shrink-0">
-                    Tambah Industri
-                </a>
+                <div class="flex flex-wrap items-center gap-2">
+                    <a href="{{ route('admin.instruktur.export.excel', ['q' => $q]) }}"
+                        class="inline-flex items-center gap-1 px-3 py-2 rounded-lg bg-green-50 text-green-700 text-sm font-medium hover:bg-green-100">
+                        Excel
+                    </a>
+                    <a href="{{ route('admin.instruktur.export.pdf', ['q' => $q]) }}"
+                        class="inline-flex items-center gap-1 px-3 py-2 rounded-lg bg-red-50 text-red-600 text-sm font-medium hover:bg-red-100">
+                        PDF
+                    </a>
+                    <button @click="importOpen = true"
+                        class="inline-flex items-center gap-1 px-3 py-2 rounded-lg bg-amber-50 text-amber-700 text-sm font-medium hover:bg-amber-100">
+                        Import
+                    </button>
+                    <button @click="hapusSemuaOpen = true"
+                        class="inline-flex items-center gap-1 px-3 py-2 rounded-lg bg-red-600 text-white text-sm font-medium hover:bg-red-700 shrink-0">
+                        Hapus Semua
+                    </button>
+                    <a href="{{ route('admin.instruktur.create') }}"
+                        class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#2563EB] text-white text-sm font-medium hover:bg-blue-700 shrink-0">
+                        Tambah Industri
+                    </a>
+                </div>
             </div>
 
             {{-- ===== KARTU INFORMASI ===== --}}
@@ -206,6 +224,80 @@
         </div>
 
         {{-- ================================================================= --}}
+        {{-- MODAL IMPORT                                                    --}}
+        {{-- ================================================================= --}}
+        <div x-show="importOpen" x-cloak @keydown.escape.window="importOpen = false"
+             x-transition:enter="transition ease-out duration-300"
+             x-transition:enter-start="opacity-0"
+             x-transition:enter-end="opacity-100"
+             x-transition:leave="transition ease-in duration-200"
+             x-transition:leave-start="opacity-100"
+             x-transition:leave-end="opacity-0"
+             class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+            <div x-show="importOpen"
+                 x-transition:enter="transition ease-out duration-300"
+                 x-transition:enter-start="opacity-0 scale-95"
+                 x-transition:enter-end="opacity-100 scale-100"
+                 x-transition:leave="transition ease-in duration-200"
+                 x-transition:leave-start="opacity-100 scale-100"
+                 x-transition:leave-end="opacity-0 scale-95"
+                 class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6" @click.outside="importOpen = false">
+                <h3 class="text-lg font-bold text-gray-800 mb-1">Import Data Industri</h3>
+                <p class="text-sm text-gray-500 mb-4">Unggah file Excel (.xlsx/.csv) sesuai template. Kolom <span class="font-semibold">nama_perusahaan</span> &amp; <span class="font-semibold">alamat</span> wajib diisi.</p>
+                <form method="POST" action="{{ route('admin.instruktur.import') }}" enctype="multipart/form-data">
+                    @csrf
+                    <input type="file" name="file" accept=".xlsx,.xls,.csv" required
+                        class="w-full text-sm text-gray-600 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-blue-50 file:text-[#2563EB] hover:file:bg-blue-100 mb-4">
+                    <div class="flex items-center justify-between">
+                        <a href="{{ route('admin.instruktur.template') }}" class="text-sm text-[#2563EB] hover:underline">Unduh Template</a>
+                        <div class="flex gap-2">
+                            <button type="button" @click="importOpen = false" class="px-4 py-2 rounded-lg text-gray-500 text-sm hover:bg-gray-50">Batal</button>
+                            <button type="submit" class="px-4 py-2 rounded-lg bg-[#2563EB] text-white text-sm font-medium hover:bg-blue-700">Import</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        {{-- ================================================================= --}}
+        {{-- MODAL HAPUS SEMUA INDUSTRI                                       --}}
+        {{-- ================================================================= --}}
+        <div x-show="hapusSemuaOpen" x-cloak @keydown.escape.window="hapusSemuaOpen = false"
+             x-transition:enter="transition ease-out duration-300"
+             x-transition:enter-start="opacity-0"
+             x-transition:enter-end="opacity-100"
+             x-transition:leave="transition ease-in duration-200"
+             x-transition:leave-start="opacity-100"
+             x-transition:leave-end="opacity-0"
+             class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+            <div x-show="hapusSemuaOpen"
+                 x-transition:enter="transition ease-out duration-300"
+                 x-transition:enter-start="opacity-0 scale-95"
+                 x-transition:enter-end="opacity-100 scale-100"
+                 x-transition:leave="transition ease-in duration-200"
+                 x-transition:leave-start="opacity-100 scale-100"
+                 x-transition:leave-end="opacity-0 scale-95"
+                 class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6" @click.outside="hapusSemuaOpen = false">
+                <h3 class="text-lg font-bold text-red-600">Hapus Semua Data Industri</h3>
+                <p class="text-sm text-gray-600 mt-2">
+                    Semua data industri/tempat PKL akan dihapus permanen. Kolom industri pada data siswa terkait akan dikosongkan otomatis. Tindakan ini tidak bisa dibatalkan.
+                </p>
+                <label class="flex items-center gap-2 mt-4 text-sm text-gray-700">
+                    <input type="checkbox" x-model="konfirmSemua" class="rounded border-gray-300 text-red-600 focus:ring-red-500">
+                    Saya mengerti tindakan ini tidak bisa dibatalkan.
+                </label>
+                <form method="POST" action="{{ route('admin.instruktur.hapus-semua') }}" class="flex justify-end gap-2 pt-5">
+                    @csrf
+                    @method('DELETE')
+                    <button type="button" @click="hapusSemuaOpen = false"
+                            class="px-4 py-2 rounded-lg text-gray-500 text-sm hover:bg-gray-50">Batal</button>
+                    <button type="submit" :disabled="!konfirmSemua"
+                            class="px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-medium hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed">Ya, hapus semua</button>
+                </form>
+            </div>
+        </div>
+
+        {{-- ================================================================= --}}
         {{-- MODAL HAPUS                                                     --}}
         {{-- ================================================================= --}}
         <div x-show="hapusOpen" x-cloak @keydown.escape.window="hapusOpen = false"
@@ -248,13 +340,18 @@
                 hapusOpen: false,
                 hapusUrl: '',
                 hapusLabel: '',
+                importOpen: false,
+                hapusSemuaOpen: false,
+                konfirmSemua: false,
 
                 init() {
                     this.$watch('detailOpen', () => this.kunciScroll());
                     this.$watch('hapusOpen',  () => this.kunciScroll());
+                    this.$watch('importOpen', () => this.kunciScroll());
+                    this.$watch('hapusSemuaOpen', () => this.kunciScroll());
                 },
                 kunciScroll() {
-                    document.body.style.overflow = (this.detailOpen || this.hapusOpen) ? 'hidden' : '';
+                    document.body.style.overflow = (this.detailOpen || this.hapusOpen || this.importOpen || this.hapusSemuaOpen) ? 'hidden' : '';
                 },
 
                 lihatDetail(d) { this.detailData = d; this.detailOpen = true; },

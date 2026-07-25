@@ -32,10 +32,20 @@
 
                                 <div x-show="mode==='semua'" class="space-y-3">
                                     <p class="text-sm text-gray-600">Buka absensi untuk <span class="font-bold">semua siswa</span> tanpa mengikuti jadwal jam. Tutup untuk mengembalikan semua ke jadwal.</p>
-                                    <div class="rounded-lg bg-gray-50 px-3 py-2 text-xs {{ $paksaBuka ? 'text-[#05b169] font-semibold' : 'text-gray-500' }}">Status: {{ $paksaBuka ? 'DIBUKA (bebas waktu)' : 'Mengikuti jadwal jam' }}</div>
+                                    <div class="rounded-lg bg-gray-50 px-3 py-2 text-xs text-gray-600">
+                                        <span class="font-semibold">Masuk:</span> <span class="{{ $paksaMasuk ? 'font-bold text-[#05b169]' : 'text-gray-500' }}">{{ $paksaMasuk ? 'DIBUKA (bebas waktu)' : 'Ikut jadwal' }}</span>
+                                        <span class="mx-1 text-gray-300">|</span>
+                                        <span class="font-semibold">Pulang:</span> <span class="{{ $paksaPulang ? 'font-bold text-[#05b169]' : 'text-gray-500' }}">{{ $paksaPulang ? 'DIBUKA (bebas waktu)' : 'Ikut jadwal' }}</span>
+                                    </div>
+                                    <div class="grid grid-cols-2 gap-2">
+                                        <form method="POST" action="{{ route('admin.monitoring.absensi.buka') }}">@csrf<input type="hidden" name="mode" value="semua"><input type="hidden" name="target" value="masuk"><input type="hidden" name="aksi" value="buka"><button type="submit" class="w-full rounded-lg bg-[#05b169] px-3 py-2 text-xs font-semibold text-white hover:bg-[#049a5b]">Buka Masuk</button></form>
+                                        <form method="POST" action="{{ route('admin.monitoring.absensi.buka') }}">@csrf<input type="hidden" name="mode" value="semua"><input type="hidden" name="target" value="masuk"><input type="hidden" name="aksi" value="tutup"><button type="submit" class="w-full rounded-lg border border-[#cf202f] px-3 py-2 text-xs font-semibold text-[#cf202f] hover:bg-[#cf202f]/5">Tutup Masuk</button></form>
+                                        <form method="POST" action="{{ route('admin.monitoring.absensi.buka') }}">@csrf<input type="hidden" name="mode" value="semua"><input type="hidden" name="target" value="pulang"><input type="hidden" name="aksi" value="buka"><button type="submit" class="w-full rounded-lg bg-[#05b169] px-3 py-2 text-xs font-semibold text-white hover:bg-[#049a5b]">Buka Pulang</button></form>
+                                        <form method="POST" action="{{ route('admin.monitoring.absensi.buka') }}">@csrf<input type="hidden" name="mode" value="semua"><input type="hidden" name="target" value="pulang"><input type="hidden" name="aksi" value="tutup"><button type="submit" class="w-full rounded-lg border border-[#cf202f] px-3 py-2 text-xs font-semibold text-[#cf202f] hover:bg-[#cf202f]/5">Tutup Pulang</button></form>
+                                    </div>
                                     <div class="flex gap-2">
-                                        <form method="POST" action="{{ route('admin.monitoring.absensi.buka') }}" class="flex-1">@csrf<input type="hidden" name="mode" value="semua"><input type="hidden" name="aksi" value="buka"><button type="submit" class="w-full rounded-lg bg-[#05b169] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#049a5b]">Buka Semua</button></form>
-                                        <form method="POST" action="{{ route('admin.monitoring.absensi.buka') }}" class="flex-1">@csrf<input type="hidden" name="mode" value="semua"><input type="hidden" name="aksi" value="tutup"><button type="submit" class="w-full rounded-lg border border-[#cf202f] px-4 py-2.5 text-sm font-semibold text-[#cf202f] hover:bg-[#cf202f]/5">Tutup Semua</button></form>
+                                        <form method="POST" action="{{ route('admin.monitoring.absensi.buka') }}" class="flex-1">@csrf<input type="hidden" name="mode" value="semua"><input type="hidden" name="target" value="semua"><input type="hidden" name="aksi" value="buka"><button type="submit" class="w-full rounded-lg bg-[#05b169] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#049a5b]">Buka Semua</button></form>
+                                        <form method="POST" action="{{ route('admin.monitoring.absensi.buka') }}" class="flex-1">@csrf<input type="hidden" name="mode" value="semua"><input type="hidden" name="target" value="semua"><input type="hidden" name="aksi" value="tutup"><button type="submit" class="w-full rounded-lg border border-[#cf202f] px-4 py-2.5 text-sm font-semibold text-[#cf202f] hover:bg-[#cf202f]/5">Tutup Semua</button></form>
                                     </div>
                                 </div>
 
@@ -46,12 +56,18 @@
                                         <p x-show="nisn.trim()!=='' && cocok" x-cloak class="mt-1 text-xs font-semibold text-[#05b169]">✓ Cocok: <span x-text="cocok?.name"></span></p>
                                         <p x-show="nisn.trim()!=='' && !cocok" x-cloak class="mt-1 text-xs font-semibold text-[#cf202f]">NISN tidak ditemukan.</p>
                                     </div>
+                                    <div class="grid grid-cols-2 gap-2">
+                                        <form method="POST" action="{{ route('admin.monitoring.absensi.buka') }}">@csrf<input type="hidden" name="mode" value="nisn"><input type="hidden" name="nisn" :value="nisn"><input type="hidden" name="target" value="masuk"><input type="hidden" name="aksi" value="buka"><button type="submit" :disabled="!cocok" :class="!cocok ? 'opacity-40 cursor-not-allowed' : 'hover:bg-[#049a5b]'" class="w-full rounded-lg bg-[#05b169] px-3 py-2 text-xs font-semibold text-white">Buka Masuk</button></form>
+                                        <form method="POST" action="{{ route('admin.monitoring.absensi.buka') }}">@csrf<input type="hidden" name="mode" value="nisn"><input type="hidden" name="nisn" :value="nisn"><input type="hidden" name="target" value="masuk"><input type="hidden" name="aksi" value="tutup"><button type="submit" :disabled="!cocok" :class="!cocok ? 'opacity-40 cursor-not-allowed' : 'hover:bg-[#cf202f]/5'" class="w-full rounded-lg border border-[#cf202f] px-3 py-2 text-xs font-semibold text-[#cf202f]">Tutup Masuk</button></form>
+                                        <form method="POST" action="{{ route('admin.monitoring.absensi.buka') }}">@csrf<input type="hidden" name="mode" value="nisn"><input type="hidden" name="nisn" :value="nisn"><input type="hidden" name="target" value="pulang"><input type="hidden" name="aksi" value="buka"><button type="submit" :disabled="!cocok" :class="!cocok ? 'opacity-40 cursor-not-allowed' : 'hover:bg-[#049a5b]'" class="w-full rounded-lg bg-[#05b169] px-3 py-2 text-xs font-semibold text-white">Buka Pulang</button></form>
+                                        <form method="POST" action="{{ route('admin.monitoring.absensi.buka') }}">@csrf<input type="hidden" name="mode" value="nisn"><input type="hidden" name="nisn" :value="nisn"><input type="hidden" name="target" value="pulang"><input type="hidden" name="aksi" value="tutup"><button type="submit" :disabled="!cocok" :class="!cocok ? 'opacity-40 cursor-not-allowed' : 'hover:bg-[#cf202f]/5'" class="w-full rounded-lg border border-[#cf202f] px-3 py-2 text-xs font-semibold text-[#cf202f]">Tutup Pulang</button></form>
+                                    </div>
                                     <div class="flex gap-2">
-                                        <form method="POST" action="{{ route('admin.monitoring.absensi.buka') }}" class="flex-1">@csrf<input type="hidden" name="mode" value="nisn"><input type="hidden" name="nisn" :value="nisn"><input type="hidden" name="aksi" value="buka"><button type="submit" :disabled="!cocok" :class="!cocok ? 'opacity-40 cursor-not-allowed' : 'hover:bg-[#049a5b]'" class="w-full rounded-lg bg-[#05b169] px-4 py-2.5 text-sm font-semibold text-white">Buka Siswa Ini</button></form>
-                                        <form method="POST" action="{{ route('admin.monitoring.absensi.buka') }}" class="flex-1">@csrf<input type="hidden" name="mode" value="nisn"><input type="hidden" name="nisn" :value="nisn"><input type="hidden" name="aksi" value="tutup"><button type="submit" :disabled="!cocok" :class="!cocok ? 'opacity-40 cursor-not-allowed' : 'hover:bg-[#cf202f]/5'" class="w-full rounded-lg border border-[#cf202f] px-4 py-2.5 text-sm font-semibold text-[#cf202f]">Tutup Siswa Ini</button></form>
+                                        <form method="POST" action="{{ route('admin.monitoring.absensi.buka') }}" class="flex-1">@csrf<input type="hidden" name="mode" value="nisn"><input type="hidden" name="nisn" :value="nisn"><input type="hidden" name="target" value="semua"><input type="hidden" name="aksi" value="buka"><button type="submit" :disabled="!cocok" :class="!cocok ? 'opacity-40 cursor-not-allowed' : 'hover:bg-[#049a5b]'" class="w-full rounded-lg bg-[#05b169] px-4 py-2.5 text-sm font-semibold text-white">Buka Semua (Siswa Ini)</button></form>
+                                        <form method="POST" action="{{ route('admin.monitoring.absensi.buka') }}" class="flex-1">@csrf<input type="hidden" name="mode" value="nisn"><input type="hidden" name="nisn" :value="nisn"><input type="hidden" name="target" value="semua"><input type="hidden" name="aksi" value="tutup"><button type="submit" :disabled="!cocok" :class="!cocok ? 'opacity-40 cursor-not-allowed' : 'hover:bg-[#cf202f]/5'" class="w-full rounded-lg border border-[#cf202f] px-4 py-2.5 text-sm font-semibold text-[#cf202f]">Tutup Semua (Siswa Ini)</button></form>
                                     </div>
                                     @if(isset($dibukaList) && count($dibukaList))
-                                        <div class="rounded-lg bg-[#05b169]/5 px-3 py-2 text-xs text-[#05b169]">Dibuka per-siswa: @foreach($dibukaList as $d)<span class="font-semibold">{{ $d->name }} ({{ $d->nisn }})</span>@if(!$loop->last), @endif @endforeach</div>
+                                        <div class="rounded-lg bg-[#05b169]/5 px-3 py-2 text-xs text-[#05b169]">Dibuka per-siswa: @foreach($dibukaList as $d)@php $mk=$d->absensi_dibuka_masuk||$d->absensi_dibuka; $pl=$d->absensi_dibuka_pulang||$d->absensi_dibuka; $fx=$mk&&$pl?'Masuk+Pulang':($mk?'Masuk':'Pulang'); @endphp<span class="font-semibold">{{ $d->name }} ({{ $d->nisn }}) [{{ $fx }}]</span>@if(!$loop->last), @endif @endforeach</div>
                                     @endif
                                 </div>
                             </div>
@@ -86,10 +102,19 @@
         @endif
 
         {{-- STATUS BUKA-PAKSA ABSENSI --}}
-        @if($paksaBuka)
+        @if($paksaMasuk || $paksaPulang)
             <div class="flex items-start gap-2 rounded-xl border border-[#05b169]/40 bg-[#05b169]/5 px-4 py-3 text-sm font-medium text-[#05b169]">
                 <span class="mt-1 inline-block h-2 w-2 flex-shrink-0 rounded-full bg-[#05b169]"></span>
-                <span>Absensi sedang <span class="font-bold">DIBUKA untuk semua siswa</span> tanpa mengikuti jadwal jam. Buka menu <span class="font-bold">Buka / Tutup Absensi</span> untuk menutup.</span>
+                <span>
+                    @if($paksaMasuk && $paksaPulang)
+                        Absensi <span class="font-bold">MASUK &amp; PULANG DIBUKA untuk semua siswa</span> tanpa mengikuti jadwal jam.
+                    @elseif($paksaMasuk)
+                        Absensi <span class="font-bold">MASUK DIBUKA untuk semua siswa</span> (bebas waktu). Absen pulang tetap mengikuti jadwal jam.
+                    @else
+                        Absensi <span class="font-bold">PULANG DIBUKA untuk semua siswa</span> (bebas waktu). Absen masuk tetap mengikuti jadwal jam.
+                    @endif
+                    Buka menu <span class="font-bold">Buka / Tutup Absensi</span> untuk mengubah.
+                </span>
             </div>
         @elseif(isset($dibukaList) && count($dibukaList))
             <div class="rounded-xl border border-[#05b169]/40 bg-[#05b169]/5 px-4 py-3 text-sm font-medium text-[#05b169]">

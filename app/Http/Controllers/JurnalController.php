@@ -38,7 +38,7 @@ class JurnalController extends Controller
             'hari_tanggal'        => 'required|date',
             'items'               => 'required|array|min:1',
             'items.*.unit_kerja'  => 'required|string',
-            'items.*.dokumentasi' => 'required|image|mimes:jpeg,png,jpg|max:2048',
+            'items.*.dokumentasi' => 'required|image|mimes:jpeg,png,jpg|max:3072',
         ], [
             'items.required'               => 'Minimal harus ada 1 pekerjaan / unit kerja.',
             'items.min'                    => 'Minimal harus ada 1 pekerjaan / unit kerja.',
@@ -46,7 +46,7 @@ class JurnalController extends Controller
             'items.*.dokumentasi.required' => 'Foto dokumentasi wajib diunggah pada setiap pekerjaan.',
             'items.*.dokumentasi.image'    => 'File dokumentasi harus berupa gambar.',
             'items.*.dokumentasi.mimes'    => 'Format foto harus jpeg, png, atau jpg.',
-            'items.*.dokumentasi.max'      => 'Ukuran foto maksimal 2MB.',
+            'items.*.dokumentasi.max'      => 'Ukuran foto maksimal 3MB.',
         ]);
 
         DB::transaction(function () use ($request, $validated) {
@@ -90,14 +90,14 @@ class JurnalController extends Controller
             'hari_tanggal'        => 'required|date',
             'items'               => 'required|array|min:1',
             'items.*.unit_kerja'  => 'required|string',
-            'items.*.dokumentasi' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            'items.*.dokumentasi' => 'nullable|image|mimes:jpeg,png,jpg|max:3072',
         ], [
             'items.required'              => 'Minimal harus ada 1 pekerjaan / unit kerja.',
             'items.min'                   => 'Minimal harus ada 1 pekerjaan / unit kerja.',
             'items.*.unit_kerja.required' => 'Unit kerja / pekerjaan wajib diisi pada setiap poin.',
             'items.*.dokumentasi.image'   => 'File dokumentasi harus berupa gambar.',
             'items.*.dokumentasi.mimes'   => 'Format foto harus jpeg, png, atau jpg.',
-            'items.*.dokumentasi.max'     => 'Ukuran foto maksimal 2MB.',
+            'items.*.dokumentasi.max'     => 'Ukuran foto maksimal 3MB.',
         ]);
 
         // Wajib ada foto: boleh dari foto lama (existing_dokumentasi) ATAU unggahan baru.
@@ -195,13 +195,13 @@ class JurnalController extends Controller
 
         $validated = $request->validate([
             'catatan_instruktur' => 'required|string',
-            'foto_bukti'         => 'required|image|mimes:jpeg,png,jpg|max:2048',
+            'foto_bukti'         => 'required|image|mimes:jpeg,png,jpg|max:3072',
         ], [
             'catatan_instruktur.required' => 'Catatan/nilai dari instruktur wajib diketik ulang.',
             'foto_bukti.required'         => 'Foto bukti fisik lembar berparaf wajib diunggah.',
             'foto_bukti.image'            => 'File harus berupa gambar.',
             'foto_bukti.mimes'            => 'Format foto harus jpeg, png, atau jpg.',
-            'foto_bukti.max'              => 'Ukuran foto maksimal 2MB.',
+            'foto_bukti.max'              => 'Ukuran foto maksimal 3MB.',
         ]);
 
         if ($jurnal->foto_bukti) {

@@ -6,6 +6,17 @@ window.Alpine = Alpine;
 
 Alpine.start();
 
+// ===== Batas ukuran file foto (dipakai di seluruh aplikasi) =====
+// Maksimal 3 MB. Meskipun sudah dikompres, kalau tetap > 3 MB file DITOLAK.
+window.MAKS_UKURAN_FOTO = 3 * 1024 * 1024; // 3 MB dalam byte
+
+// Format ukuran byte -> teks yang enak dibaca (mis. "3.4 MB")
+window.formatUkuran = function (bytes) {
+    if (bytes >= 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    if (bytes >= 1024) return Math.round(bytes / 1024) + ' KB';
+    return bytes + ' B';
+};
+
 // ===== Kompresi gambar di sisi client (Canvas API, tanpa library) =====
 // Menyusutkan foto mentah HP (3-7 MB) menjadi < ~1 MB sebelum dikirim ke server.
 window.kompresGambar = async function (file, opsi = {}) {
@@ -63,9 +74,46 @@ window.kompresGambar = async function (file, opsi = {}) {
     return new File([blob], namaBaru, { type: 'image/jpeg', lastModified: Date.now() });
 };
 
-// ===== Auto-kompres untuk <input type="file"> gambar yang dikirim langsung =====
-// Berlaku otomatis untuk Jurnal (Foto Dokumentasi), Profil, dsb.
-// Beri atribut  data-no-compress  pada input yang TIDAK ingin diproses di sini.
+// ===== Validasi batas 3 MB + kompres =====
+// Mengembalikan { ok, file, pesan }.
+// - Kalau bukan gambar: diteruskan apa adanya (ok = true).
+// - Kalau gambar & file ASLI > 3 MB: langsung ditolak (ok = false + pesan).
+// - Kalau gambar & file ASLI <= 3 MB: tetap dikompres, lalu ok = true.
+window.prosesFotoMaks3MB = async function (file) {
+    if (!file) return { ok: false, file: null, pesan: 'Tidak ada file yang dipilih.' };
+
+    // File non-gambar tidak diproses di sini
+    if (!file.type.startsWith('image/')) {
+        return { ok: true, file };
+    }
+
+    // Tolak langsung kalau file ASLI sudah melebihi 3 MB (sebelum dikompres)
+    if (file.size > window.MAKS_UKURAN_FOTO) {
+        return {
+            ok: false,
+            file: null,
+            pesan: 'Ukuran foto ' + window.formatUkuran(file.size)
+                + ' melebihi batas maksimal 3 MB. '
+                + 'Silakan pilih foto lain yang ukurannya di bawah 3 MB.',
+        };
+    }
+
+    // File ≤ 3 MB -> tetap dikompres untuk menghemat ukuran
+    let hasil = file;
+    try {
+        hasil = await window.kompresGambar(file);
+    } catch (err) {
+        console.error('Gagal kompres gambar:', err);
+        hasil = file; // fallback ke file asli (tetap ≤ 3 MB)
+    }
+
+    return { ok: true, file: hasil };
+};
+
+// ===== Auto-kompres + validasi untuk <input type="file"> gambar biasa =====
+// Berlaku otomatis untuk semua input file gambar yang dikirim langsung
+// (Jurnal, Profil, Absensi, Catatan, Observasi, Penilaian, dsb).
+// Beri atribut  data-no-compress  pada input yang ditangani manual (mis. picker khusus).
 document.addEventListener('change', async function (e) {
     const input = e.target;
     if (!(input instanceof HTMLInputElement)) return;
@@ -82,13 +130,24 @@ document.addEventListener('change', async function (e) {
     try {
         const dt = new DataTransfer();
         for (const f of files) {
-            dt.items.add(f.type.startsWith('image/') ? await window.kompresGambar(f) : f);
+            if (f.type.startsWith('image/')) {
+                const hasil = await window.prosesFotoMaks3MB(f);
+                if (!hasil.ok) {
+                    // Foto terlalu besar -> tolak, kosongkan input, beri peringatan.
+                    alert(hasil.pesan);
+                    input.value = '';
+                    input.dispatchEvent(new Event('input', { bubbles: true }));
+                    return;
+                }
+                dt.items.add(hasil.file);
+            } else {
+                dt.items.add(f);
+            }
         }
         input.files = dt.files; // ganti file asli dengan versi terkompres
     } catch (err) {
-        console.error('Gagal kompres gambar:', err);
+        console.error('Gagal memproses gambar:', err);
     } finally {
         if (tombol) tombol.disabled = false;
     }
 });
-

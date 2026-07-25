@@ -8,21 +8,25 @@
             {{-- ===== HEADER + AKSI ===== --}}
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
                 <div>
-                    <h2 class="text-xl font-bold text-gray-800">Master Data &mdash; Siswa PKL</h2>
+                    <h2 class="text-xl font-bold text-gray-800">Master Data  Siswa PKL</h2>
                     <p class="text-sm text-gray-500">Kelola data peserta PKL beserta pemetaan pembimbing &amp; tempat magang.</p>
                 </div>
                 <div class="flex flex-wrap items-center gap-2">
-                    <a href="{{ route('admin.siswa.export.excel', ['q' => $q, 'status' => $status]) }}"
+                    <a href="{{ route('admin.siswa.export.excel', ['q' => $q, 'status' => $status, 'periode' => $periode]) }}"
                         class="inline-flex items-center gap-1 px-3 py-2 rounded-lg bg-green-50 text-green-700 text-sm font-medium hover:bg-green-100">
                         Excel
                     </a>
-                    <a href="{{ route('admin.siswa.export.pdf', ['q' => $q, 'status' => $status]) }}"
+                    <a href="{{ route('admin.siswa.export.pdf', ['q' => $q, 'status' => $status, 'periode' => $periode]) }}"
                         class="inline-flex items-center gap-1 px-3 py-2 rounded-lg bg-red-50 text-red-600 text-sm font-medium hover:bg-red-100">
                         PDF
                     </a>
                     <button @click="importOpen = true"
                         class="inline-flex items-center gap-1 px-3 py-2 rounded-lg bg-amber-50 text-amber-700 text-sm font-medium hover:bg-amber-100">
                         Import
+                    </button>
+                    <button @click="hapusPeriodeOpen = true"
+                        class="inline-flex items-center gap-1 px-3 py-2 rounded-lg bg-red-600 text-white text-sm font-medium hover:bg-red-700">
+                        Hapus per Periode
                     </button>
                     <a href="{{ route('admin.siswa.create') }}"
                         class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#2563EB] text-white text-sm font-medium hover:bg-blue-700">
@@ -62,8 +66,14 @@
                         <option value="aktif" {{ $status === 'aktif' ? 'selected' : '' }}>Aktif</option>
                         <option value="selesai" {{ $status === 'selesai' ? 'selected' : '' }}>Selesai</option>
                     </select>
+                    <select name="periode" class="rounded-lg border-blue-100 focus:border-[#2563EB] focus:ring-[#2563EB] text-sm">
+                        <option value="">Semua Periode</option>
+                        @foreach ($periodeList as $p)
+                            <option value="{{ $p->id }}" {{ (string) $periode === (string) $p->id ? 'selected' : '' }}>{{ $p->nama }}@if($p->is_active) (Aktif)@endif</option>
+                        @endforeach
+                    </select>
                     <button class="px-4 py-2 rounded-lg bg-blue-50 text-[#2563EB] text-sm font-medium hover:bg-blue-100">Cari</button>
-                    @if($q || $status)
+                    @if($q || $status || $periode)
                         <a href="{{ route('admin.siswa.index') }}" class="px-4 py-2 rounded-lg text-gray-500 text-sm hover:bg-gray-50">Reset</a>
                     @endif
                 </form>
@@ -322,6 +332,50 @@
         </div>
 
         {{-- ================================================================= --}}
+        {{-- MODAL HAPUS SISWA PER PERIODE                                    --}}
+        {{-- ================================================================= --}}
+        <div x-show="hapusPeriodeOpen" x-cloak @keydown.escape.window="hapusPeriodeOpen = false"
+             x-transition:enter="transition ease-out duration-300"
+             x-transition:enter-start="opacity-0"
+             x-transition:enter-end="opacity-100"
+             x-transition:leave="transition ease-in duration-200"
+             x-transition:leave-start="opacity-100"
+             x-transition:leave-end="opacity-0"
+             class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+            <div x-show="hapusPeriodeOpen"
+                 x-transition:enter="transition ease-out duration-300"
+                 x-transition:enter-start="opacity-0 scale-95"
+                 x-transition:enter-end="opacity-100 scale-100"
+                 x-transition:leave="transition ease-in duration-200"
+                 x-transition:leave-start="opacity-100 scale-100"
+                 x-transition:leave-end="opacity-0 scale-95"
+                 class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6" @click.outside="hapusPeriodeOpen = false">
+                <h3 class="text-lg font-bold text-red-600">Hapus Siswa per Periode</h3>
+                <p class="text-sm text-gray-600 mt-2">
+                    Pilih periode PKL. <b>Seluruh data siswa</b> pada periode tersebut akan dihapus permanen beserta data absensi, jurnal, nilai, dan dokumennya. Tindakan ini tidak bisa dibatalkan.
+                </p>
+                <form method="POST" action="{{ route('admin.siswa.hapus-periode') }}" class="mt-4">
+                    @csrf
+                    @method('DELETE')
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Periode PKL</label>
+                    <select name="periode_id" x-model="periodeHapus" required
+                            class="w-full rounded-lg border-gray-300 text-sm focus:border-red-500 focus:ring-red-500 mb-4">
+                        <option value="">&mdash; Pilih Periode &mdash;</option>
+                        @foreach ($periodeList as $p)
+                            <option value="{{ $p->id }}">{{ $p->nama }}@if($p->is_active) (Aktif)@endif</option>
+                        @endforeach
+                    </select>
+                    <div class="flex justify-end gap-2">
+                        <button type="button" @click="hapusPeriodeOpen = false"
+                                class="px-4 py-2 rounded-lg text-gray-500 text-sm hover:bg-gray-50">Batal</button>
+                        <button type="submit" :disabled="!periodeHapus"
+                                class="px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-medium hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed">Ya, hapus semua</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        {{-- ================================================================= --}}
         {{-- MODAL HAPUS                                                     --}}
         {{-- ================================================================= --}}
         <div x-show="hapusOpen" x-cloak @keydown.escape.window="hapusOpen = false"
@@ -365,14 +419,17 @@
                 hapusOpen: false,
                 hapusUrl: '',
                 hapusLabel: '',
+                hapusPeriodeOpen: false,
+                periodeHapus: '',
 
                 init() {
                     this.$watch('importOpen', () => this.kunciScroll());
                     this.$watch('detailOpen', () => this.kunciScroll());
                     this.$watch('hapusOpen',  () => this.kunciScroll());
+                    this.$watch('hapusPeriodeOpen', () => this.kunciScroll());
                 },
                 kunciScroll() {
-                    document.body.style.overflow = (this.importOpen || this.detailOpen || this.hapusOpen) ? 'hidden' : '';
+                    document.body.style.overflow = (this.importOpen || this.detailOpen || this.hapusOpen || this.hapusPeriodeOpen) ? 'hidden' : '';
                 },
 
                 lihatDetail(d) { this.detailData = d; this.detailOpen = true; },

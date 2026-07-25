@@ -8,7 +8,7 @@
             {{-- ===== HEADER + AKSI ===== --}}
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
                 <div>
-                    <h2 class="text-xl font-bold text-gray-800">Master Data &mdash; Guru Pembimbing</h2>
+                    <h2 class="text-xl font-bold text-gray-800">Master Data  Guru Pembimbing</h2>
                     <p class="text-sm text-gray-500">Kelola akun guru pembimbing PKL.</p>
                 </div>
                 <div class="flex flex-wrap items-center gap-2">
@@ -23,6 +23,10 @@
                     <button @click="importOpen = true"
                         class="inline-flex items-center gap-1 px-3 py-2 rounded-lg bg-amber-50 text-amber-700 text-sm font-medium hover:bg-amber-100">
                          Import
+                    </button>
+                    <button @click="hapusSemuaOpen = true"
+                        class="inline-flex items-center gap-1 px-3 py-2 rounded-lg bg-red-600 text-white text-sm font-medium hover:bg-red-700">
+                        Hapus Semua
                     </button>
                     <a href="{{ route('admin.guru.create') }}"
                         class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#2563EB] text-white text-sm font-medium hover:bg-blue-700">
@@ -320,6 +324,44 @@
         </div>
 
         {{-- ================================================================= --}}
+        {{-- MODAL HAPUS SEMUA GURU                                           --}}
+        {{-- ================================================================= --}}
+        <div x-show="hapusSemuaOpen" x-cloak @keydown.escape.window="hapusSemuaOpen = false"
+             x-transition:enter="transition ease-out duration-300"
+             x-transition:enter-start="opacity-0"
+             x-transition:enter-end="opacity-100"
+             x-transition:leave="transition ease-in duration-200"
+             x-transition:leave-start="opacity-100"
+             x-transition:leave-end="opacity-0"
+             class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+            <div x-show="hapusSemuaOpen"
+                 x-transition:enter="transition ease-out duration-300"
+                 x-transition:enter-start="opacity-0 scale-95"
+                 x-transition:enter-end="opacity-100 scale-100"
+                 x-transition:leave="transition ease-in duration-200"
+                 x-transition:leave-start="opacity-100 scale-100"
+                 x-transition:leave-end="opacity-0 scale-95"
+                 class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6" @click.outside="hapusSemuaOpen = false">
+                <h3 class="text-lg font-bold text-red-600">Hapus Semua Akun Guru</h3>
+                <p class="text-sm text-gray-600 mt-2">
+                    Semua akun guru pembimbing akan dihapus permanen. Lembar observasi yang dibuat guru ikut terhapus, sedangkan penilaian &amp; bimbingan siswa akan dilepas otomatis. Akun Anda sendiri tidak akan terhapus.
+                </p>
+                <label class="flex items-center gap-2 mt-4 text-sm text-gray-700">
+                    <input type="checkbox" x-model="konfirmSemua" class="rounded border-gray-300 text-red-600 focus:ring-red-500">
+                    Saya mengerti tindakan ini tidak bisa dibatalkan.
+                </label>
+                <form method="POST" action="{{ route('admin.guru.hapus-semua') }}" class="flex justify-end gap-2 pt-5">
+                    @csrf
+                    @method('DELETE')
+                    <button type="button" @click="hapusSemuaOpen = false"
+                            class="px-4 py-2 rounded-lg text-gray-500 text-sm hover:bg-gray-50">Batal</button>
+                    <button type="submit" :disabled="!konfirmSemua"
+                            class="px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-medium hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed">Ya, hapus semua</button>
+                </form>
+            </div>
+        </div>
+
+        {{-- ================================================================= --}}
         {{-- MODAL HAPUS                                                     --}}
         {{-- ================================================================= --}}
         <div x-show="hapusOpen" x-cloak @keydown.escape.window="hapusOpen = false"
@@ -363,14 +405,17 @@
                 hapusOpen: false,
                 hapusUrl: '',
                 hapusLabel: '',
+                hapusSemuaOpen: false,
+                konfirmSemua: false,
 
                 init() {
                     this.$watch('importOpen', () => this.kunciScroll());
                     this.$watch('detailOpen', () => this.kunciScroll());
                     this.$watch('hapusOpen',  () => this.kunciScroll());
+                    this.$watch('hapusSemuaOpen', () => this.kunciScroll());
                 },
                 kunciScroll() {
-                    document.body.style.overflow = (this.importOpen || this.detailOpen || this.hapusOpen) ? 'hidden' : '';
+                    document.body.style.overflow = (this.importOpen || this.detailOpen || this.hapusOpen || this.hapusSemuaOpen) ? 'hidden' : '';
                 },
 
                 lihatDetail(d) { this.detailData = d; this.detailOpen = true; },

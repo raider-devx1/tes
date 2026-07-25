@@ -32,7 +32,7 @@ class SiswaController extends Controller
             'perusahaan_id' => ['nullable', 'exists:perusahaans,id'],
             'guru_id'       => ['nullable', 'exists:users,id'],
             'periode_id'    => ['nullable', 'exists:periode_pkls,id'],
-            'foto'          => ['nullable', 'image', 'mimes:jpeg,jpg,png', 'max:2048'],
+            'foto'          => ['nullable', 'image', 'mimes:jpeg,jpg,png', 'max:3072'],
             'password'      => [$siswa ? 'nullable' : 'required', 'string', 'min:6', 'confirmed'],
         ]);
     }
@@ -51,6 +51,7 @@ class SiswaController extends Controller
     {
         $q = trim((string) $request->get('q', ''));
         $status = (string) $request->get('status', '');
+        $periode = (string) $request->get('periode', '');
 
         // ---- Kartu informasi (dihitung menyeluruh, tidak terpengaruh filter) ----
         $rekap = [
@@ -68,11 +69,14 @@ class SiswaController extends Controller
                       ->orWhere('nisn', 'like', "%{$q}%");
             })
             ->when($status, fn ($query) => $query->where('status_pkl', $status))
+            ->when($periode, fn ($query) => $query->where('periode_id', $periode))
             ->orderBy('name')
             ->paginate(10)
             ->withQueryString();
 
-        return view('admin.siswa.index', compact('siswa', 'q', 'status', 'rekap'));
+        $periodeList = PeriodePkl::orderByDesc('is_active')->orderByDesc('tanggal_mulai')->get();
+
+        return view('admin.siswa.index', compact('siswa', 'q', 'status', 'periode', 'rekap', 'periodeList'));
     }
 
     public function create()
@@ -140,18 +144,55 @@ class SiswaController extends Controller
         return back()->with('success', 'Data siswa berhasil dihapus.');
     }
 
+    /**
+     * Hapus SELURUH data siswa pada satu periode PKL sekaligus.
+     * Data absensi, jurnal, nilai, observasi, dokumen & catatan ikut terhapus
+     * otomatis melalui foreign key onDelete('cascade').
+     */
+    public function destroyByPeriode(Request $request)
+    {
+        $data = $request->validate([
+            'periode_id' => ['required', 'exists:periode_pkls,id'],
+        ]);
+
+        $daftar = User::where('role', 'siswa_pkl')
+            ->where('periode_id', $data['periode_id'])
+            ->get(['id', 'foto']);
+
+        if ($daftar->isEmpty()) {
+            return back()->with('error', 'Tidak ada data siswa pada periode tersebut.');
+        }
+
+        // Hapus berkas foto agar tidak menyisakan file yatim di storage.
+        foreach ($daftar as $s) {
+            if ($s->foto) {
+                Storage::disk('public')->delete($s->foto);
+            }
+        }
+
+        $jumlah = User::where('role', 'siswa_pkl')
+            ->where('periode_id', $data['periode_id'])
+            ->delete();
+
+        $namaPeriode = optional(PeriodePkl::find($data['periode_id']))->nama ?? 'terpilih';
+
+        return back()->with('success', "Berhasil menghapus {$jumlah} data siswa pada periode \"{$namaPeriode}\" beserta seluruh data terkaitnya (absensi, jurnal, nilai, dokumen).");
+    }
+
     public function exportExcel(Request $request)
     {
         $q = trim((string) $request->get('q', ''));
         $status = (string) $request->get('status', '');
+        $periode = (string) $request->get('periode', '');
 
-        return Excel::download(new SiswaExport($q, $status), 'data-siswa-' . date('Ymd-His') . '.xlsx');
+        return Excel::download(new SiswaExport($q, $status, $periode), 'data-siswa-' . date('Ymd-His') . '.xlsx');
     }
 
     public function exportPdf(Request $request)
     {
         $q = trim((string) $request->get('q', ''));
         $status = (string) $request->get('status', '');
+        $periode = (string) $request->get('periode', '');
 
         $siswa = User::query()
             ->where('role', 'siswa_pkl')
@@ -161,6 +202,7 @@ class SiswaController extends Controller
                       ->orWhere('nisn', 'like', "%{$q}%");
             })
             ->when($status, fn ($query) => $query->where('status_pkl', $status))
+            ->when($periode, fn ($query) => $query->where('periode_id', $periode))
             ->orderBy('name')
             ->get();
 
