@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Nilai;
 use App\Models\User;
+use App\Support\ImageCompressor;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -48,7 +49,7 @@ class NilaiController extends Controller
         $q      = trim($request->get('q', ''));
         $status = $request->get('status');
 
-        $rekapQuery = User::where('role', 'siswa_pkl')
+        $rekapQuery = User::siswaBerjalan()
             ->where('guru_id', Auth::id())
             ->where('status_pkl', 'aktif');
 
@@ -71,7 +72,7 @@ class NilaiController extends Controller
             'belum_dinilai' => $totalSiswa - $sudahDinilai,
         ];
 
-        $siswa = User::where('role', 'siswa_pkl')
+        $siswa = User::siswaBerjalan()
             ->where('guru_id', Auth::id())
             ->where('status_pkl', 'aktif')
             ->with('nilai')
@@ -94,7 +95,7 @@ class NilaiController extends Controller
     public function storeGuru(Request $request)
     {
         $siswa = User::where('id', $request->user_id)
-            ->where('role', 'siswa_pkl')
+            ->siswa()
             ->where('guru_id', Auth::id())
             ->where('status_pkl', 'aktif')
             ->firstOrFail();
@@ -147,8 +148,7 @@ class NilaiController extends Controller
             if ($nilai->foto_lembar_instruktur && Storage::disk('public')->exists($nilai->foto_lembar_instruktur)) {
                 Storage::disk('public')->delete($nilai->foto_lembar_instruktur);
             }
-            $nilai->foto_lembar_instruktur = $request->file('foto_lembar_instruktur')
-                ->store('nilai/lembar-instruktur', 'public');
+            $nilai->foto_lembar_instruktur = ImageCompressor::store($request->file('foto_lembar_instruktur'), 'nilai/lembar-instruktur');
         }
 
         // Nilai akhir = rata-rata 6 komponen (0-100)

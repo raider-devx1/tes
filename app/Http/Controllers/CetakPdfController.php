@@ -29,7 +29,10 @@ class CetakPdfController extends Controller
         }
 
         abort_if(empty($siswaId), 404, 'Siswa tidak ditemukan.');
-        $siswa = User::where('role', 'siswa_pkl')->findOrFail($siswaId);
+        // withTrashed(): laporan siswa yang SUDAH DIARSIPKAN tetap bisa dicetak.
+        // Justru mencetak berkas angkatan lama itulah alasan utama arsip dibuat.
+        // Jangan ganti menjadi siswaBerjalan() -- itu akan mengembalikan 404.
+        $siswa = User::siswa()->withTrashed()->findOrFail($siswaId);
 
         // Menggunakan perbandingan longgar (==) karena di beberapa environment hosting (seperti Namecheap),
         // ID dari database bisa terbaca sebagai string sedangkan auth ID bertipe integer.
@@ -147,7 +150,7 @@ class CetakPdfController extends Controller
             ? request('tanggal')
             : Carbon::today()->toDateString();
 
-        $query = User::where('role', 'siswa_pkl')
+        $query = User::siswa()
             ->where('status_pkl', 'aktif')
             ->with(['perusahaan', 'guru']);
 
@@ -215,7 +218,7 @@ class CetakPdfController extends Controller
         $catatan = CatatanKegiatan::with(['user.perusahaan', 'user.guru'])
             ->where('is_approved', true)
             ->whereHas('user', function ($u) use ($user) {
-                $u->where('role', 'siswa_pkl')->where('status_pkl', 'aktif');
+                $u->siswaBerjalan()->where('status_pkl', 'aktif');
 
                 if ($user->role === 'guru_pembimbing') {
                     $u->where('guru_id', $user->id);
@@ -296,7 +299,7 @@ class CetakPdfController extends Controller
 
         $observasi = Observasi::with(['items', 'user.perusahaan', 'user.guru'])
             ->whereHas('user', function ($u) use ($user) {
-                $u->where('role', 'siswa_pkl')->where('status_pkl', 'aktif');
+                $u->siswaBerjalan()->where('status_pkl', 'aktif');
 
                 if ($user->role === 'guru_pembimbing') {
                     $u->where('guru_id', $user->id);
@@ -383,7 +386,7 @@ class CetakPdfController extends Controller
     {
         $user = auth()->user();
 
-        $query = User::where('role', 'siswa_pkl');
+        $query = User::siswa();
 
         if ($user->role === 'guru_pembimbing') {
             $query->where('guru_id', $user->id)->where('status_pkl', 'aktif');
@@ -396,7 +399,22 @@ class CetakPdfController extends Controller
         $lembar = [];
         foreach ($siswas as $siswa) {
             $data = $this->buildNilaiData($siswa);
-            if ($data && $data['nilai']->rata_rata !== null) {
+
+            // Sebuah lembar dianggap layak cetak bila SALAH SATU sumber nilai
+            // sudah terisi:
+            //   - nilai_akhir       -> rekap akhir yang dihitung sistem
+            //   - rata_rata_akhir   -> rata-rata 6 komponen skor guru (accessor)
+            //   - rata_rata         -> kolom lama instruktur (skala 1-5)
+            // Sebelumnya hanya `rata_rata` yang diperiksa, sehingga penilaian
+            // yang diinput lewat form baru (skor_* + nilai_akhir) dianggap
+            // kosong dan tombol "Cetak Semua" selalu menghasilkan 404.
+            $adaNilai = $data && (
+                $data['nilai']->nilai_akhir !== null
+                || $data['nilai']->rata_rata_akhir !== null
+                || $data['nilai']->rata_rata !== null
+            );
+
+            if ($adaNilai) {
                 $lembar[] = $data;
             }
         }
@@ -508,7 +526,7 @@ public function cetakAbsensiSemua()
     $kelas  = request()->filled('kelas')  ? request('kelas')  : null;
     $status = request()->filled('status') ? request('status') : null;
 
-    $query = User::where('role', 'siswa_pkl')
+    $query = User::siswa()
         ->where('status_pkl', 'aktif')
         ->with(['perusahaan', 'guru']);
 
@@ -622,7 +640,7 @@ public function cetakAbsensiSemua()
     {
         $user = auth()->user();
 
-        $query = User::where('role', 'siswa_pkl');
+        $query = User::siswa();
 
         if ($user->role === 'guru_pembimbing') {
             $query->where('guru_id', $user->id);

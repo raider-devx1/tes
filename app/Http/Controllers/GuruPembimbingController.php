@@ -34,13 +34,13 @@ class GuruPembimbingController extends Controller
         // ---- Kartu informasi ----
         $totalGuru = User::where('role', 'guru_pembimbing')->count();
 
-        $guruIdsDenganBimbingan = User::where('role', 'siswa_pkl')
+        $guruIdsDenganBimbingan = User::siswaBerjalan()
             ->whereNotNull('guru_id')
             ->distinct()
             ->pluck('guru_id');
 
         $guruAdaBimbingan   = $guruIdsDenganBimbingan->count();
-        $totalSiswaDibimbing = User::where('role', 'siswa_pkl')->whereNotNull('guru_id')->count();
+        $totalSiswaDibimbing = User::siswaBerjalan()->whereNotNull('guru_id')->count();
 
         $totalWakasek = User::where('role', 'guru_pembimbing')->where('is_wakasek', true)->count();
 
@@ -128,7 +128,7 @@ class GuruPembimbingController extends Controller
         DB::transaction(function () use ($guruIds) {
             \App\Models\Jurnal::whereIn('disetujui_oleh', $guruIds)->update(['disetujui_oleh' => null]);
 
-            User::where('role', 'siswa_pkl')->whereIn('guru_id', $guruIds)->update(['guru_id' => null]);
+            User::siswa()->whereIn('guru_id', $guruIds)->update(['guru_id' => null]);
 
             User::whereIn('id', $guruIds)->delete();
         });

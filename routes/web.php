@@ -132,6 +132,14 @@ Route::delete('/akun-admin/{admin}', [AdminAkunController::class, 'destroy'])->n
         Route::resource('instruktur', InstrukturController::class)->parameters(['instruktur' => 'perusahaan'])->except(['show']);
 // ---- MASTER DATA: DATA SISWA PKL ----
         Route::delete('/siswa/hapus-periode', [SiswaController::class, 'destroyByPeriode'])->name('siswa.hapus-periode');
+
+        // ---- ARSIP SISWA (data ter-soft-delete) ----
+        // WAJIB didaftarkan SEBELUM Route::resource('siswa'), supaya ruas
+        // '/siswa/arsip' tidak keburu ditangkap sebagai '/siswa/{siswa}'.
+        Route::get('/siswa/arsip', [SiswaController::class, 'arsip'])->name('siswa.arsip');
+        Route::put('/siswa/arsip/pulihkan-periode', [SiswaController::class, 'restoreByPeriode'])->name('siswa.arsip.pulihkan-periode');
+        Route::put('/siswa/{siswa}/pulihkan', [SiswaController::class, 'restore'])->whereNumber('siswa')->name('siswa.pulihkan');
+
         Route::resource('siswa', SiswaController::class)->except(['show']);
 
 

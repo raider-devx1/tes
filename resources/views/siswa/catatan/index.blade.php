@@ -454,7 +454,7 @@
                                                            class="block w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-[#0047d6] file:text-white hover:file:bg-[#0038aa] file:cursor-pointer">
                                                     <p class="mt-1 text-xs text-[#5b616e]">Unggah file foto (jpg/png). Otomatis dikompres, maks 3MB. Jika tetap melebihi 3MB akan ditolak.</p>
                                                     <template x-if="preview">
-                                                        <img :src="preview" class="mt-3 h-40 rounded-lg border object-cover" alt="Preview bukti">
+                                                        <img loading="lazy" decoding="async" :src="preview" class="mt-3 h-40 rounded-lg border object-cover" alt="Preview bukti">
                                                     </template>
                                                 </div>
                                             </div>

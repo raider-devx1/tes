@@ -5,21 +5,22 @@ namespace App\Http\Controllers;
 use App\Models\Nilai;
 use App\Models\Observasi;
 use App\Models\User;
+use App\Support\ImageCompressor;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class EvaluasiController extends Controller
 {
     /** Opsi filter kelas & jurusan dari seluruh siswa PKL. */
     private function opsiFilter(): array
     {
-        $kelasList = User::where('role', 'siswa_pkl')
+        $kelasList = User::siswaBerjalan()
             ->whereNotNull('kelas')->where('kelas', '!=', '')
             ->distinct()->orderBy('kelas')->pluck('kelas');
 
-        $jurusanList = User::where('role', 'siswa_pkl')
+        $jurusanList = User::siswaBerjalan()
             ->whereNotNull('jurusan')->where('jurusan', '!=', '')
             ->distinct()->orderBy('jurusan')->pluck('jurusan');
 
@@ -29,7 +30,7 @@ class EvaluasiController extends Controller
     /** Daftar siswa PKL untuk pencocokan NISN pada modal tambah/edit. */
     private function siswaList()
     {
-        return User::where('role', 'siswa_pkl')
+        return User::siswa()
             ->where('status_pkl', '!=', 'selesai')
             ->orderBy('name')
             ->get(['id', 'name', 'nisn']);
@@ -51,7 +52,7 @@ public function observasi(Request $request)
     [$kelasList, $jurusanList] = $this->opsiFilter();
 
     $query = Observasi::with(['user', 'guru', 'items'])
-        ->whereHas('user', fn ($u) => $u->where('role', 'siswa_pkl')->where('status_pkl', '!=', 'selesai'))
+        ->whereHas('user', fn ($u) => $u->siswaBerjalan()->where('status_pkl', '!=', 'selesai'))
         ->when($request->filled('q'), function ($q) use ($request) {
             $cari = trim($request->q);
             $q->whereHas('user', fn ($u) => $u
@@ -73,7 +74,7 @@ public function observasi(Request $request)
 
     $observasi = (clone $query)->paginate(15)->withQueryString();
 
-    $baseRekap = Observasi::whereHas('user', fn ($u) => $u->where('role', 'siswa_pkl')->where('status_pkl', '!=', 'selesai'));
+    $baseRekap = Observasi::whereHas('user', fn ($u) => $u->siswaBerjalan()->where('status_pkl', '!=', 'selesai'));
     $rekap = [
         'total'     => (clone $baseRekap)->count(),
         'disetujui' => (clone $baseRekap)->where('status', 'tervalidasi')->count(),
@@ -105,7 +106,7 @@ public function storeObservasi(Request $request)
     ]);
 
     $siswa = User::where('id', $validated['user_id'])
-        ->where('role', 'siswa_pkl')
+        ->siswa()
         ->firstOrFail();
 
     DB::transaction(function () use ($validated, $siswa) {
@@ -146,7 +147,7 @@ public function updateObservasi(Request $request, Observasi $observasi)
     ]);
 
     $siswa = User::where('id', $validated['user_id'])
-        ->where('role', 'siswa_pkl')
+        ->siswa()
         ->firstOrFail();
 
     DB::transaction(function () use ($observasi, $validated, $siswa) {
@@ -203,8 +204,8 @@ public function validasiObservasi(Request $request, Observasi $observasi)
     }
 
     $observasi->update([
-        'foto_dokumentasi'      => $request->file('foto_dokumentasi')->store('observasi/dokumentasi', 'public'),
-        'foto_lembar_observasi' => $request->file('foto_lembar_observasi')->store('observasi/lembar', 'public'),
+        'foto_dokumentasi'      => ImageCompressor::store($request->file('foto_dokumentasi'), 'observasi/dokumentasi'),
+        'foto_lembar_observasi' => ImageCompressor::store($request->file('foto_lembar_observasi'), 'observasi/lembar'),
         'status'                => 'tervalidasi',
         'validated_by_guru_id'  => $observasi->guru_id ?? Auth::id(),
         'validated_at'          => now(),
@@ -259,13 +260,13 @@ public function destroyObservasi(Observasi $observasi)
         $jurusan = $request->get('jurusan');
         $status  = $request->get('status'); // 'sudah' | 'belum'
 
-        $total = User::where('role', 'siswa_pkl')->where('status_pkl', '!=', 'selesai')->count();
-        $sudah = User::where('role', 'siswa_pkl')->where('status_pkl', '!=', 'selesai')
+        $total = User::siswaBerjalan()->where('status_pkl', '!=', 'selesai')->count();
+        $sudah = User::siswaBerjalan()->where('status_pkl', '!=', 'selesai')
             ->whereHas('nilai', fn ($n) => $n->whereNotNull('nilai_akhir'))->count();
 
         $rekap = ['total' => $total, 'sudah' => $sudah, 'belum' => $total - $sudah];
 
-        $siswa = User::where('role', 'siswa_pkl')
+        $siswa = User::siswa()
             ->where('status_pkl', '!=', 'selesai')
             ->with(['nilai', 'guru'])
             ->when($q !== '', fn ($query) => $query->where(fn ($u) =>
@@ -354,8 +355,7 @@ public function destroyObservasi(Observasi $observasi)
             if ($nilai->foto_lembar_instruktur && Storage::disk('public')->exists($nilai->foto_lembar_instruktur)) {
                 Storage::disk('public')->delete($nilai->foto_lembar_instruktur);
             }
-            $nilai->foto_lembar_instruktur = $request->file('foto_lembar_instruktur')
-                ->store('nilai/lembar-instruktur', 'public');
+            $nilai->foto_lembar_instruktur = ImageCompressor::store($request->file('foto_lembar_instruktur'), 'nilai/lembar-instruktur');
         }
 
         // Nilai akhir = rata-rata 6 komponen (0–100)
@@ -367,7 +367,7 @@ public function destroyObservasi(Observasi $observasi)
     public function storePenilaian(Request $request)
     {
         $request->validate($this->aturanPenilaian());
-        $siswa = User::where('role', 'siswa_pkl')->findOrFail($request->user_id);
+        $siswa = User::siswa()->findOrFail($request->user_id);
 
         $nilai = Nilai::firstOrNew(['user_id' => $siswa->id]);
         $this->isiNilai($nilai, $request, $siswa);
@@ -380,7 +380,7 @@ public function destroyObservasi(Observasi $observasi)
     public function updatePenilaian(Request $request, Nilai $nilai)
     {
         $request->validate($this->aturanPenilaian());
-        $siswa = User::where('role', 'siswa_pkl')->findOrFail($request->user_id);
+        $siswa = User::siswa()->findOrFail($request->user_id);
 
         $this->isiNilai($nilai, $request, $siswa);
         $nilai->save();

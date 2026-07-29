@@ -15,7 +15,7 @@ class GuruController extends Controller
    // Daftar siswa bimbingan (tabel lengkap + filter + pagination)
 public function index(Request $request)
 {
-    $query = User::where('role', 'siswa_pkl')
+    $query = User::siswa()
         ->where('guru_id', Auth::id())
         ->where('status_pkl', 'aktif') // hanya siswa yang sedang aktif PKL
         ->with(['perusahaan', 'periode']);
@@ -31,17 +31,17 @@ public function index(Request $request)
         });
     }
 
-    // Filter dropdown: Periode PKL
-    if ($request->filled('periode_id')) {
-        $query->where('periode_id', $request->periode_id);
-    }
+    // Filter dropdown: Periode PKL.
+    // Scope periode() sudah mengabaikan nilai kosong dengan sendirinya,
+    // sehingga tidak perlu lagi dibungkus pengecekan filled().
+    $query->periode($request->input('periode_id'));
 
     $siswas = $query->orderBy('name')->paginate(15)->withQueryString();
 
     $periodes = PeriodePkl::orderByDesc('tahun_ajaran')->orderBy('nama')->get();
 
     // Rekap seluruh siswa bimbingan (tidak terpengaruh filter/pagination)
-    $rekapQuery = User::where('role', 'siswa_pkl')->where('guru_id', Auth::id());
+    $rekapQuery = User::siswa()->where('guru_id', Auth::id());
 
     $rekap = [
         'total'   => (clone $rekapQuery)->count(),
@@ -62,7 +62,7 @@ public function index(Request $request)
     */
   public function monitoringJurnal(Request $request)
 {
-    $siswaIds = User::where('role', 'siswa_pkl')
+    $siswaIds = User::siswa()
         ->where('guru_id', Auth::id())
         ->where('status_pkl', 'aktif')
         ->pluck('id');
@@ -89,7 +89,7 @@ public function index(Request $request)
         'draft'     => Jurnal::whereIn('siswa_id', $siswaIds)->where('status', 'draft')->count(),
     ];
 
-    $siswas = User::where('role', 'siswa_pkl')->where('guru_id', Auth::id())->where('status_pkl', 'aktif')->orderBy('name')->get();
+    $siswas = User::siswa()->where('guru_id', Auth::id())->where('status_pkl', 'aktif')->orderBy('name')->get();
 
     return view('guru.monitoring.jurnal', compact('jurnals', 'rekap', 'siswas'));
 }
@@ -102,7 +102,7 @@ public function index(Request $request)
     */
   public function monitoringAbsensi(Request $request)
 {
-    $siswaIds = User::where('role', 'siswa_pkl')
+    $siswaIds = User::siswa()
         ->where('guru_id', Auth::id())
         ->where('status_pkl', 'aktif')
         ->pluck('id');
@@ -133,7 +133,7 @@ public function index(Request $request)
         'Alpha' => Absensi::whereIn('siswa_id', $siswaIds)->where('status', 'Alpha')->count(),
     ];
 
-    $siswas = User::where('role', 'siswa_pkl')->where('guru_id', Auth::id())->where('status_pkl', 'aktif')->orderBy('name')->get();
+    $siswas = User::siswa()->where('guru_id', Auth::id())->where('status_pkl', 'aktif')->orderBy('name')->get();
 
     // Daftar usulan jam kerja industri yang menunggu validasi guru.
     $usulanJam = $siswas->where('status_jam_usulan', 'diajukan')->values();
@@ -158,7 +158,7 @@ public function bukaAbsensi(Request $request)
     $mode = $request->input('mode') === 'nisn' ? 'nisn' : 'semua';
     $buka = $request->input('aksi') === 'buka';
 
-    $base = User::where('role', 'siswa_pkl')->where('guru_id', Auth::id());
+    $base = User::siswa()->where('guru_id', Auth::id());
 
     if ($mode === 'semua') {
         (clone $base)->update(['absensi_dibuka' => $buka]);

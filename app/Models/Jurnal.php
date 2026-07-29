@@ -2,15 +2,23 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\MilikPeriodePkl;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Jurnal extends Model
 {
-    use HasFactory;
+    use HasFactory, MilikPeriodePkl;
+
+    /**
+     * Kolom yang menyimpan ID siswa pemilik data.
+     * Dipakai trait MilikPeriodePkl untuk mengisi periode_id otomatis.
+     */
+    protected string $kolomPemilikPeriode = 'siswa_id';
 
     protected $fillable = [
         'siswa_id',
+        'periode_id',   // periode PKL tempat data ini dibuat (diisi otomatis)
         'hari_tanggal',
         'status',                 // draft | diajukan | disetujui
         'foto_bukti',
@@ -28,7 +36,7 @@ class Jurnal extends Model
 
     public function siswa()
     {
-        return $this->belongsTo(User::class, 'siswa_id');
+        return $this->belongsTo(User::class, 'siswa_id')->withTrashed();
     }
 
     public function items()
@@ -39,6 +47,6 @@ class Jurnal extends Model
     // Guru pembimbing yang memvalidasi
     public function validator()
     {
-        return $this->belongsTo(User::class, 'validated_by_guru_id');
+        return $this->belongsTo(User::class, 'validated_by_guru_id')->withTrashed();
     }
 }

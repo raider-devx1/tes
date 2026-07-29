@@ -2,8 +2,7 @@
 <phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
          bootstrap="vendor/autoload.php"
-         colors="true"
->
+         colors="true">
     <testsuites>
         <testsuite name="Unit">
             <directory>tests/Unit</directory>
@@ -21,14 +20,39 @@
         <env name="APP_ENV" value="testing"/>
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>
         <env name="BCRYPT_ROUNDS" value="4"/>
-        <env name="BROADCAST_CONNECTION" value="null"/>
         <env name="CACHE_STORE" value="array"/>
+
+        <!--
+            ================================================================
+            DATABASE TES TERPISAH TOTAL DARI .env
+            ================================================================
+            Dua baris di bawah membuat tes berjalan di atas database SQLite
+            yang hidup di dalam RAM dan lenyap sendiri begitu tes selesai.
+
+            Artinya:
+            - Database MySQL "pkl" di .env TIDAK PERNAH tersentuh
+            - Tidak perlu menjalankan seeder ulang setelah tes
+            - Tidak ada risiko kehilangan data siswa, jurnal, atau absensi
+
+            Syaratnya, ekstensi PHP berikut harus aktif:
+                pdo_sqlite
+                sqlite3
+
+            Di Laragon: Menu -> PHP -> Extensions, lalu centang keduanya.
+            Periksa dengan "php -m" di terminal baru.
+
+            Bila muncul pesan "could not find driver", artinya salah satu
+            ekstensi di atas belum aktif.
+            ================================================================
+        -->
         <env name="DB_CONNECTION" value="sqlite"/>
         <env name="DB_DATABASE" value=":memory:"/>
         <env name="DB_URL" value=""/>
+
         <env name="MAIL_MAILER" value="array"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>
+        <env name="BROADCAST_CONNECTION" value="null"/>
         <env name="PULSE_ENABLED" value="false"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="NIGHTWATCH_ENABLED" value="false"/>

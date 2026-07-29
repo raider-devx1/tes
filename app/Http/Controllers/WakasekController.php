@@ -32,7 +32,7 @@ class WakasekController extends Controller
         $status = $request->get('status', 'diajukan');
 
         $baseQuery = Observasi::query()
-            ->whereHas('user', fn ($u) => $u->where('role', 'siswa_pkl'));
+            ->whereHas('user', fn ($u) => $u->siswaBerjalan());
 
         $rekap = [
             'menunggu'    => (clone $baseQuery)->where('status', 'diajukan')->count(),

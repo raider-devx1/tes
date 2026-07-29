@@ -16,7 +16,8 @@
                                 {{ $info->judul }}
                             </h4>
                             <div class="konten-html text-gray-600 text-sm mt-2 leading-relaxed">
-                                {!! $info->konten !!}
+                                {{-- Disaring lewat allowlist tag/atribut untuk mencegah stored XSS. --}}
+                                {!! \App\Support\HtmlSanitizer::bersihkan($info->konten) !!}
                             </div>
 
                             @if(!empty($info->file))

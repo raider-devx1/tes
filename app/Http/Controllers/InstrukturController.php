@@ -38,8 +38,8 @@ class InstrukturController extends Controller
         $totalIndustri      = Perusahaan::count();
         $totalPembimbing    = Perusahaan::whereNotNull('pembimbing_industri')
             ->where('pembimbing_industri', '!=', '')->count();
-        $industriAdaSiswa   = Perusahaan::whereHas('siswa')->count();
-        $totalSiswaIndustri = User::where('role', 'siswa_pkl')
+        $industriAdaSiswa   = Perusahaan::whereHas('siswa', fn ($s) => $s->berjalan())->count();
+        $totalSiswaIndustri = User::siswaBerjalan()
             ->whereNotNull('perusahaan_id')->count();
 
         $rekap = [
@@ -50,7 +50,7 @@ class InstrukturController extends Controller
         ];
 
         $industri = Perusahaan::query()
-            ->withCount('siswa')
+            ->withCount(['siswa' => fn ($s) => $s->berjalan()])
             ->when($q, function ($query) use ($q) {
                 $query->where('nama_perusahaan', 'like', "%{$q}%")
                       ->orWhere('pembimbing_industri', 'like', "%{$q}%")
@@ -143,7 +143,7 @@ class InstrukturController extends Controller
         $q = trim((string) $request->get('q', ''));
 
         $industri = Perusahaan::query()
-            ->withCount('siswa')
+            ->withCount(['siswa' => fn ($s) => $s->berjalan()])
             ->when($q, function ($query) use ($q) {
                 $query->where('nama_perusahaan', 'like', "%{$q}%")
                       ->orWhere('pembimbing_industri', 'like', "%{$q}%")

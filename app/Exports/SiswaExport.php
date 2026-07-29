@@ -31,15 +31,19 @@ class SiswaExport extends StringValueBinder implements FromQuery, WithHeadings, 
 
     public function query(): Builder
     {
+        // Penyaringan role dan periode memakai scope terpusat di model User
+        // (siswa() dan periode()), sama persis dengan yang dipakai controller.
+        // Tujuannya agar isi file Excel tidak pernah berbeda dari yang tampil
+        // di layar hanya karena aturan penyaringannya ditulis ulang di sini.
         return User::query()
-            ->where('role', 'siswa_pkl')
+            ->siswa()
             ->with(['perusahaan', 'guru', 'periode'])
             ->when($this->q, function ($query) {
                 $query->where('name', 'like', "%{$this->q}%")
                       ->orWhere('nisn', 'like', "%{$this->q}%");
             })
             ->when($this->status, fn ($query) => $query->where('status_pkl', $this->status))
-            ->when($this->periode, fn ($query) => $query->where('periode_id', $this->periode))
+            ->periode($this->periode)
             ->orderBy('name');
     }
 

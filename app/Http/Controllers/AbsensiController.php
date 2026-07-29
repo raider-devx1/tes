@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Absensi;
 use App\Models\Pengaturan;
 use App\Models\User;
+use App\Support\ImageCompressor;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -265,7 +266,7 @@ class AbsensiController extends Controller
             if ($absensi->foto_bukti) {
                 Storage::disk('public')->delete($absensi->foto_bukti);
             }
-            $absensi->foto_bukti = $request->file('foto_bukti')->store('bukti_fisik/absensi', 'public');
+            $absensi->foto_bukti = ImageCompressor::store($request->file('foto_bukti'), 'bukti_fisik/absensi');
         }
 
         $absensi->status             = $validated['status'];
@@ -376,7 +377,7 @@ class AbsensiController extends Controller
      */
     public function validasiJamByGuru(Request $request, $siswaId)
     {
-        $siswa = User::where('id', $siswaId)->where('role', 'siswa_pkl')->firstOrFail();
+        $siswa = User::where('id', $siswaId)->siswa()->firstOrFail();
 
         abort_unless(
             (int) $siswa->guru_id === (int) Auth::id(),
@@ -412,7 +413,7 @@ class AbsensiController extends Controller
      */
     public function updateJamByGuru(Request $request, $siswaId)
     {
-        $siswa = User::where('id', $siswaId)->where('role', 'siswa_pkl')->firstOrFail();
+        $siswa = User::where('id', $siswaId)->siswa()->firstOrFail();
 
         abort_unless(
             (int) $siswa->guru_id === (int) Auth::id(),

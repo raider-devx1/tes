@@ -2,16 +2,24 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\MilikPeriodePkl;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Nilai extends Model
 {
-    use HasFactory;
+    use HasFactory, MilikPeriodePkl;
+
+    /**
+     * Kolom yang menyimpan ID siswa pemilik data.
+     * Dipakai trait MilikPeriodePkl untuk mengisi periode_id otomatis.
+     */
+    protected string $kolomPemilikPeriode = 'user_id';
 
     protected $fillable = [
         'user_id',
+        'periode_id',   // periode PKL tempat data ini dibuat (diisi otomatis)
         'guru_id',
 
         // Kolom lama instruktur (skala 1-5) — dibiarkan untuk kompatibilitas data lama
@@ -42,7 +50,7 @@ class Nilai extends Model
     // Relasi ke Siswa
     public function user(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'user_id');
+        return $this->belongsTo(User::class, 'user_id')->withTrashed();
     }
 
     // Instruktur industri kini data (nama pembimbing pada Perusahaan siswa), bukan akun.
@@ -59,7 +67,7 @@ class Nilai extends Model
     // Relasi ke Guru Pembimbing
     public function guru(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'guru_id');
+        return $this->belongsTo(User::class, 'guru_id')->withTrashed();
     }
 
     /** Daftar 6 komponen skor penilaian guru. */

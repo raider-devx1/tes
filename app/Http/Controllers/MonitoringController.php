@@ -7,6 +7,8 @@ use App\Models\CatatanKegiatan;
 use App\Models\Jurnal;
 use App\Models\Pengaturan;
 use App\Models\User;
+use App\Support\ImageCompressor;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -18,7 +20,7 @@ class MonitoringController extends Controller
     /** Opsi dropdown filter kelas & jurusan (diambil dari siswa PKL). */
     private function opsiFilter(): array
     {
-        $base = User::where('role', 'siswa_pkl');
+        $base = User::siswaBerjalan();
 
         return [
             'kelasList'   => (clone $base)->whereNotNull('kelas')->distinct()->orderBy('kelas')->pluck('kelas'),
@@ -29,7 +31,7 @@ class MonitoringController extends Controller
     /** Daftar siswa PKL untuk dropdown form tambah/edit. */
     private function siswaList()
     {
-        return User::where('role', 'siswa_pkl')->where('status_pkl', '!=', 'selesai')->orderBy('name')->get(['id', 'name', 'nisn']);
+        return User::siswaBerjalan()->where('status_pkl', '!=', 'selesai')->orderBy('name')->get(['id', 'name', 'nisn']);
     }
 
     // ===================================================================
@@ -45,7 +47,7 @@ public function jurnal(Request $request)
 
     $jurnal = Jurnal::query()
         ->with(['siswa', 'items'])
-        ->whereHas('siswa', fn ($s) => $s->where('status_pkl', '!=', 'selesai'))
+        ->whereHas('siswa', fn ($s) => $s->siswaBerjalan()->where('status_pkl', '!=', 'selesai'))
         ->when($q, fn ($query) => $query->whereHas('siswa', fn ($s) =>
             $s->where('name', 'like', "%{$q}%")->orWhere('nisn', 'like', "%{$q}%")))
         ->when($kelas,   fn ($query) => $query->whereHas('siswa', fn ($s) => $s->where('kelas', $kelas)))
@@ -56,7 +58,7 @@ public function jurnal(Request $request)
         ->paginate(15)
         ->withQueryString();
 
-    $rekapBase = fn () => Jurnal::whereHas('siswa', fn ($s) => $s->where('status_pkl', '!=', 'selesai'));
+    $rekapBase = fn () => Jurnal::whereHas('siswa', fn ($s) => $s->siswaBerjalan()->where('status_pkl', '!=', 'selesai'));
     $rekap = [
         'total'     => $rekapBase()->count(),
         'disetujui' => $rekapBase()->where('status', 'disetujui')->count(),
@@ -91,7 +93,7 @@ public function storeJurnal(Request $request)
     DB::transaction(function () use ($request, $data) {
         $fotoBukti = null;
         if ($request->hasFile('foto_bukti')) {
-            $fotoBukti = $request->file('foto_bukti')->store('bukti_fisik/jurnal', 'public');
+            $fotoBukti = ImageCompressor::store($request->file('foto_bukti'), 'bukti_fisik/jurnal');
         }
 
         $jurnal = Jurnal::create([
@@ -111,7 +113,7 @@ public function storeJurnal(Request $request)
             }
             $path = null;
             if ($request->hasFile("items.$i.dokumentasi")) {
-                $path = $request->file("items.$i.dokumentasi")->store('dokumentasi_jurnal', 'public');
+                $path = ImageCompressor::store($request->file("items.$i.dokumentasi"), 'dokumentasi_jurnal');
             }
             $jurnal->items()->create([
                 'unit_kerja'  => $unit,
@@ -149,7 +151,7 @@ public function updateJurnal(Request $request, Jurnal $jurnal)
             if ($fotoBukti) {
                 Storage::disk('public')->delete($fotoBukti);
             }
-            $fotoBukti = $request->file('foto_bukti')->store('bukti_fisik/jurnal', 'public');
+            $fotoBukti = ImageCompressor::store($request->file('foto_bukti'), 'bukti_fisik/jurnal');
         }
 
         $jurnal->update([
@@ -187,7 +189,7 @@ public function updateJurnal(Request $request, Jurnal $jurnal)
                 if ($existingDoc) {
                     Storage::disk('public')->delete($existingDoc);
                 }
-                $path = $request->file("items.$i.dokumentasi")->store('dokumentasi_jurnal', 'public');
+                $path = ImageCompressor::store($request->file("items.$i.dokumentasi"), 'dokumentasi_jurnal');
             }
 
             if ($existingId && ($item = $jurnal->items()->find($existingId))) {
@@ -239,7 +241,7 @@ public function catatan(Request $request)
 
     $catatan = CatatanKegiatan::query()
         ->with('user')
-        ->whereHas('user', fn ($u) => $u->where('status_pkl', '!=', 'selesai'))
+        ->whereHas('user', fn ($u) => $u->siswaBerjalan()->where('status_pkl', '!=', 'selesai'))
         ->when($q, fn ($query) => $query->whereHas('user', fn ($u) =>
             $u->where('name', 'like', "%{$q}%")->orWhere('nisn', 'like', "%{$q}%")))
         ->when($kelas,   fn ($query) => $query->whereHas('user', fn ($u) => $u->where('kelas', $kelas)))
@@ -249,7 +251,7 @@ public function catatan(Request $request)
         ->paginate(15)
         ->withQueryString();
 
-    $rekapBase = fn () => CatatanKegiatan::whereHas('user', fn ($u) => $u->where('status_pkl', '!=', 'selesai'));
+    $rekapBase = fn () => CatatanKegiatan::whereHas('user', fn ($u) => $u->siswaBerjalan()->where('status_pkl', '!=', 'selesai'));
     $rekap = [
         'total'     => $rekapBase()->count(),
         'disetujui' => $rekapBase()->where('status', 'disetujui')->count(),
@@ -277,8 +279,15 @@ public function storeCatatan(Request $request)
     ]);
 
     if ($request->hasFile('foto_bukti')) {
-        $data['foto_bukti'] = $request->file('foto_bukti')->store('bukti_fisik/catatan', 'public');
+        $data['foto_bukti'] = ImageCompressor::store($request->file('foto_bukti'), 'bukti_fisik/catatan');
     }
+
+    // Kolom perencanaan_kegiatan & pelaksanaan_kegiatan bertipe NOT NULL di
+    // basis data. Bila pengguna mengosongkannya, ConvertEmptyStringsToNull
+    // mengubahnya menjadi null dan INSERT akan gagal. Simpan string kosong.
+    $data['perencanaan_kegiatan'] = $data['perencanaan_kegiatan'] ?? '';
+    $data['pelaksanaan_kegiatan'] = $data['pelaksanaan_kegiatan'] ?? '';
+
     $data['validated_by_guru_id'] = $data['status'] === 'disetujui' ? Auth::id() : null;
     $data['validated_at']         = $data['status'] === 'disetujui' ? now() : null;
 
@@ -307,14 +316,22 @@ public function updateCatatan(Request $request, CatatanKegiatan $catatan)
     }
     if ($request->hasFile('foto_bukti')) {
         if ($fotoBukti) Storage::disk('public')->delete($fotoBukti);
-        $fotoBukti = $request->file('foto_bukti')->store('bukti_fisik/catatan', 'public');
+        $fotoBukti = ImageCompressor::store($request->file('foto_bukti'), 'bukti_fisik/catatan');
     }
 
     $catatan->update([
         'user_id'              => $data['user_id'],
         'nama_pekerjaan'       => $data['nama_pekerjaan'],
-        'perencanaan_kegiatan' => $data['perencanaan_kegiatan'] ?? null,
-        'pelaksanaan_kegiatan' => $data['pelaksanaan_kegiatan'] ?? null,
+        // NOT NULL di basis data. Bila kunci tidak dikirim sama sekali
+        // (mis. formulir parsial), nilai lama dipertahankan; bila dikirim
+        // dalam keadaan kosong, disimpan sebagai string kosong -- bukan null,
+        // karena null memicu galat 'NOT NULL constraint failed'.
+        'perencanaan_kegiatan' => $request->has('perencanaan_kegiatan')
+            ? ($data['perencanaan_kegiatan'] ?? '')
+            : (string) $catatan->perencanaan_kegiatan,
+        'pelaksanaan_kegiatan' => $request->has('pelaksanaan_kegiatan')
+            ? ($data['pelaksanaan_kegiatan'] ?? '')
+            : (string) $catatan->pelaksanaan_kegiatan,
         'catatan_instruktur'   => $data['catatan_instruktur'] ?? null,
         'status'               => $data['status'],
         'foto_bukti'           => $fotoBukti,
@@ -341,7 +358,7 @@ public function destroyCatatan(CatatanKegiatan $catatan)
 public function absensi(Request $request)
 {
     // Tandai otomatis Alpha (logika controller, menggantikan scheduler).
-    User::where('role', 'siswa_pkl')->where('status_pkl', 'aktif')->get()
+    User::siswaBerjalan()->where('status_pkl', 'aktif')->get()
         ->each(fn ($s) => Absensi::sinkronkanAlpa($s));
 
     $q       = trim($request->get('q', ''));
@@ -353,7 +370,7 @@ public function absensi(Request $request)
 
     $absensi = Absensi::query()
         ->with('siswa')
-        ->whereHas('siswa', fn ($s) => $s->where('status_pkl', '!=', 'selesai'))
+        ->whereHas('siswa', fn ($s) => $s->siswaBerjalan()->where('status_pkl', '!=', 'selesai'))
         ->when($q, fn ($query) => $query->whereHas('siswa', fn ($s) =>
             $s->where('name', 'like', "%{$q}%")->orWhere('nisn', 'like', "%{$q}%")))
         ->when($kelas,   fn ($query) => $query->whereHas('siswa', fn ($s) => $s->where('kelas', $kelas)))
@@ -366,7 +383,7 @@ public function absensi(Request $request)
         ->paginate(15)
         ->withQueryString();
 
-    $rekapBase = fn () => Absensi::whereHas('siswa', fn ($s) => $s->where('status_pkl', '!=', 'selesai'));
+    $rekapBase = fn () => Absensi::whereHas('siswa', fn ($s) => $s->siswaBerjalan()->where('status_pkl', '!=', 'selesai'));
     $rekap = [
         'Hadir' => $rekapBase()->where('status', 'Hadir')->count(),
         'Izin'  => $rekapBase()->where('status', 'Izin')->count(),
@@ -391,7 +408,7 @@ public function absensi(Request $request)
     $paksaBuka    = $paksaMasuk || $paksaPulang;
 
     // Siswa yang absensinya dibuka manual per-orang (di luar buka global).
-    $dibukaList = User::where('role', 'siswa_pkl')
+    $dibukaList = User::siswaBerjalan()
         ->where(fn ($q) => $q->where('absensi_dibuka', true)
             ->orWhere('absensi_dibuka_masuk', true)
             ->orWhere('absensi_dibuka_pulang', true))
@@ -399,7 +416,7 @@ public function absensi(Request $request)
         ->get(['id', 'name', 'nisn', 'absensi_dibuka', 'absensi_dibuka_masuk', 'absensi_dibuka_pulang']);
 
     // Data jam kerja industri per siswa (untuk pencarian & edit via NISN oleh admin).
-    $siswaJam = User::where('role', 'siswa_pkl')
+    $siswaJam = User::siswaBerjalan()
         ->where('status_pkl', '!=', 'selesai')
         ->orderBy('name')
         ->get(['id', 'name', 'nisn', 'kelas', 'jam_masuk_industri', 'jam_pulang_industri', 'jam_masuk_usulan', 'jam_pulang_usulan', 'status_jam_usulan', 'catatan_jam_usulan']);
@@ -426,7 +443,7 @@ public function absensi(Request $request)
  */
 public function updateJamAbsensi(Request $request, $siswa)
 {
-    $siswa = User::where('id', $siswa)->where('role', 'siswa_pkl')->firstOrFail();
+    $siswa = User::where('id', $siswa)->siswa()->firstOrFail();
 
     $validated = $request->validate([
         'jam_masuk_industri'  => ['required', 'regex:/^\d{1,2}:\d{2}(:\d{2})?$/'],
@@ -455,7 +472,7 @@ public function updateJamAbsensi(Request $request, $siswa)
  */
 public function validasiJamAbsensi(Request $request, $siswa)
 {
-    $siswa = User::where('id', $siswa)->where('role', 'siswa_pkl')->firstOrFail();
+    $siswa = User::where('id', $siswa)->siswa()->firstOrFail();
     $aksi  = $request->input('aksi') === 'tolak' ? 'tolak' : 'setuju';
 
     if ($aksi === 'tolak') {
@@ -562,7 +579,7 @@ public function bukaAbsensi(Request $request)
 
         // Saat menutup SEMUA, kembalikan juga pembukaan per-siswa ke jadwal.
         if (! $buka && $target === 'semua') {
-            User::where('role', 'siswa_pkl')->update([
+            User::siswaBerjalan()->update([
                 'absensi_dibuka'        => false,
                 'absensi_dibuka_masuk'  => false,
                 'absensi_dibuka_pulang' => false,
@@ -580,7 +597,7 @@ public function bukaAbsensi(Request $request)
         return back()->with('error', 'NISN wajib diisi untuk membuka/menutup absensi per siswa.');
     }
 
-    $siswa = User::where('role', 'siswa_pkl')->where('nisn', $nisn)->first();
+    $siswa = User::siswa()->where('nisn', $nisn)->first();
     if (! $siswa) {
         return back()->with('error', "Siswa dengan NISN {$nisn} tidak ditemukan.");
     }
@@ -606,30 +623,58 @@ public function storeAbsensi(Request $request)
         'siswa_id'           => ['required', 'exists:users,id'],
         'tanggal'            => ['required', 'date'],
         'status'             => ['required', Rule::in(['Hadir', 'Izin', 'Sakit', 'Alpha'])],
-        'jam_masuk'          => ['nullable', 'date_format:H:i'],
-        'jam_pulang'         => ['nullable', 'date_format:H:i'],
+        // Terima 'H:i' maupun 'H:i:s'. Peramban mengirim 'H:i', tetapi data
+        // yang berasal dari database/tes sering berbentuk 'H:i:s'. Menolaknya
+        // membuat penyimpanan gagal diam-diam (redirect back + error).
+        'jam_masuk'          => ['nullable', 'date_format:H:i,H:i:s'],
+        'jam_pulang'         => ['nullable', 'date_format:H:i,H:i:s'],
         'status_validasi'    => ['required', Rule::in(['draft', 'diajukan', 'disetujui'])],
         'catatan_instruktur' => ['nullable', 'string'],
         'foto_bukti'         => ['nullable', 'image', 'mimes:jpeg,png,jpg', 'max:3072'],
     ]);
 
+    // Normalisasi tanggal ke 'Y-m-d'.
+    $tanggal = Carbon::parse($data['tanggal'])->toDateString();
+
+    // PENTING: 'jam_masuk' / 'jam_pulang' bersifat nullable. Bila pemanggil
+    // tidak mengirim kuncinya sama sekali, kunci itu TIDAK ada di dalam $data.
+    // Wajib memakai `?? null`, bukan akses langsung (memicu Undefined array key).
+    $jamMasuk  = $data['jam_masuk']  ?? null;
+    $jamPulang = $data['jam_pulang'] ?? null;
+
     $attrs = [
         'status'               => $data['status'],
-        'jam_masuk'            => $data['jam_masuk'] ?? null,
-        'jam_pulang'           => $data['jam_pulang'] ?? null,
+        'jam_masuk'            => $jamMasuk  ? substr($jamMasuk, 0, 5)  : null,
+        'jam_pulang'           => $jamPulang ? substr($jamPulang, 0, 5) : null,
         'status_validasi'      => $data['status_validasi'],
         'catatan_instruktur'   => $data['catatan_instruktur'] ?? null,
         'validated_by_guru_id' => $data['status_validasi'] === 'disetujui' ? Auth::id() : null,
         'validated_at'         => $data['status_validasi'] === 'disetujui' ? now() : null,
     ];
     if ($request->hasFile('foto_bukti')) {
-        $attrs['foto_bukti'] = $request->file('foto_bukti')->store('bukti_fisik/absensi', 'public');
+        $attrs['foto_bukti'] = ImageCompressor::store($request->file('foto_bukti'), 'bukti_fisik/absensi');
     }
 
-    Absensi::updateOrCreate(
-        ['siswa_id' => $data['siswa_id'], 'tanggal' => $data['tanggal']],
-        $attrs
-    );
+    // Pencarian baris lama memakai whereDate(), BUKAN updateOrCreate().
+    // Alasannya: cast 'tanggal' => 'date' membuat Eloquent menuliskan nilai
+    // sebagai '2026-07-29 00:00:00'. Di MySQL kolomnya bertipe DATE sehingga
+    // bagian jam dipangkas dan pencocokan '2026-07-29' tetap berhasil; di
+    // SQLite kolomnya TEXT sehingga string tersimpan berbeda dengan kunci
+    // pencarian -> baris lama tidak ketemu -> INSERT baru -> menabrak unique
+    // (siswa_id, tanggal). whereDate() membandingkan bagian tanggalnya saja,
+    // sehingga perilakunya sama di kedua mesin basis data.
+    $absensi = Absensi::where('siswa_id', $data['siswa_id'])
+        ->whereDate('tanggal', $tanggal)
+        ->first();
+
+    if ($absensi) {
+        $absensi->fill($attrs)->save();
+    } else {
+        Absensi::create($attrs + [
+            'siswa_id' => $data['siswa_id'],
+            'tanggal'  => $tanggal,
+        ]);
+    }
 
     return back()->with('success', 'Absensi berhasil disimpan.');
 }
@@ -655,7 +700,7 @@ public function updateAbsensi(Request $request, Absensi $absensi)
     }
     if ($request->hasFile('foto_bukti')) {
         if ($fotoBukti) Storage::disk('public')->delete($fotoBukti);
-        $fotoBukti = $request->file('foto_bukti')->store('bukti_fisik/absensi', 'public');
+        $fotoBukti = ImageCompressor::store($request->file('foto_bukti'), 'bukti_fisik/absensi');
     }
 
     $absensi->update([

@@ -320,7 +320,7 @@
                         <div>
                             <p class="text-[11px] font-bold uppercase tracking-wide text-[#5b616e]">Bukti Fisik</p>
                             <a :href="detailData.foto_bukti_url" download target="_blank" class="mt-1 inline-block">
-                                <img :src="detailData.foto_bukti_url" alt="Bukti" class="max-h-48 rounded-lg border-2 border-[#0047d6]/15 object-cover">
+                                <img loading="lazy" decoding="async" :src="detailData.foto_bukti_url" alt="Bukti" class="max-h-48 rounded-lg border-2 border-[#0047d6]/15 object-cover">
                             </a>
                         </div>
                     </template>

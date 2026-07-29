@@ -648,7 +648,7 @@
                     </div>
                     <template x-if="detailData.foto_bukti_url">
                         <div><p class="text-[11px] font-semibold uppercase tracking-wide text-gray-400">Bukti Fisik</p>
-                            <a :href="detailData.foto_bukti_url" download target="_blank" class="mt-1 inline-block"><img :src="detailData.foto_bukti_url" alt="Bukti" class="max-h-48 rounded-lg border border-blue-100 object-cover"></a>
+                            <a :href="detailData.foto_bukti_url" download target="_blank" class="mt-1 inline-block"><img loading="lazy" decoding="async" :src="detailData.foto_bukti_url" alt="Bukti" class="max-h-48 rounded-lg border border-blue-100 object-cover"></a>
                         </div>
                     </template>
                 </div>

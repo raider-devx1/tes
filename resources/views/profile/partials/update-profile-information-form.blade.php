@@ -29,7 +29,7 @@
             <x-input-label :value="__('Foto Profil')" />
             <div class="mt-2 flex items-center gap-4">
                 <template x-if="fotoPreview">
-                    <img :src="fotoPreview" alt="Foto profil"
+                    <img loading="lazy" decoding="async" :src="fotoPreview" alt="Foto profil"
                          class="h-20 w-20 rounded-full object-cover ring-2 ring-gray-100">
                 </template>
                 <template x-if="!fotoPreview">

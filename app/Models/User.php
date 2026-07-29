@@ -7,6 +7,7 @@ use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -46,12 +47,30 @@ use Illuminate\Notifications\Notifiable;
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable;
+    /*
+    |--------------------------------------------------------------------------
+    | SoftDeletes
+    |--------------------------------------------------------------------------
+    | Semua tabel transaksi PKL memakai onDelete('cascade') ke tabel ini.
+    | Tanpa soft delete, satu klik hapus siswa akan memusnahkan seluruh
+    | jurnal, absensi, nilai, dan dokumennya secara permanen.
+    |
+    | Dengan SoftDeletes, penghapusan hanya mengisi kolom deleted_at.
+    | Tidak ada perintah DELETE sungguhan, sehingga cascade TIDAK berjalan
+    | dan seluruh riwayat PKL tetap utuh serta bisa dipulihkan:
+    |
+    |     User::onlyTrashed()->findOrFail($id)->restore();
+    |
+    | Penghapusan permanen tetap mungkin lewat forceDelete(), tapi sengaja
+    | tidak disediakan tombolnya di antarmuka admin.
+    */
+    use HasFactory, Notifiable, SoftDeletes;
 
     protected function casts(): array
     {
         return [
             'email_verified_at' => 'datetime',
+            'deleted_at' => 'datetime',
             'password' => 'hashed',
             'is_wakasek' => 'boolean',
             'is_admin' => 'boolean',
@@ -75,6 +94,93 @@ class User extends Authenticatable
     public function scopeWakasek($query)
     {
         return $query->where('role', 'guru_pembimbing')->where('is_wakasek', true);
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | SCOPE PENYARINGAN (sumber kebenaran tunggal)
+    |--------------------------------------------------------------------------
+    | Sebelumnya penyaringan role siswa dan periode ditulis ulang manual di
+    | banyak controller. Setiap kali ada fitur baru, semua titik itu harus
+    | diingat satu per satu -- dan satu saja terlewat, data antar-angkatan
+    | bisa tercampur tanpa disadari.
+    |
+    | Scope di bawah memindahkan aturan itu ke SATU tempat:
+    |
+    |     User::siswa()->periode($idPeriode)->get();
+    |     User::siswa()->periodeAktif()->count();
+    |
+    | Nama kolom sengaja diawali nama tabel supaya tetap aman ketika query
+    | digabung (join) dengan tabel lain yang juga punya kolom periode_id.
+    */
+
+    /** Scope: hanya akun yang berperan sebagai siswa PKL. */
+    public function scopeSiswa($query)
+    {
+        return $query->where($this->getTable() . '.role', 'siswa_pkl');
+    }
+
+    /**
+     * Pembatas standar untuk SELURUH daftar kerja harian.
+     *
+     * Menggabungkan dua hal yang selama ini tercecer:
+     *   1. withoutTrashed() -- siswa yang sudah diarsipkan tidak boleh muncul
+     *      di daftar kerja guru. Ini WAJIB ditulis eksplisit, karena relasi
+     *      di model transaksi sengaja memakai withTrashed() agar nama siswa
+     *      lama tetap tercetak di PDF. Tanpa baris ini, withTrashed() pada
+     *      relasi ikut terbawa ke dalam whereHas() dan siswa terarsip muncul
+     *      kembali di daftar guru.
+     *   2. periode() -- hanya angkatan yang sedang berjalan.
+     *
+     * Bila belum ada periode aktif, penyaringan periode diabaikan (lihat
+     * App\Support\KonteksPeriode) sehingga halaman tidak pernah kosong total.
+     */
+    public function scopeBerjalan($query)
+    {
+        return $query->withoutTrashed()
+                     ->periode(\App\Support\KonteksPeriode::id());
+    }
+
+    /** Gabungan yang paling sering dipakai: siswa PKL angkatan berjalan. */
+    public function scopeSiswaBerjalan($query)
+    {
+        return $query->siswa()->berjalan();
+    }
+
+    /**
+     * Scope: saring menurut Periode PKL.
+     *
+     * Nilai kosong (null, string kosong, atau '0') sengaja DIABAIKAN, bukan
+     * dianggap "cari yang periode_id-nya kosong". Dengan begitu scope ini
+     * aman dipakai langsung pada nilai filter dropdown tanpa perlu dibungkus
+     * when() berulang kali di controller.
+     */
+    public function scopePeriode($query, $periodeId = null)
+    {
+        if (blank($periodeId)) {
+            return $query;
+        }
+
+        return $query->where($this->getTable() . '.periode_id', $periodeId);
+    }
+
+    /**
+     * Scope: hanya baris milik Periode PKL yang sedang aktif.
+     *
+     * Bila admin belum menandai satu pun periode sebagai aktif, scope ini
+     * sengaja mengembalikan HASIL KOSONG, bukan seluruh data. Menampilkan
+     * semua angkatan sekaligus jauh lebih berbahaya daripada menampilkan
+     * tabel kosong yang jelas terlihat salah oleh admin.
+     */
+    public function scopePeriodeAktif($query)
+    {
+        $aktif = PeriodePkl::aktif();
+
+        if (! $aktif) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query->where($this->getTable() . '.periode_id', $aktif->id);
     }
 
     /*

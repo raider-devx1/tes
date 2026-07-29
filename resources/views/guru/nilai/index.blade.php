@@ -91,8 +91,8 @@
             {{-- ============================================================= --}}
             {{-- ==========  TAMPILAN LAPTOP / PC (TABEL, >=1024px)  ========= --}}
             {{-- ============================================================= --}}
-            <div class="nilai-desktop overflow-hidden rounded-xl border-2 border-[#0047d6]/15">
-                <table class="w-full text-left text-sm table-auto">
+            <div class="nilai-desktop overflow-x-auto rounded-xl border-2 border-[#0047d6]/15">
+                <table class="w-full min-w-[64rem] text-left text-sm table-auto">
                     <thead>
                         <tr class="bg-[#0047d6] text-xs uppercase tracking-wide text-white">
                             <th class="px-4 py-3 text-center w-12 font-bold">No</th>

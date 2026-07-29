@@ -374,7 +374,7 @@
                         <template x-if="detailData.foto_url">
                             <div class="mt-1 space-y-2">
                                 <a :href="detailData.foto_url" target="_blank" class="block">
-                                    <img :src="detailData.foto_url" alt="Lembar Instruktur" class="max-h-48 w-full rounded-lg border-2 border-[#0047d6]/15 object-cover">
+                                    <img loading="lazy" decoding="async" :src="detailData.foto_url" alt="Lembar Instruktur" class="max-h-48 w-full rounded-lg border-2 border-[#0047d6]/15 object-cover">
                                 </a>
                                 <div class="flex gap-2">
                                     <a :href="detailData.foto_url" target="_blank" rel="noopener"
@@ -457,7 +457,7 @@
                         <template x-if="form.foto_url">
                             <div class="mb-2 space-y-2">
                                 <a :href="form.foto_url" target="_blank" class="block">
-                                    <img :src="form.foto_url" alt="Lembar Instruktur" class="max-h-40 rounded-lg border-2 border-[#0047d6]/15 object-cover">
+                                    <img loading="lazy" decoding="async" :src="form.foto_url" alt="Lembar Instruktur" class="max-h-40 rounded-lg border-2 border-[#0047d6]/15 object-cover">
                                 </a>
                                 <div class="flex gap-2">
                                     <a :href="form.foto_url" target="_blank" rel="noopener"

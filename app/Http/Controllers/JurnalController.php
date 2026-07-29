@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Jurnal;
 use App\Models\User;
+use App\Support\ImageCompressor;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -59,7 +60,7 @@ class JurnalController extends Controller
             foreach ($request->input('items', []) as $i => $item) {
                 $path = null;
                 if ($request->hasFile("items.$i.dokumentasi")) {
-                    $path = $request->file("items.$i.dokumentasi")->store('dokumentasi_jurnal', 'public');
+                    $path = ImageCompressor::store($request->file("items.$i.dokumentasi"), 'dokumentasi_jurnal');
                 }
 
                 $jurnal->items()->create([
@@ -136,7 +137,7 @@ class JurnalController extends Controller
                     if ($existingDoc) {
                         Storage::disk('public')->delete($existingDoc);
                     }
-                    $path = $request->file("items.$i.dokumentasi")->store('dokumentasi_jurnal', 'public');
+                    $path = ImageCompressor::store($request->file("items.$i.dokumentasi"), 'dokumentasi_jurnal');
                 }
 
                 if ($existingId && ($jItem = $jurnal->items()->find($existingId))) {
@@ -207,7 +208,7 @@ class JurnalController extends Controller
         if ($jurnal->foto_bukti) {
             Storage::disk('public')->delete($jurnal->foto_bukti);
         }
-        $path = $request->file('foto_bukti')->store('bukti_fisik/jurnal', 'public');
+        $path = ImageCompressor::store($request->file('foto_bukti'), 'bukti_fisik/jurnal');
 
         $jurnal->update([
             'catatan_instruktur' => $validated['catatan_instruktur'],

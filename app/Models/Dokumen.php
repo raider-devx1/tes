@@ -2,18 +2,25 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\MilikPeriodePkl;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Dokumen extends Model
 {
-    use HasFactory;
+    use HasFactory, MilikPeriodePkl;
 
-    protected $fillable = ['siswa_id', 'laporan_akhir', 'surat_tugas', 'surat_penerimaan'];
+    /**
+     * Kolom yang menyimpan ID siswa pemilik data.
+     * Dipakai trait MilikPeriodePkl untuk mengisi periode_id otomatis.
+     */
+    protected string $kolomPemilikPeriode = 'siswa_id';
+
+    protected $fillable = ['siswa_id', 'periode_id', 'laporan_akhir', 'surat_tugas', 'surat_penerimaan'];
 
     public function siswa()
     {
-        return $this->belongsTo(User::class, 'siswa_id');
+        return $this->belongsTo(User::class, 'siswa_id')->withTrashed();
     }
 
     /** Sumber tunggal aturan hak akses. Key = nama kolom di tabel dokumens. */

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Observasi;
 use App\Models\User;
+use App\Support\ImageCompressor;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -22,7 +23,7 @@ class ObservasiController extends Controller
         $q = trim($request->get('q', ''));
 
         $baseQuery = Observasi::where('guru_id', Auth::id())
-            ->whereHas('user', fn ($u) => $u->where('status_pkl', 'aktif'));
+            ->whereHas('user', fn ($u) => $u->siswaBerjalan()->where('status_pkl', 'aktif'));
 
         $rekap = [
             'total'       => (clone $baseQuery)->count(),
@@ -48,7 +49,7 @@ class ObservasiController extends Controller
 
     public function createGuru()
     {
-        $siswas = User::where('role', 'siswa_pkl')
+        $siswas = User::siswa()
             ->where('guru_id', Auth::id())
             ->where('status_pkl', 'aktif')
             ->orderBy('name')
@@ -109,7 +110,7 @@ class ObservasiController extends Controller
             ->with('items')
             ->firstOrFail();
 
-        $siswas = User::where('role', 'siswa_pkl')
+        $siswas = User::siswa()
             ->where('guru_id', Auth::id())
             ->orderBy('name')
             ->get();
@@ -202,8 +203,8 @@ class ObservasiController extends Controller
             Storage::disk('public')->delete($observasi->foto_lembar_observasi);
         }
 
-        $fotoDokumentasiPath = $request->file('foto_dokumentasi')->store('observasi/dokumentasi', 'public');
-        $fotoLembarPath      = $request->file('foto_lembar_observasi')->store('observasi/lembar', 'public');
+        $fotoDokumentasiPath = ImageCompressor::store($request->file('foto_dokumentasi'), 'observasi/dokumentasi');
+        $fotoLembarPath      = ImageCompressor::store($request->file('foto_lembar_observasi'), 'observasi/lembar');
 
         $observasi->update([
             'foto_dokumentasi'      => $fotoDokumentasiPath,
@@ -253,8 +254,8 @@ class ObservasiController extends Controller
             Storage::disk('public')->delete($observasi->foto_lembar_observasi);
         }
 
-        $fotoDokumentasiPath = $request->file('foto_dokumentasi')->store('observasi/dokumentasi', 'public');
-        $fotoLembarPath      = $request->file('foto_lembar_observasi')->store('observasi/lembar', 'public');
+        $fotoDokumentasiPath = ImageCompressor::store($request->file('foto_dokumentasi'), 'observasi/dokumentasi');
+        $fotoLembarPath      = ImageCompressor::store($request->file('foto_lembar_observasi'), 'observasi/lembar');
 
         $isWakasek = (bool) (Auth::user()->is_wakasek ?? false);
 

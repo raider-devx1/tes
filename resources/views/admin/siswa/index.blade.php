@@ -28,6 +28,13 @@
                         class="inline-flex items-center gap-1 px-3 py-2 rounded-lg bg-red-600 text-white text-sm font-medium hover:bg-red-700">
                         Hapus per Periode
                     </button>
+                    <a href="{{ route('admin.siswa.arsip') }}"
+                        class="inline-flex items-center gap-1 px-3 py-2 rounded-lg bg-gray-100 text-gray-700 text-sm font-medium hover:bg-gray-200">
+                        Arsip
+                        @if ($jumlahArsip > 0)
+                            <span class="ml-1 inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1 rounded-full bg-gray-500 text-white text-[11px] font-semibold">{{ $jumlahArsip }}</span>
+                        @endif
+                    </a>
                     <a href="{{ route('admin.siswa.create') }}"
                         class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#2563EB] text-white text-sm font-medium hover:bg-blue-700">
                         Tambah Siswa
@@ -110,7 +117,7 @@
                                     <td class="py-3 px-4 text-center text-gray-500">{{ $siswa->firstItem() + $loop->index }}</td>
                                     <td class="py-3 px-6 whitespace-nowrap">
                                         <div class="flex items-center gap-3">
-                                            <img src="{{ $s->foto ? asset('storage/' . $s->foto) : 'https://ui-avatars.com/api/?background=DBEAFE&color=1E3A8A&name=' . urlencode($s->name) }}"
+                                            <img loading="lazy" decoding="async" src="{{ $s->foto ? asset('storage/' . $s->foto) : 'https://ui-avatars.com/api/?background=DBEAFE&color=1E3A8A&name=' . urlencode($s->name) }}"
                                                  alt="foto" class="w-9 h-9 rounded-full object-cover shrink-0">
                                             <div class="font-medium text-gray-800">{{ $s->name }}</div>
                                         </div>
@@ -173,7 +180,7 @@
                                     <td class="px-3 py-4 text-center text-gray-500">{{ $siswa->firstItem() + $loop->index }}</td>
                                     <td class="px-3 py-4">
                                         <div class="flex items-center gap-3">
-                                            <img src="{{ $s->foto ? asset('storage/' . $s->foto) : 'https://ui-avatars.com/api/?background=DBEAFE&color=1E3A8A&name=' . urlencode($s->name) }}"
+                                            <img loading="lazy" decoding="async" src="{{ $s->foto ? asset('storage/' . $s->foto) : 'https://ui-avatars.com/api/?background=DBEAFE&color=1E3A8A&name=' . urlencode($s->name) }}"
                                                  alt="foto" class="w-9 h-9 rounded-full object-cover shrink-0">
                                             <div>
                                                 <div class="font-medium text-gray-800 leading-snug break-words">{{ $s->name }}</div>
@@ -240,7 +247,7 @@
                  @click.outside="detailOpen = false">
                 <div class="sticky top-0 z-10 flex items-start justify-between gap-3 border-b border-blue-100 bg-white px-5 py-4">
                     <div class="flex items-center gap-3">
-                        <img :src="detailData.foto_url" alt="foto" class="w-11 h-11 rounded-full object-cover shrink-0">
+                        <img loading="lazy" decoding="async" :src="detailData.foto_url" alt="foto" class="w-11 h-11 rounded-full object-cover shrink-0">
                         <div>
                             <h3 class="text-base font-bold text-gray-800" x-text="detailData.nama"></h3>
                             <p class="text-xs font-mono text-gray-400">NISN: <span x-text="detailData.nisn"></span></p>

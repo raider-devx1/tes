@@ -58,7 +58,7 @@
     <div>
         <label class="block text-sm font-medium text-gray-700 mb-1">Foto Siswa</label>
         @if($s && $s->foto)
-            <img src="{{ asset('storage/' . $s->foto) }}" alt="foto" class="w-16 h-16 rounded-lg object-cover mb-2">
+            <img loading="lazy" decoding="async" src="{{ asset('storage/' . $s->foto) }}" alt="foto" class="w-16 h-16 rounded-lg object-cover mb-2">
         @endif
         <input type="file" name="foto" accept="image/*"
                class="w-full text-sm text-gray-600 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-blue-50 file:text-[#2563EB] hover:file:bg-blue-100">

@@ -3,9 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\CatatanKegiatan;
-use Illuminate\Support\Facades\Storage;
+use App\Support\ImageCompressor;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 
 class CatatanController extends Controller
 {
@@ -113,7 +114,7 @@ public function indexGuru(Request $request)
 
     // Rekap seluruh catatan siswa bimbingan aktif (tidak terpengaruh filter)
     $rekapQuery = CatatanKegiatan::whereHas('user', function ($u) use ($guru_id) {
-        $u->where('guru_id', $guru_id)->where('status_pkl', 'aktif');
+        $u->siswaBerjalan()->where('guru_id', $guru_id)->where('status_pkl', 'aktif');
     });
 
     $rekap = [
@@ -125,7 +126,8 @@ public function indexGuru(Request $request)
 
     $catatan = CatatanKegiatan::with('user')
         ->whereHas('user', function ($u) use ($guru_id, $request) {
-            $u->where('guru_id', $guru_id)
+            $u->siswaBerjalan()
+                ->where('guru_id', $guru_id)
                 ->where('status_pkl', 'aktif');
 
             if ($request->filled('q')) {
@@ -164,7 +166,7 @@ public function ajukanSiswa(Request $request, $id)
     if ($catatan->foto_bukti) {
         Storage::disk('public')->delete($catatan->foto_bukti);
     }
-    $path = $request->file('foto_bukti')->store('bukti_fisik/catatan', 'public');
+    $path = ImageCompressor::store($request->file('foto_bukti'), 'bukti_fisik/catatan');
 
     $catatan->update([
         'catatan_instruktur' => $validated['catatan_instruktur'],

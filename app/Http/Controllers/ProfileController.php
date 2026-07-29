@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ProfileUpdateRequest;
+use App\Support\ImageCompressor;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Redirect;
@@ -42,7 +43,7 @@ class ProfileController extends Controller
             if ($user->foto) {
                 Storage::disk('public')->delete($user->foto);
             }
-            $data['foto'] = $request->file('foto')->store('foto-profil', 'public');
+            $data['foto'] = ImageCompressor::store($request->file('foto'), 'foto-profil');
         } else {
             // Jangan menimpa foto lama dengan null bila tidak ada file baru
             unset($data['foto']);

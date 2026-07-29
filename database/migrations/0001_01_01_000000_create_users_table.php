@@ -70,6 +70,19 @@ return new class extends Migration
             $table->foreignId('periode_id')->nullable();
 
             $table->timestamps();
+
+            // --- Soft delete ---
+            // Semua tabel transaksi PKL memakai onDelete('cascade') ke tabel ini.
+            // Tanpa soft delete, satu klik hapus siswa akan memusnahkan seluruh
+            // jurnal, absensi, nilai, dan dokumennya secara PERMANEN.
+            //
+            // Dengan deleted_at, penghapusan hanya menandai baris. Tidak ada
+            // perintah DELETE sungguhan, sehingga cascade tidak pernah berjalan
+            // dan riwayat PKL tetap utuh serta bisa dipulihkan.
+            //
+            // Diberi index karena SoftDeletes menambahkan 'where deleted_at is null'
+            // pada hampir semua query user di aplikasi ini.
+            $table->softDeletes()->index('users_deleted_at_index');
         });
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {

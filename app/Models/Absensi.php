@@ -4,15 +4,23 @@ namespace App\Models;
 
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
+use App\Models\Concerns\MilikPeriodePkl;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Absensi extends Model
 {
-    use HasFactory;
+    use HasFactory, MilikPeriodePkl;
+
+    /**
+     * Kolom yang menyimpan ID siswa pemilik data.
+     * Dipakai trait MilikPeriodePkl untuk mengisi periode_id otomatis.
+     */
+    protected string $kolomPemilikPeriode = 'siswa_id';
 
     protected $fillable = [
         'siswa_id',
+        'periode_id',   // periode PKL tempat data ini dibuat (diisi otomatis)
         'tanggal',
         'status',            // Hadir | Izin | Sakit | Alpha
         'jam_masuk',
@@ -36,12 +44,12 @@ class Absensi extends Model
     */
     public function siswa()
     {
-        return $this->belongsTo(User::class, 'siswa_id');
+        return $this->belongsTo(User::class, 'siswa_id')->withTrashed();
     }
 
     public function validator()
     {
-        return $this->belongsTo(User::class, 'validated_by_guru_id');
+        return $this->belongsTo(User::class, 'validated_by_guru_id')->withTrashed();
     }
 
     /*
@@ -122,6 +130,10 @@ class Absensi extends Model
                 ->map(fn ($t) => Carbon::parse($t)->format('Y-m-d'))
                 ->all();
 
+            // insert() massal MELEWATI event model, sehingga trait
+            // MilikPeriodePkl tidak ikut jalan. Periode diisi manual di sini.
+            $periodeId = $siswa->periode_id ?: static::periodeAktifId();
+
             $baris = [];
             for ($d = $mulai->copy(); $d->lte($now); $d->addDay()) {
                 $tgl = $d->format('Y-m-d');
@@ -140,6 +152,7 @@ class Absensi extends Model
 
                 $baris[] = [
                     'siswa_id'        => $siswa->id,
+                    'periode_id'      => $periodeId,
                     'tanggal'         => $tgl,
                     'status'          => 'Alpha',
                     'status_validasi' => 'disetujui',
@@ -149,7 +162,11 @@ class Absensi extends Model
             }
 
             if (! empty($baris)) {
-                static::insert($baris);
+                // insertOrIgnore: bila ada request lain yang menyisipkan baris
+                // untuk tanggal yang sama pada saat bersamaan, unique index
+                // (siswa_id, tanggal) akan menolaknya secara diam-diam,
+                // bukan melempar error ke wajah pengguna.
+                static::insertOrIgnore($baris);
             }
 
             // Tandai sudah sinkron. Flag berlaku sampai jendela absensi HARI INI

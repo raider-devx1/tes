@@ -12,6 +12,18 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade'); // siswa yang dinilai
 
+            // --- Periode PKL tempat data ini dibuat ---
+            // Data transaksi WAJIB merekam periodenya sendiri. Kalau hanya
+            // mengandalkan users.periode_id, maka saat tahun ajaran berganti
+            // dan periode siswa diperbarui, seluruh riwayat lamanya ikut
+            // 'berpindah' ke periode baru dan arsip angkatan jadi rusak.
+            //
+            // TANPA ->constrained() di sini karena tabel 'periode_pkls' dibuat
+            // SETELAH tabel ini (urutan timestamp) - pola yang sama dipakai
+            // users.periode_id. Foreign key-nya dipasang belakangan pada
+            // migrasi 2026_07_24_060000. Diisi otomatis oleh trait MilikPeriodePkl.
+            $table->foreignId('periode_id')->nullable()->index();
+
             // Penilai
            
             $table->foreignId('guru_id')->nullable()->constrained('users')->nullOnDelete();

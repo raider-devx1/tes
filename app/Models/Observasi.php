@@ -2,16 +2,24 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\MilikPeriodePkl;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 
 class Observasi extends Model
 {
-    use HasFactory;
+    use HasFactory, MilikPeriodePkl;
+
+    /**
+     * Kolom yang menyimpan ID siswa pemilik data.
+     * Dipakai trait MilikPeriodePkl untuk mengisi periode_id otomatis.
+     */
+    protected string $kolomPemilikPeriode = 'user_id';
 
     protected $fillable = [
         'user_id',
+        'periode_id',   // periode PKL tempat data ini dibuat (diisi otomatis)
         'guru_id',
         'hari_tanggal',
         'pekerjaan_projek',
@@ -32,19 +40,19 @@ class Observasi extends Model
     // Siswa yang diobservasi
     public function user()
     {
-        return $this->belongsTo(User::class, 'user_id');
+        return $this->belongsTo(User::class, 'user_id')->withTrashed();
     }
 
     // Guru pembimbing yang mengisi
     public function guru()
     {
-        return $this->belongsTo(User::class, 'guru_id');
+        return $this->belongsTo(User::class, 'guru_id')->withTrashed();
     }
 
     // Guru pembimbing yang memvalidasi
     public function validator()
     {
-        return $this->belongsTo(User::class, 'validated_by_guru_id');
+        return $this->belongsTo(User::class, 'validated_by_guru_id')->withTrashed();
     }
 
     // Banyak poin permasalahan & solusi

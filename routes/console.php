@@ -11,19 +11,31 @@ Artisan::command('inspire', function () {
 
 /*
 |--------------------------------------------------------------------------
-| Pembersihan Otomatis Tabel activity_logs
+| Pemangkasan Log Aktivitas
 |--------------------------------------------------------------------------
-| Menghapus data log yang lebih tua dari 7 hari, dijalankan setiap hari
-| pukul 01:00 (saat traffic sepi). Karena kolom `created_at` sudah di-index
-| di migrasi, proses ini sangat ringan untuk database shared hosting.
 |
-| Ganti subDays(7) menjadi subDays(15) bila ingin menyimpan riwayat 15 hari.
+| Tabel activity_logs bertambah terus setiap hari. Tanpa pemangkasan, dalam
+| beberapa tahun ukurannya bisa jauh melebihi data PKL itu sendiri dan
+| membuat proses backup menjadi lambat.
+|
+| Ubah angka di bawah bila ingin masa simpan lebih panjang. Untuk satu
+| siklus PKL penuh, 180 hari adalah pilihan yang aman.
+|
+| CATATAN PENTING -- JANGAN DIUBAH MENJADI const:
+| Angka ini sengaja ditulis sebagai variabel DI DALAM closure, bukan sebagai
+| "const" di tingkat file. Berkas ini dibaca ulang setiap kali aplikasi
+| dinyalakan. Dalam sekali menjalankan "php artisan test", aplikasi
+| dinyalakan ratusan kali di dalam SATU proses PHP yang sama. Sebuah const
+| hanya boleh didefinisikan sekali per proses, sehingga penyalaan kedua akan
+| gagal dengan pesan "Constant ... already defined". Variabel biasa tidak
+| memiliki batasan itu.
+|
 */
+
 Schedule::call(function () {
+    $masaSimpanLogHari = 30;
+
     DB::table('activity_logs')
-        ->where('created_at', '<', now()->subMinutes(5))
+        ->where('created_at', '<', now()->subDays($masaSimpanLogHari))
         ->delete();
-})
-    ->everyFiveMinutes()
-    ->name('bersihkan-activity-logs')
-    ->withoutOverlapping();
+})->dailyAt('01:00')->name('pangkas-log-aktivitas');

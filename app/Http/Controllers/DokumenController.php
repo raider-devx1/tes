@@ -35,7 +35,7 @@ public function adminIndex(Request $request)
         ->withQueryString();
 
     $rekap = [
-        'totalSiswa'      => User::where('role', 'siswa_pkl')->count(),
+        'totalSiswa'      => User::siswaBerjalan()->count(),
         'laporan'         => Dokumen::whereNotNull('laporan_akhir')->count(),
         'suratPenerimaan' => Dokumen::whereNotNull('surat_penerimaan')->count(),
         'lengkap'         => Dokumen::whereNotNull('laporan_akhir')
@@ -88,7 +88,7 @@ public function adminStore(Request $request, int $siswa)
         'laporan_akhir'    => 'nullable|mimes:pdf|max:5120',
     ]);
 
-    $siswaModel = User::where('role', 'siswa_pkl')->findOrFail($siswa);
+    $siswaModel = User::siswa()->findOrFail($siswa);
     $dokumen    = Dokumen::firstOrNew(['siswa_id' => $siswaModel->id]);
 
     foreach (['surat_penerimaan', 'laporan_akhir'] as $jenis) {
@@ -113,7 +113,7 @@ public function adminDestroy(int $siswa, string $jenis)
         404, 'Jenis dokumen tidak dikenal.'
     );
 
-    $siswaModel = User::where('role', 'siswa_pkl')->findOrFail($siswa);
+    $siswaModel = User::siswa()->findOrFail($siswa);
     $dokumen    = Dokumen::where('siswa_id', $siswaModel->id)->first();
 
     if ($dokumen && $dokumen->{$jenis}) {
@@ -154,14 +154,53 @@ public function adminDestroy(int $siswa, string $jenis)
         $siswa   = Auth::user();
         $dokumen = Dokumen::firstOrNew(['siswa_id' => $siswa->id]);
 
+        $tersimpan = [];   // jenis dokumen yang benar-benar berhasil disimpan
+        $ditolak   = [];   // jenis dokumen yang diunggah tapi tidak diizinkan
+
         foreach (['surat_penerimaan', 'laporan_akhir'] as $jenis) {
-            if ($request->hasFile($jenis) && Dokumen::boleh('upload', $jenis, $siswa, $siswa)) {
-                $dokumen->{$jenis} = $request->file($jenis)->store('dokumen_pkl', 'public');
+            if (! $request->hasFile($jenis)) {
+                continue;
             }
+
+            // Tidak berhak (mis. dokumen sudah dikunci) -> catat, jangan diam-diam dilewati.
+            if (! Dokumen::boleh('upload', $jenis, $siswa, $siswa)) {
+                $ditolak[] = Dokumen::ATURAN[$jenis]['label'] ?? $jenis;
+
+                continue;
+            }
+
+            // Hapus berkas lama lebih dulu agar file usang tidak menumpuk di storage.
+            // (Sebelumnya file lama dibiarkan menggantung setiap kali siswa unggah ulang.)
+            if ($dokumen->{$jenis} && Storage::disk('public')->exists($dokumen->{$jenis})) {
+                Storage::disk('public')->delete($dokumen->{$jenis});
+            }
+
+            $dokumen->{$jenis} = $request->file($jenis)->store('dokumen_pkl', 'public');
+            $tersimpan[]       = Dokumen::ATURAN[$jenis]['label'] ?? $jenis;
         }
 
-        $dokumen->save();
-        return back()->with('success', 'Dokumen berhasil diunggah!');
+        // Tidak ada file sama sekali di request.
+        if (! $tersimpan && ! $ditolak) {
+            return back()->with('error', 'Tidak ada berkas yang dipilih untuk diunggah.');
+        }
+
+        if ($tersimpan) {
+            $dokumen->save();
+        }
+
+        // Ada yang ditolak -> JANGAN tampilkan pesan sukses palsu.
+        if ($ditolak) {
+            $pesan = 'Gagal mengunggah: ' . implode(', ', $ditolak)
+                   . '. Anda tidak punya izin mengubah dokumen tersebut.';
+
+            if ($tersimpan) {
+                $pesan .= ' Berhasil disimpan: ' . implode(', ', $tersimpan) . '.';
+            }
+
+            return back()->with('error', $pesan);
+        }
+
+        return back()->with('success', 'Dokumen berhasil diunggah: ' . implode(', ', $tersimpan) . '.');
     }
 
     /*
@@ -182,7 +221,7 @@ public function guruIndex(Request $request)
         ->paginate(15)->withQueryString();
 
     // Rekap dokumen seluruh siswa bimbingan yang masih AKTIF (tidak terpengaruh filter/pagination)
-    $rekapQuery = User::where('role', 'siswa_pkl')
+    $rekapQuery = User::siswaBerjalan()
         ->where('guru_id', Auth::id())
         ->where('status_pkl', 'aktif');    // ⬅️ agar kartu rekap ikut konsisten
 
@@ -267,7 +306,7 @@ private function querySiswa(
     ?string $status = null
 ) {
     return User::query()
-        ->where('role', 'siswa_pkl')
+        ->siswa()
         ->with('dokumen')
         ->when($q, fn ($query) => $query->where(fn ($w) =>
             $w->where('name', 'like', "%{$q}%")->orWhere('nisn', 'like', "%{$q}%")))
@@ -294,10 +333,10 @@ private function querySiswa(
 /** Opsi dropdown Kelas & Jurusan dari data siswa PKL. */
 private function opsiFilter(): array
 {
-    $kelasList = User::where('role', 'siswa_pkl')
+    $kelasList = User::siswaBerjalan()
         ->whereNotNull('kelas')->distinct()->orderBy('kelas')->pluck('kelas');
 
-    $jurusanList = User::where('role', 'siswa_pkl')
+    $jurusanList = User::siswaBerjalan()
         ->whereNotNull('jurusan')->distinct()->orderBy('jurusan')->pluck('jurusan');
 
     return [$kelasList, $jurusanList];
@@ -335,7 +374,7 @@ private function opsiFilter(): array
         abort_if($jenis === 'surat_tugas', 404, 'Surat Tugas memakai endpoint global.');
 
         $info  = Dokumen::ATURAN[$jenis] ?? abort(404, 'Jenis dokumen tidak dikenal.');
-        $siswa = User::where('role', 'siswa_pkl')->findOrFail($siswaId);
+        $siswa = User::siswa()->findOrFail($siswaId);
 
         $this->pastikanBoleh($aksi, $jenis, $siswa);
 

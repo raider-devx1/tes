@@ -23,6 +23,6 @@ class Perusahaan extends Model
     public function siswa()
     {
         return $this->hasMany(User::class, 'perusahaan_id')
-                    ->where('role', 'siswa_pkl');
+                    ->siswa();
     }
 }

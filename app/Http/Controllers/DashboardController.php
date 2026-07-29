@@ -43,7 +43,7 @@ class DashboardController extends Controller
     {
         $guruId = Auth::id();
 
-        $stats = User::where('role', 'siswa_pkl')
+        $stats = User::siswaBerjalan()
             ->where('guru_id', $guruId)
             ->selectRaw("
                 COUNT(*) as bimbingan,

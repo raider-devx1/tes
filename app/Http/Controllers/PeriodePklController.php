@@ -99,8 +99,8 @@ public function updateStatusSiswa(Request $request)
 
     $periode = PeriodePkl::findOrFail($request->periode_id);
 
-    $jumlah = \App\Models\User::where('role', 'siswa_pkl')
-        ->where('periode_id', $periode->id)
+    $jumlah = \App\Models\User::siswa()
+        ->periode($periode->id)
         ->update(['status_pkl' => $request->status_pkl]);
 
     if ($jumlah === 0) {
