@@ -20,7 +20,10 @@ class MonitoringController extends Controller
     /** Opsi dropdown filter kelas & jurusan (diambil dari siswa PKL). */
     private function opsiFilter(): array
     {
-        $base = User::siswaBerjalan();
+        // Opsi kelas & jurusan diambil dari SELURUH periode. Kalau dibatasi
+        // periode aktif, kelas milik angkatan lama hilang dari dropdown dan
+        // datanya jadi tidak bisa disaring sama sekali.
+        $base = User::siswa()->withoutTrashed();
 
         return [
             'kelasList'   => (clone $base)->whereNotNull('kelas')->distinct()->orderBy('kelas')->pluck('kelas'),
@@ -61,9 +64,10 @@ class MonitoringController extends Controller
     /** Daftar siswa PKL untuk dropdown form tambah/edit. */
     private function siswaList()
     {
-        // Semua status disertakan (belum / aktif / selesai) supaya admin tetap
-        // bisa menambah & memperbaiki data siswa angkatan yang sudah selesai.
-        return User::siswaBerjalan()
+        // Semua status (belum / aktif / selesai) DAN semua periode disertakan,
+        // supaya admin tetap bisa menambah & memperbaiki data siswa angkatan
+        // lama meskipun periode aktif sekarang sudah berganti.
+        return User::siswa()->withoutTrashed()
             ->orderByRaw("CASE status_pkl WHEN 'aktif' THEN 1 WHEN 'belum' THEN 2 WHEN 'selesai' THEN 3 ELSE 4 END")
             ->orderBy('name')
             ->get(['id', 'name', 'nisn', 'status_pkl']);
@@ -83,7 +87,7 @@ public function jurnal(Request $request)
 
     $jurnal = Jurnal::query()
         ->with(['siswa', 'items'])
-        ->whereHas('siswa', fn ($s) => $s->siswaBerjalan())
+        ->whereHas('siswa', fn ($s) => $s->siswa()->withoutTrashed())
         ->when($q, fn ($query) => $query->whereHas('siswa', fn ($s) =>
             $s->where('name', 'like', "%{$q}%")->orWhere('nisn', 'like', "%{$q}%")))
         ->when($kelas,   fn ($query) => $query->whereHas('siswa', fn ($s) => $s->where('kelas', $kelas)))
@@ -97,7 +101,7 @@ public function jurnal(Request $request)
         ->paginate(15)
         ->withQueryString();
 
-    $rekapBase = fn () => Jurnal::whereHas('siswa', fn ($s) => $s->siswaBerjalan());
+    $rekapBase = fn () => Jurnal::whereHas('siswa', fn ($s) => $s->siswa()->withoutTrashed());
     $rekap = [
         'total'     => $rekapBase()->count(),
         'disetujui' => $rekapBase()->where('status', 'disetujui')->count(),
@@ -281,7 +285,7 @@ public function catatan(Request $request)
 
     $catatan = CatatanKegiatan::query()
         ->with('user')
-        ->whereHas('user', fn ($u) => $u->siswaBerjalan())
+        ->whereHas('user', fn ($u) => $u->siswa()->withoutTrashed())
         ->when($q, fn ($query) => $query->whereHas('user', fn ($u) =>
             $u->where('name', 'like', "%{$q}%")->orWhere('nisn', 'like', "%{$q}%")))
         ->when($kelas,   fn ($query) => $query->whereHas('user', fn ($u) => $u->where('kelas', $kelas)))
@@ -294,7 +298,7 @@ public function catatan(Request $request)
         ->paginate(15)
         ->withQueryString();
 
-    $rekapBase = fn () => CatatanKegiatan::whereHas('user', fn ($u) => $u->siswaBerjalan());
+    $rekapBase = fn () => CatatanKegiatan::whereHas('user', fn ($u) => $u->siswa()->withoutTrashed());
     $rekap = [
         'total'     => $rekapBase()->count(),
         'disetujui' => $rekapBase()->where('status', 'disetujui')->count(),
@@ -401,6 +405,11 @@ public function destroyCatatan(CatatanKegiatan $catatan)
 public function absensi(Request $request)
 {
     // Tandai otomatis Alpha (logika controller, menggantikan scheduler).
+    // SENGAJA tetap dibatasi periode berjalan. Baris ini MENULIS data (membuat
+    // baris Alpha otomatis). Kalau dilepas ke semua periode, sistem akan terus
+    // menambah Alpha untuk angkatan lama yang statusnya belum diubah -- itu
+    // merusak data, bukan menampilkannya. Penyaringan lintas periode hanya
+    // berlaku untuk PENAMPILAN data di bawah ini.
     User::siswaBerjalan()->where('status_pkl', 'aktif')->get()
         ->each(fn ($s) => Absensi::sinkronkanAlpa($s));
 
@@ -414,7 +423,7 @@ public function absensi(Request $request)
 
     $absensi = Absensi::query()
         ->with('siswa')
-        ->whereHas('siswa', fn ($s) => $s->siswaBerjalan())
+        ->whereHas('siswa', fn ($s) => $s->siswa()->withoutTrashed())
         ->when($q, fn ($query) => $query->whereHas('siswa', fn ($s) =>
             $s->where('name', 'like', "%{$q}%")->orWhere('nisn', 'like', "%{$q}%")))
         ->when($kelas,   fn ($query) => $query->whereHas('siswa', fn ($s) => $s->where('kelas', $kelas)))
@@ -430,7 +439,7 @@ public function absensi(Request $request)
         ->paginate(15)
         ->withQueryString();
 
-    $rekapBase = fn () => Absensi::whereHas('siswa', fn ($s) => $s->siswaBerjalan());
+    $rekapBase = fn () => Absensi::whereHas('siswa', fn ($s) => $s->siswa()->withoutTrashed());
     $rekap = [
         'Hadir' => $rekapBase()->where('status', 'Hadir')->count(),
         'Izin'  => $rekapBase()->where('status', 'Izin')->count(),
@@ -455,7 +464,9 @@ public function absensi(Request $request)
     $paksaBuka    = $paksaMasuk || $paksaPulang;
 
     // Siswa yang absensinya dibuka manual per-orang (di luar buka global).
-    $dibukaList = User::siswaBerjalan()
+    // Lintas periode: siswa angkatan lama yang absensinya masih dibuka manual
+    // harus tetap terlihat agar admin bisa menutupnya kembali.
+    $dibukaList = User::siswa()->withoutTrashed()
         ->where(fn ($q) => $q->where('absensi_dibuka', true)
             ->orWhere('absensi_dibuka_masuk', true)
             ->orWhere('absensi_dibuka_pulang', true))
@@ -463,7 +474,7 @@ public function absensi(Request $request)
         ->get(['id', 'name', 'nisn', 'absensi_dibuka', 'absensi_dibuka_masuk', 'absensi_dibuka_pulang']);
 
     // Data jam kerja industri per siswa (untuk pencarian & edit via NISN oleh admin).
-    $siswaJam = User::siswaBerjalan()
+    $siswaJam = User::siswa()->withoutTrashed()
         ->orderByRaw("CASE status_pkl WHEN 'aktif' THEN 1 WHEN 'belum' THEN 2 WHEN 'selesai' THEN 3 ELSE 4 END")
         ->orderBy('name')
         ->get(['id', 'name', 'nisn', 'kelas', 'status_pkl', 'jam_masuk_industri', 'jam_pulang_industri', 'jam_masuk_usulan', 'jam_pulang_usulan', 'status_jam_usulan', 'catatan_jam_usulan']);
@@ -626,6 +637,7 @@ public function bukaAbsensi(Request $request)
 
         // Saat menutup SEMUA, kembalikan juga pembukaan per-siswa ke jadwal.
         if (! $buka && $target === 'semua') {
+            // SENGAJA tetap dibatasi periode berjalan: ini operasi tulis massal.
             User::siswaBerjalan()->update([
                 'absensi_dibuka'        => false,
                 'absensi_dibuka_masuk'  => false,

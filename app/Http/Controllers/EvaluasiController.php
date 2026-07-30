@@ -16,11 +16,13 @@ class EvaluasiController extends Controller
     /** Opsi filter kelas & jurusan dari seluruh siswa PKL. */
     private function opsiFilter(): array
     {
-        $kelasList = User::siswaBerjalan()
+        // Opsi diambil dari SELURUH periode supaya kelas/jurusan angkatan lama
+        // tetap bisa dipilih walau periode aktif sudah berganti.
+        $kelasList = User::siswa()->withoutTrashed()
             ->whereNotNull('kelas')->where('kelas', '!=', '')
             ->distinct()->orderBy('kelas')->pluck('kelas');
 
-        $jurusanList = User::siswaBerjalan()
+        $jurusanList = User::siswa()->withoutTrashed()
             ->whereNotNull('jurusan')->where('jurusan', '!=', '')
             ->distinct()->orderBy('jurusan')->pluck('jurusan');
 
@@ -60,9 +62,9 @@ class EvaluasiController extends Controller
     /** Daftar siswa PKL untuk pencocokan NISN pada modal tambah/edit. */
     private function siswaList()
     {
-        // Semua status disertakan (belum / aktif / selesai). Siswa yang sudah
-        // selesai tetap perlu bisa dinilai / diobservasi susulan oleh admin.
-        return User::siswa()
+        // Semua status (belum / aktif / selesai) DAN semua periode disertakan.
+        // Siswa angkatan lama tetap perlu bisa dinilai / diobservasi susulan.
+        return User::siswa()->withoutTrashed()
             ->orderByRaw("CASE status_pkl WHEN 'aktif' THEN 1 WHEN 'belum' THEN 2 WHEN 'selesai' THEN 3 ELSE 4 END")
             ->orderBy('name')
             ->get(['id', 'name', 'nisn', 'status_pkl']);
@@ -86,7 +88,7 @@ public function observasi(Request $request)
     $statusPkl = $this->statusPklValid($request->get('status_pkl', ''));
 
     $query = Observasi::with(['user', 'guru', 'items'])
-        ->whereHas('user', fn ($u) => $u->siswaBerjalan())
+        ->whereHas('user', fn ($u) => $u->siswa()->withoutTrashed())
         ->when($request->filled('q'), function ($q) use ($request) {
             $cari = trim($request->q);
             $q->whereHas('user', fn ($u) => $u
@@ -111,7 +113,7 @@ public function observasi(Request $request)
 
     $observasi = (clone $query)->paginate(15)->withQueryString();
 
-    $baseRekap = Observasi::whereHas('user', fn ($u) => $u->siswaBerjalan());
+    $baseRekap = Observasi::whereHas('user', fn ($u) => $u->siswa()->withoutTrashed());
     $rekap = [
         'total'     => (clone $baseRekap)->count(),
         'disetujui' => (clone $baseRekap)->where('status', 'tervalidasi')->count(),
@@ -300,7 +302,7 @@ public function destroyObservasi(Observasi $observasi)
 
         // Basis rekap mengikuti filter Status PKL yang sedang aktif supaya
         // angka kartu ringkasan selalu sama dengan isi tabel di bawahnya.
-        $basisRekap = fn () => User::siswa()
+        $basisRekap = fn () => User::siswa()->withoutTrashed()
             ->when($statusPkl, fn ($u) => $u->where('status_pkl', $statusPkl));
 
         $total = $basisRekap()->count();
@@ -311,12 +313,14 @@ public function destroyObservasi(Observasi $observasi)
             'total'         => $total,
             'sudah'         => $sudah,
             'belum'         => $total - $sudah,
-            'siswa_aktif'   => User::siswa()->where('status_pkl', 'aktif')->count(),
-            'siswa_belum'   => User::siswa()->where('status_pkl', 'belum')->count(),
-            'siswa_selesai' => User::siswa()->where('status_pkl', 'selesai')->count(),
+            'siswa_aktif'   => User::siswa()->withoutTrashed()->where('status_pkl', 'aktif')->count(),
+            'siswa_belum'   => User::siswa()->withoutTrashed()->where('status_pkl', 'belum')->count(),
+            'siswa_selesai' => User::siswa()->withoutTrashed()->where('status_pkl', 'selesai')->count(),
         ];
 
-        $siswa = User::siswa()
+        // LINTAS PERIODE: tanpa scope berjalan(), sehingga siswa periode lama
+        // tetap muncul di daftar penilaian apa pun periode yang sedang aktif.
+        $siswa = User::siswa()->withoutTrashed()
             ->when($statusPkl, fn ($query) => $query->where('status_pkl', $statusPkl))
             ->with(['nilai', 'guru'])
             ->when($q !== '', fn ($query) => $query->where(fn ($u) =>
