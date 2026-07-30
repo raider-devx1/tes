@@ -29,7 +29,7 @@
             <div class="bg-white rounded-2xl shadow-sm border border-blue-100 p-4 sm:p-5 mb-6">
                 <h3 class="text-base font-semibold text-gray-800 mb-1">Atur Status Siswa per Periode</h3>
                 <p class="text-sm text-gray-500 mb-4">
-                    Pilih periode, lalu ubah status PKL <strong>seluruh siswa</strong> pada periode tersebut sekaligus
+                    Masukkan <strong>nama periode</strong> (harus sama persis dengan nama yang terdaftar), lalu ubah status PKL <strong>seluruh siswa</strong> pada periode tersebut sekaligus
                     (belum / aktif / selesai). Berguna, misalnya, untuk menandai semua siswa periode lama menjadi "selesai".
                 </p>
                 <form method="POST" action="{{ route('admin.periode.update-status-siswa') }}"
@@ -37,24 +37,30 @@
                     @csrf
                     <div class="flex flex-col md:flex-row gap-3 md:items-end">
                         <div class="flex-1">
-                            <label class="block text-xs font-medium text-gray-500 mb-1">Periode PKL</label>
-                            <select name="periode_id" required
-                                    class="w-full rounded-lg border-blue-100 focus:border-[#2563EB] focus:ring-[#2563EB] text-sm">
-                                <option value="">-- Pilih Periode --</option>
+                            <label for="nama_periode" class="block text-xs font-medium text-gray-500 mb-1">Nama Periode</label>
+                            <input type="text" id="nama_periode" name="nama_periode" required
+                                   list="daftar-nama-periode"
+                                   autocomplete="off"
+                                   value="{{ old('nama_periode') }}"
+                                   placeholder="Ketik nama periode, mis. PKL Gelombang 1"
+                                   class="w-full rounded-lg border-blue-100 focus:border-[#2563EB] focus:ring-[#2563EB] text-sm @error('nama_periode') border-red-300 @enderror">
+                            {{-- Daftar saran nama periode: admin tetap mengetik, tapi tidak perlu menghafal ejaan. --}}
+                            <datalist id="daftar-nama-periode">
                                 @foreach($semuaPeriode as $item)
-                                    <option value="{{ $item->id }}">
-                                        {{ $item->nama }} &mdash; {{ $item->tahun_ajaran }} {{ $item->is_active ? '(Aktif)' : '' }}
-                                    </option>
+                                    <option value="{{ $item->nama }}">{{ $item->tahun_ajaran }}{{ $item->is_active ? ' (Aktif)' : '' }}</option>
                                 @endforeach
-                            </select>
+                            </datalist>
+                            @error('nama_periode')
+                                <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                            @enderror
                         </div>
                         <div class="w-full md:w-56">
                             <label class="block text-xs font-medium text-gray-500 mb-1">Ubah Status Menjadi</label>
                             <select name="status_pkl" required
                                     class="w-full rounded-lg border-blue-100 focus:border-[#2563EB] focus:ring-[#2563EB] text-sm">
-                                <option value="belum">Belum</option>
-                                <option value="aktif">Aktif</option>
-                                <option value="selesai">Selesai</option>
+                                <option value="belum" @selected(old('status_pkl') === 'belum')>Belum</option>
+                                <option value="aktif" @selected(old('status_pkl') === 'aktif')>Aktif</option>
+                                <option value="selesai" @selected(old('status_pkl') === 'selesai')>Selesai</option>
                             </select>
                         </div>
                         <div>
@@ -317,7 +323,8 @@
                  class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6" @click.outside="statusOpen = false">
                 <h3 class="text-lg font-bold text-gray-800">Ubah Status Semua Siswa</h3>
                 <p class="text-sm text-gray-600 mt-2">
-                    Ubah status SEMUA siswa pada periode ini? Tindakan ini berlaku untuk seluruh siswa pada periode yang dipilih.
+                    Ubah status SEMUA siswa pada periode <span class="font-semibold" x-text="statusLabel"></span>?
+                    Tindakan ini berlaku untuk seluruh siswa pada periode tersebut.
                 </p>
                 <div class="flex justify-end gap-2 pt-5">
                     <button type="button" @click="statusOpen = false"
@@ -338,6 +345,7 @@
                 hapusUrl: '',
                 hapusLabel: '',
                 statusOpen: false,
+                statusLabel: '',
 
                 init() {
                     this.$watch('detailOpen', () => this.kunciScroll());
@@ -356,7 +364,11 @@
                     this.hapusOpen  = true;
                 },
 
-                konfirmStatus() { this.statusOpen = true; },
+                konfirmStatus() {
+                    const input = this.$refs.statusForm.querySelector('[name="nama_periode"]');
+                    this.statusLabel = input && input.value.trim() ? '\u201c' + input.value.trim() + '\u201d' : 'ini';
+                    this.statusOpen = true;
+                },
             };
         };
     </script>

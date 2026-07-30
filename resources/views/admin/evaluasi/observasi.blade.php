@@ -90,8 +90,18 @@
                                 @endforeach
                             </select>
                         </div>
+                        {{-- Filter status PKL siswa: aktif / belum / selesai --}}
                         <div class="w-full md:w-48">
-                            <label class="block text-xs font-bold uppercase tracking-wide text-black mb-1">Status</label>
+                            <label class="block text-xs font-bold uppercase tracking-wide text-black mb-1">Status PKL</label>
+                            <select name="status_pkl" class="w-full rounded-xl border-2 border-[#0047d6]/25 bg-white px-3 py-2.5 text-sm font-medium text-black focus:border-[#0047d6] focus:ring-2 focus:ring-[#0047d6]/30">
+                                <option value="">Semua Status PKL</option>
+                                <option value="aktif" @selected(request('status_pkl') === 'aktif')>Aktif</option>
+                                <option value="belum" @selected(request('status_pkl') === 'belum')>Belum</option>
+                                <option value="selesai" @selected(request('status_pkl') === 'selesai')>Selesai</option>
+                            </select>
+                        </div>
+                        <div class="w-full md:w-48">
+                            <label class="block text-xs font-bold uppercase tracking-wide text-black mb-1">Status Validasi</label>
                             <select name="status" class="w-full rounded-xl border-2 border-[#0047d6]/25 bg-white px-3 py-2.5 text-sm font-medium text-black focus:border-[#0047d6] focus:ring-2 focus:ring-[#0047d6]/30">
                                 <option value="">Semua Status</option>
                                 <option value="1" @selected(request('status') === '1')>Sudah Divalidasi</option>

@@ -346,8 +346,18 @@
                     @foreach($jurusanList as $jr)<option value="{{ $jr }}" @selected(request('jurusan') === $jr)>{{ $jr }}</option>@endforeach
                 </select>
             </div>
+            {{-- Filter status PKL siswa: aktif / belum / selesai --}}
             <div>
-                <label class="block text-xs text-gray-500 mb-1">Status</label>
+                <label class="block text-xs text-gray-500 mb-1">Status PKL</label>
+                <select name="status_pkl" class="rounded-lg border-gray-200 text-sm focus:border-[#2563EB] focus:ring-[#2563EB]">
+                    <option value="">Semua Status PKL</option>
+                    <option value="aktif" @selected(request('status_pkl') === 'aktif')>Aktif</option>
+                    <option value="belum" @selected(request('status_pkl') === 'belum')>Belum</option>
+                    <option value="selesai" @selected(request('status_pkl') === 'selesai')>Selesai</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs text-gray-500 mb-1">Status Absensi</label>
                 <select name="status" class="rounded-lg border-gray-200 text-sm focus:border-[#2563EB] focus:ring-[#2563EB]">
                     <option value="">Semua</option>
                     <option value="Hadir" @selected(request('status') === 'Hadir')>Hadir</option>

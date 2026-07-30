@@ -348,7 +348,11 @@ class CetakPdfController extends Controller
         )->hari_tanggal;
 
         $pengaturan  = $this->getPengaturan();
-        $tahunAjaran = optional($this->periodeAktif())->tahun_ajaran ?? '2025/2026';
+        // Gunakan periode milik siswa itu sendiri (via relasi 'periode').
+        // Ini memastikan siswa angkatan lama tetap mencetak tanggal/tahun
+        // ajaran periode mereka sendiri, bukan periode baru yang aktif saat ini.
+        $periodeSiswa = $siswa->periode ?? $this->periodeAktif();
+        $tahunAjaran  = optional($periodeSiswa)->tahun_ajaran ?? '2025/2026';
 
         return [
             'nama_sekolah'      => $pengaturan['nama_sekolah'] ?? 'UPTD SMKN 1 MAJENE',
@@ -584,13 +588,10 @@ public function cetakAbsensiSemua()
         $ijin  = $absensi->filter(fn ($a) => in_array(strtolower($a->status), ['izin', 'ijin'], true))->count();
         $alpa  = $absensi->filter(fn ($a) => in_array(strtolower($a->status), ['alpha', 'alpa', 'tanpa keterangan'], true))->count();
 
-        // Mengambil data Periode PKL
-        $periodePkl = PeriodePkl::where('id', $siswa->periode_pkl_id)->first();
-
-        // --- PROSES LOGIKA VARIABEL UNTUK BLADE DI SINI ---
-        // Menggunakan fallback jika relasi di model atau pencarian query yang aktif
-        // PERBAIKAN 1: Tambahkan fallback ke $this->periodeAktif() jika relasi kosong
-        $periode = $siswa->periodePkl ?? $siswa->periode_pkl ?? $periodePkl ?? (method_exists(PeriodePkl::class, 'aktif') ? $this->periodeAktif() : null);
+        // Ambil periode milik siswa ini via relasi belongsTo (kolom periode_id).
+        // Fallback ke periode aktif hanya jika siswa belum terdaftar ke periode manapun.
+        $periodePkl = $siswa->periode ?? PeriodePkl::find($siswa->periode_id);
+        $periode    = $periodePkl ?? $this->periodeAktif();
         
         $mulaiPkl = ($periode && $periode->tanggal_mulai)
             ? \Carbon\Carbon::parse($periode->tanggal_mulai)
@@ -673,9 +674,9 @@ public function cetakAbsensiSemua()
             $ijin  = $absensi->filter(fn ($a) => in_array(strtolower($a->status), ['izin', 'ijin'], true))->count();
             $alpa  = $absensi->filter(fn ($a) => in_array(strtolower($a->status), ['alpha', 'alpa', 'tanpa keterangan'], true))->count();
 
-            // Periode PKL + fallback (sama seperti cetakNilaiGuruSatuan)
-            $periodePkl = PeriodePkl::where('id', $siswa->periode_pkl_id)->first();
-            $periode = $siswa->periodePkl ?? $siswa->periode_pkl ?? $periodePkl ?? (method_exists(PeriodePkl::class, 'aktif') ? $this->periodeAktif() : null);
+            // Ambil periode milik siswa ini (kolom periode_id), bukan periode aktif global.
+            $periodePkl = $siswa->periode ?? PeriodePkl::find($siswa->periode_id);
+            $periode    = $periodePkl ?? $this->periodeAktif();
 
             $mulaiPkl = ($periode && $periode->tanggal_mulai)
                 ? \Carbon\Carbon::parse($periode->tanggal_mulai)
@@ -716,7 +717,9 @@ public function cetakTemplatePenilaianKosong($siswa_id = null)
     $siswa = $this->resolveSiswa($siswa_id);
 
     $pengaturan  = $this->getPengaturan();
-    $tahunAjaran = optional($this->periodeAktif())->tahun_ajaran ?? '2025/2026';
+    // Gunakan periode milik siswa itu sendiri (bukan periode yang sedang aktif).
+    $periodeSiswa = $siswa->periode ?? $this->periodeAktif();
+    $tahunAjaran  = optional($periodeSiswa)->tahun_ajaran ?? '2025/2026';
 
     $tanggalObservasi = optional(
         Observasi::where('user_id', $siswa->id)->orderBy('hari_tanggal', 'desc')->first()

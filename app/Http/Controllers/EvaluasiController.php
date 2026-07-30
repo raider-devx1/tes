@@ -27,13 +27,45 @@ class EvaluasiController extends Controller
         return [$kelasList, $jurusanList];
     }
 
+    /**
+     * Nilai filter "Status PKL" yang diizinkan.
+     *
+     * Nilai di luar daftar ini dianggap kosong (= tampilkan semua), sehingga
+     * parameter URL yang diketik sembarangan tidak pernah masuk ke query.
+     */
+    private function statusPklValid($nilai): string
+    {
+        $nilai = is_string($nilai) ? trim(strtolower($nilai)) : '';
+
+        return in_array($nilai, ['aktif', 'belum', 'selesai'], true) ? $nilai : '';
+    }
+
+    /**
+     * Ekspresi ORDER BY untuk memprioritaskan siswa AKTIF di urutan pertama,
+     * lalu BELUM, dan SELESAI paling akhir.
+     *
+     * Nama tabel diambil dari model (getTable()), bukan ditulis manual, agar
+     * tetap benar bila konvensi penamaan tabel berubah. Subquery berkorelasi
+     * dipakai supaya tidak perlu join -- join akan merusak whereHas() dan
+     * paginate() yang sudah ada.
+     */
+    private function prioritasStatusSql(string $modelClass, string $kolomFk): string
+    {
+        $tabel = (new $modelClass)->getTable();
+
+        return "(CASE (SELECT status_pkl FROM users WHERE users.id = {$tabel}.{$kolomFk})"
+            . " WHEN 'aktif' THEN 1 WHEN 'belum' THEN 2 WHEN 'selesai' THEN 3 ELSE 4 END) ASC";
+    }
+
     /** Daftar siswa PKL untuk pencocokan NISN pada modal tambah/edit. */
     private function siswaList()
     {
+        // Semua status disertakan (belum / aktif / selesai). Siswa yang sudah
+        // selesai tetap perlu bisa dinilai / diobservasi susulan oleh admin.
         return User::siswa()
-            ->where('status_pkl', '!=', 'selesai')
+            ->orderByRaw("CASE status_pkl WHEN 'aktif' THEN 1 WHEN 'belum' THEN 2 WHEN 'selesai' THEN 3 ELSE 4 END")
             ->orderBy('name')
-            ->get(['id', 'name', 'nisn']);
+            ->get(['id', 'name', 'nisn', 'status_pkl']);
     }
 
     /*
@@ -51,8 +83,10 @@ public function observasi(Request $request)
 {
     [$kelasList, $jurusanList] = $this->opsiFilter();
 
+    $statusPkl = $this->statusPklValid($request->get('status_pkl', ''));
+
     $query = Observasi::with(['user', 'guru', 'items'])
-        ->whereHas('user', fn ($u) => $u->siswaBerjalan()->where('status_pkl', '!=', 'selesai'))
+        ->whereHas('user', fn ($u) => $u->siswaBerjalan())
         ->when($request->filled('q'), function ($q) use ($request) {
             $cari = trim($request->q);
             $q->whereHas('user', fn ($u) => $u
@@ -70,11 +104,14 @@ public function observasi(Request $request)
                 $q->where('status', '!=', 'tervalidasi');
             }
         })
+        ->when($statusPkl, fn ($q) => $q->whereHas('user', fn ($u) => $u->where('status_pkl', $statusPkl)))
+        // Urutan utama: siswa AKTIF dulu, lalu BELUM, terakhir SELESAI.
+        ->orderByRaw($this->prioritasStatusSql(Observasi::class, 'user_id'))
         ->latest('hari_tanggal');
 
     $observasi = (clone $query)->paginate(15)->withQueryString();
 
-    $baseRekap = Observasi::whereHas('user', fn ($u) => $u->siswaBerjalan()->where('status_pkl', '!=', 'selesai'));
+    $baseRekap = Observasi::whereHas('user', fn ($u) => $u->siswaBerjalan());
     $rekap = [
         'total'     => (clone $baseRekap)->count(),
         'disetujui' => (clone $baseRekap)->where('status', 'tervalidasi')->count(),
@@ -85,7 +122,7 @@ public function observasi(Request $request)
     $siswaList  = $this->siswaList();   // <-- INI yang kurang
 
     return view('admin.evaluasi.observasi', compact(
-        'observasi', 'rekap', 'jumlahGuru', 'kelasList', 'jurusanList', 'siswaList'
+        'observasi', 'rekap', 'jumlahGuru', 'kelasList', 'jurusanList', 'siswaList', 'statusPkl'
     ));
 }
 
@@ -258,16 +295,29 @@ public function destroyObservasi(Observasi $observasi)
         $q       = trim($request->get('q', ''));
         $kelas   = $request->get('kelas');
         $jurusan = $request->get('jurusan');
-        $status  = $request->get('status'); // 'sudah' | 'belum'
+        $status    = $request->get('status'); // 'sudah' | 'belum'
+        $statusPkl = $this->statusPklValid($request->get('status_pkl', ''));
 
-        $total = User::siswaBerjalan()->where('status_pkl', '!=', 'selesai')->count();
-        $sudah = User::siswaBerjalan()->where('status_pkl', '!=', 'selesai')
+        // Basis rekap mengikuti filter Status PKL yang sedang aktif supaya
+        // angka kartu ringkasan selalu sama dengan isi tabel di bawahnya.
+        $basisRekap = fn () => User::siswa()
+            ->when($statusPkl, fn ($u) => $u->where('status_pkl', $statusPkl));
+
+        $total = $basisRekap()->count();
+        $sudah = $basisRekap()
             ->whereHas('nilai', fn ($n) => $n->whereNotNull('nilai_akhir'))->count();
 
-        $rekap = ['total' => $total, 'sudah' => $sudah, 'belum' => $total - $sudah];
+        $rekap = [
+            'total'         => $total,
+            'sudah'         => $sudah,
+            'belum'         => $total - $sudah,
+            'siswa_aktif'   => User::siswa()->where('status_pkl', 'aktif')->count(),
+            'siswa_belum'   => User::siswa()->where('status_pkl', 'belum')->count(),
+            'siswa_selesai' => User::siswa()->where('status_pkl', 'selesai')->count(),
+        ];
 
         $siswa = User::siswa()
-            ->where('status_pkl', '!=', 'selesai')
+            ->when($statusPkl, fn ($query) => $query->where('status_pkl', $statusPkl))
             ->with(['nilai', 'guru'])
             ->when($q !== '', fn ($query) => $query->where(fn ($u) =>
                 $u->where('name', 'like', "%{$q}%")->orWhere('nisn', 'like', "%{$q}%")))
@@ -279,6 +329,8 @@ public function destroyObservasi(Observasi $observasi)
                 $query->where(fn ($u) =>
                     $u->whereDoesntHave('nilai')
                       ->orWhereHas('nilai', fn ($n) => $n->whereNull('nilai_akhir'))))
+            // Urutan utama: siswa AKTIF dulu, lalu BELUM, terakhir SELESAI.
+            ->orderByRaw("CASE status_pkl WHEN 'aktif' THEN 1 WHEN 'belum' THEN 2 WHEN 'selesai' THEN 3 ELSE 4 END")
             ->orderBy('name')
             ->paginate(15)
             ->withQueryString();
@@ -286,7 +338,7 @@ public function destroyObservasi(Observasi $observasi)
         $siswaList = $this->siswaList();
 
         return view('admin.evaluasi.penilaian', compact(
-            'siswa', 'rekap', 'kelasList', 'jurusanList', 'siswaList'
+            'siswa', 'rekap', 'kelasList', 'jurusanList', 'siswaList', 'statusPkl'
         ));
     }
 

@@ -28,10 +28,45 @@ class MonitoringController extends Controller
         ];
     }
 
+    /**
+     * Nilai filter "Status PKL" yang diizinkan.
+     *
+     * Nilai di luar daftar ini dianggap kosong (= tampilkan semua), sehingga
+     * parameter URL yang diketik sembarangan tidak pernah masuk ke query.
+     */
+    private function statusPklValid($nilai): string
+    {
+        $nilai = is_string($nilai) ? trim(strtolower($nilai)) : '';
+
+        return in_array($nilai, ['aktif', 'belum', 'selesai'], true) ? $nilai : '';
+    }
+
+    /**
+     * Ekspresi ORDER BY untuk memprioritaskan siswa AKTIF di urutan pertama,
+     * lalu BELUM, dan SELESAI paling akhir.
+     *
+     * Nama tabel diambil dari model (getTable()), bukan ditulis manual, agar
+     * tetap benar bila konvensi penamaan tabel berubah. Subquery berkorelasi
+     * dipakai supaya tidak perlu join -- join akan merusak whereHas() dan
+     * paginate() yang sudah ada.
+     */
+    private function prioritasStatusSql(string $modelClass, string $kolomFk): string
+    {
+        $tabel = (new $modelClass)->getTable();
+
+        return "(CASE (SELECT status_pkl FROM users WHERE users.id = {$tabel}.{$kolomFk})"
+            . " WHEN 'aktif' THEN 1 WHEN 'belum' THEN 2 WHEN 'selesai' THEN 3 ELSE 4 END) ASC";
+    }
+
     /** Daftar siswa PKL untuk dropdown form tambah/edit. */
     private function siswaList()
     {
-        return User::siswaBerjalan()->where('status_pkl', '!=', 'selesai')->orderBy('name')->get(['id', 'name', 'nisn']);
+        // Semua status disertakan (belum / aktif / selesai) supaya admin tetap
+        // bisa menambah & memperbaiki data siswa angkatan yang sudah selesai.
+        return User::siswaBerjalan()
+            ->orderByRaw("CASE status_pkl WHEN 'aktif' THEN 1 WHEN 'belum' THEN 2 WHEN 'selesai' THEN 3 ELSE 4 END")
+            ->orderBy('name')
+            ->get(['id', 'name', 'nisn', 'status_pkl']);
     }
 
     // ===================================================================
@@ -39,26 +74,30 @@ class MonitoringController extends Controller
 // ===================================================================
 public function jurnal(Request $request)
 {
-    $q       = trim($request->get('q', ''));
-    $status  = $request->get('status', '');
-    $kelas   = $request->get('kelas', '');
-    $jurusan = $request->get('jurusan', '');
-    $tanggal = $request->get('tanggal', '');
+    $q         = trim($request->get('q', ''));
+    $status    = $request->get('status', '');
+    $statusPkl = $this->statusPklValid($request->get('status_pkl', ''));
+    $kelas     = $request->get('kelas', '');
+    $jurusan   = $request->get('jurusan', '');
+    $tanggal   = $request->get('tanggal', '');
 
     $jurnal = Jurnal::query()
         ->with(['siswa', 'items'])
-        ->whereHas('siswa', fn ($s) => $s->siswaBerjalan()->where('status_pkl', '!=', 'selesai'))
+        ->whereHas('siswa', fn ($s) => $s->siswaBerjalan())
         ->when($q, fn ($query) => $query->whereHas('siswa', fn ($s) =>
             $s->where('name', 'like', "%{$q}%")->orWhere('nisn', 'like', "%{$q}%")))
         ->when($kelas,   fn ($query) => $query->whereHas('siswa', fn ($s) => $s->where('kelas', $kelas)))
         ->when($jurusan, fn ($query) => $query->whereHas('siswa', fn ($s) => $s->where('jurusan', $jurusan)))
         ->when($status,  fn ($query) => $query->where('status', $status))
         ->when($tanggal, fn ($query) => $query->whereDate('hari_tanggal', $tanggal))
+        ->when($statusPkl, fn ($query) => $query->whereHas('siswa', fn ($s) => $s->where('status_pkl', $statusPkl)))
+        // Urutan utama: siswa AKTIF dulu, lalu BELUM, terakhir SELESAI.
+        ->orderByRaw($this->prioritasStatusSql(Jurnal::class, 'siswa_id'))
         ->orderByDesc('hari_tanggal')
         ->paginate(15)
         ->withQueryString();
 
-    $rekapBase = fn () => Jurnal::whereHas('siswa', fn ($s) => $s->siswaBerjalan()->where('status_pkl', '!=', 'selesai'));
+    $rekapBase = fn () => Jurnal::whereHas('siswa', fn ($s) => $s->siswaBerjalan());
     $rekap = [
         'total'     => $rekapBase()->count(),
         'disetujui' => $rekapBase()->where('status', 'disetujui')->count(),
@@ -67,7 +106,7 @@ public function jurnal(Request $request)
     ];
 
     return view('admin.monitoring.jurnal', array_merge(
-        compact('jurnal', 'q', 'status', 'kelas', 'jurusan', 'tanggal', 'rekap'),
+        compact('jurnal', 'q', 'status', 'statusPkl', 'kelas', 'jurusan', 'tanggal', 'rekap'),
         ['siswaList' => $this->siswaList()],
         $this->opsiFilter()
     ));
@@ -234,24 +273,28 @@ public function destroyJurnal(Jurnal $jurnal)
 // ===================================================================
 public function catatan(Request $request)
 {
-    $q       = trim($request->get('q', ''));
-    $status  = $request->get('status', '');
-    $kelas   = $request->get('kelas', '');
-    $jurusan = $request->get('jurusan', '');
+    $q         = trim($request->get('q', ''));
+    $status    = $request->get('status', '');
+    $statusPkl = $this->statusPklValid($request->get('status_pkl', ''));
+    $kelas     = $request->get('kelas', '');
+    $jurusan   = $request->get('jurusan', '');
 
     $catatan = CatatanKegiatan::query()
         ->with('user')
-        ->whereHas('user', fn ($u) => $u->siswaBerjalan()->where('status_pkl', '!=', 'selesai'))
+        ->whereHas('user', fn ($u) => $u->siswaBerjalan())
         ->when($q, fn ($query) => $query->whereHas('user', fn ($u) =>
             $u->where('name', 'like', "%{$q}%")->orWhere('nisn', 'like', "%{$q}%")))
         ->when($kelas,   fn ($query) => $query->whereHas('user', fn ($u) => $u->where('kelas', $kelas)))
         ->when($jurusan, fn ($query) => $query->whereHas('user', fn ($u) => $u->where('jurusan', $jurusan)))
         ->when($status,  fn ($query) => $query->where('status', $status))
+        ->when($statusPkl, fn ($query) => $query->whereHas('user', fn ($u) => $u->where('status_pkl', $statusPkl)))
+        // Urutan utama: siswa AKTIF dulu, lalu BELUM, terakhir SELESAI.
+        ->orderByRaw($this->prioritasStatusSql(CatatanKegiatan::class, 'user_id'))
         ->latest()
         ->paginate(15)
         ->withQueryString();
 
-    $rekapBase = fn () => CatatanKegiatan::whereHas('user', fn ($u) => $u->siswaBerjalan()->where('status_pkl', '!=', 'selesai'));
+    $rekapBase = fn () => CatatanKegiatan::whereHas('user', fn ($u) => $u->siswaBerjalan());
     $rekap = [
         'total'     => $rekapBase()->count(),
         'disetujui' => $rekapBase()->where('status', 'disetujui')->count(),
@@ -260,7 +303,7 @@ public function catatan(Request $request)
     ];
 
     return view('admin.monitoring.catatan', array_merge(
-        compact('catatan', 'q', 'status', 'kelas', 'jurusan', 'rekap'),
+        compact('catatan', 'q', 'status', 'statusPkl', 'kelas', 'jurusan', 'rekap'),
         ['siswaList' => $this->siswaList()],
         $this->opsiFilter()
     ));
@@ -361,16 +404,17 @@ public function absensi(Request $request)
     User::siswaBerjalan()->where('status_pkl', 'aktif')->get()
         ->each(fn ($s) => Absensi::sinkronkanAlpa($s));
 
-    $q       = trim($request->get('q', ''));
-    $status  = $request->get('status', '');
-    $tanggal = $request->get('tanggal', '');
-    $bulan   = $request->get('bulan', '');
-    $kelas   = $request->get('kelas', '');
-    $jurusan = $request->get('jurusan', '');
+    $q         = trim($request->get('q', ''));
+    $status    = $request->get('status', '');
+    $statusPkl = $this->statusPklValid($request->get('status_pkl', ''));
+    $tanggal   = $request->get('tanggal', '');
+    $bulan     = $request->get('bulan', '');
+    $kelas     = $request->get('kelas', '');
+    $jurusan   = $request->get('jurusan', '');
 
     $absensi = Absensi::query()
         ->with('siswa')
-        ->whereHas('siswa', fn ($s) => $s->siswaBerjalan()->where('status_pkl', '!=', 'selesai'))
+        ->whereHas('siswa', fn ($s) => $s->siswaBerjalan())
         ->when($q, fn ($query) => $query->whereHas('siswa', fn ($s) =>
             $s->where('name', 'like', "%{$q}%")->orWhere('nisn', 'like', "%{$q}%")))
         ->when($kelas,   fn ($query) => $query->whereHas('siswa', fn ($s) => $s->where('kelas', $kelas)))
@@ -379,11 +423,14 @@ public function absensi(Request $request)
         ->when($tanggal, fn ($query) => $query->whereDate('tanggal', $tanggal))
         ->when($bulan,   fn ($query) => $query->whereYear('tanggal', substr($bulan, 0, 4))
                                               ->whereMonth('tanggal', substr($bulan, 5, 2)))
+        ->when($statusPkl, fn ($query) => $query->whereHas('siswa', fn ($s) => $s->where('status_pkl', $statusPkl)))
+        // Urutan utama: siswa AKTIF dulu, lalu BELUM, terakhir SELESAI.
+        ->orderByRaw($this->prioritasStatusSql(Absensi::class, 'siswa_id'))
         ->orderByDesc('tanggal')
         ->paginate(15)
         ->withQueryString();
 
-    $rekapBase = fn () => Absensi::whereHas('siswa', fn ($s) => $s->siswaBerjalan()->where('status_pkl', '!=', 'selesai'));
+    $rekapBase = fn () => Absensi::whereHas('siswa', fn ($s) => $s->siswaBerjalan());
     $rekap = [
         'Hadir' => $rekapBase()->where('status', 'Hadir')->count(),
         'Izin'  => $rekapBase()->where('status', 'Izin')->count(),
@@ -417,9 +464,9 @@ public function absensi(Request $request)
 
     // Data jam kerja industri per siswa (untuk pencarian & edit via NISN oleh admin).
     $siswaJam = User::siswaBerjalan()
-        ->where('status_pkl', '!=', 'selesai')
+        ->orderByRaw("CASE status_pkl WHEN 'aktif' THEN 1 WHEN 'belum' THEN 2 WHEN 'selesai' THEN 3 ELSE 4 END")
         ->orderBy('name')
-        ->get(['id', 'name', 'nisn', 'kelas', 'jam_masuk_industri', 'jam_pulang_industri', 'jam_masuk_usulan', 'jam_pulang_usulan', 'status_jam_usulan', 'catatan_jam_usulan']);
+        ->get(['id', 'name', 'nisn', 'kelas', 'status_pkl', 'jam_masuk_industri', 'jam_pulang_industri', 'jam_masuk_usulan', 'jam_pulang_usulan', 'status_jam_usulan', 'catatan_jam_usulan']);
 
     // Pengajuan jam yang masih menunggu validasi admin.
     $usulanJam = $siswaJam->where('status_jam_usulan', 'diajukan')->values();
@@ -431,7 +478,7 @@ public function absensi(Request $request)
     ];
 
     return view('admin.monitoring.absensi', array_merge(
-        compact('absensi', 'q', 'status', 'tanggal', 'bulan', 'kelas', 'jurusan', 'rekap', 'tanggalDefault', 'pengaturanAbsensi', 'paksaBuka', 'paksaMasuk', 'paksaPulang', 'siswaJam', 'usulanJam', 'jamAdmin'),
+        compact('absensi', 'q', 'status', 'statusPkl', 'tanggal', 'bulan', 'kelas', 'jurusan', 'rekap', 'tanggalDefault', 'pengaturanAbsensi', 'paksaBuka', 'paksaMasuk', 'paksaPulang', 'siswaJam', 'usulanJam', 'jamAdmin'),
         ['siswaList' => $this->siswaList(), 'dibukaList' => $dibukaList],
         $this->opsiFilter()
     ));
