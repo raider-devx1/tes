@@ -904,6 +904,9 @@ public function aturRekapAbsensi(Request $request)
         // '' = biarkan jadwal apa adanya, selain itu ubah jadwal hari kerja.
         'hari_kerja'      => ['nullable', Rule::in(['', User::HARI_KERJA_SENIN_JUMAT, User::HARI_KERJA_SENIN_SABTU])],
         'reset_total'     => ['nullable', 'boolean'],
+        // Hanya berlaku bila rentang = 1 hari: paksa tanggal itu walau bukan
+        // hari kerja (mis. Sabtu/Minggu yang absensinya dibuka admin).
+        'paksa_tanggal'   => ['nullable', 'boolean'],
     ], [
         'nisn.required_if'               => 'NISN wajib diisi untuk mode per siswa.',
         'tanggal_mulai.required'         => 'Tanggal mulai wajib diisi.',
@@ -929,6 +932,11 @@ public function aturRekapAbsensi(Request $request)
     $statusSisa   = (string) ($data['status_sisa'] ?? '');
     $resetTotal   = $request->boolean('reset_total');
     $jadwalBaru   = (string) ($data['hari_kerja'] ?? '');
+
+    // Mode SATU HARI: tanggal mulai = tanggal selesai. Berguna untuk mengedit
+    // atau membuat absensi khusus satu tanggal saja (mis. hari ini).
+    $satuHari     = $mulai->isSameDay($selesai);
+    $paksaTanggal = $satuHari && $request->boolean('paksa_tanggal');
 
     // ---- Tentukan siswa sasaran ----
     if ($data['mode'] === 'nisn') {
@@ -974,7 +982,12 @@ public function aturRekapAbsensi(Request $request)
     $siswaDilewati = [];
 
     // Hari kerja dihitung PER SISWA karena jadwalnya bisa berbeda-beda.
-    $hariKerjaSiswa = function (User $siswa) use ($mulai, $selesai): array {
+    $hariKerjaSiswa = function (User $siswa) use ($mulai, $selesai, $paksaTanggal): array {
+        // Satu hari yang dipaksa admin: tanggal itu selalu boleh diisi.
+        if ($paksaTanggal) {
+            return [$mulai->format('Y-m-d')];
+        }
+
         $tanggal = [];
 
         for ($d = $mulai->copy(); $d->lte($selesai); $d->addDay()) {

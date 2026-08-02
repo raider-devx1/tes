@@ -216,6 +216,36 @@
                                         </div>
                                     </div>
 
+                                    {{-- Pintasan tanggal: satu hari saja / rentang cepat --}}
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <span class="text-[11px] font-bold uppercase tracking-wide text-[#5b616e]">Pintasan:</span>
+                                        <button type="button" @click="pilihTanggal('hariIni')"
+                                                :class="satuHari &amp;&amp; form.mulai === tanggalHariIni ? 'bg-[#2563EB] text-white' : 'bg-white text-[#2563EB] hover:bg-[#2563EB]/10'"
+                                                class="rounded-lg border-2 border-[#2563EB]/30 px-3 py-1.5 text-[11px] font-bold">Hari Ini ({{ \Carbon\Carbon::now(config('app.timezone', 'Asia/Makassar'))->format('d/m/Y') }})</button>
+                                        <button type="button" @click="pilihTanggal('kemarin')"
+                                                class="rounded-lg border-2 border-[#2563EB]/30 bg-white px-3 py-1.5 text-[11px] font-bold text-[#2563EB] hover:bg-[#2563EB]/10">Kemarin</button>
+                                        <button type="button" @click="pilihTanggal('bulanIni')"
+                                                class="rounded-lg border-2 border-[#2563EB]/30 bg-white px-3 py-1.5 text-[11px] font-bold text-[#2563EB] hover:bg-[#2563EB]/10">Bulan Ini</button>
+                                        <button type="button" @click="pilihTanggal('samakan')" x-show="!satuHari" x-cloak
+                                                class="rounded-lg border-2 border-[#2563EB]/30 bg-white px-3 py-1.5 text-[11px] font-bold text-[#2563EB] hover:bg-[#2563EB]/10">Jadikan satu hari</button>
+                                    </div>
+
+                                    {{-- Mode satu hari: edit / buat baru untuk tanggal itu saja --}}
+                                    <div x-show="satuHari" x-cloak class="space-y-2 rounded-xl border-2 border-[#2563EB]/25 bg-[#2563EB]/5 px-4 py-3">
+                                        <p class="text-xs font-bold text-[#2563EB]">Mode satu hari: <span x-text="form.mulai"></span></p>
+                                        <p class="text-[11px] font-medium text-[#5b616e]">Isi <span class="font-bold">salah satu</span> status dengan angka <span class="font-bold">1</span> (sisanya 0) untuk menetapkan status hari itu. Bila absensi tanggal tersebut sudah ada, statusnya diedit tanpa menghapus foto dan jam absen; bila belum ada, dibuatkan baru dengan jam otomatis tepat waktu.</p>
+                                        <div class="flex flex-wrap gap-2">
+                                            <button type="button" @click="setSatuStatus('Hadir')" class="rounded-lg bg-white px-3 py-1.5 text-[11px] font-bold text-green-600 hover:bg-green-50">Set Hadir</button>
+                                            <button type="button" @click="setSatuStatus('Izin')" class="rounded-lg bg-white px-3 py-1.5 text-[11px] font-bold text-blue-600 hover:bg-blue-50">Set Izin</button>
+                                            <button type="button" @click="setSatuStatus('Sakit')" class="rounded-lg bg-white px-3 py-1.5 text-[11px] font-bold text-amber-600 hover:bg-amber-50">Set Sakit</button>
+                                            <button type="button" @click="setSatuStatus('Alpha')" class="rounded-lg bg-white px-3 py-1.5 text-[11px] font-bold text-[#cf202f] hover:bg-[#cf202f]/10">Set Alpha</button>
+                                        </div>
+                                        <label class="flex items-start gap-2 text-[11px] font-medium text-[#d98200]">
+                                            <input type="checkbox" name="paksa_tanggal" value="1" x-model="form.paksaTanggal" class="mt-0.5 rounded border-[#d98200]/40 text-[#d98200] focus:ring-[#d98200]">
+                                            <span>Paksa tanggal ini walau bukan hari kerja (mis. Sabtu/Minggu yang absensinya dibuka admin).</span>
+                                        </label>
+                                    </div>
+
                                     {{-- Jadwal hari kerja: menentukan hari mana yang boleh diisi absensi --}}
                                     <div>
                                         <label class="mb-1 block text-xs font-bold uppercase tracking-wide text-black">Jadwal Hari Kerja</label>
@@ -1084,6 +1114,7 @@
                 list: Array.isArray(list) ? list : [],
                 urlRekap: urlRekap,
                 hariKerjaGlobal: hariKerjaGlobal || 'senin_jumat',
+                tanggalHariIni: '',  // diisi saat modal dibuka (untuk pintasan "Hari Ini")
                 form: {
                     mulai: '',
                     selesai: '',
@@ -1094,6 +1125,7 @@
                     alpha: 0,
                     statusSisa: '',
                     resetTotal: false,
+                    paksaTanggal: false, // hanya berlaku bila rentang = 1 hari
                 },
 
                 bukaModal() {
@@ -1115,6 +1147,49 @@
                     this.form.alpha = 0;
                     this.form.statusSisa = '';
                     this.form.resetTotal = false;
+                    this.form.paksaTanggal = false;
+                    this.tanggalHariIni = fmt(hariIni);
+                },
+
+                /* Pintasan tanggal. 'hariIni'/'kemarin' membuat rentang 1 hari. */
+                pilihTanggal(jenis) {
+                    const fmt = (d) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+                    const hariIni = new Date();
+
+                    if (jenis === 'hariIni') {
+                        this.form.mulai = fmt(hariIni);
+                        this.form.selesai = fmt(hariIni);
+                    } else if (jenis === 'kemarin') {
+                        const kemarin = new Date(hariIni);
+                        kemarin.setDate(kemarin.getDate() - 1);
+                        this.form.mulai = fmt(kemarin);
+                        this.form.selesai = fmt(kemarin);
+                    } else if (jenis === 'bulanIni') {
+                        this.form.mulai = fmt(new Date(hariIni.getFullYear(), hariIni.getMonth(), 1));
+                        this.form.selesai = fmt(hariIni);
+                        this.form.paksaTanggal = false;
+                    } else if (jenis === 'samakan') {
+                        this.form.selesai = this.form.mulai;
+                    }
+
+                    // Angka rekap ikut menyesuaikan rentang baru bila siswa sudah dicari.
+                    if (this.mode === 'nisn' && this.info) {
+                        this.cari();
+                    }
+                },
+
+                /* Mode satu hari: tetapkan satu status saja untuk tanggal itu. */
+                setSatuStatus(status) {
+                    this.form.hadir = status === 'Hadir' ? 1 : 0;
+                    this.form.izin  = status === 'Izin'  ? 1 : 0;
+                    this.form.sakit = status === 'Sakit' ? 1 : 0;
+                    this.form.alpha = status === 'Alpha' ? 1 : 0;
+                    this.form.statusSisa = '';
+                },
+
+                /* Rentang tanggal hanya satu hari. */
+                get satuHari() {
+                    return !!this.form.mulai && this.form.mulai === this.form.selesai;
                 },
 
                 /*
@@ -1206,6 +1281,10 @@
                  */
                 get hariTersedia() {
                     if (!this.form.mulai || !this.form.selesai) return 0;
+
+                    // Satu hari yang dipaksa: tanggal itu selalu dianggap tersedia.
+                    if (this.satuHari && this.form.paksaTanggal) return 1;
+
                     const mulai = new Date(this.form.mulai + 'T00:00:00');
                     const selesai = new Date(this.form.selesai + 'T00:00:00');
                     if (isNaN(mulai) || isNaN(selesai) || selesai < mulai) return 0;
