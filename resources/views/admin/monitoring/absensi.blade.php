@@ -255,19 +255,19 @@
                                     <div>
                                         <label class="mb-1 block text-xs font-bold uppercase tracking-wide text-black">Sisa Hari Diisi Sebagai</label>
                                         <select name="status_sisa" x-model="form.statusSisa" class="w-full rounded-xl border-2 border-[#2563EB]/25 bg-white px-3 py-2.5 text-sm font-medium text-black focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/30">
-                                            <option value="">Dikosongkan (tanpa baris absensi)</option>
+                                            <option value="">Dibiarkan apa adanya (tidak diubah)</option>
                                             <option value="Hadir">Hadir</option>
                                             <option value="Izin">Izin</option>
                                             <option value="Sakit">Sakit</option>
                                             <option value="Alpha">Alpha</option>
                                         </select>
-                                        <p class="mt-1 text-xs font-medium text-[#5b616e]">Bila dikosongkan, hari kerja sisa yang tanggalnya sudah lewat dapat ditandai <span class="font-bold">Alpha otomatis</span> oleh sistem. Hari libur tidak pernah ditandai Alpha.</p>
+                                        <p class="mt-1 text-xs font-medium text-[#5b616e]">Bila dibiarkan apa adanya, absensi hari kerja sisa <span class="font-bold">tidak disentuh</span> (tidak dihapus, tidak diubah); tanggal yang belum terisi dan sudah lewat dapat ditandai <span class="font-bold">Alpha otomatis</span> oleh sistem. Hari libur tidak pernah ditandai Alpha.</p>
                                     </div>
 
                                     {{-- Pengosongan total --}}
                                     <label class="flex items-start gap-2 rounded-xl border-2 border-[#cf202f]/25 bg-[#cf202f]/5 px-4 py-3 text-xs font-medium text-[#cf202f]">
                                         <input type="checkbox" name="reset_total" value="1" x-model="form.resetTotal" class="mt-0.5 rounded border-[#cf202f]/40 text-[#cf202f] focus:ring-[#cf202f]">
-                                        <span>Hapus <span class="font-bold">SELURUH riwayat absensi</span> (semua tanggal, bukan hanya rentang di atas) sebelum menulis ulang. Centang ini bila ingin memulai data absensi benar-benar dari 0.</span>
+                                        <span>Hapus <span class="font-bold">SELURUH riwayat absensi</span> (semua tanggal, bukan hanya rentang di atas) sebelum menulis ulang &mdash; <span class="font-bold">termasuk foto bukti dan jam absen</span>. Centang ini HANYA bila ingin memulai data absensi benar-benar dari 0. Biarkan kosong agar sistem hanya mengedit status.</span>
                                     </label>
 
                                     {{-- Ringkasan --}}
@@ -276,11 +276,11 @@
                                         (jadwal <span class="font-bold text-gray-800" x-text="labelJadwalAktif"></span>) &middot;
                                         total diisi: <span class="font-bold text-gray-800" x-text="totalDiminta"></span> hari
                                         <p x-show="totalDiminta > hariTersedia" x-cloak class="mt-1 font-bold text-[#cf202f]">Total melebihi hari kerja tersedia. Perlebar rentang tanggal atau kurangi jumlahnya.</p>
-                                        <p x-show="totalDiminta === 0 && form.statusSisa === ''" x-cloak class="mt-1 font-bold text-[#cf202f]">Semua jumlah 0: rekap absensi akan dikosongkan menjadi 0.</p>
+                                        <p x-show="totalDiminta === 0 && form.statusSisa === ''" x-cloak class="mt-1 font-bold text-[#cf202f]">Semua jumlah 0: rekap absensi akan dikosongkan menjadi 0 (baris absensi pada rentang ini dihapus).</p>
                                     </div>
 
-                                    <div class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-medium text-amber-700">
-                                        Absensi lama akan <span class="font-bold">dihapus dan ditulis ulang</span> (termasuk foto buktinya). Tindakan ini tidak bisa dibatalkan.
+                                    <div class="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs font-medium text-emerald-700">
+                                        Cara kerja: sistem <span class="font-bold">hanya mengedit status kehadiran</span> pada tanggal yang sudah ada &mdash; <span class="font-bold">foto dokumentasi dan jam absen siswa tetap utuh</span>. Tanggal yang belum ada absensinya akan <span class="font-bold">dibuat baru</span> dengan jam masuk/pulang otomatis tepat waktu dan foto bukti kosong (opsional). Penghapusan hanya terjadi bila semua jumlah diisi 0 atau opsi hapus seluruh riwayat dicentang.
                                     </div>
 
                                     <div class="flex justify-end gap-2 pt-1">
@@ -1254,10 +1254,13 @@
                             + (this.form.resetTotal
                                 ? 'SELURUH riwayat absensi akan dihapus.'
                                 : 'Absensi pada rentang tanggal tersebut akan dihapus.');
+                    } else if (this.form.resetTotal) {
+                        pesan = 'Terapkan jumlah ini ke ' + sasaran + '? SELURUH riwayat absensi '
+                            + '(termasuk foto bukti dan jam absen) akan dihapus lebih dulu, lalu ditulis ulang.';
                     } else {
-                        pesan = 'Terapkan jumlah ini ke ' + sasaran + '? Absensi lama '
-                            + (this.form.resetTotal ? '(seluruh riwayat) ' : 'pada rentang tanggal tersebut ')
-                            + 'akan ditimpa.';
+                        pesan = 'Terapkan jumlah ini ke ' + sasaran + '? Status kehadiran pada rentang tanggal '
+                            + 'tersebut akan diedit, tanggal yang belum ada absensinya dibuat baru dengan jam tepat waktu. '
+                            + 'Foto dokumentasi dan jam absen yang sudah ada tetap utuh.';
                     }
 
                     if (!window.confirm(pesan)) {

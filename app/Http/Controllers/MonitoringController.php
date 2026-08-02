@@ -967,7 +967,8 @@ public function aturRekapAbsensi(Request $request)
     $adminId        = Auth::id();
     $periodeAktifId = Absensi::periodeAktifId();
 
-    $totalBaris   = 0;
+    $totalBaris   = 0; // baris BARU yang dibuat
+    $totalUbah    = 0; // baris LAMA yang hanya diubah statusnya
     $totalHapus   = 0;
     $siswaDiproses = 0;
     $siswaDilewati = [];
@@ -997,10 +998,16 @@ public function aturRekapAbsensi(Request $request)
         }
     }
 
+    // Semua jumlah 0 DAN sisa dikosongkan = permintaan PENGOSONGAN rekap
+    // (satu-satunya keadaan di mana baris absensi benar-benar dihapus).
+    // Selain itu operasinya bersifat EDIT: status diubah di tempat, foto bukti
+    // dan jam absen yang sudah ada TIDAK ikut hilang.
+    $modeKosong = ($totalDiminta === 0 && $statusSisa === '');
+
     DB::transaction(function () use (
-        $sasaran, $hariKerjaSiswa, $jumlah, $totalDiminta, $statusSisa, $resetTotal,
+        $sasaran, $hariKerjaSiswa, $jumlah, $totalDiminta, $statusSisa, $resetTotal, $modeKosong,
         $mulai, $selesai, $now, $adminId, $periodeAktifId,
-        &$totalBaris, &$totalHapus, &$siswaDiproses, &$siswaDilewati
+        &$totalBaris, &$totalUbah, &$totalHapus, &$siswaDiproses, &$siswaDilewati
     ) {
         foreach ($sasaran as $siswa) {
             $tanggalTersedia = $hariKerjaSiswa($siswa);
@@ -1011,40 +1018,121 @@ public function aturRekapAbsensi(Request $request)
                 continue;
             }
 
-            // 1) Bersihkan baris lama beserta foto buktinya.
-            //    reset_total = seluruh riwayat; selain itu hanya rentang terpilih.
-            $queryLama = Absensi::where('siswa_id', $siswa->id);
-
-            if (! $resetTotal) {
-                $queryLama->whereDate('tanggal', '>=', $mulai->format('Y-m-d'))
-                          ->whereDate('tanggal', '<=', $selesai->format('Y-m-d'));
-            }
-
-            $lama = $queryLama->get(['id', 'foto_bukti']);
-
-            foreach ($lama as $row) {
-                if ($row->foto_bukti) {
-                    Storage::disk('public')->delete($row->foto_bukti);
-                }
-            }
-
-            if ($lama->isNotEmpty()) {
-                Absensi::whereIn('id', $lama->pluck('id'))->delete();
-                $totalHapus += $lama->count();
-            }
-
-            // 2) Susun baris baru. Bila semua jumlah 0 dan sisa dikosongkan,
-            //    tidak ada baris yang ditulis -> rekap siswa menjadi 0.
             $jamMasuk  = substr($siswa->jamMasukEfektif(), 0, 5);
             $jamPulang = substr($siswa->jamPulangEfektif(), 0, 5);
             $periodeId = $siswa->periode_id ?: $periodeAktifId;
 
-            $baris = [];
-            $i     = 0;
+            // ---------------------------------------------------------------
+            // 1) PENGHAPUSAN (hanya bila diminta secara eksplisit)
+            //    - reset_total  : seluruh riwayat absensi siswa dibuang.
+            //    - modeKosong   : rentang terpilih dibuang sehingga rekap 0.
+            //    Di luar dua keadaan ini TIDAK ADA baris yang dihapus, sehingga
+            //    foto bukti dan jam absen siswa tetap utuh.
+            // ---------------------------------------------------------------
+            if ($resetTotal || $modeKosong) {
+                $queryLama = Absensi::where('siswa_id', $siswa->id);
 
-            $tambah = function (string $status, string $tanggal) use (
-                $siswa, $periodeId, $jamMasuk, $jamPulang, $adminId, $now, &$baris
-            ) {
+                if (! $resetTotal) {
+                    $queryLama->whereDate('tanggal', '>=', $mulai->format('Y-m-d'))
+                              ->whereDate('tanggal', '<=', $selesai->format('Y-m-d'));
+                }
+
+                $lama = $queryLama->get(['id', 'foto_bukti']);
+
+                foreach ($lama as $row) {
+                    if ($row->foto_bukti) {
+                        Storage::disk('public')->delete($row->foto_bukti);
+                    }
+                }
+
+                if ($lama->isNotEmpty()) {
+                    Absensi::whereIn('id', $lama->pluck('id'))->delete();
+                    $totalHapus += $lama->count();
+                }
+            }
+
+            if ($modeKosong) {
+                $siswaDiproses++;
+                \Illuminate\Support\Facades\Cache::forget("sinkron_alpa:{$siswa->id}:" . $now->format('Y-m-d'));
+                continue;
+            }
+
+            // ---------------------------------------------------------------
+            // 2) RENCANA STATUS PER TANGGAL
+            //    Urutan pengisian: Hadir dulu (hari paling awal), lalu Izin,
+            //    Sakit, Alpha. Sisa hari kerja hanya ikut diubah bila admin
+            //    memilih "status sisa"; bila dikosongkan, hari-hari itu
+            //    dibiarkan apa adanya (tidak dihapus, tidak diubah).
+            // ---------------------------------------------------------------
+            $rencana = [];
+            $i       = 0;
+
+            foreach ($jumlah as $status => $banyak) {
+                for ($n = 0; $n < $banyak; $n++, $i++) {
+                    $rencana[$tanggalTersedia[$i]] = $status;
+                }
+            }
+
+            if ($statusSisa !== '') {
+                for (; $i < count($tanggalTersedia); $i++) {
+                    $rencana[$tanggalTersedia[$i]] = $statusSisa;
+                }
+            }
+
+            // ---------------------------------------------------------------
+            // 3) BARIS LAMA PADA RENTANG -> dipetakan per tanggal.
+            //    whereDate() dipakai (bukan updateOrCreate) karena cast 'date'
+            //    menuliskan 'Y-m-d H:i:s' yang tidak cocok dengan TEXT SQLite.
+            // ---------------------------------------------------------------
+            $peta = [];
+
+            if (! empty($rencana)) {
+                $lamaRentang = Absensi::where('siswa_id', $siswa->id)
+                    ->whereDate('tanggal', '>=', $mulai->format('Y-m-d'))
+                    ->whereDate('tanggal', '<=', $selesai->format('Y-m-d'))
+                    ->get();
+
+                foreach ($lamaRentang as $row) {
+                    $peta[Carbon::parse($row->tanggal)->format('Y-m-d')] = $row;
+                }
+            }
+
+            // ---------------------------------------------------------------
+            // 4) EDIT baris yang sudah ada + BUAT BARU untuk tanggal kosong.
+            // ---------------------------------------------------------------
+            $baris = [];
+
+            foreach ($rencana as $tanggal => $status) {
+                $row = $peta[$tanggal] ?? null;
+
+                if ($row) {
+                    // EDIT: hanya status (dan pelengkapnya) yang disentuh.
+                    // foto_bukti + catatan_instruktur SENGAJA tidak diubah.
+                    $row->status = $status;
+
+                    // Jam absen lama dipertahankan. Bila kosong dan statusnya
+                    // Hadir, diisi otomatis dengan jam tepat waktu siswa.
+                    if ($status === 'Hadir') {
+                        if (empty($row->jam_masuk)) {
+                            $row->jam_masuk = $jamMasuk;
+                        }
+                        if (empty($row->jam_pulang)) {
+                            $row->jam_pulang = $jamPulang;
+                        }
+                    }
+
+                    $row->status_validasi      = 'disetujui';
+                    $row->validated_by_guru_id = $row->validated_by_guru_id ?: $adminId;
+                    $row->validated_at         = $row->validated_at ?: $now;
+
+                    $row->save();
+                    $totalUbah++;
+
+                    continue;
+                }
+
+                // BUAT BARU: jam masuk/pulang otomatis tepat waktu, foto bukti
+                // dibiarkan kosong karena bersifat opsional bagi admin.
                 $baris[] = [
                     'siswa_id'             => $siswa->id,
                     'periode_id'           => $periodeId,
@@ -1052,26 +1140,13 @@ public function aturRekapAbsensi(Request $request)
                     'status'               => $status,
                     'jam_masuk'            => $status === 'Hadir' ? $jamMasuk  : null,
                     'jam_pulang'           => $status === 'Hadir' ? $jamPulang : null,
+                    'foto_bukti'           => null,
                     'status_validasi'      => 'disetujui',
                     'validated_by_guru_id' => $adminId,
                     'validated_at'         => $now,
                     'created_at'           => $now,
                     'updated_at'           => $now,
                 ];
-            };
-
-            // Urutan pengisian: Hadir dulu (hari paling awal), lalu Izin, Sakit, Alpha.
-            foreach ($jumlah as $status => $banyak) {
-                for ($n = 0; $n < $banyak; $n++, $i++) {
-                    $tambah($status, $tanggalTersedia[$i]);
-                }
-            }
-
-            // 3) Sisa hari kerja yang belum terpakai (bila admin memilih status).
-            if ($statusSisa !== '') {
-                for (; $i < count($tanggalTersedia); $i++) {
-                    $tambah($statusSisa, $tanggalTersedia[$i]);
-                }
             }
 
             if (! empty($baris)) {
@@ -1114,7 +1189,12 @@ public function aturRekapAbsensi(Request $request)
 
     $pesan = "Rekap absensi {$lingkup} berhasil diatur ({$ringkas}) pada "
         . $mulai->format('d/m/Y') . ' - ' . $selesai->format('d/m/Y')
-        . ". {$totalBaris} baris ditulis, {$totalHapus} baris lama dihapus.";
+        . ". {$totalUbah} baris lama diubah statusnya (foto bukti & jam absen tetap utuh), "
+        . "{$totalBaris} baris baru dibuat dengan jam tepat waktu.";
+
+    if ($totalHapus > 0) {
+        $pesan .= " {$totalHapus} baris lama dihapus karena opsi reset dicentang.";
+    }
 
     if (! empty($siswaDilewati)) {
         $contoh = implode(', ', array_slice($siswaDilewati, 0, 3));
