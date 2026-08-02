@@ -213,11 +213,16 @@ class AbsensiController extends Controller
         $jendela = $this->jendelaAbsensi($siswa);
 
         // JADWAL HARI KERJA: hari libur (Minggu, dan Sabtu bila jadwal siswa
-        // hanya Senin-Jumat) tidak boleh diisi absensi sama sekali. Hari itu
+        // hanya Senin-Jumat) normalnya tidak boleh diisi absensi. Hari itu
         // sengaja dibiarkan kosong dan juga tidak ditandai Alpha otomatis.
-        if (! $siswa->adalahHariKerja($jendela['now'])) {
+        //
+        // PENGECUALIAN: bila ADMIN sendiri yang MEMBUKA absensi (buka jam masuk
+        // dan/atau jam pulang, baik global "semua siswa" maupun per-NISN),
+        // maka absensi TETAP BOLEH diisi walau hari Sabtu/Minggu. Admin dianggap
+        // sengaja mengadakan kegiatan di hari libur tersebut.
+        if (! $siswa->adalahHariKerja($jendela['now']) && ! $jendela['paksa']) {
             return back()->with('error', 'Hari ini bukan hari kerja absensi Anda (jadwal: '
-                . $siswa->labelHariKerja() . '). Absensi tidak perlu diisi.');
+                . $siswa->labelHariKerja() . '). Absensi tidak perlu diisi, kecuali admin membuka absensi.');
         }
 
         if (! $jendela['terbuka']) {
