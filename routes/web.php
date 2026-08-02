@@ -158,6 +158,8 @@ Route::get('/monitoring/absensi', [MonitoringController::class, 'absensi'])->nam
 Route::post('/monitoring/absensi/pengaturan', [MonitoringController::class, 'pengaturanAbsensi'])->name('monitoring.absensi.pengaturan');
 Route::post('/monitoring/absensi/buka', [MonitoringController::class, 'bukaAbsensi'])->name('monitoring.absensi.buka');
 Route::post('/monitoring/absensi', [MonitoringController::class, 'storeAbsensi'])->name('monitoring.absensi.store');
+// Atur JUMLAH Hadir/Izin/Sakit/Alpha (per NISN atau semua siswa) dalam satu rentang tanggal.
+Route::post('/monitoring/absensi/rekap', [MonitoringController::class, 'aturRekapAbsensi'])->name('monitoring.absensi.rekap');
 // Validasi & edit jam kerja industri siswa oleh admin (letakkan sebelum rute generic {absensi}).
 Route::put('/monitoring/absensi/jam/{siswa}/validasi', [MonitoringController::class, 'validasiJamAbsensi'])->name('monitoring.absensi.jam.validasi');
 Route::put('/monitoring/absensi/jam/{siswa}', [MonitoringController::class, 'updateJamAbsensi'])->name('monitoring.absensi.jam.update');

@@ -97,6 +97,135 @@
                 </button>
                 <button type="button" @click="tambah()"
                         class="inline-flex items-center justify-center gap-1.5 rounded-lg bg-[#2563EB] px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700">Tambah Absensi</button>
+
+                {{-- ===== TOMBOL: ATUR JUMLAH HADIR / IZIN / SAKIT / ALPHA ===== --}}
+                @php
+                    $rekapSiswaList = ($siswaJam ?? collect())->map(fn ($s) => [
+                        'nisn'  => (string) ($s->nisn ?? ''),
+                        'name'  => $s->name,
+                        'kelas' => $s->kelas ?? '-',
+                        'statusPkl' => $s->status_pkl ?? '-',
+                    ])->values();
+                @endphp
+                <div x-data="rekapMassal(@js($rekapSiswaList))" x-effect="document.body.style.overflow = open ? 'hidden' : ''" class="inline-block">
+                    <button type="button" @click="bukaModal()"
+                            class="inline-flex items-center justify-center gap-1.5 rounded-lg bg-[#d98200] px-4 py-2.5 text-sm font-semibold text-white hover:opacity-90">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-6h13M9 5h13M4 7h.01M4 12h.01M4 17h.01"/></svg>
+                        Atur Jumlah H/I/S/A
+                    </button>
+
+                    <template x-teleport="body">
+                        <div x-show="open" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4" @keydown.escape.window="open=false">
+                            <div class="absolute inset-0 bg-black/50" @click="open=false"></div>
+                            <div class="relative flex max-h-[90vh] w-full max-w-2xl flex-col rounded-2xl bg-white shadow-xl">
+                                <div class="flex items-center justify-between border-b border-gray-100 px-5 py-4">
+                                    <div>
+                                        <h3 class="text-base font-bold text-gray-800">Atur Jumlah Hadir / Izin / Sakit / Alpha</h3>
+                                        <p class="text-xs font-medium text-[#5b616e]">Tentukan jumlah hari tiap status, sistem yang menuliskan tanggalnya.</p>
+                                    </div>
+                                    <button type="button" @click="open=false" class="text-2xl leading-none text-gray-400 hover:text-black">&times;</button>
+                                </div>
+
+                                <form method="POST" action="{{ route('admin.monitoring.absensi.rekap') }}" class="overflow-y-auto px-5 py-4 space-y-4 text-left" @submit="kirim($event)">
+                                    @csrf
+
+                                    {{-- Pilih lingkup --}}
+                                    <div class="flex gap-2">
+                                        <button type="button" @click="mode='nisn'" :class="mode==='nisn' ? 'bg-[#2563EB] text-white' : 'bg-gray-100 text-gray-600'" class="flex-1 rounded-lg px-3 py-2 text-sm font-semibold">Per Siswa (NISN)</button>
+                                        <button type="button" @click="mode='semua'" :class="mode==='semua' ? 'bg-[#2563EB] text-white' : 'bg-gray-100 text-gray-600'" class="flex-1 rounded-lg px-3 py-2 text-sm font-semibold">Semua Siswa</button>
+                                    </div>
+                                    <input type="hidden" name="mode" :value="mode">
+
+                                    {{-- Pencarian NISN --}}
+                                    <div x-show="mode==='nisn'" x-cloak>
+                                        <label class="mb-1 block text-xs font-bold uppercase tracking-wide text-black">NISN Siswa</label>
+                                        <div class="flex gap-2">
+                                            <input type="text" x-model="nisn" @keydown.enter.prevent="cari()" inputmode="numeric" placeholder="Masukkan NISN siswa..."
+                                                   class="w-full rounded-xl border-2 border-[#2563EB]/25 bg-white px-4 py-2.5 text-sm font-medium text-black placeholder-[#a8acb3] focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/30">
+                                            <button type="button" @click="cari()" class="shrink-0 rounded-xl bg-[#2563EB] px-4 py-2.5 text-sm font-bold text-white hover:bg-[#1d4ed8]">Cari</button>
+                                        </div>
+                                        <input type="hidden" name="nisn" :value="nisn">
+                                        <p x-show="siswa" x-cloak class="mt-1 text-xs font-bold text-[#05b169]">&check; <span x-text="siswa?.name"></span> &middot; <span x-text="siswa?.kelas"></span> &middot; status PKL <span x-text="siswa?.statusPkl"></span></p>
+                                        <p x-show="pesanError" x-cloak x-text="pesanError" class="mt-1 text-xs font-bold text-[#cf202f]"></p>
+                                    </div>
+
+                                    <div x-show="mode==='semua'" x-cloak class="rounded-xl border-2 border-[#cf202f]/30 bg-[#cf202f]/5 px-4 py-3 text-xs font-medium text-[#cf202f]">
+                                        Jumlah ini akan diterapkan ke <span class="font-bold">SEMUA siswa PKL periode berjalan</span>. Absensi lama mereka pada rentang tanggal di bawah akan ditimpa.
+                                    </div>
+
+                                    {{-- Rentang tanggal --}}
+                                    <div class="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label class="mb-1 block text-xs font-bold uppercase tracking-wide text-black">Tanggal Mulai</label>
+                                            <input type="date" name="tanggal_mulai" x-model="form.mulai" required
+                                                   class="w-full rounded-xl border-2 border-[#2563EB]/25 bg-white px-3 py-2.5 text-sm font-medium text-black focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/30">
+                                        </div>
+                                        <div>
+                                            <label class="mb-1 block text-xs font-bold uppercase tracking-wide text-black">Tanggal Selesai</label>
+                                            <input type="date" name="tanggal_selesai" x-model="form.selesai" required
+                                                   class="w-full rounded-xl border-2 border-[#2563EB]/25 bg-white px-3 py-2.5 text-sm font-medium text-black focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/30">
+                                        </div>
+                                    </div>
+
+                                    <label class="flex items-center gap-2 text-sm font-medium text-gray-700">
+                                        <input type="checkbox" name="lewati_akhir_pekan" value="1" x-model="form.lewatiAkhirPekan" class="rounded border-gray-300 text-[#2563EB] focus:ring-[#2563EB]">
+                                        Lewati Sabtu &amp; Minggu
+                                    </label>
+
+                                    {{-- Jumlah tiap status --}}
+                                    <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                                        <div>
+                                            <label class="mb-1 block text-xs font-bold uppercase tracking-wide text-green-600">Hadir</label>
+                                            <input type="number" min="0" name="jumlah_hadir" x-model.number="form.hadir" required class="w-full rounded-xl border-2 border-green-200 px-3 py-2.5 text-sm font-bold text-black focus:border-green-500 focus:ring-2 focus:ring-green-200">
+                                        </div>
+                                        <div>
+                                            <label class="mb-1 block text-xs font-bold uppercase tracking-wide text-blue-600">Izin</label>
+                                            <input type="number" min="0" name="jumlah_izin" x-model.number="form.izin" required class="w-full rounded-xl border-2 border-blue-200 px-3 py-2.5 text-sm font-bold text-black focus:border-blue-500 focus:ring-2 focus:ring-blue-200">
+                                        </div>
+                                        <div>
+                                            <label class="mb-1 block text-xs font-bold uppercase tracking-wide text-amber-500">Sakit</label>
+                                            <input type="number" min="0" name="jumlah_sakit" x-model.number="form.sakit" required class="w-full rounded-xl border-2 border-amber-200 px-3 py-2.5 text-sm font-bold text-black focus:border-amber-500 focus:ring-2 focus:ring-amber-200">
+                                        </div>
+                                        <div>
+                                            <label class="mb-1 block text-xs font-bold uppercase tracking-wide text-red-500">Alpha</label>
+                                            <input type="number" min="0" name="jumlah_alpha" x-model.number="form.alpha" required class="w-full rounded-xl border-2 border-red-200 px-3 py-2.5 text-sm font-bold text-black focus:border-red-500 focus:ring-2 focus:ring-red-200">
+                                        </div>
+                                    </div>
+
+                                    {{-- Sisa hari --}}
+                                    <div>
+                                        <label class="mb-1 block text-xs font-bold uppercase tracking-wide text-black">Sisa Hari Diisi Sebagai</label>
+                                        <select name="status_sisa" x-model="form.statusSisa" class="w-full rounded-xl border-2 border-[#2563EB]/25 bg-white px-3 py-2.5 text-sm font-medium text-black focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/30">
+                                            <option value="">Dikosongkan (tanpa baris absensi)</option>
+                                            <option value="Hadir">Hadir</option>
+                                            <option value="Izin">Izin</option>
+                                            <option value="Sakit">Sakit</option>
+                                            <option value="Alpha">Alpha</option>
+                                        </select>
+                                        <p class="mt-1 text-xs font-medium text-[#5b616e]">Bila dikosongkan, hari sisa yang tanggalnya sudah lewat dapat ditandai <span class="font-bold">Alpha otomatis</span> oleh sistem.</p>
+                                    </div>
+
+                                    {{-- Ringkasan --}}
+                                    <div class="rounded-xl bg-slate-50 px-4 py-3 text-xs font-medium text-gray-600">
+                                        Hari tersedia pada rentang: <span class="font-bold text-gray-800" x-text="hariTersedia"></span> hari &middot;
+                                        total diisi: <span class="font-bold text-gray-800" x-text="totalDiminta"></span> hari
+                                        <p x-show="totalDiminta > hariTersedia" x-cloak class="mt-1 font-bold text-[#cf202f]">Total melebihi hari tersedia. Perlebar rentang tanggal atau kurangi jumlahnya.</p>
+                                    </div>
+
+                                    <div class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-medium text-amber-700">
+                                        Absensi lama pada rentang tanggal ini akan <span class="font-bold">dihapus dan ditulis ulang</span> (termasuk foto buktinya). Tindakan ini tidak bisa dibatalkan.
+                                    </div>
+
+                                    <div class="flex justify-end gap-2 pt-1">
+                                        <button type="button" @click="open=false" class="rounded-xl border-2 border-[#2563EB]/25 bg-white px-4 py-2 text-sm font-bold text-[#2563EB] hover:bg-[#2563EB]/5">Batal</button>
+                                        <button type="submit" :disabled="!bolehKirim" :class="!bolehKirim ? 'opacity-40 cursor-not-allowed' : 'hover:opacity-90'"
+                                                class="rounded-xl bg-[#d98200] px-4 py-2 text-sm font-bold text-white">Terapkan Jumlah</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </template>
+                </div>
             </div>
         </div>
 
@@ -867,6 +996,102 @@
     {{-- ===== Alpine: pencarian & edit jam kerja siswa via NISN ===== --}}
     <script>
         document.addEventListener('alpine:init', () => {
+            /* ===== Atur jumlah Hadir/Izin/Sakit/Alpha (per NISN atau semua siswa) ===== */
+            Alpine.data('rekapMassal', (list) => ({
+                open: false,
+                mode: 'nisn',
+                nisn: '',
+                siswa: null,
+                pesanError: '',
+                list: Array.isArray(list) ? list : [],
+                form: {
+                    mulai: '',
+                    selesai: '',
+                    lewatiAkhirPekan: true,
+                    hadir: 0,
+                    izin: 0,
+                    sakit: 0,
+                    alpha: 0,
+                    statusSisa: '',
+                },
+
+                bukaModal() {
+                    const hariIni = new Date();
+                    const awalBulan = new Date(hariIni.getFullYear(), hariIni.getMonth(), 1);
+                    const fmt = (d) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+
+                    this.open = true;
+                    this.nisn = '';
+                    this.siswa = null;
+                    this.pesanError = '';
+                    this.form.mulai = fmt(awalBulan);
+                    this.form.selesai = fmt(hariIni);
+                    this.form.hadir = 0;
+                    this.form.izin = 0;
+                    this.form.sakit = 0;
+                    this.form.alpha = 0;
+                    this.form.statusSisa = '';
+                },
+
+                cari() {
+                    const n = (this.nisn || '').trim();
+                    if (!n) {
+                        this.siswa = null;
+                        this.pesanError = 'Masukkan NISN terlebih dahulu.';
+                        return;
+                    }
+                    const found = this.list.find((x) => String(x.nisn) === n);
+                    if (!found) {
+                        this.siswa = null;
+                        this.pesanError = 'NISN tidak ditemukan.';
+                        return;
+                    }
+                    this.pesanError = '';
+                    this.siswa = found;
+                },
+
+                /* Jumlah hari yang bisa diisi pada rentang tanggal terpilih. */
+                get hariTersedia() {
+                    if (!this.form.mulai || !this.form.selesai) return 0;
+                    const mulai = new Date(this.form.mulai + 'T00:00:00');
+                    const selesai = new Date(this.form.selesai + 'T00:00:00');
+                    if (isNaN(mulai) || isNaN(selesai) || selesai < mulai) return 0;
+
+                    let jumlah = 0;
+                    for (let d = new Date(mulai); d <= selesai; d.setDate(d.getDate() + 1)) {
+                        const akhirPekan = d.getDay() === 0 || d.getDay() === 6;
+                        if (this.form.lewatiAkhirPekan && akhirPekan) continue;
+                        jumlah++;
+                    }
+                    return jumlah;
+                },
+
+                get totalDiminta() {
+                    const n = (v) => (Number.isFinite(Number(v)) ? Number(v) : 0);
+                    return n(this.form.hadir) + n(this.form.izin) + n(this.form.sakit) + n(this.form.alpha);
+                },
+
+                get bolehKirim() {
+                    if (this.mode === 'nisn' && !this.siswa) return false;
+                    if (this.hariTersedia === 0) return false;
+                    if (this.totalDiminta > this.hariTersedia) return false;
+                    return this.totalDiminta > 0 || this.form.statusSisa !== '';
+                },
+
+                kirim(e) {
+                    if (!this.bolehKirim) {
+                        e.preventDefault();
+                        return;
+                    }
+                    const pesan = this.mode === 'semua'
+                        ? 'Terapkan jumlah ini ke SEMUA siswa PKL periode berjalan? Absensi lama pada rentang tanggal tersebut akan ditimpa.'
+                        : 'Terapkan jumlah ini ke ' + (this.siswa ? this.siswa.name : 'siswa terpilih') + '? Absensi lama pada rentang tanggal tersebut akan ditimpa.';
+                    if (!window.confirm(pesan)) {
+                        e.preventDefault();
+                    }
+                },
+            }));
+
             Alpine.data('jamFinder', (list, urlTemplate) => ({
                 open: false,
                 nisn: '',
