@@ -24,6 +24,9 @@ class PasswordController extends Controller
             'password' => Hash::make($validated['password']),
         ]);
 
-        return back()->with('status', 'password-updated');
+        return back()
+            ->with('status', 'password-updated')
+            ->with('profil_pesan', 'Berhasil! Anda telah mengubah password akun Anda. Gunakan password baru pada login berikutnya.')
+            ->with('profil_pesan_sukses', true);
     }
 }

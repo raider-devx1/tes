@@ -51,13 +51,43 @@ class ProfileController extends Controller
 
         $user->fill($data);
 
+        // Catat bagian apa saja yang benar-benar berubah, untuk pesan sukses.
+        $berubah = [];
+
+        if ($user->isDirty('name')) {
+            $berubah[] = 'nama';
+        }
+
         if ($user->isDirty('email')) {
+            $berubah[] = 'email';
             $user->email_verified_at = null;
+        }
+
+        if ($user->isDirty('foto')) {
+            $berubah[] = 'foto profil';
         }
 
         $user->save();
 
-        return Redirect::route('profile.edit')->with('status', 'profile-updated');
+        // Susun kalimat: "nama", "nama dan foto profil", "nama, email, dan foto profil".
+        $adaPerubahan = ! empty($berubah);
+
+        if (! $adaPerubahan) {
+            $pesan = 'Tidak ada perubahan pada profil Anda. Data tetap seperti sebelumnya.';
+        } else {
+            $jumlah  = count($berubah);
+            $terakhir = array_pop($berubah);
+            $daftar  = $jumlah > 1
+                ? implode(', ', $berubah) . ' dan ' . $terakhir
+                : $terakhir;
+
+            $pesan = 'Berhasil! Anda telah mengubah ' . $daftar . ' akun Anda.';
+        }
+
+        return Redirect::route('profile.edit')
+            ->with('status', 'profile-updated')
+            ->with('profil_pesan', $pesan)
+            ->with('profil_pesan_sukses', $adaPerubahan);
     }
 
     /**
