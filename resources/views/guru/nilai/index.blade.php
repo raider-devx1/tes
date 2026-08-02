@@ -371,6 +371,59 @@
                             <input type="hidden" name="user_id" value="{{ $s->id }}">
                             <input type="hidden" name="guru_id" value="{{ auth()->id() }}">
                             <div class="space-y-6">
+                                {{-- ===== IDENTITAS UNTUK HASIL CETAK (NIS / NISN) ===== --}}
+                                @php
+                                    $labelIdentitas = optional($s->nilai)->label_identitas === 'nis' ? 'nis' : 'nisn';
+                                    $nomorIdentitas = optional($s->nilai)->nomor_identitas;
+                                @endphp
+                                <div x-data="{ label: '{{ $labelIdentitas }}', nomor: @js($nomorIdentitas ?? ''), nisnSiswa: @js($s->nisn ?? '') }"
+                                     class="p-4 bg-[#05b169]/5 rounded-lg border border-[#05b169]/25">
+                                    <label class="block text-sm font-bold text-black mb-1">Identitas pada Hasil Cetak</label>
+                                    <p class="text-xs text-[#5b616e] mb-3">
+                                        Pilih kata yang tercetak pada lembar penilaian: <span class="font-bold text-black">NISN</span> atau <span class="font-bold text-black">NIS</span>, lalu isi nomornya sesuai yang ingin dipakai.
+                                    </p>
+
+                                    <div class="flex flex-wrap gap-2 mb-3">
+                                        <label class="cursor-pointer">
+                                            <input type="radio" name="label_identitas" value="nisn" x-model="label" class="peer sr-only">
+                                            <span class="inline-flex items-center rounded-lg border-2 border-gray-200 bg-white px-4 py-2 text-xs font-bold text-[#5b616e] transition peer-checked:border-[#05b169] peer-checked:bg-[#05b169] peer-checked:text-white">
+                                                Pakai NISN
+                                            </span>
+                                        </label>
+                                        <label class="cursor-pointer">
+                                            <input type="radio" name="label_identitas" value="nis" x-model="label" class="peer sr-only">
+                                            <span class="inline-flex items-center rounded-lg border-2 border-gray-200 bg-white px-4 py-2 text-xs font-bold text-[#5b616e] transition peer-checked:border-[#05b169] peer-checked:bg-[#05b169] peer-checked:text-white">
+                                                Pakai NIS
+                                            </span>
+                                        </label>
+                                    </div>
+
+                                    <label class="block text-xs font-medium text-gray-600 mb-1">
+                                        Nomor <span class="font-bold text-black" x-text="label === 'nis' ? 'NIS' : 'NISN'">NISN</span> yang dicetak
+                                    </label>
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <input type="text" name="nomor_identitas" x-model="nomor" maxlength="30" inputmode="numeric"
+                                               :placeholder="label === 'nis' ? 'Ketik NIS siswa, mis. 12345' : (nisnSiswa || 'Ketik NISN siswa')"
+                                               class="block w-full sm:w-64 rounded-lg border-gray-300 shadow-sm focus:ring-[#05b169] sm:text-sm">
+                                        <button type="button" x-show="nisnSiswa" @click="label = 'nisn'; nomor = nisnSiswa"
+                                                class="rounded-lg bg-white border border-[#05b169]/40 px-3 py-2 text-[11px] font-bold text-[#05b169] hover:bg-[#05b169]/10">
+                                            Pakai NISN data siswa (<span x-text="nisnSiswa"></span>)
+                                        </button>
+                                        <button type="button" @click="nomor = ''"
+                                                class="rounded-lg bg-white border border-gray-300 px-3 py-2 text-[11px] font-bold text-[#5b616e] hover:bg-gray-100">
+                                            Kosongkan
+                                        </button>
+                                    </div>
+
+                                    <p class="text-[11px] text-[#5b616e] mt-2">
+                                        Pratinjau baris cetak:
+                                        <span class="font-bold text-black" x-text="(label === 'nis' ? 'NIS' : 'NISN') + ' : ' + (nomor.trim() !== '' ? nomor.trim() : (label === 'nis' ? '-' : (nisnSiswa || '-')))"></span>
+                                    </p>
+                                    <p class="text-[11px] text-[#5b616e]">
+                                        Bila nomor dikosongkan dan pilihannya NISN, cetakan otomatis memakai NISN dari data siswa.
+                                    </p>
+                                </div>
+
                                 {{-- ===== UPLOAD FOTO LEMBAR INSTRUKTUR ===== --}}
                                 <div class="p-4 bg-[#0047d6]/5 rounded-lg border border-[#0047d6]/20">
                                     <label class="block text-sm font-bold text-black mb-1">Foto Lembar Penilaian Instruktur</label>

@@ -22,6 +22,10 @@ class Nilai extends Model
         'periode_id',   // periode PKL tempat data ini dibuat (diisi otomatis)
         'guru_id',
 
+        // Identitas siswa yang dipakai pada hasil CETAK penilaian guru
+        'label_identitas',   // 'nisn' (bawaan) atau 'nis'
+        'nomor_identitas',   // nomor yang diketik bebas oleh guru
+
         // Kolom lama instruktur (skala 1-5) — dibiarkan untuk kompatibilitas data lama
         'soft_skill',
         'hard_skill',
@@ -68,6 +72,36 @@ class Nilai extends Model
     public function guru(): BelongsTo
     {
         return $this->belongsTo(User::class, 'guru_id')->withTrashed();
+    }
+
+    /* ============ IDENTITAS UNTUK HASIL CETAK ============ */
+
+    public const LABEL_NISN = 'nisn';
+    public const LABEL_NIS  = 'nis';
+
+    /**
+     * Kata yang dicetak pada baris identitas: "NISN" atau "NIS".
+     * Bawaan tetap "NISN" agar cetakan lama tidak berubah.
+     */
+    public function getLabelIdentitasCetakAttribute(): string
+    {
+        return $this->label_identitas === self::LABEL_NIS ? 'NIS' : 'NISN';
+    }
+
+    /**
+     * Nomor yang dicetak pada baris identitas.
+     * Bila guru tidak mengisi nomor, dipakai NISN bawaan milik siswa.
+     */
+    public function getNomorIdentitasCetakAttribute(): string
+    {
+        $nomor = trim((string) ($this->nomor_identitas ?? ''));
+
+        if ($nomor !== '') {
+            return $nomor;
+        }
+
+        // Nomor kosong: hanya masuk akal sebagai fallback untuk NISN siswa.
+        return trim((string) ($this->user->nisn ?? '')) ?: '-';
     }
 
     /** Daftar 6 komponen skor penilaian guru. */

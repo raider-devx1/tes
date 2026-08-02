@@ -136,9 +136,13 @@
                     <td>{{ $siswa->name ?? '' }}</td>
                 </tr>
                 <tr>
-                    <td>NISN</td>
+                    {{-- Label mengikuti pilihan guru pada modal Beri Nilai: NISN (bawaan) atau NIS --}}
+                    <td>{{ optional($nilai ?? null)->label_identitas === 'nis' ? 'NIS' : 'NISN' }}</td>
                     <td class="titik-dua">:</td>
-                    <td>{{ $siswa->nisn ?? '-' }}</td>
+                    {{-- Nomor mengikuti isian guru; bila kosong dipakai NISN dari data siswa --}}
+                    <td>{{ trim((string) (optional($nilai ?? null)->nomor_identitas ?? '')) !== ''
+                            ? trim((string) $nilai->nomor_identitas)
+                            : (optional($nilai ?? null)->label_identitas === 'nis' ? '-' : ($siswa->nisn ?? '-')) }}</td>
                 </tr>
                 <tr>
                     <td>Kelas</td>

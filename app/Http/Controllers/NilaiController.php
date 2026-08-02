@@ -8,6 +8,7 @@ use App\Support\ImageCompressor;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 
 class NilaiController extends Controller
 {
@@ -120,7 +121,13 @@ class NilaiController extends Controller
             'deskripsi_presentasi'    => 'required|string',
             'catatan_guru'            => 'nullable|string',
             'foto_lembar_instruktur'  => $aturanFoto . '|image|mimes:jpeg,png,jpg|max:3072',
+
+            // Identitas yang dipakai pada hasil CETAK penilaian
+            'label_identitas'         => ['nullable', Rule::in([Nilai::LABEL_NISN, Nilai::LABEL_NIS])],
+            'nomor_identitas'         => ['nullable', 'string', 'max:30', 'regex:/^[0-9.\-\/ ]*$/'],
         ], [
+            'nomor_identitas.max'   => 'Nomor NIS/NISN maksimal 30 karakter.',
+            'nomor_identitas.regex' => 'Nomor NIS/NISN hanya boleh berisi angka, titik, strip, atau garis miring.',
             'foto_lembar_instruktur.required' => 'Foto lembar penilaian instruktur wajib diunggah.',
             'foto_lembar_instruktur.image'    => 'File harus berupa gambar (JPG/JPEG/PNG).',
             'foto_lembar_instruktur.mimes'    => 'Format foto harus JPG, JPEG, atau PNG.',
@@ -142,6 +149,17 @@ class NilaiController extends Controller
         $nilai->skor_presentasi         = $request->skor_presentasi;
         $nilai->deskripsi_presentasi    = $request->deskripsi_presentasi;
         $nilai->catatan_guru            = $request->catatan_guru;
+
+        // ---- Identitas untuk hasil cetak (NIS / NISN) ----
+        // Bawaan tetap NISN supaya cetakan lama tidak berubah bila guru tidak
+        // mengubah apa pun di bagian ini.
+        $label = (string) $request->input('label_identitas', Nilai::LABEL_NISN);
+        $nilai->label_identitas = $label === Nilai::LABEL_NIS ? Nilai::LABEL_NIS : Nilai::LABEL_NISN;
+
+        $nomor = trim((string) $request->input('nomor_identitas', ''));
+        // Kosongkan (null) bila guru tidak mengisi -> cetakan otomatis memakai
+        // NISN bawaan milik siswa.
+        $nilai->nomor_identitas = $nomor !== '' ? $nomor : null;
 
         // Simpan / ganti foto lembar penilaian instruktur
         if ($request->hasFile('foto_lembar_instruktur')) {
