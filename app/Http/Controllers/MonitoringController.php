@@ -1126,4 +1126,14 @@ public function aturRekapAbsensi(Request $request)
     return back()->with('success', $pesan);
 }
 
+public function destroyAbsensi(Absensi $absensi)
+{
+    if ($absensi->foto_bukti) {
+        Storage::disk('public')->delete($absensi->foto_bukti);
+    }
+    $absensi->delete();
+
+    return back()->with('success', 'Absensi berhasil dihapus.');
+}
+
 }
