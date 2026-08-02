@@ -90,18 +90,10 @@
                     </td>
                     <td> {{ $row->catatan_instruktur ?? '-' }} </td>
                     <td>
-                        @if($row->status === 'disetujui')
-                            <div class="verified">
-                                <span class="verified-title">DISETUJUI OLEH INSTRUKTUR</span>
-                                TERVERIFIKASI SISTEM
-                                <span class="verified-sub">
-                                    (Divalidasi oleh Guru Pembimbing @if($row->validated_at) pada {{ \Carbon\Carbon::parse($row->validated_at)->locale('id')->translatedFormat('d F Y') }} @endif)
-                                </span>
-                            </div>
-                        @else
-                            <br><br><br>
-                            <div class="text-center">( .................... )</div>
-                        @endif
+                        {{-- Kolom paraf instruktur SELALU dicetak kosong (hanya tempat paraf basah),
+                             baik jurnal sudah divalidasi/disetujui maupun belum. --}}
+                        <br><br><br>
+                        <div class="text-center">( .................... )</div>
                     </td>
                 </tr>
                 @empty

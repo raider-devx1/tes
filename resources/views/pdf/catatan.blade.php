@@ -93,17 +93,9 @@
             <br><br>
             Instruktur,
 
-            @if($item->status === 'disetujui')
-                <div class="verified">
-                    <span class="verified-title">DISETUJUI OLEH INSTRUKTUR - TERVERIFIKASI SISTEM</span>
-                    <span class="verified-sub">
-                        (Divalidasi oleh Guru Pembimbing @if($item->validated_at) pada {{ \Carbon\Carbon::parse($item->validated_at)->locale('id')->translatedFormat('d F Y') }} @endif)
-                    </span>
-                </div>
-                <div class="nama-ttd-verified"> {{ $item->user->instruktur->name ?? '-' }} </div>
-            @else
-                <div class="nama-ttd"> {{ $item->user->instruktur->name ?? '-' }} </div>
-            @endif
+            {{-- Ruang tanda tangan/paraf instruktur SELALU dicetak kosong,
+                 baik catatan sudah divalidasi/disetujui maupun belum. --}}
+            <div class="nama-ttd"> {{ $item->user->instruktur->name ?? '-' }} </div>
         </div>
     </div>
     <div style="clear:both;"></div>

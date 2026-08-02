@@ -18,7 +18,8 @@
         .text-center { text-align: center !important; }
         .paraf-col { width: 80px; }
 
-        /* Keterangan paraf pada hasil cetak: tulisan hitam "SUDAH DIVALIDASI" */
+        /* Kolom paraf pada hasil cetak SELALU dibiarkan kosong (untuk paraf basah),
+           baik lembar sudah divalidasi maupun belum. */
         .sign-text { font-family: 'Helvetica', Arial, sans-serif; font-size: 9pt; font-weight: bold; color: #000; }
 
         .footer-note { font-size: 9pt; color: #000; margin-top: 8px; }
@@ -33,6 +34,7 @@
 @forelse($lembar as $data)
     @php
         extract($data);
+        // Status validasi TIDAK lagi dicetak pada lembar; kolom paraf selalu kosong.
         $sudahValidasi = ($status ?? 'draft') === 'tervalidasi';
     @endphp
 
@@ -64,14 +66,10 @@
                     <td class="text-center"> {{ $loop->iteration }} </td>
                     <td>{!! nl2br(e($item->permasalahan)) !!}</td>
                     <td>{!! nl2br(e($item->solusi)) !!}</td>
-                    <td class="text-center sign-text">
-                        {{-- Draft: paraf instruktur kosong. Tervalidasi: tulisan hitam. --}}
-                        {!! $sudahValidasi ? 'SUDAH<br>DIVALIDASI' : '' !!}
-                    </td>
-                    <td class="text-center sign-text">
-                        {{-- Draft: paraf guru pembimbing kosong. Tervalidasi: tulisan hitam. --}}
-                        {!! $sudahValidasi ? 'SUDAH<br>DIVALIDASI' : '' !!}
-                    </td>
+                    {{-- Paraf instruktur: SELALU kosong, tanpa tulisan apa pun. --}}
+                    <td class="text-center sign-text">&nbsp;</td>
+                    {{-- Paraf guru pembimbing: SELALU kosong, tanpa tulisan apa pun. --}}
+                    <td class="text-center sign-text">&nbsp;</td>
                 </tr>
                 @empty
                 <tr>
@@ -81,15 +79,8 @@
             </tbody>
         </table>
 
-        @if($sudahValidasi)
-            <div class="footer-note">
-                Lembar observasi ini telah divalidasi oleh Guru Pembimbing
-                @if(!empty($validated_at))
-                    pada {{ \Carbon\Carbon::parse($validated_at)->locale('id')->translatedFormat('d F Y') }}
-                @endif
-                berdasarkan lembar fisik yang sudah diparaf instruktur &amp; guru pembimbing.
-            </div>
-        @endif
+        {{-- Catatan validasi sengaja TIDAK dicetak: lembar hasil cetak dibiarkan
+             polos agar paraf instruktur & guru pembimbing diisi manual. --}}
     </div>
 
 @empty

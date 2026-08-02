@@ -96,18 +96,10 @@
                     <td class="text-center"> {{ $row->jam_pulang ?? '-' }} </td>
                     <td> {{ $row->catatan_instruktur ?? '-' }} </td>
                     <td>
-                        @if(($row->status_validasi ?? 'draft') === 'disetujui')
-                            <div class="verified">
-                                <span class="verified-title">DISETUJUI OLEH INSTRUKTUR</span>
-                                TERVERIFIKASI SISTEM
-                                <span class="verified-sub">
-                                    (Divalidasi oleh Guru Pembimbing @if($row->validated_at) pada {{ \Carbon\Carbon::parse($row->validated_at)->locale('id')->translatedFormat('d F Y') }} @endif)
-                                </span>
-                            </div>
-                        @else
-                            <br><br>
-                            <div class="text-center">( .................... )</div>
-                        @endif
+                        {{-- Kolom paraf/validasi SELALU dicetak kosong (hanya tempat paraf basah),
+                             baik absensi sudah divalidasi maupun belum. --}}
+                        <br><br>
+                        <div class="text-center">( .................... )</div>
                     </td>
                 </tr>
                 @empty
@@ -140,7 +132,7 @@
         </table>
 
         <div class="footer-note">
-            * Kolom validasi menampilkan status verifikasi bukti fisik yang telah divalidasi oleh Guru Pembimbing.
+            * Kolom validasi sengaja dibiarkan kosong untuk paraf/tanda tangan basah Instruktur atau Guru Pembimbing.
         </div>
     </div>
 
