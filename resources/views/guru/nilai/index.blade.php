@@ -407,7 +407,7 @@
                                                class="block w-full sm:w-64 rounded-lg border-gray-300 shadow-sm focus:ring-[#05b169] sm:text-sm">
                                         <button type="button" x-show="nisnSiswa" @click="label = 'nisn'; nomor = nisnSiswa"
                                                 class="rounded-lg bg-white border border-[#05b169]/40 px-3 py-2 text-[11px] font-bold text-[#05b169] hover:bg-[#05b169]/10">
-                                            Pakai NISN data siswa (<span x-text="nisnSiswa"></span>)
+                                            Pakai NIS data siswa (<span x-text="nisnSiswa"></span>)
                                         </button>
                                         <button type="button" @click="nomor = ''"
                                                 class="rounded-lg bg-white border border-gray-300 px-3 py-2 text-[11px] font-bold text-[#5b616e] hover:bg-gray-100">
