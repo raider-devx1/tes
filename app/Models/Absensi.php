@@ -77,6 +77,10 @@ class Absensi extends Model
     |
     | Dipanggil saat halaman absensi dibuka (siswa / guru / admin) sehingga
     | tidak lagi bergantung pada cron/scheduler.
+    |
+    | HARI LIBUR TIDAK PERNAH DITANDAI ALPHA. Hari kerja mengikuti jadwal
+    | efektif siswa (Senin-Jumat atau Senin-Sabtu, lihat User::adalahHariKerja).
+    | Sabtu/Minggu di luar jadwal dibiarkan kosong tanpa baris absensi.
     */
     public static function sinkronkanAlpa(User $siswa): void
     {
@@ -140,6 +144,13 @@ class Absensi extends Model
 
                 if (in_array($tgl, $sudahAda, true)) {
                     continue; // sudah ada baris (Hadir/Izin/Sakit/Alpha)
+                }
+
+                // BUKAN hari kerja (Minggu, dan Sabtu bila jadwal siswa hanya
+                // Senin-Jumat) -> jangan pernah ditandai Alpha. Hari libur
+                // sengaja dibiarkan KOSONG tanpa baris absensi sama sekali.
+                if (! $siswa->adalahHariKerja($d)) {
+                    continue;
                 }
 
                 // Batas terakhir absensi hari itu (jam pulang + durasi).

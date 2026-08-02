@@ -454,6 +454,11 @@ public function absensi(Request $request)
         'jam_masuk'    => Pengaturan::ambil('absensi_jam_masuk', '08:00'),
         'jam_pulang'   => Pengaturan::ambil('absensi_jam_pulang', '16:00'),
         'durasi_menit' => (int) Pengaturan::ambil('absensi_durasi_menit', 30),
+        // Jadwal hari kerja global: 'senin_jumat' (default) atau 'senin_sabtu'.
+        'hari_kerja'       => User::hariKerjaGlobal(),
+        'hari_kerja_label' => User::hariKerjaGlobal() === User::HARI_KERJA_SENIN_SABTU
+            ? 'Senin - Sabtu'
+            : 'Senin - Jumat',
     ];
 
     // Status buka-paksa absensi global, kini TERPISAH untuk fase masuk & pulang.
@@ -477,7 +482,7 @@ public function absensi(Request $request)
     $siswaJam = User::siswa()->withoutTrashed()
         ->orderByRaw("CASE status_pkl WHEN 'aktif' THEN 1 WHEN 'belum' THEN 2 WHEN 'selesai' THEN 3 ELSE 4 END")
         ->orderBy('name')
-        ->get(['id', 'name', 'nisn', 'kelas', 'status_pkl', 'jam_masuk_industri', 'jam_pulang_industri', 'jam_masuk_usulan', 'jam_pulang_usulan', 'status_jam_usulan', 'catatan_jam_usulan']);
+        ->get(['id', 'name', 'nisn', 'kelas', 'status_pkl', 'jam_masuk_industri', 'jam_pulang_industri', 'jam_masuk_usulan', 'jam_pulang_usulan', 'status_jam_usulan', 'catatan_jam_usulan', 'hari_kerja']);
 
     // Pengajuan jam yang masih menunggu validasi admin.
     $usulanJam = $siswaJam->where('status_jam_usulan', 'diajukan')->values();
@@ -585,6 +590,9 @@ public function pengaturanAbsensi(Request $request)
         'absensi_jam_masuk'    => ['required', 'date_format:H:i'],
         'absensi_jam_pulang'   => ['required', 'date_format:H:i'],
         'absensi_durasi_menit' => ['required', 'integer', 'min:1', 'max:1440'],
+        // Jadwal hari kerja GLOBAL. Siswa yang jadwalnya berbeda tetap bisa
+        // diatur satu per satu lewat pencarian NISN (kolom users.hari_kerja).
+        'absensi_hari_kerja'   => ['nullable', Rule::in([User::HARI_KERJA_SENIN_JUMAT, User::HARI_KERJA_SENIN_SABTU])],
     ], [
         'absensi_jam_masuk.required'    => 'Jam masuk wajib diisi.',
         'absensi_jam_masuk.date_format' => 'Format jam masuk harus HH:MM.',
@@ -597,7 +605,15 @@ public function pengaturanAbsensi(Request $request)
     Pengaturan::simpan('absensi_jam_pulang', $data['absensi_jam_pulang']);
     Pengaturan::simpan('absensi_durasi_menit', (string) $data['absensi_durasi_menit']);
 
-    return back()->with('success', 'Pengaturan absensi berhasil disimpan.');
+    $hariKerja = $data['absensi_hari_kerja'] ?? User::HARI_KERJA_SENIN_JUMAT;
+    Pengaturan::simpan('absensi_hari_kerja', $hariKerja);
+
+    $labelHariKerja = $hariKerja === User::HARI_KERJA_SENIN_SABTU ? 'Senin - Sabtu' : 'Senin - Jumat';
+
+    return back()->with('success', "Pengaturan absensi berhasil disimpan. Jadwal hari kerja: {$labelHariKerja}"
+        . ($hariKerja === User::HARI_KERJA_SENIN_JUMAT
+            ? ' (Sabtu & Minggu dilewati, tanpa baris absensi dan tidak ditandai Alpha).'
+            : ' (hanya Minggu yang dilewati).'));
 }
 
 /**
@@ -779,71 +795,130 @@ public function updateAbsensi(Request $request, Absensi $absensi)
 }
 
 /**
- * ATUR JUMLAH REKAP ABSENSI (Hadir / Izin / Sakit / Alpha) secara massal.
+ * INFORMASI ABSENSI SATU SISWA (dipanggil lewat AJAX dari modal admin).
  *
- * Admin menentukan BERAPA BANYAK hari Hadir/Izin/Sakit/Alpha yang harus
- * dimiliki seorang siswa (mode "nisn") atau SELURUH siswa PKL berjalan
- * (mode "semua") di dalam satu rentang tanggal.
+ * Admin mengetik NISN -> layar langsung menampilkan jumlah Hadir, Izin,
+ * Sakit, dan Alpha siswa tersebut sehingga bisa langsung diedit.
  *
- * Cara kerja:
- *  1. Seluruh baris absensi siswa di dalam rentang tanggal DIHAPUS lebih dulu
- *     (termasuk file foto buktinya) supaya hasil akhirnya persis sesuai jumlah
- *     yang diminta -- bukan menumpuk di atas data lama.
- *  2. Hari-hari dalam rentang diurutkan dari yang paling awal, lalu diisi
- *     berurutan: Hadir -> Izin -> Sakit -> Alpha.
- *  3. Sisa hari yang tidak terpakai diisi sesuai pilihan "status_sisa"
- *     (kosongkan / Hadir / Izin / Sakit / Alpha).
+ * Mengembalikan dua kelompok angka:
+ *  - "total"  : seluruh riwayat absensi siswa (tanpa batas tanggal)
+ *  - "rentang": hanya di dalam rentang tanggal yang sedang dipilih admin
+ */
+public function rekapSiswa(Request $request)
+{
+    $nisn = trim((string) $request->query('nisn', ''));
+
+    if ($nisn === '') {
+        return response()->json(['ok' => false, 'pesan' => 'NISN wajib diisi.'], 422);
+    }
+
+    $siswa = User::siswa()->withoutTrashed()->where('nisn', $nisn)->first();
+
+    if (! $siswa) {
+        return response()->json(['ok' => false, 'pesan' => "Siswa dengan NISN {$nisn} tidak ditemukan."], 404);
+    }
+
+    $hitung = function ($query) {
+        return [
+            'Hadir' => (clone $query)->where('status', 'Hadir')->count(),
+            'Izin'  => (clone $query)->where('status', 'Izin')->count(),
+            'Sakit' => (clone $query)->where('status', 'Sakit')->count(),
+            'Alpha' => (clone $query)->where('status', 'Alpha')->count(),
+        ];
+    };
+
+    $semua = Absensi::where('siswa_id', $siswa->id);
+    $total = $hitung($semua);
+
+    // Rekap di dalam rentang tanggal (bila admin sudah mengisinya).
+    $rentang = null;
+    $mulai   = $request->query('tanggal_mulai');
+    $selesai = $request->query('tanggal_selesai');
+
+    if (filled($mulai) && filled($selesai)) {
+        try {
+            $m = Carbon::parse($mulai)->format('Y-m-d');
+            $s = Carbon::parse($selesai)->format('Y-m-d');
+
+            $q = Absensi::where('siswa_id', $siswa->id)
+                ->whereDate('tanggal', '>=', $m)
+                ->whereDate('tanggal', '<=', $s);
+
+            $rentang = $hitung($q);
+        } catch (\Throwable $e) {
+            $rentang = null; // tanggal tidak valid: cukup abaikan bagian ini.
+        }
+    }
+
+    return response()->json([
+        'ok'    => true,
+        'siswa' => [
+            'nisn'       => $siswa->nisn,
+            'name'       => $siswa->name,
+            'kelas'      => $siswa->kelas ?? '-',
+            'jurusan'    => $siswa->jurusan ?? '-',
+            'status_pkl' => $siswa->status_pkl ?? '-',
+            // Jadwal hari kerja: khusus siswa ini bila diatur, selain itu global.
+            'hari_kerja'        => $siswa->hari_kerja ?? '',
+            'hari_kerja_efektif'=> $siswa->hariKerjaEfektif(),
+            'hari_kerja_label'  => $siswa->labelHariKerja(),
+            'hari_kerja_khusus' => $siswa->pakaiHariKerjaKhusus(),
+        ],
+        'total'        => $total,
+        'total_baris'  => array_sum($total),
+        'rentang'      => $rentang,
+    ]);
+}
+
+/**
+ * ATUR JUMLAH ABSENSI (Hadir / Izin / Sakit / Alpha) + JADWAL HARI KERJA.
  *
- * Catatan penting:
- *  - Bila "status_sisa" dikosongkan, hari sisa yang sudah lewat AKAN ditandai
- *    Alpha otomatis oleh Absensi::sinkronkanAlpa() saat halaman absensi dibuka.
- *    Agar jumlah benar-benar terkunci, isi "status_sisa".
- *  - Baris Hadir otomatis diberi jam masuk & pulang efektif milik siswa.
+ * Dipakai admin untuk MENIMPA rekap absensi:
+ *  - mode "nisn"  : satu siswa hasil pencarian NISN
+ *  - mode "semua" : seluruh siswa PKL periode berjalan
+ *
+ * Aturan penting:
+ *  1. Jumlah boleh diisi sebagian saja. Mengisi Hadir 20 dan sisanya 0 itu SAH.
+ *  2. Mengisi SEMUA jumlah dengan 0 juga SAH: seluruh absensi pada rentang
+ *     dihapus sehingga rekap siswa kembali 0. Bila "reset_total" dicentang,
+ *     SELURUH riwayat absensi siswa (semua tanggal) yang dihapus.
+ *  3. Hari yang BUKAN hari kerja tidak pernah diisi. Jadwal Senin-Jumat berarti
+ *     Sabtu & Minggu dilewati: dikosongkan tanpa baris absensi, dan tidak akan
+ *     ditandai Alpha otomatis oleh sistem.
+ *  4. Pada mode "nisn", jadwal hari kerja siswa itu sendiri bisa diubah
+ *     (mis. siswa yang tetap masuk sampai Sabtu). Pada mode "semua", jadwal
+ *     yang diubah adalah jadwal GLOBAL sekolah.
  */
 public function aturRekapAbsensi(Request $request)
 {
     $data = $request->validate([
-        'mode'               => ['required', Rule::in(['nisn', 'semua'])],
-        'nisn'               => ['required_if:mode,nisn', 'nullable', 'string', 'max:20'],
-        'tanggal_mulai'      => ['required', 'date'],
-        'tanggal_selesai'    => ['required', 'date', 'after_or_equal:tanggal_mulai'],
-        'jumlah_hadir'       => ['required', 'integer', 'min:0', 'max:400'],
-        'jumlah_izin'        => ['required', 'integer', 'min:0', 'max:400'],
-        'jumlah_sakit'       => ['required', 'integer', 'min:0', 'max:400'],
-        'jumlah_alpha'       => ['required', 'integer', 'min:0', 'max:400'],
-        'lewati_akhir_pekan' => ['nullable', 'boolean'],
-        'status_sisa'        => ['nullable', Rule::in(['', 'Hadir', 'Izin', 'Sakit', 'Alpha'])],
+        'mode'            => ['required', Rule::in(['nisn', 'semua'])],
+        'nisn'            => ['required_if:mode,nisn', 'nullable', 'string', 'max:20'],
+        'tanggal_mulai'   => ['required', 'date'],
+        'tanggal_selesai' => ['required', 'date', 'after_or_equal:tanggal_mulai'],
+        'jumlah_hadir'    => ['required', 'integer', 'min:0', 'max:400'],
+        'jumlah_izin'     => ['required', 'integer', 'min:0', 'max:400'],
+        'jumlah_sakit'    => ['required', 'integer', 'min:0', 'max:400'],
+        'jumlah_alpha'    => ['required', 'integer', 'min:0', 'max:400'],
+        'status_sisa'     => ['nullable', Rule::in(['', 'Hadir', 'Izin', 'Sakit', 'Alpha'])],
+        // '' = biarkan jadwal apa adanya, selain itu ubah jadwal hari kerja.
+        'hari_kerja'      => ['nullable', Rule::in(['', User::HARI_KERJA_SENIN_JUMAT, User::HARI_KERJA_SENIN_SABTU])],
+        'reset_total'     => ['nullable', 'boolean'],
     ], [
-        'nisn.required_if'                 => 'NISN wajib diisi untuk mode per siswa.',
-        'tanggal_mulai.required'           => 'Tanggal mulai wajib diisi.',
-        'tanggal_selesai.required'         => 'Tanggal selesai wajib diisi.',
-        'tanggal_selesai.after_or_equal'   => 'Tanggal selesai tidak boleh lebih awal dari tanggal mulai.',
+        'nisn.required_if'               => 'NISN wajib diisi untuk mode per siswa.',
+        'tanggal_mulai.required'         => 'Tanggal mulai wajib diisi.',
+        'tanggal_selesai.required'       => 'Tanggal selesai wajib diisi.',
+        'tanggal_selesai.after_or_equal' => 'Tanggal selesai tidak boleh lebih awal dari tanggal mulai.',
     ]);
 
     $mulai   = Carbon::parse($data['tanggal_mulai'])->startOfDay();
     $selesai = Carbon::parse($data['tanggal_selesai'])->startOfDay();
 
-    // Batas wajar: satu tahun. Mencegah rentang keliru (mis. salah ketik tahun)
-    // menghasilkan puluhan ribu baris absensi.
+    // Batas wajar 1 tahun: mencegah salah ketik tahun menghasilkan puluhan ribu baris.
     if ($mulai->diffInDays($selesai) > 366) {
         return back()->with('error', 'Rentang tanggal terlalu panjang. Maksimal 1 tahun.');
     }
 
-    $lewatiAkhirPekan = $request->boolean('lewati_akhir_pekan');
-
-    $tanggalTersedia = [];
-    for ($d = $mulai->copy(); $d->lte($selesai); $d->addDay()) {
-        if ($lewatiAkhirPekan && $d->isWeekend()) {
-            continue;
-        }
-        $tanggalTersedia[] = $d->format('Y-m-d');
-    }
-
-    if (empty($tanggalTersedia)) {
-        return back()->with('error', 'Tidak ada hari yang bisa diisi pada rentang tersebut (semua akhir pekan dilewati).');
-    }
-
-    // Urutan pengisian: Hadir dulu (hari paling awal), lalu Izin, Sakit, Alpha.
     $jumlah = [
         'Hadir' => (int) $data['jumlah_hadir'],
         'Izin'  => (int) $data['jumlah_izin'],
@@ -851,16 +926,9 @@ public function aturRekapAbsensi(Request $request)
         'Alpha' => (int) $data['jumlah_alpha'],
     ];
     $totalDiminta = array_sum($jumlah);
-
-    if ($totalDiminta === 0 && blank($data['status_sisa'] ?? '')) {
-        return back()->with('error', 'Isi minimal satu jumlah (Hadir/Izin/Sakit/Alpha), atau pilih status untuk sisa hari.');
-    }
-
-    if ($totalDiminta > count($tanggalTersedia)) {
-        return back()->with('error', 'Total ' . $totalDiminta . ' hari melebihi ' . count($tanggalTersedia)
-            . ' hari yang tersedia pada rentang ' . $mulai->format('d/m/Y') . ' - ' . $selesai->format('d/m/Y')
-            . '. Perlebar rentang tanggal atau kurangi jumlahnya.');
-    }
+    $statusSisa   = (string) ($data['status_sisa'] ?? '');
+    $resetTotal   = $request->boolean('reset_total');
+    $jadwalBaru   = (string) ($data['hari_kerja'] ?? '');
 
     // ---- Tentukan siswa sasaran ----
     if ($data['mode'] === 'nisn') {
@@ -869,6 +937,12 @@ public function aturRekapAbsensi(Request $request)
 
         if (! $siswa) {
             return back()->with('error', "Siswa dengan NISN {$nisn} tidak ditemukan.");
+        }
+
+        // Jadwal khusus siswa ini (mis. tetap masuk sampai Sabtu).
+        if ($jadwalBaru !== '' && $jadwalBaru !== (string) ($siswa->hari_kerja ?? '')) {
+            $siswa->hari_kerja = $jadwalBaru;
+            $siswa->save();
         }
 
         $sasaran = collect([$siswa]);
@@ -880,21 +954,73 @@ public function aturRekapAbsensi(Request $request)
         if ($sasaran->isEmpty()) {
             return back()->with('error', 'Tidak ada siswa PKL pada periode berjalan.');
         }
+
+        // Mode semua: yang diubah adalah jadwal GLOBAL sekolah. Jadwal khusus
+        // per siswa sengaja TIDAK dihapus supaya pengecualian tetap terjaga.
+        if ($jadwalBaru !== '') {
+            Pengaturan::simpan('absensi_hari_kerja', $jadwalBaru);
+            $sasaran->each(fn ($s) => $s->setAttribute('hari_kerja', $s->hari_kerja));
+        }
     }
 
-    $statusSisa = $data['status_sisa'] ?? '';
-    $now        = now();
-    $adminId    = Auth::id();
+    $now            = now();
+    $adminId        = Auth::id();
     $periodeAktifId = Absensi::periodeAktifId();
-    $totalBaris = 0;
 
-    DB::transaction(function () use ($sasaran, $tanggalTersedia, $jumlah, $statusSisa, $mulai, $selesai, $now, $adminId, $periodeAktifId, &$totalBaris) {
+    $totalBaris   = 0;
+    $totalHapus   = 0;
+    $siswaDiproses = 0;
+    $siswaDilewati = [];
+
+    // Hari kerja dihitung PER SISWA karena jadwalnya bisa berbeda-beda.
+    $hariKerjaSiswa = function (User $siswa) use ($mulai, $selesai): array {
+        $tanggal = [];
+
+        for ($d = $mulai->copy(); $d->lte($selesai); $d->addDay()) {
+            if (! $siswa->adalahHariKerja($d)) {
+                continue; // Sabtu/Minggu di luar jadwal: dilewati, tanpa baris.
+            }
+            $tanggal[] = $d->format('Y-m-d');
+        }
+
+        return $tanggal;
+    };
+
+    // Validasi awal khusus mode NISN supaya pesannya jelas (bukan "dilewati").
+    if ($data['mode'] === 'nisn') {
+        $cek = $hariKerjaSiswa($sasaran->first());
+
+        if ($totalDiminta > count($cek)) {
+            return back()->with('error', 'Total ' . $totalDiminta . ' hari melebihi ' . count($cek)
+                . ' hari kerja yang tersedia pada rentang ' . $mulai->format('d/m/Y') . ' - ' . $selesai->format('d/m/Y')
+                . ' (jadwal ' . $sasaran->first()->labelHariKerja() . '). Perlebar rentang tanggal atau kurangi jumlahnya.');
+        }
+    }
+
+    DB::transaction(function () use (
+        $sasaran, $hariKerjaSiswa, $jumlah, $totalDiminta, $statusSisa, $resetTotal,
+        $mulai, $selesai, $now, $adminId, $periodeAktifId,
+        &$totalBaris, &$totalHapus, &$siswaDiproses, &$siswaDilewati
+    ) {
         foreach ($sasaran as $siswa) {
-            // 1) Bersihkan baris lama pada rentang ini (beserta foto buktinya).
-            $lama = Absensi::where('siswa_id', $siswa->id)
-                ->whereDate('tanggal', '>=', $mulai->format('Y-m-d'))
-                ->whereDate('tanggal', '<=', $selesai->format('Y-m-d'))
-                ->get(['id', 'foto_bukti']);
+            $tanggalTersedia = $hariKerjaSiswa($siswa);
+
+            // Jumlah yang diminta tidak muat pada hari kerja siswa ini.
+            if ($totalDiminta > count($tanggalTersedia)) {
+                $siswaDilewati[] = $siswa->name . ' (' . $siswa->nisn . ')';
+                continue;
+            }
+
+            // 1) Bersihkan baris lama beserta foto buktinya.
+            //    reset_total = seluruh riwayat; selain itu hanya rentang terpilih.
+            $queryLama = Absensi::where('siswa_id', $siswa->id);
+
+            if (! $resetTotal) {
+                $queryLama->whereDate('tanggal', '>=', $mulai->format('Y-m-d'))
+                          ->whereDate('tanggal', '<=', $selesai->format('Y-m-d'));
+            }
+
+            $lama = $queryLama->get(['id', 'foto_bukti']);
 
             foreach ($lama as $row) {
                 if ($row->foto_bukti) {
@@ -904,9 +1030,11 @@ public function aturRekapAbsensi(Request $request)
 
             if ($lama->isNotEmpty()) {
                 Absensi::whereIn('id', $lama->pluck('id'))->delete();
+                $totalHapus += $lama->count();
             }
 
-            // 2) Susun baris baru sesuai jumlah yang diminta.
+            // 2) Susun baris baru. Bila semua jumlah 0 dan sisa dikosongkan,
+            //    tidak ada baris yang ditulis -> rekap siswa menjadi 0.
             $jamMasuk  = substr($siswa->jamMasukEfektif(), 0, 5);
             $jamPulang = substr($siswa->jamPulangEfektif(), 0, 5);
             $periodeId = $siswa->periode_id ?: $periodeAktifId;
@@ -914,40 +1042,35 @@ public function aturRekapAbsensi(Request $request)
             $baris = [];
             $i     = 0;
 
+            $tambah = function (string $status, string $tanggal) use (
+                $siswa, $periodeId, $jamMasuk, $jamPulang, $adminId, $now, &$baris
+            ) {
+                $baris[] = [
+                    'siswa_id'             => $siswa->id,
+                    'periode_id'           => $periodeId,
+                    'tanggal'              => $tanggal,
+                    'status'               => $status,
+                    'jam_masuk'            => $status === 'Hadir' ? $jamMasuk  : null,
+                    'jam_pulang'           => $status === 'Hadir' ? $jamPulang : null,
+                    'status_validasi'      => 'disetujui',
+                    'validated_by_guru_id' => $adminId,
+                    'validated_at'         => $now,
+                    'created_at'           => $now,
+                    'updated_at'           => $now,
+                ];
+            };
+
+            // Urutan pengisian: Hadir dulu (hari paling awal), lalu Izin, Sakit, Alpha.
             foreach ($jumlah as $status => $banyak) {
                 for ($n = 0; $n < $banyak; $n++, $i++) {
-                    $baris[] = [
-                        'siswa_id'             => $siswa->id,
-                        'periode_id'           => $periodeId,
-                        'tanggal'              => $tanggalTersedia[$i],
-                        'status'               => $status,
-                        'jam_masuk'            => $status === 'Hadir' ? $jamMasuk  : null,
-                        'jam_pulang'           => $status === 'Hadir' ? $jamPulang : null,
-                        'status_validasi'      => 'disetujui',
-                        'validated_by_guru_id' => $adminId,
-                        'validated_at'         => $now,
-                        'created_at'           => $now,
-                        'updated_at'           => $now,
-                    ];
+                    $tambah($status, $tanggalTersedia[$i]);
                 }
             }
 
-            // 3) Sisa hari yang belum terpakai.
+            // 3) Sisa hari kerja yang belum terpakai (bila admin memilih status).
             if ($statusSisa !== '') {
                 for (; $i < count($tanggalTersedia); $i++) {
-                    $baris[] = [
-                        'siswa_id'             => $siswa->id,
-                        'periode_id'           => $periodeId,
-                        'tanggal'              => $tanggalTersedia[$i],
-                        'status'               => $statusSisa,
-                        'jam_masuk'            => $statusSisa === 'Hadir' ? $jamMasuk  : null,
-                        'jam_pulang'           => $statusSisa === 'Hadir' ? $jamPulang : null,
-                        'status_validasi'      => 'disetujui',
-                        'validated_by_guru_id' => $adminId,
-                        'validated_at'         => $now,
-                        'created_at'           => $now,
-                        'updated_at'           => $now,
-                    ];
+                    $tambah($statusSisa, $tanggalTersedia[$i]);
                 }
             }
 
@@ -960,33 +1083,47 @@ public function aturRekapAbsensi(Request $request)
                 $totalBaris += count($baris);
             }
 
-            // Bersihkan penanda cache sinkronisasi Alpha agar penandaan otomatis
-            // menghitung ulang dari data yang baru saja disimpan.
+            $siswaDiproses++;
+
+            // Hapus penanda cache agar penandaan Alpha otomatis dihitung ulang
+            // dari data yang baru saja disimpan.
             \Illuminate\Support\Facades\Cache::forget("sinkron_alpa:{$siswa->id}:" . $now->format('Y-m-d'));
         }
     });
 
-    $ringkas = "Hadir {$jumlah['Hadir']}, Izin {$jumlah['Izin']}, Sakit {$jumlah['Sakit']}, Alpha {$jumlah['Alpha']}";
+    if ($siswaDiproses === 0) {
+        return back()->with('error', 'Tidak ada siswa yang bisa diproses. '
+            . 'Jumlah yang diminta melebihi hari kerja yang tersedia pada rentang tanggal tersebut.');
+    }
+
     $lingkup = $sasaran->count() === 1
         ? ('siswa ' . $sasaran->first()->name . ' (NISN ' . $sasaran->first()->nisn . ')')
-        : ($sasaran->count() . ' siswa');
+        : ($siswaDiproses . ' siswa');
 
-    $peringatan = $statusSisa === '' && $totalDiminta < count($tanggalTersedia)
-        ? ' Sisa hari dibiarkan kosong dan bisa ditandai Alpha otomatis bila tanggalnya sudah lewat.'
-        : '';
+    // Semua jumlah 0 dan sisa dikosongkan = pengosongan rekap.
+    if ($totalDiminta === 0 && $statusSisa === '') {
+        $cakupan = $resetTotal
+            ? 'SELURUH riwayat absensi'
+            : ('absensi ' . $mulai->format('d/m/Y') . ' - ' . $selesai->format('d/m/Y'));
 
-    return back()->with('success', "Rekap absensi untuk {$lingkup} berhasil diatur ({$ringkas}) pada "
-        . $mulai->format('d/m/Y') . ' - ' . $selesai->format('d/m/Y') . ". Total {$totalBaris} baris ditulis." . $peringatan);
-}
-
-public function destroyAbsensi(Absensi $absensi)
-{
-    if ($absensi->foto_bukti) {
-        Storage::disk('public')->delete($absensi->foto_bukti);
+        return back()->with('success', "Rekap {$lingkup} dikosongkan: {$cakupan} dihapus ({$totalHapus} baris). "
+            . 'Hadir, Izin, Sakit, dan Alpha kini 0.');
     }
-    $absensi->delete();
 
-    return back()->with('success', 'Absensi berhasil dihapus.');
+    $ringkas = "Hadir {$jumlah['Hadir']}, Izin {$jumlah['Izin']}, Sakit {$jumlah['Sakit']}, Alpha {$jumlah['Alpha']}";
+
+    $pesan = "Rekap absensi {$lingkup} berhasil diatur ({$ringkas}) pada "
+        . $mulai->format('d/m/Y') . ' - ' . $selesai->format('d/m/Y')
+        . ". {$totalBaris} baris ditulis, {$totalHapus} baris lama dihapus.";
+
+    if (! empty($siswaDilewati)) {
+        $contoh = implode(', ', array_slice($siswaDilewati, 0, 3));
+        $sisa   = count($siswaDilewati) - 3;
+        $pesan .= ' Dilewati ' . count($siswaDilewati) . ' siswa karena hari kerjanya tidak mencukupi: '
+            . $contoh . ($sisa > 0 ? " dan {$sisa} lainnya." : '.');
+    }
+
+    return back()->with('success', $pesan);
 }
 
 }

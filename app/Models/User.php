@@ -38,6 +38,8 @@ use Illuminate\Notifications\Notifiable;
     'absensi_dibuka',
     'absensi_dibuka_masuk',
     'absensi_dibuka_pulang',
+    // --- Jadwal hari kerja absensi (per-siswa; null = ikut jadwal global) ---
+    'hari_kerja',
     // --- Relasi ---
     'perusahaan_id',
     'guru_id',
@@ -214,6 +216,91 @@ class User extends Authenticatable
     {
         return $this->status_jam_usulan === 'disetujui'
             && (! empty($this->jam_masuk_industri) || ! empty($this->jam_pulang_industri));
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | JADWAL HARI KERJA ABSENSI
+    |--------------------------------------------------------------------------
+    | Default seluruh sekolah: SENIN - JUMAT. Admin dapat mengubahnya menjadi
+    | SENIN - SABTU lewat Pengaturan Absensi (kunci: absensi_hari_kerja).
+    |
+    | Kolom users.hari_kerja adalah PENGECUALIAN per siswa: siswa yang tetap
+    | masuk sampai Sabtu dapat diberi jadwal 'senin_sabtu' sendiri walau jadwal
+    | sekolah hanya sampai Jumat. Bernilai null berarti ikut jadwal global.
+    |
+    | Hari yang BUKAN hari kerja tidak boleh diisi absensi dan TIDAK pernah
+    | ditandai Alpha otomatis -- barisnya sengaja dibiarkan kosong.
+    */
+    public const HARI_KERJA_SENIN_JUMAT = 'senin_jumat';
+    public const HARI_KERJA_SENIN_SABTU = 'senin_sabtu';
+
+    /** Jadwal hari kerja GLOBAL yang berlaku di seluruh sekolah. */
+    public static function hariKerjaGlobal(): string
+    {
+        $nilai = (string) Pengaturan::ambil('absensi_hari_kerja', self::HARI_KERJA_SENIN_JUMAT);
+
+        return $nilai === self::HARI_KERJA_SENIN_SABTU
+            ? self::HARI_KERJA_SENIN_SABTU
+            : self::HARI_KERJA_SENIN_JUMAT;
+    }
+
+    /** Jadwal hari kerja yang benar-benar berlaku untuk siswa ini. */
+    public function hariKerjaEfektif(): string
+    {
+        $khusus = (string) ($this->hari_kerja ?? '');
+
+        if (in_array($khusus, [self::HARI_KERJA_SENIN_JUMAT, self::HARI_KERJA_SENIN_SABTU], true)) {
+            return $khusus;
+        }
+
+        return self::hariKerjaGlobal();
+    }
+
+    /** True bila siswa ini memakai jadwal khusus (bukan jadwal global admin). */
+    public function pakaiHariKerjaKhusus(): bool
+    {
+        return in_array((string) ($this->hari_kerja ?? ''), [
+            self::HARI_KERJA_SENIN_JUMAT,
+            self::HARI_KERJA_SENIN_SABTU,
+        ], true);
+    }
+
+    /** True bila jadwal siswa ini menjadikan Sabtu sebagai hari kerja. */
+    public function masukSampaiSabtu(): bool
+    {
+        return $this->hariKerjaEfektif() === self::HARI_KERJA_SENIN_SABTU;
+    }
+
+    /**
+     * Apakah tanggal tertentu termasuk hari kerja bagi siswa ini?
+     *
+     * Minggu SELALU bukan hari kerja. Sabtu hanya hari kerja bila jadwal
+     * efektif siswa adalah 'senin_sabtu'.
+     */
+    public function adalahHariKerja($tanggal): bool
+    {
+        $c = $tanggal instanceof \Carbon\Carbon
+            ? $tanggal
+            : \Carbon\Carbon::parse($tanggal);
+
+        $hari = (int) $c->dayOfWeek; // 0 = Minggu ... 6 = Sabtu
+
+        if ($hari === 0) {
+            return false;           // Minggu selalu libur
+        }
+
+        if ($hari === 6) {
+            return $this->masukSampaiSabtu();
+        }
+
+        return true;                // Senin - Jumat
+    }
+
+    /** Label jadwal hari kerja untuk ditampilkan di layar. */
+    public function labelHariKerja(): string
+    {
+        return $this->masukSampaiSabtu() ? 'Senin - Sabtu' : 'Senin - Jumat';
     }
 
     /**
