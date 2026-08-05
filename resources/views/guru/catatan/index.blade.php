@@ -159,6 +159,18 @@
                                 </td>
                                 <td class="px-4 py-3 text-center">
                                     <span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-bold {{ $statusBadge }}">{{ $statusLabel }}</span>
+
+                                    {{-- Paraf digital instruktur: langsung terlihat di kolom Status --}}
+                                    <div class="mt-2 flex justify-center">
+                                        <x-paraf-instruktur :ttd="$item->ttd_instruktur"
+                                                            :nama="$item->ttd_instruktur_nama"
+                                                            :waktu="$item->ttd_signed_at"
+                                                            :foto-lama="$item->foto_bukti"
+                                                            :tinggi="42"
+                                                            judul="Paraf Instruktur — {{ $item->user->name ?? '-' }}"
+                                                            unduh-nama="paraf-catatan-{{ $item->user->nisn ?? $item->user_id }}-{{ $item->id }}"
+                                                            kosong="Belum ada paraf instruktur" />
+                                    </div>
                                 </td>
                                 <td class="px-4 py-3">
                                     <div class="flex flex-col items-stretch gap-1.5">
@@ -181,6 +193,8 @@
                                                class="inline-flex items-center justify-center rounded-xl border-2 border-[#0047d6] bg-white px-3 py-1.5 text-xs font-bold text-[#0047d6] transition hover:bg-[#0047d6]/5">
                                                 Download Bukti
                                             </a>
+                                        @elseif($item->ttd_instruktur)
+                                            <span class="text-center text-[11px] font-bold text-[#05b169]">Paraf digital tersimpan (lihat kolom Status)</span>
                                         @else
                                             <span class="text-center text-xs italic text-[#5b616e]">Belum ada bukti</span>
                                         @endif
@@ -208,7 +222,19 @@
                                                                     {{ $item->catatan_instruktur }}
                                                                 </div>
                                                             @endif
-                                                            <p class="text-xs text-[#5b616e]">Pastikan Anda sudah memeriksa foto bukti fisik (tombol Lihat/Download Bukti) sebelum memvalidasi.</p>
+                                                            {{-- Paraf digital instruktur (klik gambar untuk memperbesar) --}}
+                                                            <div class="rounded-xl border-2 border-[#0047d6]/15 bg-[#0047d6]/5 p-3">
+                                                                <p class="mb-2 text-xs font-bold uppercase tracking-wide text-[#5b616e]">Paraf Instruktur</p>
+                                                                <x-paraf-instruktur :ttd="$item->ttd_instruktur"
+                                                                                    :nama="$item->ttd_instruktur_nama"
+                                                                                    :waktu="$item->ttd_signed_at"
+                                                                                    :foto-lama="$item->foto_bukti"
+                                                                                    :tinggi="64"
+                                                                                    judul="Paraf Instruktur — {{ $item->user->name ?? '-' }}"
+                                                                                    unduh-nama="paraf-catatan-{{ $item->user->nisn ?? $item->user_id }}-{{ $item->id }}"
+                                                                                    kosong="Instruktur belum memberi paraf digital" />
+                                                            </div>
+                                                            <p class="text-xs text-[#5b616e]">Periksa paraf digital instruktur di atas sebelum memvalidasi.</p>
                                                         </div>
                                                         <div class="flex justify-end gap-2 border-t-2 border-[#0047d6]/15 px-5 py-3">
                                                             <form action="{{ route('guru.catatan.validasi', $item->id) }}" method="POST"
@@ -272,6 +298,12 @@
                                 <div class="mt-1 flex flex-wrap items-center gap-2">
                                     <span class="text-xs font-medium text-[#5b616e] truncate">{{ $item->nama_pekerjaan }}</span>
                                     <span class="inline-block rounded-full px-2.5 py-0.5 text-[11px] font-bold {{ $statusBadge }}">{{ $statusLabel }}</span>
+                                    @if($item->ttd_instruktur)
+                                        {{-- Cuplikan kecil paraf instruktur --}}
+                                        <img src="{{ asset('storage/' . $item->ttd_instruktur) }}" alt="Paraf instruktur"
+                                             class="rounded border border-[#05b169]/40 bg-white"
+                                             style="height:18px; width:auto; max-width:64px;">
+                                    @endif
                                 </div>
                             </div>
                             <button type="button" @click="detail = true"
@@ -326,6 +358,18 @@
                                         <div>
                                             <p class="text-xs font-bold uppercase tracking-wide text-[#5b616e]">Status</p>
                                             <span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-bold {{ $statusBadge }}">{{ $statusLabel }}</span>
+
+                                            {{-- Paraf digital instruktur --}}
+                                            <div class="mt-2">
+                                                <x-paraf-instruktur :ttd="$item->ttd_instruktur"
+                                                                    :nama="$item->ttd_instruktur_nama"
+                                                                    :waktu="$item->ttd_signed_at"
+                                                                    :foto-lama="$item->foto_bukti"
+                                                                    :tinggi="44"
+                                                                    judul="Paraf Instruktur — {{ $item->user->name ?? '-' }}"
+                                                                    unduh-nama="paraf-catatan-{{ $item->user->nisn ?? $item->user_id }}-{{ $item->id }}"
+                                                                    kosong="Belum ada paraf instruktur" />
+                                            </div>
                                         </div>
                                     </div>
 
@@ -364,6 +408,8 @@
                                                     Download Bukti
                                                 </a>
                                             </div>
+                                        @elseif($item->ttd_instruktur)
+                                            <p class="text-sm font-bold text-[#05b169]">Paraf digital tersimpan (lihat bagian Status)</p>
                                         @else
                                             <p class="text-sm italic text-[#5b616e]">Belum ada bukti</p>
                                         @endif

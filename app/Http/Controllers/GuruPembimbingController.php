@@ -27,6 +27,20 @@ class GuruPembimbingController extends Controller
         ]);
     }
 
+    /**
+     * Buang spasi, tab, baris baru, dan spasi tak-terputus (U+00A0).
+     *
+     * Wajib dipakai pada NIP dan PASSWORD. Laravel sengaja TIDAK memangkas
+     * spasi pada field password (lihat $except pada middleware TrimStrings),
+     * sehingga spasi yang ikut terbawa saat admin menyalin-tempel NIP akan
+     * tersimpan diam-diam dan membuat guru tidak pernah bisa login walau
+     * merasa password-nya sudah benar.
+     */
+    private function rapikan(?string $nilai): string
+    {
+        return preg_replace('/[\s\x{00A0}]+/u', '', (string) $nilai);
+    }
+
     public function index(Request $request)
     {
         $q = trim((string) $request->get('q', ''));
@@ -73,8 +87,9 @@ class GuruPembimbingController extends Controller
     public function store(Request $request)
     {
         $data = $this->validateData($request);
-        $data['role'] = 'guru_pembimbing';
-        $data['password'] = Hash::make($data['password']);
+        $data['role']     = 'guru_pembimbing';
+        $data['nip']      = $this->rapikan($data['nip']);
+        $data['password'] = Hash::make($this->rapikan($data['password']));
 
         User::create($data);
 
@@ -91,8 +106,12 @@ class GuruPembimbingController extends Controller
     {
         $data = $this->validateData($request, $guru);
 
-        if (!empty($data['password'])) {
-            $data['password'] = Hash::make($data['password']);
+        $data['nip'] = $this->rapikan($data['nip']);
+
+        $passwordBaru = $this->rapikan($data['password'] ?? '');
+
+        if ($passwordBaru !== '') {
+            $data['password'] = Hash::make($passwordBaru);
         } else {
             unset($data['password']);
         }

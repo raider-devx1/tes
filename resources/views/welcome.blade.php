@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>LMS PKL — UPTD SMK Negeri 1 Majene</title>
+    <title>LMS PKL UPTD SMK Negeri 1 Majene</title>
 
     {{-- Logo tampil di tab / URL title --}}
     <link rel="icon" type="image/png" href="{{ asset('images/logo.png') }}">
@@ -52,8 +52,8 @@
                 <span class="text-blue-600">LMS PKL</span> SMK Negeri 1 Majene
             </h1>
             <p class="mt-5 max-w-2xl mx-auto text-base sm:text-lg text-slate-600 leading-relaxed">
-                Platform digital untuk mengelola seluruh kegiatan Praktik Kerja Lapangan (PKL) —
-                dari jurnal harian, absensi, monitoring, hingga penilaian — dalam satu tempat untuk siswa, guru pembimbing, dan admin.
+                Platform digital untuk mengelola seluruh kegiatan Praktik Kerja Lapangan (PKL) 
+                dari jurnal harian, absensi, monitoring, hingga penilaian dalam satu tempat untuk siswa, guru pembimbing, dan admin.
             </p>
             <div class="mt-8">
                 <a href="{{ route('login') }}"
@@ -133,7 +133,7 @@
     <footer class="border-t border-slate-100">
         <div class="max-w-5xl mx-auto px-4 sm:px-6 py-8 flex flex-col sm:flex-row items-center justify-center gap-3 text-center text-sm text-slate-500">
             <img src="{{ asset('images/logo.png') }}" alt="Logo" class="h-8 w-8 object-contain">
-            <span>&copy; {{ date('Y') }} LMS PKL — UPTD SMK Negeri 1 Majene. Semua hak dilindungi.</span>
+            <span>&copy; {{ date('Y') }} LMS PKL UPTD SMK Negeri 1 Majene. Semua hak dilindungi.</span>
         </div>
     </footer>
 

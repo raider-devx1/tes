@@ -146,6 +146,12 @@ Route::delete('/akun-admin/{admin}', [AdminAkunController::class, 'destroy'])->n
        // ---- MONITORING (read + CRUD) ----
 Route::get('/monitoring/jurnal', [MonitoringController::class, 'jurnal'])->name('monitoring.jurnal');
 Route::post('/monitoring/jurnal', [MonitoringController::class, 'storeJurnal'])->name('monitoring.jurnal.store');
+
+// ---- VALIDASI JURNAL MASSAL (beberapa NISN sekaligus / semua siswa) ----
+// Didaftarkan SEBELUM route ber-parameter {jurnal} agar tidak tertangkap olehnya.
+Route::post('/monitoring/jurnal/validasi', [MonitoringController::class, 'validasiJurnal'])->name('monitoring.jurnal.validasi');
+Route::get('/monitoring/jurnal/validasi-pratinjau', [MonitoringController::class, 'pratinjauValidasiJurnal'])->name('monitoring.jurnal.validasi-pratinjau');
+
 Route::put('/monitoring/jurnal/{jurnal}', [MonitoringController::class, 'updateJurnal'])->name('monitoring.jurnal.update');
 Route::delete('/monitoring/jurnal/{jurnal}', [MonitoringController::class, 'destroyJurnal'])->name('monitoring.jurnal.destroy');
 
@@ -162,6 +168,11 @@ Route::post('/monitoring/absensi', [MonitoringController::class, 'storeAbsensi']
 Route::post('/monitoring/absensi/rekap', [MonitoringController::class, 'aturRekapAbsensi'])->name('monitoring.absensi.rekap');
 // Info rekap absensi satu siswa (JSON, dipanggil modal admin saat NISN diketik).
 Route::get('/monitoring/absensi/rekap-siswa', [MonitoringController::class, 'rekapSiswa'])->name('monitoring.absensi.rekap-siswa');
+// VALIDASI ABSENSI (terpisah dari "Atur Jumlah"): banyak NISN sekaligus atau semua siswa,
+// dengan filter hari tertentu / rentang tanggal / seluruh riwayat.
+Route::post('/monitoring/absensi/validasi', [MonitoringController::class, 'validasiAbsensi'])->name('monitoring.absensi.validasi');
+// Pratinjau jumlah baris yang akan divalidasi (JSON, dipanggil modal admin).
+Route::get('/monitoring/absensi/validasi-pratinjau', [MonitoringController::class, 'pratinjauValidasi'])->name('monitoring.absensi.validasi-pratinjau');
 // Validasi & edit jam kerja industri siswa oleh admin (letakkan sebelum rute generic {absensi}).
 Route::put('/monitoring/absensi/jam/{siswa}/validasi', [MonitoringController::class, 'validasiJamAbsensi'])->name('monitoring.absensi.jam.validasi');
 Route::put('/monitoring/absensi/jam/{siswa}', [MonitoringController::class, 'updateJamAbsensi'])->name('monitoring.absensi.jam.update');
@@ -171,6 +182,12 @@ Route::delete('/monitoring/absensi/{absensi}', [MonitoringController::class, 'de
 // ---- EVALUASI & NILAI (read + CRUD) ----
 Route::get('/evaluasi/observasi', [EvaluasiController::class, 'observasi'])->name('evaluasi.observasi');
 Route::post('/evaluasi/observasi', [EvaluasiController::class, 'storeObservasi'])->name('evaluasi.observasi.store');
+
+// ---- VALIDASI OBSERVASI MASSAL (beberapa NISN sekaligus / semua siswa) ----
+// Didaftarkan SEBELUM route ber-parameter {observasi} agar tidak tertangkap olehnya.
+Route::post('/evaluasi/observasi/validasi-massal', [EvaluasiController::class, 'validasiObservasiMassal'])->name('evaluasi.observasi.validasi-massal');
+Route::get('/evaluasi/observasi/validasi-pratinjau', [EvaluasiController::class, 'pratinjauValidasiObservasi'])->name('evaluasi.observasi.validasi-pratinjau');
+
 Route::put('/evaluasi/observasi/{observasi}', [EvaluasiController::class, 'updateObservasi'])->name('evaluasi.observasi.update');
 Route::put('/evaluasi/observasi/{observasi}/validasi', [EvaluasiController::class, 'validasiObservasi'])->name('evaluasi.observasi.validasi');
 Route::put('/evaluasi/observasi/{observasi}/batal-validasi', [EvaluasiController::class, 'batalValidasiObservasi'])->name('evaluasi.observasi.batal');

@@ -25,16 +25,27 @@ class Observasi extends Model
         'pekerjaan_projek',
         'status',                 // draft | diajukan | tervalidasi
         'diajukan_at',            // waktu guru mengajukan (menunggu divalidasi wakasek)
-        'foto_dokumentasi',       // foto kegiatan/kunjungan (diunggah saat mengajukan)
-        'foto_lembar_observasi',  // foto lembar fisik yang sudah diparaf instruktur & guru
+        'foto_dokumentasi',       // BUKTI FOTO OBSERVASI (diunggah saat mengajukan)
+        'foto_lembar_observasi',  // LEGACY: foto lembar fisik berparaf (alur lama, hanya untuk data lama)
+
+        // ===== Paraf digital (kanvas di web/HP), pengganti foto lembar berparaf =====
+        'ttd_guru',                 // path PNG paraf guru pembimbing
+        'ttd_guru_nama',            // nama guru saat memaraf
+        'ttd_guru_signed_at',
+        'ttd_instruktur',           // path PNG paraf instruktur (dibubuhkan di bawah paraf guru)
+        'ttd_instruktur_nama',
+        'ttd_instruktur_signed_at',
+
         'validated_by_guru_id',
         'validated_at',
     ];
 
     protected $casts = [
-        'hari_tanggal' => 'date',
-        'diajukan_at'  => 'datetime',
-        'validated_at' => 'datetime',
+        'hari_tanggal'             => 'date',
+        'diajukan_at'              => 'datetime',
+        'validated_at'             => 'datetime',
+        'ttd_guru_signed_at'       => 'datetime',
+        'ttd_instruktur_signed_at' => 'datetime',
     ];
 
     // Siswa yang diobservasi
@@ -83,5 +94,19 @@ class Observasi extends Model
     public function getIsDraftAttribute(): bool
     {
         return ($this->status ?? 'draft') === 'draft';
+    }
+
+    /** True bila paraf digital guru pembimbing & instruktur sudah lengkap. */
+    public function getSudahDiparafAttribute(): bool
+    {
+        return (bool) ($this->ttd_guru && $this->ttd_instruktur);
+    }
+
+    /** True bila data ini masih memakai bukti lama (foto lembar berparaf). */
+    public function getPakaiBuktiLamaAttribute(): bool
+    {
+        return ! $this->ttd_guru
+            && ! $this->ttd_instruktur
+            && (bool) $this->foto_lembar_observasi;
     }
 }

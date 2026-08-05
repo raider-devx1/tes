@@ -16,11 +16,25 @@ class GuruImport implements ToModel, WithHeadingRow, WithValidation, SkipsEmptyR
 {
     public function model(array $row)
     {
+        // NIP 18 digit kerap dibaca Excel sebagai ANGKA, sehingga (string)
+        // menghasilkan notasi ilmiah seperti 1.9651231199E+17 dan nol di depan
+        // hilang. angkaUtuh() menjaga seluruh digitnya tetap utuh.
+        $nip = self::rapikan(self::angkaUtuh($row['nip'] ?? null));
+
+        // Password bawaan = NIP (kebiasaan sekolah), bukan 'password123'.
+        // Spasi hasil salin-tempel dibuang supaya guru tidak pernah terkunci
+        // oleh spasi yang tidak terlihat di kolom password.
+        $passwordMentah = self::rapikan(self::angkaUtuh($row['password'] ?? null));
+
+        if ($passwordMentah === '') {
+            $passwordMentah = $nip !== '' ? $nip : 'password123';
+        }
+
         $user = new User([
-            'name'     => $row['nama'],
-            'password' => Hash::make($row['password'] ?? 'password123'),
-            'nip'      => isset($row['nip'])   ? (string) $row['nip']   : null,
-            'no_hp'    => isset($row['no_hp']) ? (string) $row['no_hp'] : null,
+            'name'     => trim((string) $row['nama']),
+            'password' => Hash::make($passwordMentah),
+            'nip'      => $nip !== '' ? $nip : null,
+            'no_hp'    => isset($row['no_hp']) ? self::rapikan(self::angkaUtuh($row['no_hp'])) : null,
             'role'     => 'guru_pembimbing',
         ]);
 
@@ -33,6 +47,33 @@ class GuruImport implements ToModel, WithHeadingRow, WithValidation, SkipsEmptyR
         $user->updated_at = $now;
 
         return $user;
+    }
+
+    /** Ubah nilai sel menjadi teks tanpa notasi ilmiah / desimal palsu. */
+    private static function angkaUtuh($nilai): string
+    {
+        if ($nilai === null) {
+            return '';
+        }
+
+        if (is_float($nilai) || is_int($nilai)) {
+            return number_format((float) $nilai, 0, '', '');
+        }
+
+        $teks = (string) $nilai;
+
+        // Tangani teks yang terlanjur berbentuk "1.98105022005E+17".
+        if (preg_match('/^\d(?:\.\d+)?E\+?\d+$/i', trim($teks))) {
+            return number_format((float) $teks, 0, '', '');
+        }
+
+        return $teks;
+    }
+
+    /** Buang spasi, tab, baris baru, dan spasi tak-terputus (U+00A0). */
+    private static function rapikan(?string $nilai): string
+    {
+        return preg_replace('/[\s\x{00A0}]+/u', '', (string) $nilai);
     }
 
     public function rules(): array

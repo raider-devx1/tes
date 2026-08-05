@@ -14,10 +14,23 @@
         .box { border:1px solid #000; min-height:70px; padding:8px; }
         .box-besar { border:1px solid #000; min-height:130px; padding:8px; }
         .catatan { border:1px solid #000; min-height:90px; padding:8px; }
-        .ttd { margin-top:35px; width:100%; }
+        .ttd { margin-top:22px; width:100%; }
         .ttd-kanan { width:45%; float:right; text-align:center; }
         .nama-ttd { margin-top:70px; text-decoration:underline; }
-        .nama-ttd-verified { margin-top:10px; text-decoration:underline; font-weight:bold; }
+        .nama-ttd-verified { margin-top:2px; text-decoration:underline; font-weight:bold; font-size:11pt; }
+
+        /* Tanda tangan digital instruktur (hasil kanvas di web/HP).
+
+           Tinggi paraf: 58px (sebelumnya 34px) -> cukup jelas terbaca saat dicetak,
+           tapi TIDAK melebihi ruang paraf basah versi manual (margin-top:70px pada
+           .nama-ttd). Karena blok bertanda tangan tetap lebih pendek daripada blok
+           kosongnya, lembar catatan dijamin tidak turun ke halaman kedua.
+
+           max-width:210px menjaga paraf yang gambarnya sangat lebar tetap berada di
+           dalam kolom kanan (45% lebar halaman) dan tidak menabrak teks. */
+        .ttd-img { margin-top:4px; height:58px; text-align:center; }
+        .ttd-img img { height:58px; width:auto; max-width:210px; display:inline; }
+        .ttd-info { font-size:8pt; margin-top:1px; }
         .empty { text-align:center; font-style:italic; color:#555; }
 
         /* Badge tanda tangan digital terverifikasi */
@@ -93,9 +106,20 @@
             <br><br>
             Instruktur,
 
-            {{-- Ruang tanda tangan/paraf instruktur SELALU dicetak kosong,
-                 baik catatan sudah divalidasi/disetujui maupun belum. --}}
-            <div class="nama-ttd"> {{ $item->user->instruktur->name ?? '-' }} </div>
+            @php $ttdParaf = \App\Support\TandaTangan::dataUri($item->ttd_instruktur); @endphp
+            @if($ttdParaf)
+                {{-- Tanda tangan digital instruktur: otomatis dari halaman pengajuan siswa --}}
+                <div class="ttd-img">
+                    <img src="{{ $ttdParaf }}" alt="Tanda tangan instruktur" style="height:58px; width:auto; max-width:210px;">
+                </div>
+                <div class="nama-ttd-verified">
+                    {{ $item->ttd_instruktur_nama ?: ($item->user->instruktur->name ?? '-') }}
+                </div>
+               
+            @else
+                {{-- Belum ditandatangani: ruang paraf basah tetap dicetak kosong --}}
+                <div class="nama-ttd"> {{ $item->user->instruktur->name ?? '-' }} </div>
+            @endif
         </div>
     </div>
     <div style="clear:both;"></div>

@@ -8,6 +8,7 @@ use App\Models\Jurnal;
 use App\Models\Pengaturan;
 use App\Models\User;
 use App\Support\ImageCompressor;
+use App\Support\TandaTangan;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -45,6 +46,44 @@ class MonitoringController extends Controller
     }
 
     /**
+     * Nilai filter "Status Validasi" absensi yang diizinkan.
+     *
+     * - draft     : masih draft (belum diajukan siswa)
+     * - diajukan  : menunggu divalidasi
+     * - disetujui : sudah tervalidasi
+     * - belum     : gabungan draft + diajukan (semua yang belum tervalidasi)
+     *
+     * Nilai di luar daftar ini dianggap kosong (= tampilkan semua), sehingga
+     * parameter URL yang diketik sembarangan tidak pernah masuk ke query.
+     */
+    private function statusValidasiValid($nilai): string
+    {
+        $nilai = is_string($nilai) ? trim(strtolower($nilai)) : '';
+
+        return in_array($nilai, ['draft', 'diajukan', 'disetujui', 'belum'], true) ? $nilai : '';
+    }
+
+    /**
+     * Terapkan filter status validasi ke query absensi.
+     *
+     * Baris absensi lama bisa memiliki status_validasi NULL. Nilai NULL itu
+     * diperlakukan sama dengan 'draft', persis seperti yang ditampilkan pada
+     * tabel (status_validasi ?? 'draft'), supaya hasil filter tidak bocor.
+     */
+    private function filterStatusValidasi($query, string $statusValidasi)
+    {
+        if ($statusValidasi === 'draft') {
+            $query->where(fn ($x) => $x->where('status_validasi', 'draft')->orWhereNull('status_validasi'));
+        } elseif ($statusValidasi === 'belum') {
+            $query->where(fn ($x) => $x->whereIn('status_validasi', ['draft', 'diajukan'])->orWhereNull('status_validasi'));
+        } elseif ($statusValidasi !== '') {
+            $query->where('status_validasi', $statusValidasi);
+        }
+
+        return $query;
+    }
+
+    /**
      * Ekspresi ORDER BY untuk memprioritaskan siswa AKTIF di urutan pertama,
      * lalu BELUM, dan SELESAI paling akhir.
      *
@@ -68,9 +107,30 @@ class MonitoringController extends Controller
         // supaya admin tetap bisa menambah & memperbaiki data siswa angkatan
         // lama meskipun periode aktif sekarang sudah berganti.
         return User::siswa()->withoutTrashed()
+            ->with('perusahaan:id,pembimbing_industri')
             ->orderByRaw("CASE status_pkl WHEN 'aktif' THEN 1 WHEN 'belum' THEN 2 WHEN 'selesai' THEN 3 ELSE 4 END")
             ->orderBy('name')
-            ->get(['id', 'name', 'nisn', 'status_pkl']);
+            ->get(['id', 'name', 'nisn', 'status_pkl', 'perusahaan_id'])
+            ->each(function ($siswa) {
+                // Nama instruktur ikut dikirim ke form agar teks "Diparaf oleh" terisi otomatis.
+                $siswa->setAttribute('instruktur_nama', $this->namaInstrukturSiswa($siswa));
+                $siswa->unsetRelation('perusahaan');
+            });
+    }
+
+    /**
+     * Nama instruktur (pembimbing industri) milik seorang siswa.
+     * Dipakai untuk mengisi otomatis nama di bawah paraf digital.
+     */
+    private function namaInstrukturSiswa($siswa): ?string
+    {
+        if (! $siswa instanceof User) {
+            $siswa = $siswa ? User::find($siswa) : null;
+        }
+
+        $nama = $siswa ? ($siswa->instruktur->name ?? null) : null;
+
+        return ($nama && $nama !== 'Belum Diatur') ? $nama : null;
     }
 
     // ===================================================================
@@ -124,6 +184,8 @@ public function storeJurnal(Request $request)
         'status'              => ['required', Rule::in(['draft', 'diajukan', 'disetujui'])],
         'catatan_instruktur'  => ['nullable', 'string'],
         'foto_bukti'          => ['nullable', 'image', 'mimes:jpeg,png,jpg', 'max:3072'],
+        // Tanda tangan digital instruktur (opsional), dikirim sebagai PNG base64 dari kanvas.
+        'ttd_instruktur'      => ['nullable', 'string'],
         'items'               => ['required', 'array', 'min:1'],
         'items.*.unit_kerja'  => ['required', 'string'],
         'items.*.dokumentasi' => ['nullable', 'image', 'mimes:jpeg,png,jpg', 'max:3072'],
@@ -139,12 +201,18 @@ public function storeJurnal(Request $request)
             $fotoBukti = ImageCompressor::store($request->file('foto_bukti'), 'bukti_fisik/jurnal');
         }
 
+        // Paraf digital instruktur (opsional): disimpan sebagai berkas PNG.
+        $ttdPath = TandaTangan::simpan($request->input('ttd_instruktur'), 'ttd/jurnal');
+
         $jurnal = Jurnal::create([
             'siswa_id'             => $data['siswa_id'],
             'hari_tanggal'         => $data['hari_tanggal'],
             'status'               => $data['status'],
             'catatan_instruktur'   => $data['catatan_instruktur'] ?? null,
             'foto_bukti'           => $fotoBukti,
+            'ttd_instruktur'       => $ttdPath,
+            'ttd_instruktur_nama'  => $ttdPath ? $this->namaInstrukturSiswa($data['siswa_id']) : null,
+            'ttd_signed_at'        => $ttdPath ? now() : null,
             'validated_by_guru_id' => $data['status'] === 'disetujui' ? Auth::id() : null,
             'validated_at'         => $data['status'] === 'disetujui' ? now() : null,
         ]);
@@ -177,6 +245,8 @@ public function updateJurnal(Request $request, Jurnal $jurnal)
         'catatan_instruktur'           => ['nullable', 'string'],
         'foto_bukti'                   => ['nullable', 'image', 'mimes:jpeg,png,jpg', 'max:3072'],
         'hapus_foto_bukti'             => ['nullable', 'boolean'],
+        'ttd_instruktur'               => ['nullable', 'string'],
+        'hapus_ttd_instruktur'         => ['nullable', 'boolean'],
         'items'                        => ['nullable', 'array'],
         'items.*.id'                   => ['nullable', 'integer'],
         'items.*.unit_kerja'           => ['nullable', 'string'],
@@ -197,12 +267,35 @@ public function updateJurnal(Request $request, Jurnal $jurnal)
             $fotoBukti = ImageCompressor::store($request->file('foto_bukti'), 'bukti_fisik/jurnal');
         }
 
+        // ---- Paraf digital instruktur (opsional) ----
+        $ttdPath  = $jurnal->ttd_instruktur;
+        $ttdNama  = $jurnal->ttd_instruktur_nama;
+        $ttdWaktu = $jurnal->ttd_signed_at;
+
+        if ($request->boolean('hapus_ttd_instruktur') && $ttdPath) {
+            TandaTangan::hapus($ttdPath);
+            $ttdPath  = null;
+            $ttdNama  = null;
+            $ttdWaktu = null;
+        }
+
+        $ttdBaru = TandaTangan::simpan($request->input('ttd_instruktur'), 'ttd/jurnal');
+        if ($ttdBaru) {
+            TandaTangan::hapus($ttdPath);   // ganti paraf lama bila ada
+            $ttdPath  = $ttdBaru;
+            $ttdNama  = $this->namaInstrukturSiswa($jurnal->siswa_id);
+            $ttdWaktu = now();
+        }
+
         $jurnal->update([
             'siswa_id'             => $data['siswa_id'],
             'hari_tanggal'         => $data['hari_tanggal'],
             'status'               => $data['status'],
             'catatan_instruktur'   => $data['catatan_instruktur'] ?? null,
             'foto_bukti'           => $fotoBukti,
+            'ttd_instruktur'       => $ttdPath,
+            'ttd_instruktur_nama'  => $ttdNama,
+            'ttd_signed_at'        => $ttdWaktu,
             'validated_by_guru_id' => $data['status'] === 'disetujui' ? ($jurnal->validated_by_guru_id ?? Auth::id()) : null,
             'validated_at'         => $data['status'] === 'disetujui' ? ($jurnal->validated_at ?? now()) : null,
         ]);
@@ -266,10 +359,252 @@ public function destroyJurnal(Jurnal $jurnal)
     if ($jurnal->foto_bukti) {
         Storage::disk('public')->delete($jurnal->foto_bukti);
     }
+    TandaTangan::hapus($jurnal->ttd_instruktur);
     $jurnal->items()->delete();
     $jurnal->delete();
 
     return back()->with('success', 'Jurnal berhasil dihapus.');
+}
+
+/**
+ * PRATINJAU VALIDASI JURNAL (JSON, dipanggil modal admin).
+ *
+ * Menghitung berapa jurnal yang akan terkena aksi validasi untuk filter yang
+ * sedang dipilih: BEBERAPA NISN sekaligus atau semua siswa, pada satu hari
+ * tertentu / rentang tanggal / seluruh riwayat.
+ */
+public function pratinjauValidasiJurnal(Request $request)
+{
+    $mode  = $request->query('mode') === 'semua' ? 'semua' : 'nisn';
+    $jenis = in_array($request->query('jenis_tanggal'), ['tanggal', 'rentang', 'semua'], true)
+        ? (string) $request->query('jenis_tanggal')
+        : 'rentang';
+
+    $tanggal = $request->query('tanggal');
+    $mulai   = $request->query('tanggal_mulai');
+    $selesai = $request->query('tanggal_selesai');
+
+    $daftarNisn = $this->pecahDaftar($request->query('nisn', ''));
+
+    if ($mode === 'nisn' && empty($daftarNisn)) {
+        return response()->json(['ok' => false, 'pesan' => 'Masukkan minimal satu NISN.'], 422);
+    }
+
+    if (count($daftarNisn) > 300) {
+        return response()->json(['ok' => false, 'pesan' => 'Terlalu banyak NISN sekaligus. Maksimal 300 NISN.'], 422);
+    }
+
+    $tidakDitemukan = [];
+    $siswa = $this->siswaSasaranValidasi(
+        $mode,
+        $daftarNisn,
+        $request->query('semua_periode') === '1',
+        $tidakDitemukan
+    );
+
+    $ringkasan = ['total' => 0, 'draft' => 0, 'diajukan' => 0, 'disetujui' => 0, 'belum' => 0, 'siswa' => 0];
+
+    if ($siswa->isEmpty()) {
+        return response()->json([
+            'ok'              => true,
+            'jumlah_siswa'    => 0,
+            'daftar'          => [],
+            'ringkasan'       => $ringkasan,
+            'tidak_ditemukan' => $tidakDitemukan,
+        ]);
+    }
+
+    $query = Jurnal::query()->whereIn('siswa_id', $siswa->pluck('id'));
+    $this->filterTanggalValidasi($query, $jenis, $tanggal, $mulai, $selesai, 'hari_tanggal');
+
+    $rekap = $query->selectRaw('siswa_id, status, COUNT(*) as jumlah')
+        ->groupBy('siswa_id', 'status')
+        ->get();
+
+    // Status jurnal lama bisa NULL / nilai tak dikenal: dihitung sebagai draft.
+    $peta = [];
+    foreach ($rekap as $row) {
+        $st = in_array($row->status, ['draft', 'diajukan', 'disetujui'], true) ? $row->status : 'draft';
+
+        $peta[$row->siswa_id][$st] = (int) ($peta[$row->siswa_id][$st] ?? 0) + (int) $row->jumlah;
+    }
+
+    $daftar = [];
+
+    foreach ($siswa as $s) {
+        $draft     = (int) ($peta[$s->id]['draft'] ?? 0);
+        $diajukan  = (int) ($peta[$s->id]['diajukan'] ?? 0);
+        $disetujui = (int) ($peta[$s->id]['disetujui'] ?? 0);
+        $total     = $draft + $diajukan + $disetujui;
+
+        $ringkasan['total']     += $total;
+        $ringkasan['draft']     += $draft;
+        $ringkasan['diajukan']  += $diajukan;
+        $ringkasan['disetujui'] += $disetujui;
+
+        if ($total > 0) {
+            $ringkasan['siswa']++;
+        }
+
+        $daftar[] = [
+            'nisn'       => (string) $s->nisn,
+            'name'       => $s->name,
+            'kelas'      => $s->kelas ?? '-',
+            'status_pkl' => $s->status_pkl ?? '-',
+            'total'      => $total,
+            'draft'      => $draft,
+            'diajukan'   => $diajukan,
+            'disetujui'  => $disetujui,
+            'belum'      => $draft + $diajukan,
+        ];
+    }
+
+    $ringkasan['belum'] = $ringkasan['draft'] + $ringkasan['diajukan'];
+
+    return response()->json([
+        'ok'              => true,
+        'jumlah_siswa'    => $siswa->count(),
+        // Mode "semua" bisa berisi ratusan siswa: kirim contoh 50 teratas saja.
+        'daftar'          => $mode === 'semua' ? array_slice($daftar, 0, 50) : $daftar,
+        'ringkasan'       => $ringkasan,
+        'tidak_ditemukan' => $tidakDitemukan,
+    ]);
+}
+
+/**
+ * VALIDASI JURNAL MASSAL (fitur tersendiri di halaman monitoring jurnal).
+ *
+ * Lingkup:
+ *  - mode 'nisn'  : BEBERAPA NISN sekaligus (dipisah koma/spasi/baris baru)
+ *  - mode 'semua' : seluruh siswa PKL periode berjalan (opsional semua periode)
+ *
+ * Filter tanggal:
+ *  - 'tanggal' : hanya satu hari tertentu
+ *  - 'rentang' : rentang tanggal tertentu
+ *  - 'semua'   : seluruh riwayat jurnal
+ *
+ * Aksi:
+ *  - 'setujui'  : status -> disetujui (tervalidasi)
+ *  - 'batalkan' : status -> draft (validasi dilepas)
+ *
+ * Fitur ini TIDAK menyentuh isi jurnal: unit kerja, dokumentasi, foto bukti,
+ * maupun catatan instruktur dibiarkan apa adanya.
+ */
+public function validasiJurnal(Request $request)
+{
+    $data = $request->validate([
+        'mode'            => ['required', Rule::in(['nisn', 'semua'])],
+        'nisn'            => ['required_if:mode,nisn', 'nullable', 'string', 'max:5000'],
+        'jenis_tanggal'   => ['required', Rule::in(['tanggal', 'rentang', 'semua'])],
+        'tanggal'         => ['required_if:jenis_tanggal,tanggal', 'nullable', 'date'],
+        'tanggal_mulai'   => ['required_if:jenis_tanggal,rentang', 'nullable', 'date'],
+        'tanggal_selesai' => ['required_if:jenis_tanggal,rentang', 'nullable', 'date', 'after_or_equal:tanggal_mulai'],
+        'aksi'            => ['required', Rule::in(['setujui', 'batalkan'])],
+        // Sumber = status jurnal yang ikut diproses saat menyetujui.
+        'sumber'          => ['nullable', Rule::in(['', 'semua', 'draft', 'diajukan'])],
+        'semua_periode'   => ['nullable', 'boolean'],
+    ], [
+        'nisn.required_if'               => 'NISN wajib diisi untuk validasi per siswa (boleh lebih dari satu).',
+        'tanggal.required_if'            => 'Tanggal wajib diisi bila memvalidasi hari tertentu.',
+        'tanggal_mulai.required_if'      => 'Tanggal mulai wajib diisi bila memakai rentang tanggal.',
+        'tanggal_selesai.required_if'    => 'Tanggal selesai wajib diisi bila memakai rentang tanggal.',
+        'tanggal_selesai.after_or_equal' => 'Tanggal selesai tidak boleh lebih awal dari tanggal mulai.',
+    ]);
+
+    $mode   = $data['mode'];
+    $jenis  = $data['jenis_tanggal'];
+    $aksi   = $data['aksi'];
+    $sumber = (string) ($data['sumber'] ?? 'semua');
+
+    $tidakDitemukan = [];
+    $siswa = $this->siswaSasaranValidasi(
+        $mode,
+        $data['nisn'] ?? '',
+        $request->boolean('semua_periode'),
+        $tidakDitemukan
+    );
+
+    if ($siswa->isEmpty()) {
+        return back()->with('error', $mode === 'nisn'
+            ? ('Tidak ada NISN yang cocok dengan data siswa PKL.'
+                . (empty($tidakDitemukan) ? '' : ' NISN yang dicari: ' . implode(', ', array_slice($tidakDitemukan, 0, 10)) . '.'))
+            : 'Tidak ada siswa PKL pada periode berjalan.');
+    }
+
+    $query = Jurnal::query()->whereIn('siswa_id', $siswa->pluck('id'));
+    $this->filterTanggalValidasi(
+        $query,
+        $jenis,
+        $data['tanggal'] ?? null,
+        $data['tanggal_mulai'] ?? null,
+        $data['tanggal_selesai'] ?? null,
+        'hari_tanggal'
+    );
+
+    if ($aksi === 'setujui') {
+        // Hanya jurnal yang BELUM disetujui yang perlu diproses.
+        if (in_array($sumber, ['draft', 'diajukan'], true)) {
+            $query->where('status', $sumber);
+        } else {
+            $query->where(fn ($q) => $q->where('status', '!=', 'disetujui')
+                                       ->orWhereNull('status'));
+        }
+    } else {
+        $query->where('status', 'disetujui');
+    }
+
+    $baris = $query->get(['id', 'siswa_id']);
+
+    if ($baris->isEmpty()) {
+        return back()->with('error', $aksi === 'setujui'
+            ? 'Tidak ada jurnal yang perlu divalidasi pada filter tersebut (semuanya sudah tervalidasi atau datanya belum ada).'
+            : 'Tidak ada jurnal tervalidasi yang bisa dibatalkan pada filter tersebut.');
+    }
+
+    // Kolom yang disentuh sama dengan validasi guru (JurnalController@validasiByGuru).
+    $isi = $aksi === 'setujui'
+        ? ['status' => 'disetujui', 'validated_by_guru_id' => Auth::id(), 'validated_at' => now()]
+        : ['status' => 'draft', 'validated_by_guru_id' => null, 'validated_at' => null];
+
+    DB::transaction(function () use ($baris, $isi) {
+        foreach ($baris->pluck('id')->chunk(500) as $potongan) {
+            Jurnal::whereIn('id', $potongan->all())->update($isi);
+        }
+    });
+
+    $totalBaris     = $baris->count();
+    $siswaTerdampak = $baris->pluck('siswa_id')->unique()->count();
+
+    $cakupan = match ($jenis) {
+        'tanggal' => 'tanggal ' . Carbon::parse($data['tanggal'])->format('d/m/Y'),
+        'rentang' => 'rentang ' . Carbon::parse($data['tanggal_mulai'])->format('d/m/Y')
+            . ' - ' . Carbon::parse($data['tanggal_selesai'])->format('d/m/Y'),
+        default   => 'seluruh riwayat jurnal',
+    };
+
+    $siswaPertama = $siswa->firstWhere('id', $baris->first()->siswa_id);
+
+    $lingkup = $siswaTerdampak === 1
+        ? ('siswa ' . $siswaPertama?->name . ' (NISN ' . $siswaPertama?->nisn . ')')
+        : ($siswaTerdampak . ' siswa');
+
+    $pesan = $aksi === 'setujui'
+        ? "Validasi jurnal berhasil: {$totalBaris} jurnal milik {$lingkup} kini TERVALIDASI (disetujui) pada {$cakupan}."
+        : "Validasi dibatalkan: {$totalBaris} jurnal milik {$lingkup} dikembalikan ke draft pada {$cakupan}.";
+
+    if ($aksi === 'setujui' && in_array($sumber, ['draft', 'diajukan'], true)) {
+        $pesan .= ' Hanya jurnal berstatus ' . $sumber . ' yang diproses.';
+    }
+
+    $pesan .= ' Isi jurnal, dokumentasi, foto bukti, dan catatan instruktur tidak diubah.';
+
+    if (! empty($tidakDitemukan)) {
+        $contoh = implode(', ', array_slice($tidakDitemukan, 0, 5));
+        $sisa   = count($tidakDitemukan) - 5;
+        $pesan .= ' NISN tidak ditemukan (' . count($tidakDitemukan) . '): ' . $contoh . ($sisa > 0 ? " dan {$sisa} lainnya." : '.');
+    }
+
+    return back()->with('success', $pesan);
 }
 
    // ===================================================================
@@ -323,10 +658,22 @@ public function storeCatatan(Request $request)
         'catatan_instruktur'   => ['nullable', 'string'],
         'status'               => ['required', Rule::in(['draft', 'diajukan', 'disetujui'])],
         'foto_bukti'           => ['nullable', 'image', 'mimes:jpeg,png,jpg', 'max:3072'],
+        // Tanda tangan digital instruktur (opsional), PNG base64 dari kanvas.
+        'ttd_instruktur'       => ['nullable', 'string'],
     ]);
+
+    // Nilai mentah kanvas tidak boleh langsung masuk basis data.
+    unset($data['ttd_instruktur']);
 
     if ($request->hasFile('foto_bukti')) {
         $data['foto_bukti'] = ImageCompressor::store($request->file('foto_bukti'), 'bukti_fisik/catatan');
+    }
+
+    $ttdPath = TandaTangan::simpan($request->input('ttd_instruktur'), 'ttd/catatan');
+    if ($ttdPath) {
+        $data['ttd_instruktur']      = $ttdPath;
+        $data['ttd_instruktur_nama'] = $this->namaInstrukturSiswa($data['user_id']);
+        $data['ttd_signed_at']       = now();
     }
 
     // Kolom perencanaan_kegiatan & pelaksanaan_kegiatan bertipe NOT NULL di
@@ -354,6 +701,8 @@ public function updateCatatan(Request $request, CatatanKegiatan $catatan)
         'status'               => ['required', Rule::in(['draft', 'diajukan', 'disetujui'])],
         'foto_bukti'           => ['nullable', 'image', 'mimes:jpeg,png,jpg', 'max:3072'],
         'hapus_foto_bukti'     => ['nullable', 'boolean'],
+        'ttd_instruktur'       => ['nullable', 'string'],
+        'hapus_ttd_instruktur' => ['nullable', 'boolean'],
     ]);
 
     $fotoBukti = $catatan->foto_bukti;
@@ -364,6 +713,26 @@ public function updateCatatan(Request $request, CatatanKegiatan $catatan)
     if ($request->hasFile('foto_bukti')) {
         if ($fotoBukti) Storage::disk('public')->delete($fotoBukti);
         $fotoBukti = ImageCompressor::store($request->file('foto_bukti'), 'bukti_fisik/catatan');
+    }
+
+    // ---- Paraf digital instruktur (opsional) ----
+    $ttdPath  = $catatan->ttd_instruktur;
+    $ttdNama  = $catatan->ttd_instruktur_nama;
+    $ttdWaktu = $catatan->ttd_signed_at;
+
+    if ($request->boolean('hapus_ttd_instruktur') && $ttdPath) {
+        TandaTangan::hapus($ttdPath);
+        $ttdPath  = null;
+        $ttdNama  = null;
+        $ttdWaktu = null;
+    }
+
+    $ttdBaru = TandaTangan::simpan($request->input('ttd_instruktur'), 'ttd/catatan');
+    if ($ttdBaru) {
+        TandaTangan::hapus($ttdPath);   // ganti paraf lama bila ada
+        $ttdPath  = $ttdBaru;
+        $ttdNama  = $this->namaInstrukturSiswa($catatan->user_id);
+        $ttdWaktu = now();
     }
 
     $catatan->update([
@@ -382,6 +751,9 @@ public function updateCatatan(Request $request, CatatanKegiatan $catatan)
         'catatan_instruktur'   => $data['catatan_instruktur'] ?? null,
         'status'               => $data['status'],
         'foto_bukti'           => $fotoBukti,
+        'ttd_instruktur'       => $ttdPath,
+        'ttd_instruktur_nama'  => $ttdNama,
+        'ttd_signed_at'        => $ttdWaktu,
         'validated_by_guru_id' => $data['status'] === 'disetujui' ? ($catatan->validated_by_guru_id ?? Auth::id()) : null,
         'validated_at'         => $data['status'] === 'disetujui' ? ($catatan->validated_at ?? now()) : null,
     ]);
@@ -394,6 +766,7 @@ public function destroyCatatan(CatatanKegiatan $catatan)
     if ($catatan->foto_bukti) {
         Storage::disk('public')->delete($catatan->foto_bukti);
     }
+    TandaTangan::hapus($catatan->ttd_instruktur);
     $catatan->delete();
 
     return back()->with('success', 'Catatan kegiatan berhasil dihapus.');
@@ -420,10 +793,14 @@ public function absensi(Request $request)
     $bulan     = $request->get('bulan', '');
     $kelas     = $request->get('kelas', '');
     $jurusan   = $request->get('jurusan', '');
+    // Filter status validasi: draft / diajukan (menunggu) / disetujui / belum.
+    $statusValidasi = $this->statusValidasiValid($request->get('status_validasi', ''));
 
     $absensi = Absensi::query()
         ->with('siswa')
         ->whereHas('siswa', fn ($s) => $s->siswa()->withoutTrashed())
+        // Filter STATUS VALIDASI (draft / menunggu divalidasi / tervalidasi).
+        ->when($statusValidasi, fn ($query) => $this->filterStatusValidasi($query, $statusValidasi))
         ->when($q, fn ($query) => $query->whereHas('siswa', fn ($s) =>
             $s->where('name', 'like', "%{$q}%")->orWhere('nisn', 'like', "%{$q}%")))
         ->when($kelas,   fn ($query) => $query->whereHas('siswa', fn ($s) => $s->where('kelas', $kelas)))
@@ -494,7 +871,7 @@ public function absensi(Request $request)
     ];
 
     return view('admin.monitoring.absensi', array_merge(
-        compact('absensi', 'q', 'status', 'statusPkl', 'tanggal', 'bulan', 'kelas', 'jurusan', 'rekap', 'tanggalDefault', 'pengaturanAbsensi', 'paksaBuka', 'paksaMasuk', 'paksaPulang', 'siswaJam', 'usulanJam', 'jamAdmin'),
+        compact('absensi', 'q', 'status', 'statusPkl', 'statusValidasi', 'tanggal', 'bulan', 'kelas', 'jurusan', 'rekap', 'tanggalDefault', 'pengaturanAbsensi', 'paksaBuka', 'paksaMasuk', 'paksaPulang', 'siswaJam', 'usulanJam', 'jamAdmin'),
         ['siswaList' => $this->siswaList(), 'dibukaList' => $dibukaList],
         $this->opsiFilter()
     ));
@@ -871,10 +1248,354 @@ public function rekapSiswa(Request $request)
 }
 
 /**
+ * Pecah masukan daftar (NISN / status) menjadi array bersih & unik.
+ *
+ * Admin bebas memisahkan dengan koma, titik koma, spasi, atau baris baru,
+ * sehingga daftar NISN dari Excel bisa ditempel apa adanya.
+ */
+private function pecahDaftar($nilai): array
+{
+    if (is_array($nilai)) {
+        $nilai = implode(',', $nilai);
+    }
+
+    $pecah  = preg_split('/[\s,;]+/', (string) $nilai) ?: [];
+    $bersih = [];
+
+    foreach ($pecah as $item) {
+        $item = trim($item);
+
+        if ($item !== '' && ! in_array($item, $bersih, true)) {
+            $bersih[] = $item;
+        }
+    }
+
+    return $bersih;
+}
+
+/**
+ * Filter tanggal untuk fitur VALIDASI MASSAL (absensi maupun jurnal).
+ *  - 'tanggal' : hanya SATU hari tertentu
+ *  - 'rentang' : dari tanggal mulai s.d. tanggal selesai
+ *  - 'semua'   : seluruh riwayat (tanpa batas tanggal)
+ *
+ * $kolom dibuat bisa diganti karena nama kolom tanggalnya berbeda antar tabel:
+ * absensi memakai 'tanggal', jurnal memakai 'hari_tanggal'.
+ */
+private function filterTanggalValidasi($query, string $jenis, ?string $tanggal, ?string $mulai, ?string $selesai, string $kolom = 'tanggal')
+{
+    if ($jenis === 'tanggal' && filled($tanggal)) {
+        $query->whereDate($kolom, Carbon::parse($tanggal)->format('Y-m-d'));
+    } elseif ($jenis === 'rentang' && filled($mulai) && filled($selesai)) {
+        $query->whereDate($kolom, '>=', Carbon::parse($mulai)->format('Y-m-d'))
+              ->whereDate($kolom, '<=', Carbon::parse($selesai)->format('Y-m-d'));
+    }
+
+    return $query;
+}
+
+/**
+ * Kumpulkan siswa sasaran untuk fitur VALIDASI ABSENSI.
+ *
+ * Mode 'nisn' menerima BANYAK NISN sekaligus. NISN yang tidak ditemukan
+ * dikembalikan lewat $tidakDitemukan agar bisa dilaporkan ke admin.
+ */
+private function siswaSasaranValidasi(string $mode, $nisnMentah, bool $semuaPeriode, array &$tidakDitemukan)
+{
+    $tidakDitemukan = [];
+
+    if ($mode === 'nisn') {
+        $daftarNisn = $this->pecahDaftar($nisnMentah);
+
+        if (empty($daftarNisn)) {
+            return collect();
+        }
+
+        $siswa = User::siswa()->withoutTrashed()
+            ->whereIn('nisn', $daftarNisn)
+            ->orderBy('name')
+            ->get(['id', 'name', 'nisn', 'kelas', 'jurusan', 'status_pkl']);
+
+        $ditemukan      = $siswa->pluck('nisn')->map(fn ($n) => (string) $n)->all();
+        $tidakDitemukan = array_values(array_diff($daftarNisn, $ditemukan));
+
+        return $siswa;
+    }
+
+    // Mode 'semua'. Bawaannya hanya siswa periode BERJALAN supaya arsip
+    // angkatan lama tidak ikut tersentuh; admin bisa melebarkannya sendiri.
+    $query = $semuaPeriode ? User::siswa()->withoutTrashed() : User::siswaBerjalan();
+
+    return $query->orderBy('name')->get(['id', 'name', 'nisn', 'kelas', 'jurusan', 'status_pkl']);
+}
+
+/**
+ * PRATINJAU VALIDASI ABSENSI (JSON, dipanggil modal admin).
+ *
+ * Menampilkan berapa baris absensi yang akan terkena aksi validasi untuk
+ * filter yang sedang dipilih: per beberapa NISN atau semua siswa, pada satu
+ * hari tertentu / rentang tanggal / seluruh riwayat.
+ */
+public function pratinjauValidasi(Request $request)
+{
+    $mode  = $request->query('mode') === 'semua' ? 'semua' : 'nisn';
+    $jenis = in_array($request->query('jenis_tanggal'), ['tanggal', 'rentang', 'semua'], true)
+        ? (string) $request->query('jenis_tanggal')
+        : 'rentang';
+
+    $tanggal = $request->query('tanggal');
+    $mulai   = $request->query('tanggal_mulai');
+    $selesai = $request->query('tanggal_selesai');
+
+    $statusFilter = array_values(array_intersect(
+        $this->pecahDaftar($request->query('status', '')),
+        ['Hadir', 'Izin', 'Sakit', 'Alpha']
+    ));
+
+    $daftarNisn = $this->pecahDaftar($request->query('nisn', ''));
+
+    if ($mode === 'nisn' && empty($daftarNisn)) {
+        return response()->json(['ok' => false, 'pesan' => 'Masukkan minimal satu NISN.'], 422);
+    }
+
+    if (count($daftarNisn) > 300) {
+        return response()->json(['ok' => false, 'pesan' => 'Terlalu banyak NISN sekaligus. Maksimal 300 NISN.'], 422);
+    }
+
+    $tidakDitemukan = [];
+    $siswa = $this->siswaSasaranValidasi(
+        $mode,
+        $daftarNisn,
+        $request->query('semua_periode') === '1',
+        $tidakDitemukan
+    );
+
+    $ringkasan = ['total' => 0, 'draft' => 0, 'diajukan' => 0, 'disetujui' => 0, 'belum' => 0, 'siswa' => 0];
+
+    if ($siswa->isEmpty()) {
+        return response()->json([
+            'ok'              => true,
+            'jumlah_siswa'    => 0,
+            'daftar'          => [],
+            'ringkasan'       => $ringkasan,
+            'tidak_ditemukan' => $tidakDitemukan,
+        ]);
+    }
+
+    $query = Absensi::query()->whereIn('siswa_id', $siswa->pluck('id'));
+    $this->filterTanggalValidasi($query, $jenis, $tanggal, $mulai, $selesai);
+
+    if (! empty($statusFilter)) {
+        $query->whereIn('status', $statusFilter);
+    }
+
+    $rekap = $query->selectRaw('siswa_id, status_validasi, COUNT(*) as jumlah')
+        ->groupBy('siswa_id', 'status_validasi')
+        ->get();
+
+    $peta = [];
+    foreach ($rekap as $row) {
+        $sv = in_array($row->status_validasi, ['draft', 'diajukan', 'disetujui'], true)
+            ? $row->status_validasi
+            : 'draft';
+
+        $peta[$row->siswa_id][$sv] = (int) $row->jumlah;
+    }
+
+    $daftar = [];
+
+    foreach ($siswa as $s) {
+        $draft     = (int) ($peta[$s->id]['draft'] ?? 0);
+        $diajukan  = (int) ($peta[$s->id]['diajukan'] ?? 0);
+        $disetujui = (int) ($peta[$s->id]['disetujui'] ?? 0);
+        $total     = $draft + $diajukan + $disetujui;
+
+        $ringkasan['total']     += $total;
+        $ringkasan['draft']     += $draft;
+        $ringkasan['diajukan']  += $diajukan;
+        $ringkasan['disetujui'] += $disetujui;
+
+        if ($total > 0) {
+            $ringkasan['siswa']++;
+        }
+
+        $daftar[] = [
+            'nisn'       => (string) $s->nisn,
+            'name'       => $s->name,
+            'kelas'      => $s->kelas ?? '-',
+            'status_pkl' => $s->status_pkl ?? '-',
+            'total'      => $total,
+            'draft'      => $draft,
+            'diajukan'   => $diajukan,
+            'disetujui'  => $disetujui,
+            'belum'      => $draft + $diajukan,
+        ];
+    }
+
+    $ringkasan['belum'] = $ringkasan['draft'] + $ringkasan['diajukan'];
+
+    return response()->json([
+        'ok'              => true,
+        'jumlah_siswa'    => $siswa->count(),
+        // Mode "semua" bisa berisi ratusan siswa: kirim contoh 50 teratas saja.
+        'daftar'          => $mode === 'semua' ? array_slice($daftar, 0, 50) : $daftar,
+        'ringkasan'       => $ringkasan,
+        'tidak_ditemukan' => $tidakDitemukan,
+    ]);
+}
+
+/**
+ * VALIDASI ABSENSI MASSAL (fitur terpisah dari "Atur Jumlah").
+ *
+ * Lingkup:
+ *  - mode 'nisn'  : BEBERAPA NISN sekaligus (dipisah koma/spasi/baris baru)
+ *  - mode 'semua' : seluruh siswa PKL periode berjalan (opsional semua periode)
+ *
+ * Filter tanggal:
+ *  - 'tanggal' : hanya satu hari tertentu
+ *  - 'rentang' : rentang tanggal tertentu
+ *  - 'semua'   : seluruh riwayat absensi
+ *
+ * Aksi:
+ *  - 'setujui'  : status_validasi -> disetujui (tervalidasi)
+ *  - 'batalkan' : status_validasi -> draft (validasi dilepas)
+ *
+ * Fitur ini TIDAK menyentuh status kehadiran, jam absen, maupun foto bukti.
+ */
+public function validasiAbsensi(Request $request)
+{
+    $data = $request->validate([
+        'mode'            => ['required', Rule::in(['nisn', 'semua'])],
+        'nisn'            => ['required_if:mode,nisn', 'nullable', 'string', 'max:5000'],
+        'jenis_tanggal'   => ['required', Rule::in(['tanggal', 'rentang', 'semua'])],
+        'tanggal'         => ['required_if:jenis_tanggal,tanggal', 'nullable', 'date'],
+        'tanggal_mulai'   => ['required_if:jenis_tanggal,rentang', 'nullable', 'date'],
+        'tanggal_selesai' => ['required_if:jenis_tanggal,rentang', 'nullable', 'date', 'after_or_equal:tanggal_mulai'],
+        'aksi'            => ['required', Rule::in(['setujui', 'batalkan'])],
+        'status'          => ['nullable', 'array'],
+        'status.*'        => [Rule::in(['Hadir', 'Izin', 'Sakit', 'Alpha'])],
+        // Sumber = status validasi yang ikut diproses saat menyetujui.
+        'sumber'          => ['nullable', Rule::in(['', 'semua', 'draft', 'diajukan'])],
+        'semua_periode'   => ['nullable', 'boolean'],
+    ], [
+        'nisn.required_if'               => 'NISN wajib diisi untuk validasi per siswa (boleh lebih dari satu).',
+        'tanggal.required_if'            => 'Tanggal wajib diisi bila memvalidasi hari tertentu.',
+        'tanggal_mulai.required_if'      => 'Tanggal mulai wajib diisi bila memakai rentang tanggal.',
+        'tanggal_selesai.required_if'    => 'Tanggal selesai wajib diisi bila memakai rentang tanggal.',
+        'tanggal_selesai.after_or_equal' => 'Tanggal selesai tidak boleh lebih awal dari tanggal mulai.',
+    ]);
+
+    $mode   = $data['mode'];
+    $jenis  = $data['jenis_tanggal'];
+    $aksi   = $data['aksi'];
+    $sumber = (string) ($data['sumber'] ?? 'semua');
+
+    $statusFilter = array_values(array_intersect(
+        (array) ($data['status'] ?? []),
+        ['Hadir', 'Izin', 'Sakit', 'Alpha']
+    ));
+
+    $tidakDitemukan = [];
+    $siswa = $this->siswaSasaranValidasi(
+        $mode,
+        $data['nisn'] ?? '',
+        $request->boolean('semua_periode'),
+        $tidakDitemukan
+    );
+
+    if ($siswa->isEmpty()) {
+        return back()->with('error', $mode === 'nisn'
+            ? ('Tidak ada NISN yang cocok dengan data siswa PKL.'
+                . (empty($tidakDitemukan) ? '' : ' NISN yang dicari: ' . implode(', ', array_slice($tidakDitemukan, 0, 10)) . '.'))
+            : 'Tidak ada siswa PKL pada periode berjalan.');
+    }
+
+    $query = Absensi::query()->whereIn('siswa_id', $siswa->pluck('id'));
+    $this->filterTanggalValidasi(
+        $query,
+        $jenis,
+        $data['tanggal'] ?? null,
+        $data['tanggal_mulai'] ?? null,
+        $data['tanggal_selesai'] ?? null
+    );
+
+    if (! empty($statusFilter)) {
+        $query->whereIn('status', $statusFilter);
+    }
+
+    if ($aksi === 'setujui') {
+        // Hanya baris yang BELUM disetujui yang perlu diproses.
+        if (in_array($sumber, ['draft', 'diajukan'], true)) {
+            $query->where('status_validasi', $sumber);
+        } else {
+            $query->where(fn ($q) => $q->where('status_validasi', '!=', 'disetujui')
+                                       ->orWhereNull('status_validasi'));
+        }
+    } else {
+        $query->where('status_validasi', 'disetujui');
+    }
+
+    $baris = $query->get(['id', 'siswa_id']);
+
+    if ($baris->isEmpty()) {
+        return back()->with('error', $aksi === 'setujui'
+            ? 'Tidak ada absensi yang perlu divalidasi pada filter tersebut (semuanya sudah tervalidasi atau datanya belum ada).'
+            : 'Tidak ada absensi tervalidasi yang bisa dibatalkan pada filter tersebut.');
+    }
+
+    $isi = $aksi === 'setujui'
+        ? ['status_validasi' => 'disetujui', 'validated_by_guru_id' => Auth::id(), 'validated_at' => now()]
+        : ['status_validasi' => 'draft', 'validated_by_guru_id' => null, 'validated_at' => null];
+
+    DB::transaction(function () use ($baris, $isi) {
+        foreach ($baris->pluck('id')->chunk(500) as $potongan) {
+            Absensi::whereIn('id', $potongan->all())->update($isi);
+        }
+    });
+
+    $totalBaris     = $baris->count();
+    $siswaTerdampak = $baris->pluck('siswa_id')->unique()->count();
+
+    $cakupan = match ($jenis) {
+        'tanggal' => 'tanggal ' . Carbon::parse($data['tanggal'])->format('d/m/Y'),
+        'rentang' => 'rentang ' . Carbon::parse($data['tanggal_mulai'])->format('d/m/Y')
+            . ' - ' . Carbon::parse($data['tanggal_selesai'])->format('d/m/Y'),
+        default   => 'seluruh riwayat absensi',
+    };
+
+    $lingkup = $siswaTerdampak === 1
+        ? ('siswa ' . $siswa->firstWhere('id', $baris->first()->siswa_id)?->name . ' (NISN ' . $siswa->firstWhere('id', $baris->first()->siswa_id)?->nisn . ')')
+        : ($siswaTerdampak . ' siswa');
+
+    $pesan = $aksi === 'setujui'
+        ? "Validasi absensi berhasil: {$totalBaris} baris milik {$lingkup} kini TERVALIDASI (disetujui) pada {$cakupan}."
+        : "Validasi dibatalkan: {$totalBaris} baris milik {$lingkup} dikembalikan ke draft pada {$cakupan}.";
+
+    if (! empty($statusFilter)) {
+        $pesan .= ' Hanya status ' . implode(', ', $statusFilter) . ' yang diproses.';
+    }
+
+    $pesan .= ' Status kehadiran, jam absen, dan foto bukti tidak diubah.';
+
+    if (! empty($tidakDitemukan)) {
+        $contoh = implode(', ', array_slice($tidakDitemukan, 0, 5));
+        $sisa   = count($tidakDitemukan) - 5;
+        $pesan .= ' NISN tidak ditemukan (' . count($tidakDitemukan) . '): ' . $contoh . ($sisa > 0 ? " dan {$sisa} lainnya." : '.');
+    }
+
+    return back()->with('success', $pesan);
+}
+
+/**
  * ATUR JUMLAH ABSENSI (Hadir / Izin / Sakit / Alpha) + JADWAL HARI KERJA.
  *
+ * CATATAN: fitur ini TIDAK ikut memvalidasi absensi. Status validasi baris
+ * lama dibiarkan apa adanya dan baris baru dibuat sebagai 'draft'. Gunakan
+ * fitur "Validasi Absensi" untuk menyetujui / membatalkan validasi.
+ *
  * Dipakai admin untuk MENIMPA rekap absensi:
- *  - mode "nisn"  : satu siswa hasil pencarian NISN
+ *  - mode "nisn"  : satu ATAU beberapa siswa sekaligus (NISN boleh lebih dari
+ *                   satu, dipisah koma / titik koma / spasi / baris baru)
  *  - mode "semua" : seluruh siswa PKL periode berjalan
  *
  * Aturan penting:
@@ -893,7 +1614,8 @@ public function aturRekapAbsensi(Request $request)
 {
     $data = $request->validate([
         'mode'            => ['required', Rule::in(['nisn', 'semua'])],
-        'nisn'            => ['required_if:mode,nisn', 'nullable', 'string', 'max:20'],
+        // Boleh berisi BANYAK NISN sekaligus (dipisah koma/spasi/baris baru).
+        'nisn'            => ['required_if:mode,nisn', 'nullable', 'string', 'max:5000'],
         'tanggal_mulai'   => ['required', 'date'],
         'tanggal_selesai' => ['required', 'date', 'after_or_equal:tanggal_mulai'],
         'jumlah_hadir'    => ['required', 'integer', 'min:0', 'max:400'],
@@ -939,21 +1661,46 @@ public function aturRekapAbsensi(Request $request)
     $paksaTanggal = $satuHari && $request->boolean('paksa_tanggal');
 
     // ---- Tentukan siswa sasaran ----
+    $nisnTidakDitemukan = [];
+
     if ($data['mode'] === 'nisn') {
-        $nisn  = trim((string) ($data['nisn'] ?? ''));
-        $siswa = User::siswa()->withoutTrashed()->where('nisn', $nisn)->first();
+        // BOLEH LEBIH DARI SATU NISN: dipisah koma, titik koma, spasi, atau
+        // baris baru (bisa langsung ditempel dari Excel).
+        $daftarNisn = $this->pecahDaftar($data['nisn'] ?? '');
 
-        if (! $siswa) {
-            return back()->with('error', "Siswa dengan NISN {$nisn} tidak ditemukan.");
+        if (empty($daftarNisn)) {
+            return back()->with('error', 'Masukkan minimal satu NISN.');
         }
 
-        // Jadwal khusus siswa ini (mis. tetap masuk sampai Sabtu).
-        if ($jadwalBaru !== '' && $jadwalBaru !== (string) ($siswa->hari_kerja ?? '')) {
-            $siswa->hari_kerja = $jadwalBaru;
-            $siswa->save();
+        if (count($daftarNisn) > 300) {
+            return back()->with('error', 'Terlalu banyak NISN sekaligus. Maksimal 300 NISN per proses.');
         }
 
-        $sasaran = collect([$siswa]);
+        $sasaran = User::siswa()->withoutTrashed()
+            ->whereIn('nisn', $daftarNisn)
+            ->orderBy('name')
+            ->get();
+
+        $nisnTidakDitemukan = array_values(array_diff(
+            $daftarNisn,
+            $sasaran->pluck('nisn')->map(fn ($n) => (string) $n)->all()
+        ));
+
+        if ($sasaran->isEmpty()) {
+            return back()->with('error', 'Tidak ada siswa yang cocok dengan NISN: '
+                . implode(', ', array_slice($daftarNisn, 0, 10))
+                . (count($daftarNisn) > 10 ? ' ...' : '') . '.');
+        }
+
+        // Jadwal khusus untuk siswa yang dipilih (mis. tetap masuk sampai Sabtu).
+        if ($jadwalBaru !== '') {
+            foreach ($sasaran as $siswaSasaran) {
+                if ($jadwalBaru !== (string) ($siswaSasaran->hari_kerja ?? '')) {
+                    $siswaSasaran->hari_kerja = $jadwalBaru;
+                    $siswaSasaran->save();
+                }
+            }
+        }
     } else {
         // Operasi tulis massal: SENGAJA dibatasi siswa periode berjalan agar
         // arsip angkatan lama tidak ikut ditimpa.
@@ -1001,13 +1748,26 @@ public function aturRekapAbsensi(Request $request)
     };
 
     // Validasi awal khusus mode NISN supaya pesannya jelas (bukan "dilewati").
+    // Dengan banyak NISN, jadwal hari kerja tiap siswa bisa berbeda: dipakai
+    // siswa dengan hari kerja TERBANYAK sebagai acuan. Siswa lain yang hari
+    // kerjanya tidak mencukupi tetap dilaporkan sebagai "dilewati".
     if ($data['mode'] === 'nisn') {
-        $cek = $hariKerjaSiswa($sasaran->first());
+        $maksHariKerja = 0;
+        $siswaAcuan    = $sasaran->first();
 
-        if ($totalDiminta > count($cek)) {
-            return back()->with('error', 'Total ' . $totalDiminta . ' hari melebihi ' . count($cek)
+        foreach ($sasaran as $siswaCek) {
+            $tersedia = count($hariKerjaSiswa($siswaCek));
+
+            if ($tersedia > $maksHariKerja) {
+                $maksHariKerja = $tersedia;
+                $siswaAcuan    = $siswaCek;
+            }
+        }
+
+        if ($totalDiminta > $maksHariKerja) {
+            return back()->with('error', 'Total ' . $totalDiminta . ' hari melebihi ' . $maksHariKerja
                 . ' hari kerja yang tersedia pada rentang ' . $mulai->format('d/m/Y') . ' - ' . $selesai->format('d/m/Y')
-                . ' (jadwal ' . $sasaran->first()->labelHariKerja() . '). Perlebar rentang tanggal atau kurangi jumlahnya.');
+                . ' (jadwal ' . $siswaAcuan->labelHariKerja() . '). Perlebar rentang tanggal atau kurangi jumlahnya.');
         }
     }
 
@@ -1134,9 +1894,10 @@ public function aturRekapAbsensi(Request $request)
                         }
                     }
 
-                    $row->status_validasi      = 'disetujui';
-                    $row->validated_by_guru_id = $row->validated_by_guru_id ?: $adminId;
-                    $row->validated_at         = $row->validated_at ?: $now;
+                    // PENTING: status VALIDASI SENGAJA TIDAK DISENTUH di sini.
+                    // "Atur Jumlah" hanya mengurus jumlah hari tiap status
+                    // kehadiran. Menyetujui / membatalkan validasi dikerjakan
+                    // terpisah lewat fitur "Validasi Absensi".
 
                     $row->save();
                     $totalUbah++;
@@ -1154,9 +1915,11 @@ public function aturRekapAbsensi(Request $request)
                     'jam_masuk'            => $status === 'Hadir' ? $jamMasuk  : null,
                     'jam_pulang'           => $status === 'Hadir' ? $jamPulang : null,
                     'foto_bukti'           => null,
-                    'status_validasi'      => 'disetujui',
-                    'validated_by_guru_id' => $adminId,
-                    'validated_at'         => $now,
+                    // Baris baru dibuat sebagai DRAFT (belum tervalidasi).
+                    // Validasi dilakukan lewat fitur "Validasi Absensi".
+                    'status_validasi'      => 'draft',
+                    'validated_by_guru_id' => null,
+                    'validated_at'         => null,
                     'created_at'           => $now,
                     'updated_at'           => $now,
                 ];
@@ -1203,7 +1966,8 @@ public function aturRekapAbsensi(Request $request)
     $pesan = "Rekap absensi {$lingkup} berhasil diatur ({$ringkas}) pada "
         . $mulai->format('d/m/Y') . ' - ' . $selesai->format('d/m/Y')
         . ". {$totalUbah} baris lama diubah statusnya (foto bukti & jam absen tetap utuh), "
-        . "{$totalBaris} baris baru dibuat dengan jam tepat waktu.";
+        . "{$totalBaris} baris baru dibuat dengan jam tepat waktu."
+        . ' Status validasi TIDAK diubah (baris baru berstatus draft) -- gunakan menu "Validasi Absensi" untuk memvalidasi.';
 
     if ($totalHapus > 0) {
         $pesan .= " {$totalHapus} baris lama dihapus karena opsi reset dicentang.";
@@ -1213,6 +1977,13 @@ public function aturRekapAbsensi(Request $request)
         $contoh = implode(', ', array_slice($siswaDilewati, 0, 3));
         $sisa   = count($siswaDilewati) - 3;
         $pesan .= ' Dilewati ' . count($siswaDilewati) . ' siswa karena hari kerjanya tidak mencukupi: '
+            . $contoh . ($sisa > 0 ? " dan {$sisa} lainnya." : '.');
+    }
+
+    if (! empty($nisnTidakDitemukan)) {
+        $contoh = implode(', ', array_slice($nisnTidakDitemukan, 0, 5));
+        $sisa   = count($nisnTidakDitemukan) - 5;
+        $pesan .= ' NISN tidak ditemukan (' . count($nisnTidakDitemukan) . '): '
             . $contoh . ($sisa > 0 ? " dan {$sisa} lainnya." : '.');
     }
 

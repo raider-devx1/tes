@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Jurnal;
 use App\Models\User;
 use App\Support\ImageCompressor;
+use App\Support\TandaTangan;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -178,6 +179,9 @@ class JurnalController extends Controller
             }
         }
 
+        // Hapus juga tanda tangan digital instruktur (bila ada)
+        TandaTangan::hapus($jurnal->ttd_instruktur);
+
         $jurnal->delete();
 
         return redirect()->route('siswa.jurnal.index')
@@ -187,37 +191,49 @@ class JurnalController extends Controller
     // ===================== AJUKAN (SISWA) =====================
 
     /**
-     * Siswa mengunggah foto bukti fisik + mengetik ulang catatan instruktur.
-     * foto_bukti & catatan_instruktur WAJIB. Status -> diajukan.
+     * ALUR BARU: siswa TIDAK lagi mengunggah foto lembar berparaf.
+     * Instruktur menandatangani LANGSUNG di web (kanvas tanda tangan, ramah HP).
+     * catatan_instruktur & ttd_instruktur WAJIB. Status -> diajukan.
      */
     public function ajukanSiswa(Request $request, $id)
     {
         $jurnal = Jurnal::where('id', $id)->where('siswa_id', Auth::id())->firstOrFail();
 
         $validated = $request->validate([
-            'catatan_instruktur' => 'required|string',
-            'foto_bukti'         => 'required|image|mimes:jpeg,png,jpg|max:3072',
+            'catatan_instruktur'  => 'required|string',
+            'ttd_instruktur'      => ['required', 'string', function ($atribut, $nilai, $gagal) {
+                if (! TandaTangan::valid($nilai)) {
+                    $gagal('Tanda tangan digital tidak terbaca. Mohon minta instruktur menandatangani ulang.');
+                }
+            }],
         ], [
             'catatan_instruktur.required' => 'Catatan/nilai dari instruktur wajib diketik ulang.',
-            'foto_bukti.required'         => 'Foto bukti fisik lembar berparaf wajib diunggah.',
-            'foto_bukti.image'            => 'File harus berupa gambar.',
-            'foto_bukti.mimes'            => 'Format foto harus jpeg, png, atau jpg.',
-            'foto_bukti.max'              => 'Ukuran foto maksimal 3MB.',
+            'ttd_instruktur.required'     => 'Tanda tangan digital instruktur wajib diisi.',
         ]);
 
-        if ($jurnal->foto_bukti) {
-            Storage::disk('public')->delete($jurnal->foto_bukti);
+        $path = TandaTangan::simpan($validated['ttd_instruktur'], 'ttd/jurnal');
+
+        if (! $path) {
+            return back()->with('error', 'Tanda tangan digital gagal disimpan. Silakan coba lagi.');
         }
-        $path = ImageCompressor::store($request->file('foto_bukti'), 'bukti_fisik/jurnal');
+
+        // Pengajuan ulang: buang tanda tangan lama agar storage tidak menumpuk
+        TandaTangan::hapus($jurnal->ttd_instruktur);
+
+        // Nama instruktur TIDAK diketik lagi: diambil otomatis dari data perusahaan siswa.
+        $namaTtd = Auth::user()->instruktur->name ?? null;
+        $namaTtd = $namaTtd === 'Belum Diatur' ? null : $namaTtd;
 
         $jurnal->update([
-            'catatan_instruktur' => $validated['catatan_instruktur'],
-            'foto_bukti'         => $path,
-            'status'             => 'diajukan',
+            'catatan_instruktur'  => $validated['catatan_instruktur'],
+            'ttd_instruktur'      => $path,
+            'ttd_instruktur_nama' => $namaTtd,
+            'ttd_signed_at'       => now(),
+            'status'              => 'diajukan',
         ]);
 
         return redirect()->route('siswa.jurnal.index')
-            ->with('success', 'Jurnal berhasil diajukan ke Guru Pembimbing untuk divalidasi.');
+            ->with('success', 'Jurnal berhasil diajukan. Tanda tangan instruktur otomatis tercetak pada kolom paraf.');
     }
 
     // ===================== VALIDASI (GURU) =====================

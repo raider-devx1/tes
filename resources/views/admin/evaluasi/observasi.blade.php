@@ -64,6 +64,238 @@
                     </div>
                 </div>
 
+                {{-- ========= VALIDASI OBSERVASI: BEBERAPA NISN SEKALIGUS / SEMUA SISWA ========= --}}
+                @php
+                    $observasiValidasiList = ($siswaList ?? collect())->map(fn ($s) => [
+                        'nisn'      => (string) ($s->nisn ?? ''),
+                        'name'      => $s->name,
+                        'statusPkl' => $s->status_pkl ?? '-',
+                    ])->values();
+                @endphp
+                <div x-data="validasiObservasiMassal(@js($observasiValidasiList), @js(route('admin.evaluasi.observasi.validasi-pratinjau')))"
+                     x-effect="document.body.style.overflow = bukaMassal ? 'hidden' : ''"
+                     class="mb-6 rounded-2xl border-2 border-[#05b169]/30 bg-white p-4 sm:p-5 shadow-sm flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                    <div>
+                        <h3 class="text-base font-bold tracking-tight text-black">Validasi Observasi</h3>
+                        <p class="text-xs font-medium text-[#5b616e]">
+                            Memvalidasi atau membatalkan validasi lembar observasi <span class="font-bold text-black">tanpa membuka satu per satu</span>:
+                            bisa <span class="font-bold text-black">beberapa NISN sekaligus</span> atau <span class="font-bold text-black">semua siswa</span>,
+                            dengan filter <span class="font-bold text-black">hari tertentu</span>, <span class="font-bold text-black">rentang tanggal</span>, atau seluruh riwayat.
+                            Isi observasi, bukti foto, dan paraf digital tidak diubah.
+                        </p>
+                    </div>
+                    <button type="button" @click="bukaModal()"
+                            class="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-[#05b169] px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:opacity-90 focus:outline-none focus:ring-4 focus:ring-[#05b169]/30 shrink-0">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        Validasi Observasi
+                    </button>
+
+                    <template x-teleport="body">
+                        <div x-show="bukaMassal" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4" @keydown.escape.window="bukaMassal = false">
+                            <div class="absolute inset-0 bg-black/50" @click="bukaMassal = false"></div>
+                            <div class="relative flex max-h-[90vh] w-full max-w-2xl flex-col rounded-2xl bg-white shadow-xl">
+                                <div class="flex items-center justify-between border-b border-gray-100 px-5 py-4">
+                                    <div>
+                                        <h3 class="text-base font-bold text-gray-800">Validasi Observasi Massal</h3>
+                                        <p class="text-xs font-medium text-[#5b616e]">Pilih lingkup siswa dan tanggalnya, periksa dulu jumlahnya, lalu setujui atau batalkan validasinya.</p>
+                                    </div>
+                                    <button type="button" @click="bukaMassal = false" class="text-2xl leading-none text-gray-400 hover:text-black">&times;</button>
+                                </div>
+
+                                <form method="POST" action="{{ route('admin.evaluasi.observasi.validasi-massal') }}" x-ref="formValidasiMassal" @submit.prevent
+                                      class="overflow-y-auto px-5 py-4 space-y-4 text-left">
+                                    @csrf
+                                    <input type="hidden" name="mode" :value="mode">
+                                    <input type="hidden" name="jenis_tanggal" :value="jenisTanggal">
+                                    <input type="hidden" name="nisn" :value="mode === 'nisn' ? daftarNisn.join(',') : ''">
+                                    <input type="hidden" name="aksi" x-ref="inputAksi" value="setujui">
+
+                                    {{-- Lingkup siswa --}}
+                                    <div class="flex gap-2">
+                                        <button type="button" @click="setMode('nisn')" :class="mode==='nisn' ? 'bg-[#0047d6] text-white' : 'bg-gray-100 text-gray-600'" class="flex-1 rounded-lg px-3 py-2 text-sm font-semibold">Per Siswa (NISN)</button>
+                                        <button type="button" @click="setMode('semua')" :class="mode==='semua' ? 'bg-[#0047d6] text-white' : 'bg-gray-100 text-gray-600'" class="flex-1 rounded-lg px-3 py-2 text-sm font-semibold">Semua Siswa</button>
+                                    </div>
+
+                                    {{-- NISN: boleh lebih dari satu --}}
+                                    <div x-show="mode==='nisn'" x-cloak>
+                                        <label class="mb-1 block text-xs font-bold uppercase tracking-wide text-black">
+                                            NISN Siswa
+                                            <span class="ml-1 rounded bg-[#0047d6]/10 px-1.5 py-0.5 text-[10px] font-bold normal-case tracking-normal text-[#0047d6]">boleh lebih dari satu</span>
+                                        </label>
+                                        <textarea x-model="nisnInput" rows="2"
+                                                  placeholder="Tulis / tempel beberapa NISN, pisahkan dengan koma, spasi, atau baris baru. Contoh: 0012345678, 0012345679"
+                                                  class="w-full rounded-xl border-2 border-[#0047d6]/25 bg-white px-4 py-2.5 text-sm font-medium text-black placeholder-[#a8acb3] focus:border-[#0047d6] focus:ring-2 focus:ring-[#0047d6]/30"></textarea>
+
+                                        <div class="mt-2 flex flex-wrap items-center gap-2">
+                                            <button type="button" @click="isiSemuaAktif()" class="rounded-lg border-2 border-[#0047d6]/30 bg-white px-3 py-1.5 text-[11px] font-bold text-[#0047d6] hover:bg-[#0047d6]/10">Isi semua siswa aktif</button>
+                                            <button type="button" @click="kosongkanNisn()" x-show="daftarNisn.length" x-cloak class="rounded-lg border-2 border-[#cf202f]/30 bg-white px-3 py-1.5 text-[11px] font-bold text-[#cf202f] hover:bg-[#cf202f]/10">Kosongkan</button>
+                                            <span x-show="daftarNisn.length" x-cloak class="text-[11px] font-bold text-[#5b616e]">
+                                                Terbaca <span x-text="daftarNisn.length"></span> NISN &middot; cocok <span class="text-[#05b169]" x-text="nisnCocok.length"></span>
+                                                <span x-show="nisnTidakCocok.length" class="text-[#cf202f]">&middot; <span x-text="nisnTidakCocok.length"></span> tidak ditemukan</span>
+                                            </span>
+                                        </div>
+
+                                        {{-- Chip NISN: klik untuk membuang --}}
+                                        <div x-show="daftarNisn.length" x-cloak class="mt-2 flex flex-wrap gap-1.5">
+                                            <template x-for="n in nisnCocok" :key="'ok-' + n">
+                                                <button type="button" @click="hapusNisn(n)" class="inline-flex items-center gap-1 rounded-full bg-[#0047d6]/10 px-2.5 py-1 text-[11px] font-bold text-[#0047d6] hover:bg-[#0047d6]/20">
+                                                    <span x-text="namaNisn(n)"></span>
+                                                    <span class="text-sm leading-none">&times;</span>
+                                                </button>
+                                            </template>
+                                            <template x-for="n in nisnTidakCocok" :key="'no-' + n">
+                                                <button type="button" @click="hapusNisn(n)" class="inline-flex items-center gap-1 rounded-full bg-[#cf202f]/10 px-2.5 py-1 text-[11px] font-bold text-[#cf202f] hover:bg-[#cf202f]/20">
+                                                    <span x-text="n + ' (tidak ada)'"></span>
+                                                    <span class="text-sm leading-none">&times;</span>
+                                                </button>
+                                            </template>
+                                        </div>
+                                    </div>
+
+                                    {{-- Mode semua siswa --}}
+                                    <div x-show="mode==='semua'" x-cloak class="space-y-2 rounded-xl border-2 border-[#d98200]/30 bg-[#d98200]/5 px-4 py-3">
+                                        <p class="text-xs font-bold text-[#d98200]">Aksi ini berlaku untuk SEMUA siswa PKL periode berjalan.</p>
+                                        <label class="flex items-start gap-2 text-[11px] font-medium text-[#5b616e]">
+                                            <input type="checkbox" name="semua_periode" value="1" x-model="semuaPeriode" @change="hasil = null" class="mt-0.5 rounded border-[#d98200]/40 text-[#d98200] focus:ring-[#d98200]">
+                                            <span>Sertakan juga siswa dari <span class="font-bold">semua periode</span>, termasuk arsip angkatan lama.</span>
+                                        </label>
+                                    </div>
+
+                                    {{-- Cakupan tanggal --}}
+                                    <div>
+                                        <label class="mb-1 block text-xs font-bold uppercase tracking-wide text-black">Cakupan Tanggal</label>
+                                        <div class="flex flex-wrap gap-2">
+                                            <button type="button" @click="setJenis('tanggal')" :class="jenisTanggal==='tanggal' ? 'bg-[#0047d6] text-white' : 'bg-white text-[#0047d6] hover:bg-[#0047d6]/10'" class="rounded-lg border-2 border-[#0047d6]/30 px-3 py-1.5 text-[11px] font-bold">Hari Tertentu</button>
+                                            <button type="button" @click="setJenis('rentang')" :class="jenisTanggal==='rentang' ? 'bg-[#0047d6] text-white' : 'bg-white text-[#0047d6] hover:bg-[#0047d6]/10'" class="rounded-lg border-2 border-[#0047d6]/30 px-3 py-1.5 text-[11px] font-bold">Rentang Tanggal</button>
+                                            <button type="button" @click="setJenis('semua')" :class="jenisTanggal==='semua' ? 'bg-[#0047d6] text-white' : 'bg-white text-[#0047d6] hover:bg-[#0047d6]/10'" class="rounded-lg border-2 border-[#0047d6]/30 px-3 py-1.5 text-[11px] font-bold">Seluruh Riwayat</button>
+                                        </div>
+
+                                        <div x-show="jenisTanggal==='tanggal'" x-cloak class="mt-2">
+                                            <input type="date" name="tanggal" x-model="tanggal" @change="hasil = null"
+                                                   class="w-full rounded-xl border-2 border-[#0047d6]/25 bg-white px-3 py-2.5 text-sm font-medium text-black focus:border-[#0047d6] focus:ring-2 focus:ring-[#0047d6]/30">
+                                        </div>
+
+                                        <div x-show="jenisTanggal==='rentang'" x-cloak class="mt-2 grid grid-cols-2 gap-3">
+                                            <div>
+                                                <label class="mb-1 block text-[11px] font-bold uppercase tracking-wide text-[#5b616e]">Tanggal Mulai</label>
+                                                <input type="date" name="tanggal_mulai" x-model="mulai" @change="hasil = null"
+                                                       class="w-full rounded-xl border-2 border-[#0047d6]/25 bg-white px-3 py-2.5 text-sm font-medium text-black focus:border-[#0047d6] focus:ring-2 focus:ring-[#0047d6]/30">
+                                            </div>
+                                            <div>
+                                                <label class="mb-1 block text-[11px] font-bold uppercase tracking-wide text-[#5b616e]">Tanggal Selesai</label>
+                                                <input type="date" name="tanggal_selesai" x-model="selesai" @change="hasil = null"
+                                                       class="w-full rounded-xl border-2 border-[#0047d6]/25 bg-white px-3 py-2.5 text-sm font-medium text-black focus:border-[#0047d6] focus:ring-2 focus:ring-[#0047d6]/30">
+                                            </div>
+                                        </div>
+
+                                        <div x-show="jenisTanggal !== 'semua'" x-cloak class="mt-2 flex flex-wrap items-center gap-2">
+                                            <span class="text-[11px] font-bold uppercase tracking-wide text-[#5b616e]">Pintasan:</span>
+                                            <button type="button" @click="pilihTanggal('hariIni')" class="rounded-lg border-2 border-[#0047d6]/30 bg-white px-3 py-1.5 text-[11px] font-bold text-[#0047d6] hover:bg-[#0047d6]/10">Hari Ini</button>
+                                            <button type="button" @click="pilihTanggal('kemarin')" class="rounded-lg border-2 border-[#0047d6]/30 bg-white px-3 py-1.5 text-[11px] font-bold text-[#0047d6] hover:bg-[#0047d6]/10">Kemarin</button>
+                                            <button type="button" @click="pilihTanggal('7hari')" class="rounded-lg border-2 border-[#0047d6]/30 bg-white px-3 py-1.5 text-[11px] font-bold text-[#0047d6] hover:bg-[#0047d6]/10">7 Hari Terakhir</button>
+                                            <button type="button" @click="pilihTanggal('bulanIni')" class="rounded-lg border-2 border-[#0047d6]/30 bg-white px-3 py-1.5 text-[11px] font-bold text-[#0047d6] hover:bg-[#0047d6]/10">Bulan Ini</button>
+                                            <button type="button" @click="pilihTanggal('bulanLalu')" class="rounded-lg border-2 border-[#0047d6]/30 bg-white px-3 py-1.5 text-[11px] font-bold text-[#0047d6] hover:bg-[#0047d6]/10">Bulan Lalu</button>
+                                        </div>
+
+                                        <p x-show="jenisTanggal==='semua'" x-cloak class="mt-2 text-[11px] font-bold text-[#cf202f]">Seluruh riwayat observasi siswa terpilih akan diproses (tanpa batas tanggal).</p>
+                                    </div>
+
+                                    {{-- Sumber status yang ikut disetujui --}}
+                                    <div>
+                                        <label class="mb-1 block text-xs font-bold uppercase tracking-wide text-black">Observasi Yang Ikut Divalidasi</label>
+                                        <select name="sumber" x-model="sumber" @change="hasil = null"
+                                                class="w-full rounded-xl border-2 border-[#0047d6]/25 bg-white px-3 py-2.5 text-sm font-medium text-black focus:border-[#0047d6] focus:ring-2 focus:ring-[#0047d6]/30">
+                                            <option value="semua">Semua yang belum tervalidasi (Draft + Diajukan)</option>
+                                            <option value="diajukan">Hanya yang berstatus Diajukan</option>
+                                            <option value="draft">Hanya yang berstatus Draft</option>
+                                        </select>
+                                        <p class="mt-1 text-[11px] font-medium text-[#5b616e]">Pilihan ini hanya berpengaruh pada aksi <span class="font-bold">Setujui</span>. Pembatalan selalu menyasar observasi yang berstatus <span class="font-bold">Tervalidasi</span>.</p>
+                                    </div>
+
+                                    {{-- Pratinjau --}}
+                                    <div class="rounded-xl bg-slate-50 px-4 py-3">
+                                        <div class="flex flex-wrap items-center justify-between gap-2">
+                                            <p class="text-xs font-bold text-gray-700">Cakupan: <span class="font-medium text-[#5b616e]" x-text="labelCakupan"></span></p>
+                                            <button type="button" @click="periksa()" :disabled="memuat" :class="memuat ? 'opacity-40 cursor-not-allowed' : 'hover:bg-[#0047d6]/10'"
+                                                    class="rounded-lg border-2 border-[#0047d6]/30 bg-white px-3 py-1.5 text-[11px] font-bold text-[#0047d6]">Periksa Dulu</button>
+                                        </div>
+
+                                        <p x-show="memuat" x-cloak class="mt-2 text-xs font-medium text-[#5b616e]">Menghitung jumlah lembar observasi...</p>
+                                        <p x-show="pesanError" x-cloak x-text="pesanError" class="mt-2 text-xs font-bold text-[#cf202f]"></p>
+
+                                        <template x-if="hasil">
+                                            <div class="mt-2">
+                                                <div class="grid grid-cols-2 gap-2 text-center sm:grid-cols-4">
+                                                    <div class="rounded-lg bg-white px-2 py-1.5">
+                                                        <p class="text-[10px] font-bold uppercase text-[#5b616e]">Total Observasi</p>
+                                                        <p class="text-base font-extrabold text-black" x-text="hasil.ringkasan.total"></p>
+                                                    </div>
+                                                    <div class="rounded-lg bg-white px-2 py-1.5">
+                                                        <p class="text-[10px] font-bold uppercase text-[#5b616e]">Draft</p>
+                                                        <p class="text-base font-extrabold text-[#5b616e]" x-text="hasil.ringkasan.draft"></p>
+                                                    </div>
+                                                    <div class="rounded-lg bg-white px-2 py-1.5">
+                                                        <p class="text-[10px] font-bold uppercase text-[#d98200]">Diajukan</p>
+                                                        <p class="text-base font-extrabold text-[#d98200]" x-text="hasil.ringkasan.diajukan"></p>
+                                                    </div>
+                                                    <div class="rounded-lg bg-white px-2 py-1.5">
+                                                        <p class="text-[10px] font-bold uppercase text-[#05b169]">Tervalidasi</p>
+                                                        <p class="text-base font-extrabold text-[#05b169]" x-text="hasil.ringkasan.tervalidasi"></p>
+                                                    </div>
+                                                </div>
+
+                                                <p class="mt-2 text-[11px] font-medium text-[#5b616e]">
+                                                    Siswa terjaring: <span class="font-bold text-black" x-text="hasil.jumlah_siswa"></span> &middot;
+                                                    belum tervalidasi: <span class="font-bold text-[#cf202f]" x-text="hasil.ringkasan.belum"></span> lembar
+                                                </p>
+
+                                                <div x-show="hasil.daftar.length" x-cloak class="mt-2 max-h-48 overflow-y-auto rounded-lg border border-gray-200 bg-white">
+                                                    <table class="w-full text-left text-[11px]">
+                                                        <thead class="bg-gray-50 text-[10px] font-bold uppercase text-[#5b616e]">
+                                                            <tr>
+                                                                <th class="px-2 py-1.5">Siswa</th>
+                                                                <th class="px-2 py-1.5 text-center">Total</th>
+                                                                <th class="px-2 py-1.5 text-center">Draft</th>
+                                                                <th class="px-2 py-1.5 text-center">Diajukan</th>
+                                                                <th class="px-2 py-1.5 text-center">Tervalidasi</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            <template x-for="row in hasil.daftar" :key="row.nisn">
+                                                                <tr class="border-t border-gray-100">
+                                                                    <td class="px-2 py-1.5">
+                                                                        <span class="font-bold text-black" x-text="row.name"></span>
+                                                                        <span class="text-[#5b616e]" x-text="' (' + row.nisn + ')'"></span>
+                                                                    </td>
+                                                                    <td class="px-2 py-1.5 text-center font-bold" x-text="row.total"></td>
+                                                                    <td class="px-2 py-1.5 text-center text-[#5b616e]" x-text="row.draft"></td>
+                                                                    <td class="px-2 py-1.5 text-center text-[#d98200]" x-text="row.diajukan"></td>
+                                                                    <td class="px-2 py-1.5 text-center text-[#05b169]" x-text="row.tervalidasi"></td>
+                                                                </tr>
+                                                            </template>
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                                <p x-show="mode==='semua' && hasil.jumlah_siswa > hasil.daftar.length" x-cloak class="mt-1 text-[10px] font-medium text-[#5b616e]">Tabel hanya menampilkan 50 siswa teratas, tetapi aksi tetap berlaku untuk seluruh siswa yang terjaring.</p>
+                                            </div>
+                                        </template>
+                                    </div>
+
+                                    {{-- Tombol aksi --}}
+                                    <div class="flex flex-wrap justify-end gap-2 pt-1">
+                                        <button type="button" @click="bukaMassal = false" class="rounded-xl border-2 border-[#0047d6]/25 bg-white px-4 py-2 text-sm font-bold text-[#0047d6] hover:bg-[#0047d6]/5">Tutup</button>
+                                        <button type="button" @click="kirim('batalkan')" :disabled="!bolehKirim" :class="!bolehKirim ? 'opacity-40 cursor-not-allowed' : 'hover:bg-[#cf202f]/5'"
+                                                class="rounded-xl border-2 border-[#cf202f] bg-white px-4 py-2 text-sm font-bold text-[#cf202f]">Batalkan Validasi</button>
+                                        <button type="button" @click="kirim('setujui')" :disabled="!bolehKirim" :class="!bolehKirim ? 'opacity-40 cursor-not-allowed' : 'hover:opacity-90'"
+                                                class="rounded-xl bg-[#05b169] px-4 py-2 text-sm font-bold text-white">Setujui (Validasi)</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </template>
+                </div>
                 {{-- FILTER FORM --}}
                 <form method="GET" action="{{ route('admin.evaluasi.observasi') }}" class="mb-6">
                     <div class="flex flex-col md:flex-row gap-3 md:items-end">
@@ -131,7 +363,7 @@
                                 <th class="px-4 py-3.5 font-bold w-80">Permasalahan</th>
                                 <th class="px-4 py-3.5 font-bold w-80">Solusi Pemecahan</th>
                                 <th class="px-4 py-3.5 text-center font-bold w-36">Status</th>
-                                <th class="px-4 py-3.5 text-center font-bold w-32">Foto</th>
+                                <th class="px-4 py-3.5 text-center font-bold w-52">Foto &amp; Paraf</th>
                                 <th class="px-4 py-3.5 text-center font-bold w-24">Cetak</th>
                                 <th class="px-4 py-3.5 text-center font-bold w-44">Aksi</th>
                             </tr>
@@ -213,22 +445,33 @@
                                         </div>
                                     </td>
 
-                                    {{-- FOTO --}}
+                                    {{-- FOTO & PARAF DIGITAL (bisa diperbesar + diunduh) --}}
                                     <td class="px-4 py-3 text-center">
-                                        @if ($obs->foto_dokumentasi || $obs->foto_lembar_observasi)
-                                            <div class="flex flex-col items-center justify-center gap-1.5">
-                                                @if ($obs->foto_dokumentasi)
-                                                    <a href="{{ asset('storage/' . $obs->foto_dokumentasi) }}" download target="_blank" rel="noopener"
-                                                       class="inline-flex items-center justify-center rounded-full bg-[#0047d6]/10 px-2.5 py-1 text-xs font-bold text-[#0047d6] transition hover:bg-[#0047d6]/20 w-24">Dokumentasi</a>
-                                                @endif
-                                                @if ($obs->foto_lembar_observasi)
-                                                    <a href="{{ asset('storage/' . $obs->foto_lembar_observasi) }}" download target="_blank" rel="noopener"
-                                                       class="inline-flex items-center justify-center rounded-full bg-[#05b169]/10 px-2.5 py-1 text-xs font-bold text-[#05b169] transition hover:bg-[#05b169]/20 w-24">Lembar</a>
-                                                @endif
-                                            </div>
-                                        @else
-                                            <span class="text-xs text-[#5b616e]">-</span>
-                                        @endif
+                                        <div class="flex flex-col items-center justify-center gap-1.5">
+                                            @if ($obs->foto_dokumentasi)
+                                                <a href="{{ asset('storage/' . $obs->foto_dokumentasi) }}" download target="_blank" rel="noopener"
+                                                   class="inline-flex items-center justify-center rounded-full bg-[#0047d6]/10 px-2.5 py-1 text-xs font-bold text-[#0047d6] transition hover:bg-[#0047d6]/20 w-28">Bukti Foto</a>
+                                            @endif
+
+                                            <x-paraf-instruktur :ttd="$obs->ttd_instruktur"
+                                                                :nama="$obs->ttd_instruktur_nama ?: ($obs->user->instruktur->name ?? null)"
+                                                                :waktu="$obs->ttd_instruktur_signed_at"
+                                                                :foto-lama="$obs->foto_lembar_observasi"
+                                                                :tinggi="38"
+                                                                judul="Paraf Instruktur — {{ $obs->user->name ?? '-' }}"
+                                                                unduh-nama="paraf-instruktur-observasi-{{ $obs->id }}"
+                                                                kosong="Belum ada paraf instruktur" />
+
+                                            <x-paraf-instruktur :ttd="$obs->ttd_guru"
+                                                                :nama="$obs->ttd_guru_nama ?: ($obs->guru->name ?? null)"
+                                                                :waktu="$obs->ttd_guru_signed_at"
+                                                                :tinggi="38"
+                                                                judul="Paraf Guru Pembimbing — {{ $obs->user->name ?? '-' }}"
+                                                                label="Paraf guru pembimbing"
+                                                                peran-label="Nama guru"
+                                                                unduh-nama="paraf-guru-observasi-{{ $obs->id }}"
+                                                                kosong="Belum ada paraf guru" />
+                                        </div>
                                     </td>
 
                                     {{-- CETAK --}}
@@ -240,7 +483,18 @@
                                     {{-- AKSI --}}
                                     <td class="px-4 py-3">
                                         <div class="flex flex-col items-center gap-2">
-                                            <button type="button" @click="konfirmValidasi(@js(route('admin.evaluasi.observasi.validasi', $obs->id)))"
+                                            <button type="button"
+                                                    @click="konfirmValidasi(@js([
+                                                        'url' => route('admin.evaluasi.observasi.validasi', $obs->id),
+                                                        'nama' => $obs->user->name,
+                                                        'nisn' => $obs->user->nisn,
+                                                        'guru_nama' => $obs->ttd_guru_nama ?: ($obs->guru->name ?? null),
+                                                        'instruktur_nama' => $obs->ttd_instruktur_nama ?: ($obs->user->instruktur->name ?? null),
+                                                        'ttd_guru_url' => $obs->ttd_guru ? asset('storage/'.$obs->ttd_guru) : null,
+                                                        'ttd_instruktur_url' => $obs->ttd_instruktur ? asset('storage/'.$obs->ttd_instruktur) : null,
+                                                        'foto_dokumentasi_url' => $obs->foto_dokumentasi ? asset('storage/'.$obs->foto_dokumentasi) : null,
+                                                        'foto_lembar_url' => $obs->foto_lembar_observasi ? asset('storage/'.$obs->foto_lembar_observasi) : null,
+                                                    ]))"
                                                     class="inline-flex w-full items-center justify-center rounded-xl bg-[#05b169] px-3 py-1.5 text-xs font-bold text-white transition hover:bg-[#049457]">
                                                 {{ $obs->status === 'tervalidasi' ? 'Validasi Ulang' : 'Validasi' }}
                                             </button>
@@ -317,6 +571,12 @@
                                                     'items' => $obs->items->map(fn($it) => ['id' => $it->id, 'permasalahan' => $it->permasalahan, 'solusi' => $it->solusi])->values(),
                                                     'foto_dokumentasi_url' => $obs->foto_dokumentasi ? asset('storage/'.$obs->foto_dokumentasi) : null,
                                                     'foto_lembar_url' => $obs->foto_lembar_observasi ? asset('storage/'.$obs->foto_lembar_observasi) : null,
+                                                    'ttd_guru_url' => $obs->ttd_guru ? asset('storage/'.$obs->ttd_guru) : null,
+                                                    'ttd_guru_waktu' => $obs->ttd_guru_signed_at ? $obs->ttd_guru_signed_at->format('d/m/Y H:i') : null,
+                                                    'ttd_instruktur_url' => $obs->ttd_instruktur ? asset('storage/'.$obs->ttd_instruktur) : null,
+                                                    'ttd_instruktur_waktu' => $obs->ttd_instruktur_signed_at ? $obs->ttd_instruktur_signed_at->format('d/m/Y H:i') : null,
+                                                    'guru_nama' => $obs->ttd_guru_nama ?: ($obs->guru->name ?? null),
+                                                    'instruktur_nama' => $obs->ttd_instruktur_nama ?: ($obs->user->instruktur->name ?? null),
                                                     'cetak_url' => route('cetak.observasi', $obs->user_id),
                                                     'validasi_url' => route('admin.evaluasi.observasi.validasi', $obs->id),
                                                     'batal_url' => route('admin.evaluasi.observasi.batal', $obs->id),
@@ -439,12 +699,49 @@
                             </div>
                         </div>
                     </template>
+
+                    {{-- PARAF DIGITAL: bisa dilihat & diunduh --}}
+                    <template x-if="detailData.ttd_instruktur_url || detailData.ttd_guru_url">
+                        <div>
+                            <p class="text-[11px] font-bold uppercase tracking-wide text-[#5b616e] mb-1">Paraf Digital</p>
+                            <div class="grid grid-cols-2 gap-2">
+                                <template x-if="detailData.ttd_instruktur_url">
+                                    <div class="rounded-xl border-2 border-[#05b169]/25 bg-white p-2 text-center">
+                                        <img :src="detailData.ttd_instruktur_url" alt="Paraf instruktur" class="mx-auto h-14 w-auto object-contain">
+                                        <p class="mt-1 text-[10px] font-bold uppercase tracking-wide text-[#05b169]">Instruktur</p>
+                                        <p class="text-[10px] font-medium text-[#5b616e]" x-text="detailData.instruktur_nama || '-'"></p>
+                                        <p class="text-[10px] text-[#5b616e]" x-text="detailData.ttd_instruktur_waktu || ''"></p>
+                                        <div class="mt-1.5 flex justify-center gap-1.5">
+                                            <a :href="detailData.ttd_instruktur_url" target="_blank" rel="noopener"
+                                               class="rounded-lg border-2 border-[#0047d6]/30 px-2 py-1 text-[10px] font-bold text-[#0047d6] hover:bg-[#0047d6]/10">Buka</a>
+                                            <a :href="detailData.ttd_instruktur_url" :download="'paraf-instruktur-observasi-' + (detailData.id || '') + '.png'"
+                                               class="rounded-lg bg-[#05b169] px-2 py-1 text-[10px] font-bold text-white hover:opacity-90">Unduh</a>
+                                        </div>
+                                    </div>
+                                </template>
+                                <template x-if="detailData.ttd_guru_url">
+                                    <div class="rounded-xl border-2 border-[#0047d6]/25 bg-white p-2 text-center">
+                                        <img :src="detailData.ttd_guru_url" alt="Paraf guru pembimbing" class="mx-auto h-14 w-auto object-contain">
+                                        <p class="mt-1 text-[10px] font-bold uppercase tracking-wide text-[#0047d6]">Guru Pembimbing</p>
+                                        <p class="text-[10px] font-medium text-[#5b616e]" x-text="detailData.guru_nama || '-'"></p>
+                                        <p class="text-[10px] text-[#5b616e]" x-text="detailData.ttd_guru_waktu || ''"></p>
+                                        <div class="mt-1.5 flex justify-center gap-1.5">
+                                            <a :href="detailData.ttd_guru_url" target="_blank" rel="noopener"
+                                               class="rounded-lg border-2 border-[#0047d6]/30 px-2 py-1 text-[10px] font-bold text-[#0047d6] hover:bg-[#0047d6]/10">Buka</a>
+                                            <a :href="detailData.ttd_guru_url" :download="'paraf-guru-observasi-' + (detailData.id || '') + '.png'"
+                                               class="rounded-lg bg-[#0047d6] px-2 py-1 text-[10px] font-bold text-white hover:opacity-90">Unduh</a>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                    </template>
                 </div>
 
                 {{-- AKSI DALAM MODAL DETAIL --}}
                 <div class="sticky bottom-0 z-10 space-y-2 border-t-2 border-[#0047d6]/10 bg-white px-5 py-4">
                     <div class="flex flex-wrap gap-2">
-                        <button type="button" @click="detailOpen = false; konfirmValidasi(detailData.validasi_url)"
+                        <button type="button" @click="detailOpen = false; konfirmValidasi(detailData)"
                                 class="flex-1 min-w-[110px] rounded-xl bg-[#05b169] px-3 py-2.5 text-xs font-bold text-white transition hover:bg-[#049457]"
                                 x-text="detailData.status === 'tervalidasi' ? 'Validasi Ulang' : 'Validasi'"></button>
                         <template x-if="detailData.status === 'tervalidasi'">
@@ -489,25 +786,71 @@
                     <button type="button" @click="validasiOpen = false" class="text-2xl leading-none text-[#5b616e] hover:text-black">&times;</button>
                 </div>
                 <p class="mb-4 text-sm text-[#5b616e]">
-                    Unggah foto dokumentasi kegiatan dan foto lembar observasi yang sudah diparaf
-                    <span class="font-semibold text-black">instruktur &amp; guru pembimbing</span>.
+                    Unggah <span class="font-semibold text-black">bukti foto observasi</span>, lalu bubuhkan
+                    <span class="font-semibold text-black">paraf digital</span> guru pembimbing &amp; instruktur langsung di layar
+                    (keduanya <span class="font-bold text-black">opsional</span>, bisa menyusul).
                     Setelah divalidasi, hasil cetak PDF menampilkan keterangan <span class="font-bold text-black">SUDAH DIVALIDASI</span>.
                 </p>
                 <form :action="validasiUrl" method="POST" enctype="multipart/form-data" class="space-y-4">
                     @csrf
                     @method('PUT')
+
+                    <template x-if="validasi.nama">
+                        <div class="rounded-xl bg-[#0047d6]/5 px-3 py-2 text-xs font-semibold text-black">
+                            Siswa: <span x-text="validasi.nama"></span>
+                            <span class="font-mono text-[11px] font-medium text-[#5b616e]" x-text="validasi.nisn ? '(NISN ' + validasi.nisn + ')' : ''"></span>
+                        </div>
+                    </template>
+
                     <div>
-                        <label class="block text-sm font-bold text-black mb-1">Foto Dokumentasi Kegiatan <span class="text-red-500">*</span></label>
-                        <input type="file" name="foto_dokumentasi" accept="image/*" required
+                        <label class="block text-sm font-bold text-black mb-1">
+                            Bukti Foto Observasi
+                            <span class="text-red-500" x-show="!validasi.foto_dokumentasi_url">*</span>
+                        </label>
+                        <input type="file" name="foto_dokumentasi" accept="image/*" :required="!validasi.foto_dokumentasi_url"
                                class="block w-full text-sm text-gray-700 file:mr-3 file:rounded-lg file:border-0 file:bg-[#0047d6] file:px-4 file:py-2 file:text-white file:font-bold">
-                        <p class="mt-1 text-xs text-gray-500">Wajib. Format JPG/JPEG/PNG, maksimal 3 MB.</p>
+                        <p class="mt-1 text-xs text-gray-500"
+                           x-text="validasi.foto_dokumentasi_url ? 'Sudah ada foto tersimpan. Kosongkan bila tidak ingin menggantinya.' : 'Wajib. Format JPG/JPEG/PNG, maksimal 3 MB.'"></p>
                     </div>
-                    <div>
-                        <label class="block text-sm font-bold text-black mb-1">Foto Lembar Observasi (Sudah Diparaf) <span class="text-red-500">*</span></label>
-                        <input type="file" name="foto_lembar_observasi" accept="image/*" required
-                               class="block w-full text-sm text-gray-700 file:mr-3 file:rounded-lg file:border-0 file:bg-[#05b169] file:px-4 file:py-2 file:text-white file:font-bold">
-                        <p class="mt-1 text-xs text-gray-500">Wajib. Foto lembar fisik yang sudah diparaf instruktur &amp; guru pembimbing.</p>
+
+                    {{-- PARAF DIGITAL GURU PEMBIMBING (OPSIONAL) --}}
+                    <div class="rounded-xl border-2 border-[#0047d6]/15 p-3">
+                        <template x-if="validasi.ttd_guru_url">
+                            <div class="mb-2 rounded-lg bg-[#0047d6]/5 p-2 text-center">
+                                <p class="text-[11px] font-bold uppercase tracking-wide text-[#0047d6]">Paraf guru tersimpan</p>
+                                <img :src="validasi.ttd_guru_url" alt="Paraf guru pembimbing" class="mx-auto mt-1 h-12 w-auto object-contain">
+                                <label class="mt-1 inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#cf202f]">
+                                    <input type="checkbox" name="hapus_ttd_guru" value="1" class="rounded border-[#cf202f]/40 text-[#cf202f] focus:ring-[#cf202f]">
+                                    Hapus paraf guru ini
+                                </label>
+                            </div>
+                        </template>
+                        <x-ttd-pad name="ttd_guru" label="Paraf Digital Guru Pembimbing (Opsional)" :tinggi="150" :wajib="false" />
+                        <p class="mt-1 text-[11px] text-[#5b616e]">Diparaf oleh: <span class="font-semibold text-black" x-text="namaGuruValidasi"></span></p>
                     </div>
+
+                    {{-- PARAF DIGITAL INSTRUKTUR (OPSIONAL) --}}
+                    <div class="rounded-xl border-2 border-[#05b169]/20 p-3">
+                        <template x-if="validasi.ttd_instruktur_url">
+                            <div class="mb-2 rounded-lg bg-[#05b169]/5 p-2 text-center">
+                                <p class="text-[11px] font-bold uppercase tracking-wide text-[#05b169]">Paraf instruktur tersimpan</p>
+                                <img :src="validasi.ttd_instruktur_url" alt="Paraf instruktur" class="mx-auto mt-1 h-12 w-auto object-contain">
+                                <label class="mt-1 inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#cf202f]">
+                                    <input type="checkbox" name="hapus_ttd_instruktur" value="1" class="rounded border-[#cf202f]/40 text-[#cf202f] focus:ring-[#cf202f]">
+                                    Hapus paraf instruktur ini
+                                </label>
+                            </div>
+                        </template>
+                        <x-ttd-pad name="ttd_instruktur" label="Paraf Digital Instruktur (Opsional)" :tinggi="150" :wajib="false" />
+                        <p class="mt-1 text-[11px] text-[#5b616e]">Diparaf oleh: <span class="font-semibold text-black" x-text="namaInstrukturValidasi"></span></p>
+                    </div>
+
+                    <template x-if="validasi.foto_lembar_url">
+                        <div class="rounded-xl bg-[#d98200]/5 px-3 py-2 text-[11px] font-medium text-[#5b616e]">
+                            Data lama: <a :href="validasi.foto_lembar_url" target="_blank" rel="noopener" class="font-bold text-[#d98200] underline">foto lembar berparaf</a>
+                            masih tersimpan dan tetap bisa dilihat/dicetak.
+                        </div>
+                    </template>
                     <div class="flex justify-end gap-2 pt-2">
                         <button type="button" @click="validasiOpen = false" class="rounded-xl border-2 border-[#0047d6]/25 bg-white px-4 py-2 text-sm font-bold text-[#0047d6] transition hover:bg-[#0047d6]/5">Batal</button>
                         <button type="submit" class="rounded-xl bg-[#05b169] px-4 py-2 text-sm font-bold text-white transition hover:bg-[#049457]">Simpan &amp; Validasi</button>
@@ -678,6 +1021,7 @@
                 detailData: {},
                 validasiOpen: false,
                 validasiUrl: '',
+                validasi: {},
                 batalOpen: false,
                 batalUrl: '',
 
@@ -731,8 +1075,243 @@
 
                 simpan(e) { if (!this.siswaCocok) e.preventDefault(); },
                 konfirmHapus(url) { this.hapusUrl = url; this.hapusOpen = true; },
-                konfirmValidasi(url) { this.validasiUrl = url; this.validasiOpen = true; },
+                /* Nama otomatis di bawah kotak paraf (tanpa isian manual). */
+                get namaGuruValidasi() {
+                    const n = this.validasi.guru_nama || '';
+                    return (n && n !== '-' && n !== 'Belum Diatur') ? n : 'Guru pembimbing (nama belum diatur)';
+                },
+                get namaInstrukturValidasi() {
+                    const n = this.validasi.instruktur_nama || '';
+                    return (n && n !== '-' && n !== 'Belum Diatur') ? n : 'Instruktur (nama belum diatur admin)';
+                },
+
+                /* Bersihkan kanvas paraf supaya tidak terbawa dari baris sebelumnya. */
+                resetParaf() {
+                    this.$nextTick(() => {
+                        document.querySelectorAll('[data-ttd] [data-ttd-clear]').forEach((tombol) => tombol.click());
+                    });
+                },
+
+                /* Menerima URL (string) atau objek data baris (desktop & modal detail). */
+                konfirmValidasi(d) {
+                    const data = (typeof d === 'string') ? { url: d } : Object.assign({}, d || {});
+
+                    data.url = data.url || data.validasi_url || '';
+
+                    this.validasi = data;
+                    this.validasiUrl = data.url;
+                    this.resetParaf();
+                    this.validasiOpen = true;
+                },
                 konfirmBatal(url) { this.batalUrl = url; this.batalOpen = true; },
+            };
+        };
+
+        /* =================================================================
+           VALIDASI OBSERVASI MASSAL: beberapa NISN sekaligus / semua siswa
+           (mengikuti pola halaman Monitoring Jurnal admin)
+        ================================================================= */
+        window.validasiObservasiMassal = function (list, urlPratinjau) {
+            const tglStr = (d) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+
+            return {
+                bukaMassal: false,
+                mode: 'nisn',            // 'nisn' (boleh banyak) atau 'semua'
+                nisnInput: '',           // boleh memuat BANYAK NISN
+                jenisTanggal: 'rentang', // 'tanggal' | 'rentang' | 'semua'
+                tanggal: '',
+                mulai: '',
+                selesai: '',
+                sumber: 'semua',
+                semuaPeriode: false,
+                list: Array.isArray(list) ? list : [],
+                urlPratinjau: urlPratinjau,
+                memuat: false,
+                pesanError: '',
+                hasil: null,
+
+                bukaModal() {
+                    const hariIni = new Date();
+                    const awalBulan = new Date(hariIni.getFullYear(), hariIni.getMonth(), 1);
+
+                    this.bukaMassal = true;
+                    this.mode = 'nisn';
+                    this.nisnInput = '';
+                    this.jenisTanggal = 'rentang';
+                    this.tanggal = tglStr(hariIni);
+                    this.mulai = tglStr(awalBulan);
+                    this.selesai = tglStr(hariIni);
+                    this.sumber = 'semua';
+                    this.semuaPeriode = false;
+                    this.memuat = false;
+                    this.pesanError = '';
+                    this.hasil = null;
+                },
+
+                /* Daftar NISN: dipisah koma / titik koma / spasi / baris baru. */
+                get daftarNisn() {
+                    return [...new Set(
+                        String(this.nisnInput || '').split(/[^0-9A-Za-z]+/).map((x) => x.trim()).filter((x) => x !== '')
+                    )];
+                },
+
+                get nisnCocok() {
+                    if (!this.list.length) return this.daftarNisn;
+                    return this.daftarNisn.filter((n) => this.list.some((x) => String(x.nisn) === n));
+                },
+
+                get nisnTidakCocok() {
+                    if (!this.list.length) return [];
+                    return this.daftarNisn.filter((n) => !this.list.some((x) => String(x.nisn) === n));
+                },
+
+                namaNisn(n) {
+                    const s = this.list.find((x) => String(x.nisn) === String(n));
+                    return s ? (s.name + ' (' + n + ')') : String(n);
+                },
+
+                hapusNisn(n) {
+                    this.nisnInput = this.daftarNisn.filter((x) => x !== String(n)).join(', ');
+                    this.hasil = null;
+                },
+
+                kosongkanNisn() {
+                    this.nisnInput = '';
+                    this.hasil = null;
+                    this.pesanError = '';
+                },
+
+                /* Isi semua siswa PKL aktif pada daftar. */
+                isiSemuaAktif() {
+                    const berNisn = this.list.filter((x) => String(x.nisn || '') !== '');
+                    const aktif   = berNisn.filter((x) => String(x.statusPkl || '').toLowerCase() === 'aktif');
+                    const dipakai = aktif.length ? aktif : berNisn;
+
+                    this.nisnInput = dipakai.map((x) => String(x.nisn)).join(', ');
+                    this.hasil = null;
+                    this.pesanError = dipakai.length ? '' : 'Tidak ada siswa pada daftar.';
+                },
+
+                setMode(m) { this.mode = m; this.hasil = null; this.pesanError = ''; },
+                setJenis(j) { this.jenisTanggal = j; this.hasil = null; },
+
+                /* Pintasan tanggal cepat. */
+                pilihTanggal(pintasan) {
+                    const hariIni = new Date();
+
+                    if (pintasan === 'hariIni') {
+                        this.jenisTanggal = 'tanggal';
+                        this.tanggal = tglStr(hariIni);
+                    } else if (pintasan === 'kemarin') {
+                        const k = new Date(hariIni);
+                        k.setDate(k.getDate() - 1);
+                        this.jenisTanggal = 'tanggal';
+                        this.tanggal = tglStr(k);
+                    } else if (pintasan === '7hari') {
+                        const m = new Date(hariIni);
+                        m.setDate(m.getDate() - 6);
+                        this.jenisTanggal = 'rentang';
+                        this.mulai = tglStr(m);
+                        this.selesai = tglStr(hariIni);
+                    } else if (pintasan === 'bulanIni') {
+                        this.jenisTanggal = 'rentang';
+                        this.mulai = tglStr(new Date(hariIni.getFullYear(), hariIni.getMonth(), 1));
+                        this.selesai = tglStr(hariIni);
+                    } else if (pintasan === 'bulanLalu') {
+                        this.jenisTanggal = 'rentang';
+                        this.mulai = tglStr(new Date(hariIni.getFullYear(), hariIni.getMonth() - 1, 1));
+                        this.selesai = tglStr(new Date(hariIni.getFullYear(), hariIni.getMonth(), 0));
+                    }
+
+                    this.hasil = null;
+                },
+
+                get labelCakupan() {
+                    const rapi = (s) => {
+                        if (!s) return '-';
+                        const p = String(s).split('-');
+                        return p.length === 3 ? (p[2] + '/' + p[1] + '/' + p[0]) : String(s);
+                    };
+
+                    const siswa = this.mode === 'semua'
+                        ? (this.semuaPeriode ? 'semua siswa (semua periode)' : 'semua siswa periode berjalan')
+                        : (this.nisnCocok.length + ' siswa terpilih');
+
+                    let waktu = 'seluruh riwayat observasi';
+                    if (this.jenisTanggal === 'tanggal') {
+                        waktu = 'tanggal ' + rapi(this.tanggal);
+                    } else if (this.jenisTanggal === 'rentang') {
+                        waktu = 'rentang ' + rapi(this.mulai) + ' - ' + rapi(this.selesai);
+                    }
+
+                    return siswa + ' pada ' + waktu;
+                },
+
+                get bolehKirim() {
+                    if (this.memuat) return false;
+                    if (this.mode === 'nisn' && !this.nisnCocok.length) return false;
+                    if (this.jenisTanggal === 'tanggal' && !this.tanggal) return false;
+                    if (this.jenisTanggal === 'rentang' && (!this.mulai || !this.selesai)) return false;
+                    if (this.jenisTanggal === 'rentang' && this.selesai < this.mulai) return false;
+                    return true;
+                },
+
+                /* Pratinjau: hitung dulu berapa lembar observasi yang terkena aksi. */
+                async periksa() {
+                    if (this.mode === 'nisn' && !this.daftarNisn.length) {
+                        this.pesanError = 'Masukkan minimal satu NISN.';
+                        return;
+                    }
+
+                    this.memuat = true;
+                    this.pesanError = '';
+                    this.hasil = null;
+
+                    try {
+                        const p = new URLSearchParams();
+                        p.set('mode', this.mode);
+                        p.set('jenis_tanggal', this.jenisTanggal);
+                        p.set('nisn', this.mode === 'nisn' ? this.daftarNisn.join(',') : '');
+                        p.set('tanggal', this.tanggal || '');
+                        p.set('tanggal_mulai', this.mulai || '');
+                        p.set('tanggal_selesai', this.selesai || '');
+                        p.set('semua_periode', this.semuaPeriode ? '1' : '0');
+
+                        const res = await fetch(this.urlPratinjau + '?' + p.toString(), {
+                            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                        });
+                        const data = await res.json();
+
+                        if (!res.ok || !data.ok) {
+                            this.pesanError = data.pesan || 'Pratinjau gagal dimuat.';
+                            return;
+                        }
+
+                        this.hasil = data;
+
+                        if (Array.isArray(data.tidak_ditemukan) && data.tidak_ditemukan.length) {
+                            this.pesanError = data.tidak_ditemukan.length + ' NISN tidak ditemukan dan akan dilewati: '
+                                + data.tidak_ditemukan.slice(0, 5).join(', ');
+                        }
+                    } catch (e) {
+                        this.pesanError = 'Tidak dapat menghubungi server. Coba lagi.';
+                    } finally {
+                        this.memuat = false;
+                    }
+                },
+
+                kirim(aksi) {
+                    if (!this.bolehKirim) return;
+
+                    const pesan = aksi === 'setujui'
+                        ? 'Setujui (validasi) lembar observasi untuk ' + this.labelCakupan + '? Isi observasi, bukti foto, dan paraf digital tidak diubah.'
+                        : 'Batalkan validasi observasi untuk ' + this.labelCakupan + '? Lembar yang sudah tervalidasi akan dikembalikan ke draft.';
+
+                    if (!window.confirm(pesan)) return;
+
+                    this.$refs.inputAksi.value = aksi;
+                    this.$refs.formValidasiMassal.submit();
+                },
             };
         };
     </script>

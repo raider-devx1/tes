@@ -6,10 +6,13 @@ use App\Models\Nilai;
 use App\Models\Observasi;
 use App\Models\User;
 use App\Support\ImageCompressor;
+use App\Support\TandaTangan;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 
 class EvaluasiController extends Controller
 {
@@ -87,7 +90,7 @@ public function observasi(Request $request)
 
     $statusPkl = $this->statusPklValid($request->get('status_pkl', ''));
 
-    $query = Observasi::with(['user', 'guru', 'items'])
+    $query = Observasi::with(['user.perusahaan', 'guru', 'items'])
         ->whereHas('user', fn ($u) => $u->siswa()->withoutTrashed())
         ->when($request->filled('q'), function ($q) use ($request) {
             $cari = trim($request->q);
@@ -215,40 +218,87 @@ public function updateObservasi(Request $request, Observasi $observasi)
 }
 
 /**
- * VALIDASI oleh Admin — unggah foto dokumentasi kegiatan + foto lembar
- * observasi yang sudah diparaf instruktur & guru. Status -> tervalidasi.
+ * VALIDASI oleh Admin — unggah BUKTI FOTO OBSERVASI + bubuhkan PARAF
+ * DIGITAL guru pembimbing & instruktur langsung di layar (keduanya OPSIONAL).
+ *
+ * Paraf digital menggantikan unggahan foto lembar fisik berparaf pada alur
+ * lama. Kolom foto_lembar_observasi tetap dipertahankan agar data lama
+ * masih bisa dilihat & dicetak. Status -> tervalidasi.
  */
 public function validasiObservasi(Request $request, Observasi $observasi)
 {
+    // Paraf boleh kosong; bila diisi, isinya harus data URL kanvas yang sah.
+    $aturanParaf = function ($atribut, $nilai, $gagal) {
+        if (blank($nilai)) {
+            return;
+        }
+
+        if (! TandaTangan::valid($nilai)) {
+            $gagal('Paraf digital tidak terbaca. Ulangi coretan paraf pada kotak yang tersedia.');
+        }
+    };
+
     $request->validate([
-        'foto_dokumentasi'      => 'required|image|mimes:jpeg,png,jpg|max:3072',
-        'foto_lembar_observasi' => 'required|image|mimes:jpeg,png,jpg|max:3072',
+        // Bukti foto observasi hanya wajib bila memang belum pernah diunggah.
+        'foto_dokumentasi'     => [$observasi->foto_dokumentasi ? 'nullable' : 'required', 'image', 'mimes:jpeg,png,jpg', 'max:3072'],
+        // Paraf digital: OPSIONAL, boleh dibubuhkan menyusul.
+        'ttd_guru'             => ['nullable', 'string', $aturanParaf],
+        'ttd_instruktur'       => ['nullable', 'string', $aturanParaf],
+        'hapus_ttd_guru'       => ['nullable', 'boolean'],
+        'hapus_ttd_instruktur' => ['nullable', 'boolean'],
     ], [
-        'foto_dokumentasi.required'      => 'Foto dokumentasi kegiatan/kunjungan wajib diunggah.',
-        'foto_dokumentasi.image'         => 'Foto dokumentasi harus berupa gambar.',
-        'foto_dokumentasi.mimes'         => 'Format foto dokumentasi harus JPG, JPEG, atau PNG.',
-        'foto_dokumentasi.max'           => 'Ukuran foto dokumentasi maksimal 3 MB.',
-        'foto_lembar_observasi.required' => 'Foto lembar observasi yang sudah diparaf wajib diunggah.',
-        'foto_lembar_observasi.image'    => 'Foto lembar observasi harus berupa gambar.',
-        'foto_lembar_observasi.mimes'    => 'Format foto lembar observasi harus JPG, JPEG, atau PNG.',
-        'foto_lembar_observasi.max'      => 'Ukuran foto lembar observasi maksimal 3 MB.',
+        'foto_dokumentasi.required' => 'Bukti foto observasi wajib diunggah.',
+        'foto_dokumentasi.image'    => 'Bukti foto observasi harus berupa gambar.',
+        'foto_dokumentasi.mimes'    => 'Format bukti foto observasi harus JPG, JPEG, atau PNG.',
+        'foto_dokumentasi.max'      => 'Ukuran bukti foto observasi maksimal 3 MB.',
     ]);
 
-    // Hapus foto lama bila validasi ulang
-    if ($observasi->foto_dokumentasi && Storage::disk('public')->exists($observasi->foto_dokumentasi)) {
-        Storage::disk('public')->delete($observasi->foto_dokumentasi);
-    }
-    if ($observasi->foto_lembar_observasi && Storage::disk('public')->exists($observasi->foto_lembar_observasi)) {
-        Storage::disk('public')->delete($observasi->foto_lembar_observasi);
+    $isi = [
+        'status'               => 'tervalidasi',
+        'validated_by_guru_id' => $observasi->guru_id ?? Auth::id(),
+        'validated_at'         => now(),
+    ];
+
+    // Foto baru menggantikan foto lama (bila ada).
+    if ($request->hasFile('foto_dokumentasi')) {
+        if ($observasi->foto_dokumentasi && Storage::disk('public')->exists($observasi->foto_dokumentasi)) {
+            Storage::disk('public')->delete($observasi->foto_dokumentasi);
+        }
+
+        $isi['foto_dokumentasi'] = ImageCompressor::store($request->file('foto_dokumentasi'), 'observasi/dokumentasi');
     }
 
-    $observasi->update([
-        'foto_dokumentasi'      => ImageCompressor::store($request->file('foto_dokumentasi'), 'observasi/dokumentasi'),
-        'foto_lembar_observasi' => ImageCompressor::store($request->file('foto_lembar_observasi'), 'observasi/lembar'),
-        'status'                => 'tervalidasi',
-        'validated_by_guru_id'  => $observasi->guru_id ?? Auth::id(),
-        'validated_at'          => now(),
-    ]);
+    // ---- Paraf digital GURU PEMBIMBING (opsional) ----
+    if (filled($request->input('ttd_guru'))) {
+        TandaTangan::hapus($observasi->ttd_guru);
+
+        $isi['ttd_guru']           = TandaTangan::simpan($request->input('ttd_guru'), 'ttd/observasi/guru');
+        $isi['ttd_guru_nama']      = $observasi->guru->name ?? (Auth::user()->name ?? null);
+        $isi['ttd_guru_signed_at'] = now();
+    } elseif ($request->boolean('hapus_ttd_guru')) {
+        TandaTangan::hapus($observasi->ttd_guru);
+
+        $isi['ttd_guru']           = null;
+        $isi['ttd_guru_nama']      = null;
+        $isi['ttd_guru_signed_at'] = null;
+    }
+
+    // ---- Paraf digital INSTRUKTUR (opsional) ----
+    if (filled($request->input('ttd_instruktur'))) {
+        TandaTangan::hapus($observasi->ttd_instruktur);
+
+        $isi['ttd_instruktur']           = TandaTangan::simpan($request->input('ttd_instruktur'), 'ttd/observasi/instruktur');
+        $isi['ttd_instruktur_nama']      = $this->namaInstrukturSiswa($observasi->user);
+        $isi['ttd_instruktur_signed_at'] = now();
+    } elseif ($request->boolean('hapus_ttd_instruktur')) {
+        TandaTangan::hapus($observasi->ttd_instruktur);
+
+        $isi['ttd_instruktur']           = null;
+        $isi['ttd_instruktur_nama']      = null;
+        $isi['ttd_instruktur_signed_at'] = null;
+    }
+
+    $observasi->update($isi);
 
     return redirect()->route('admin.evaluasi.observasi')
         ->with('success', 'Lembar observasi berhasil divalidasi. Hasil cetak kini menampilkan keterangan "SUDAH DIVALIDASI".');
@@ -279,10 +329,344 @@ public function destroyObservasi(Observasi $observasi)
         Storage::disk('public')->delete($observasi->foto_lembar_observasi);
     }
 
+    // Berkas paraf digital ikut dibersihkan.
+    TandaTangan::hapus($observasi->ttd_guru);
+    TandaTangan::hapus($observasi->ttd_instruktur);
+
     $observasi->delete();
 
     return redirect()->route('admin.evaluasi.observasi')
         ->with('success', 'Data observasi berhasil dihapus.');
+}
+
+/*
+|--------------------------------------------------------------------------
+| VALIDASI OBSERVASI MASSAL (beberapa NISN sekaligus / semua siswa)
+|--------------------------------------------------------------------------
+| Mengikuti pola halaman Monitoring Jurnal admin: satu tombol yang bisa
+| memvalidasi lembar observasi milik BEBERAPA NISN sekaligus atau SEMUA
+| siswa, dengan filter hari tertentu / rentang tanggal / seluruh riwayat.
+*/
+
+/** Nama instruktur (pembimbing industri) milik seorang siswa. */
+private function namaInstrukturSiswa($siswa): ?string
+{
+    if (! $siswa instanceof User) {
+        $siswa = $siswa ? User::find($siswa) : null;
+    }
+
+    $nama = $siswa ? ($siswa->instruktur->name ?? null) : null;
+
+    return ($nama && $nama !== 'Belum Diatur') ? $nama : null;
+}
+
+/** Pecah daftar NISN yang dipisah koma / titik koma / spasi / baris baru. */
+private function pecahDaftar($nilai): array
+{
+    if (is_array($nilai)) {
+        $nilai = implode(',', $nilai);
+    }
+
+    $pecah  = preg_split('/[^0-9A-Za-z]+/', (string) $nilai) ?: [];
+    $bersih = [];
+
+    foreach ($pecah as $item) {
+        $item = trim($item);
+
+        if ($item !== '' && ! in_array($item, $bersih, true)) {
+            $bersih[] = $item;
+        }
+    }
+
+    return $bersih;
+}
+
+/**
+ * Filter tanggal untuk validasi massal observasi.
+ *  - 'tanggal' : hanya SATU hari tertentu
+ *  - 'rentang' : dari tanggal mulai s.d. tanggal selesai
+ *  - 'semua'   : seluruh riwayat (tanpa batas tanggal)
+ */
+private function filterTanggalValidasi($query, string $jenis, ?string $tanggal, ?string $mulai, ?string $selesai, string $kolom = 'hari_tanggal')
+{
+    if ($jenis === 'tanggal' && filled($tanggal)) {
+        $query->whereDate($kolom, Carbon::parse($tanggal)->format('Y-m-d'));
+    } elseif ($jenis === 'rentang' && filled($mulai) && filled($selesai)) {
+        $query->whereDate($kolom, '>=', Carbon::parse($mulai)->format('Y-m-d'))
+              ->whereDate($kolom, '<=', Carbon::parse($selesai)->format('Y-m-d'));
+    }
+
+    return $query;
+}
+
+/**
+ * Kumpulkan siswa sasaran validasi massal.
+ * NISN yang tidak ditemukan dikembalikan lewat $tidakDitemukan.
+ */
+private function siswaSasaranValidasi(string $mode, $nisnMentah, bool $semuaPeriode, array &$tidakDitemukan)
+{
+    $tidakDitemukan = [];
+
+    if ($mode === 'nisn') {
+        $daftarNisn = $this->pecahDaftar($nisnMentah);
+
+        if (empty($daftarNisn)) {
+            return collect();
+        }
+
+        $siswa = User::siswa()->withoutTrashed()
+            ->whereIn('nisn', $daftarNisn)
+            ->orderBy('name')
+            ->get(['id', 'name', 'nisn', 'kelas', 'jurusan', 'status_pkl']);
+
+        $ditemukan      = $siswa->pluck('nisn')->map(fn ($n) => (string) $n)->all();
+        $tidakDitemukan = array_values(array_diff($daftarNisn, $ditemukan));
+
+        return $siswa;
+    }
+
+    // Mode 'semua': bawaannya hanya siswa periode BERJALAN supaya arsip
+    // angkatan lama tidak ikut tersentuh; admin bisa melebarkannya sendiri.
+    $query = $semuaPeriode ? User::siswa()->withoutTrashed() : User::siswaBerjalan();
+
+    return $query->orderBy('name')->get(['id', 'name', 'nisn', 'kelas', 'jurusan', 'status_pkl']);
+}
+
+/**
+ * PRATINJAU VALIDASI OBSERVASI (JSON, dipanggil modal admin).
+ * Menghitung dulu berapa lembar observasi yang akan terkena aksi.
+ */
+public function pratinjauValidasiObservasi(Request $request)
+{
+    $mode  = $request->query('mode') === 'semua' ? 'semua' : 'nisn';
+    $jenis = in_array($request->query('jenis_tanggal'), ['tanggal', 'rentang', 'semua'], true)
+        ? (string) $request->query('jenis_tanggal')
+        : 'rentang';
+
+    $tanggal = $request->query('tanggal');
+    $mulai   = $request->query('tanggal_mulai');
+    $selesai = $request->query('tanggal_selesai');
+
+    $daftarNisn = $this->pecahDaftar($request->query('nisn', ''));
+
+    if ($mode === 'nisn' && empty($daftarNisn)) {
+        return response()->json(['ok' => false, 'pesan' => 'Masukkan minimal satu NISN.'], 422);
+    }
+
+    if (count($daftarNisn) > 300) {
+        return response()->json(['ok' => false, 'pesan' => 'Terlalu banyak NISN sekaligus. Maksimal 300 NISN.'], 422);
+    }
+
+    $tidakDitemukan = [];
+    $siswa = $this->siswaSasaranValidasi(
+        $mode,
+        $daftarNisn,
+        $request->query('semua_periode') === '1',
+        $tidakDitemukan
+    );
+
+    $ringkasan = ['total' => 0, 'draft' => 0, 'diajukan' => 0, 'tervalidasi' => 0, 'belum' => 0, 'siswa' => 0];
+
+    if ($siswa->isEmpty()) {
+        return response()->json([
+            'ok'              => true,
+            'jumlah_siswa'    => 0,
+            'daftar'          => [],
+            'ringkasan'       => $ringkasan,
+            'tidak_ditemukan' => $tidakDitemukan,
+        ]);
+    }
+
+    $query = Observasi::query()->whereIn('user_id', $siswa->pluck('id'));
+    $this->filterTanggalValidasi($query, $jenis, $tanggal, $mulai, $selesai, 'hari_tanggal');
+
+    $rekap = $query->selectRaw('user_id, status, COUNT(*) as jumlah')
+        ->groupBy('user_id', 'status')
+        ->get();
+
+    // Status lama bisa NULL / tak dikenal: dihitung sebagai draft.
+    $peta = [];
+    foreach ($rekap as $row) {
+        $st = in_array($row->status, ['draft', 'diajukan', 'tervalidasi'], true) ? $row->status : 'draft';
+
+        $peta[$row->user_id][$st] = (int) ($peta[$row->user_id][$st] ?? 0) + (int) $row->jumlah;
+    }
+
+    $daftar = [];
+
+    foreach ($siswa as $s) {
+        $draft       = (int) ($peta[$s->id]['draft'] ?? 0);
+        $diajukan    = (int) ($peta[$s->id]['diajukan'] ?? 0);
+        $tervalidasi = (int) ($peta[$s->id]['tervalidasi'] ?? 0);
+        $total       = $draft + $diajukan + $tervalidasi;
+
+        $ringkasan['total']       += $total;
+        $ringkasan['draft']       += $draft;
+        $ringkasan['diajukan']    += $diajukan;
+        $ringkasan['tervalidasi'] += $tervalidasi;
+
+        if ($total > 0) {
+            $ringkasan['siswa']++;
+        }
+
+        $daftar[] = [
+            'nisn'        => (string) $s->nisn,
+            'name'        => $s->name,
+            'kelas'       => $s->kelas ?? '-',
+            'status_pkl'  => $s->status_pkl ?? '-',
+            'total'       => $total,
+            'draft'       => $draft,
+            'diajukan'    => $diajukan,
+            'tervalidasi' => $tervalidasi,
+            'belum'       => $draft + $diajukan,
+        ];
+    }
+
+    $ringkasan['belum'] = $ringkasan['draft'] + $ringkasan['diajukan'];
+
+    return response()->json([
+        'ok'              => true,
+        'jumlah_siswa'    => $siswa->count(),
+        // Mode 'semua' bisa berisi ratusan siswa: kirim contoh 50 teratas saja.
+        'daftar'          => $mode === 'semua' ? array_slice($daftar, 0, 50) : $daftar,
+        'ringkasan'       => $ringkasan,
+        'tidak_ditemukan' => $tidakDitemukan,
+    ]);
+}
+
+/**
+ * VALIDASI OBSERVASI MASSAL.
+ *
+ * Lingkup:
+ *  - mode 'nisn'  : BEBERAPA NISN sekaligus (dipisah koma/spasi/baris baru)
+ *  - mode 'semua' : seluruh siswa PKL periode berjalan (opsional semua periode)
+ *
+ * Aksi:
+ *  - 'setujui'  : status -> tervalidasi
+ *  - 'batalkan' : status -> draft
+ *
+ * Isi observasi, bukti foto, dan paraf digital TIDAK diubah.
+ */
+public function validasiObservasiMassal(Request $request)
+{
+    $data = $request->validate([
+        'mode'            => ['required', Rule::in(['nisn', 'semua'])],
+        'nisn'            => ['required_if:mode,nisn', 'nullable', 'string', 'max:5000'],
+        'jenis_tanggal'   => ['required', Rule::in(['tanggal', 'rentang', 'semua'])],
+        'tanggal'         => ['required_if:jenis_tanggal,tanggal', 'nullable', 'date'],
+        'tanggal_mulai'   => ['required_if:jenis_tanggal,rentang', 'nullable', 'date'],
+        'tanggal_selesai' => ['required_if:jenis_tanggal,rentang', 'nullable', 'date', 'after_or_equal:tanggal_mulai'],
+        'aksi'            => ['required', Rule::in(['setujui', 'batalkan'])],
+        'sumber'          => ['nullable', Rule::in(['', 'semua', 'draft', 'diajukan'])],
+        'semua_periode'   => ['nullable', 'boolean'],
+    ], [
+        'nisn.required_if'               => 'NISN wajib diisi untuk validasi per siswa (boleh lebih dari satu).',
+        'tanggal.required_if'            => 'Tanggal wajib diisi bila memvalidasi hari tertentu.',
+        'tanggal_mulai.required_if'      => 'Tanggal mulai wajib diisi bila memakai rentang tanggal.',
+        'tanggal_selesai.required_if'    => 'Tanggal selesai wajib diisi bila memakai rentang tanggal.',
+        'tanggal_selesai.after_or_equal' => 'Tanggal selesai tidak boleh lebih awal dari tanggal mulai.',
+    ]);
+
+    $mode   = $data['mode'];
+    $jenis  = $data['jenis_tanggal'];
+    $aksi   = $data['aksi'];
+    $sumber = (string) ($data['sumber'] ?? 'semua');
+
+    $tidakDitemukan = [];
+    $siswa = $this->siswaSasaranValidasi(
+        $mode,
+        $data['nisn'] ?? '',
+        $request->boolean('semua_periode'),
+        $tidakDitemukan
+    );
+
+    if ($siswa->isEmpty()) {
+        return back()->with('error', $mode === 'nisn'
+            ? ('Tidak ada NISN yang cocok dengan data siswa PKL.'
+                . (empty($tidakDitemukan) ? '' : ' NISN yang dicari: ' . implode(', ', array_slice($tidakDitemukan, 0, 10)) . '.'))
+            : 'Tidak ada siswa PKL pada periode berjalan.');
+    }
+
+    $query = Observasi::query()->whereIn('user_id', $siswa->pluck('id'));
+    $this->filterTanggalValidasi(
+        $query,
+        $jenis,
+        $data['tanggal'] ?? null,
+        $data['tanggal_mulai'] ?? null,
+        $data['tanggal_selesai'] ?? null,
+        'hari_tanggal'
+    );
+
+    if ($aksi === 'setujui') {
+        if (in_array($sumber, ['draft', 'diajukan'], true)) {
+            $query->where('status', $sumber);
+        } else {
+            $query->where(fn ($q) => $q->where('status', '!=', 'tervalidasi')
+                                       ->orWhereNull('status'));
+        }
+    } else {
+        $query->where('status', 'tervalidasi');
+    }
+
+    $baris = $query->get(['id', 'user_id']);
+
+    if ($baris->isEmpty()) {
+        return back()->with('error', $aksi === 'setujui'
+            ? 'Tidak ada lembar observasi yang perlu divalidasi pada filter tersebut (semuanya sudah tervalidasi atau datanya belum ada).'
+            : 'Tidak ada lembar observasi tervalidasi yang bisa dibatalkan pada filter tersebut.');
+    }
+
+    $isi = $aksi === 'setujui'
+        ? [
+            'status'               => 'tervalidasi',
+            'validated_by_guru_id' => DB::raw('COALESCE(guru_id, ' . (int) Auth::id() . ')'),
+            'validated_at'         => now(),
+        ]
+        : [
+            'status'               => 'draft',
+            'validated_by_guru_id' => null,
+            'validated_at'         => null,
+        ];
+
+    DB::transaction(function () use ($baris, $isi) {
+        foreach ($baris->pluck('id')->chunk(500) as $potongan) {
+            Observasi::whereIn('id', $potongan->all())->update($isi);
+        }
+    });
+
+    $totalBaris     = $baris->count();
+    $siswaTerdampak = $baris->pluck('user_id')->unique()->count();
+
+    $cakupan = match ($jenis) {
+        'tanggal' => 'tanggal ' . Carbon::parse($data['tanggal'])->format('d/m/Y'),
+        'rentang' => 'rentang ' . Carbon::parse($data['tanggal_mulai'])->format('d/m/Y')
+            . ' - ' . Carbon::parse($data['tanggal_selesai'])->format('d/m/Y'),
+        default   => 'seluruh riwayat observasi',
+    };
+
+    $siswaPertama = $siswa->firstWhere('id', $baris->first()->user_id);
+
+    $lingkup = $siswaTerdampak === 1
+        ? ('siswa ' . $siswaPertama?->name . ' (NISN ' . $siswaPertama?->nisn . ')')
+        : ($siswaTerdampak . ' siswa');
+
+    $pesan = $aksi === 'setujui'
+        ? "Validasi observasi berhasil: {$totalBaris} lembar observasi milik {$lingkup} kini TERVALIDASI pada {$cakupan}."
+        : "Validasi dibatalkan: {$totalBaris} lembar observasi milik {$lingkup} dikembalikan ke draft pada {$cakupan}.";
+
+    if ($aksi === 'setujui' && in_array($sumber, ['draft', 'diajukan'], true)) {
+        $pesan .= ' Hanya observasi berstatus ' . $sumber . ' yang diproses.';
+    }
+
+    $pesan .= ' Isi observasi, bukti foto, dan paraf digital tidak diubah.';
+
+    if (! empty($tidakDitemukan)) {
+        $contoh = implode(', ', array_slice($tidakDitemukan, 0, 5));
+        $sisa   = count($tidakDitemukan) - 5;
+        $pesan .= ' NISN tidak ditemukan (' . count($tidakDitemukan) . '): ' . $contoh . ($sisa > 0 ? " dan {$sisa} lainnya." : '.');
+    }
+
+    return back()->with('success', $pesan);
 }
 
     /*

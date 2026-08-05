@@ -16,33 +16,6 @@
         }
     </style>
 
-    <script>
-        document.addEventListener('alpine:init', () => {
-            Alpine.data('fotoBuktiPicker', () => ({
-                fileName: '',
-                async pilih(event) {
-                    const file = event.target.files[0];
-                    if (!file) return;
-                    // Kompres + validasi maksimal 3 MB sebelum disalin ke input utama
-                    const hasil = await window.prosesFotoMaks3MB(file);
-                    if (!hasil.ok) {
-                        window.swalPeringatan(hasil.pesan);
-                        event.target.value = '';
-                        // Kosongkan juga input utama supaya tidak ada file lama tertinggal
-                        this.$refs.finalInput.value = '';
-                        this.fileName = '';
-                        return;
-                    }
-                    // Salin file ke input utama yang bernama "foto_bukti"
-                    const dt = new DataTransfer();
-                    dt.items.add(hasil.file);
-                    this.$refs.finalInput.files = dt.files;
-                    this.fileName = hasil.file.name;
-                },
-            }));
-        });
-    </script>
-
     <div class="py-8 md:py-12 bg-white">
         <div class="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 2xl:px-12">
 
@@ -223,20 +196,31 @@
                                     @else
                                         <span class="inline-flex items-center rounded-full bg-[#5b616e] px-3 py-1 text-xs font-bold text-white">Draft</span>
                                     @endif
-                                    @if($jurnal->foto_bukti)
+                                    @if($jurnal->ttd_instruktur)
+                                        <div class="mt-1.5">
+                                            <img src="{{ asset('storage/'.$jurnal->ttd_instruktur) }}" alt="Paraf instruktur"
+                                                 style="max-height:38px;width:auto;max-width:120px;margin:0 auto;">
+                                            <span class="block text-[10px] font-bold text-[#05b169]">Paraf digital tersimpan</span>
+                                        </div>
+                                    @elseif($jurnal->foto_bukti)
+                                        {{-- Data lama: pengajuan versi foto lembar berparaf --}}
                                         <a href="{{ asset('storage/'.$jurnal->foto_bukti) }}" download target="_blank"
                                            class="mt-1.5 inline-flex items-center text-[11px] font-bold text-[#0047d6] hover:underline">
-                                            Download Bukti Fisik
+                                            Download Bukti Fisik (lama)
                                         </a>
                                     @endif
                                 </td>
                                 <td class="px-4 py-3">
                                     <div class="flex flex-wrap items-center justify-center gap-2">
                                         
-                                        <a href="{{ route('cetak.jurnal', ['jurnal_id' => $jurnal->id]) }}" target="_blank"
-                                           class="inline-flex items-center rounded-full bg-[#0047d6] px-3 py-1.5 text-xs font-bold text-white transition hover:bg-[#0038aa]">
-                                            {{ $jurnal->status === 'disetujui' ? 'PDF Final' : 'Cetak Draf' }}
-                                        </a>
+                                        {{-- Tombol cetak per baris hanya untuk jurnal yang SUDAH DISETUJUI.
+                                             Tombol "Cetak Draf" (jurnal draft/diajukan) dihilangkan. --}}
+                                        @if($jurnal->status === 'disetujui')
+                                            <a href="{{ route('cetak.jurnal', ['jurnal_id' => $jurnal->id]) }}" target="_blank"
+                                               class="inline-flex items-center rounded-full bg-[#0047d6] px-3 py-1.5 text-xs font-bold text-white transition hover:bg-[#0038aa]">
+                                                PDF Final
+                                            </a>
+                                        @endif
                                         @if($jurnal->status !== 'disetujui')
                                             <a href="{{ route('siswa.jurnal.edit', $jurnal->id) }}"
                                                class="inline-flex items-center rounded-full bg-[#0047d6]/10 px-3 py-1.5 text-xs font-bold text-[#0047d6] transition hover:bg-[#0047d6]/20">
@@ -255,61 +239,12 @@
                                                         class="inline-flex items-center rounded-full bg-[#05b169] px-3 py-1.5 text-xs font-bold text-white transition hover:bg-[#049a5b]">
                                                     Ajukan
                                                 </button>
-                                                <div x-show="openAjukan" x-cloak
-                                                     class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
-                                                     @keydown.escape.window="openAjukan = false">
-                                                    <div class="w-full max-w-lg rounded-2xl bg-white shadow-xl text-left"
-                                                         @click.outside="openAjukan = false">
-                                                        <div class="flex items-center justify-between border-b-2 border-[#0047d6]/15 px-5 py-3">
-                                                            <h3 class="text-base font-bold text-black">
-                                                                Ajukan Jurnal — {{ $tgl }}
-                                                            </h3>
-                                                            <button type="button" @click="openAjukan = false"
-                                                                    class="text-2xl leading-none text-[#5b616e] hover:text-black">&times;</button>
-                                                        </div>
-                                                        <form method="POST" action="{{ route('siswa.jurnal.ajukan', $jurnal->id) }}"
-                                                              enctype="multipart/form-data" class="space-y-4 p-5">
-                                                            @csrf
-                                                            @method('PUT')
-                                                            <div>
-                                                                <label class="block text-xs font-bold uppercase tracking-wide text-black mb-1">
-                                                                    Catatan / Nilai dari Instruktur
-                                                                </label>
-                                                                <textarea name="catatan_instruktur" rows="3" required
-                                                                          class="w-full rounded-xl border-2 border-[#0047d6]/25 bg-white px-3 py-2.5 text-sm font-medium text-black focus:border-[#0047d6] focus:ring-2 focus:ring-[#0047d6]/30"
-                                                                          placeholder="Ketik ulang catatan/nilai manual dari instruktur...">{{ old('catatan_instruktur') }}</textarea>
-                                                            </div>
-                                                            <div x-data="fotoBuktiPicker">
-                                                                <label class="block text-xs font-bold uppercase tracking-wide text-black mb-1">
-                                                                    Foto Bukti Fisik (lembar berparaf)
-                                                                </label>
-                                                                <input type="file" name="foto_bukti" x-ref="finalInput" accept="image/*" class="hidden">
-                                                                <input type="file" x-ref="galeri" accept="image/*" class="hidden" @change="pilih($event)" data-no-compress>
-                                                                <div class="flex flex-wrap gap-2">
-                                                                    <button type="button" @click="$refs.galeri.click()"
-                                                                            class="inline-flex items-center gap-1.5 rounded-xl border-2 border-[#0047d6] bg-white px-4 py-2.5 text-sm font-bold text-[#0047d6] transition hover:bg-[#0047d6]/5">
-                                                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                                                            <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                                                                        </svg>
-                                                                        Pilih Foto
-                                                                    </button>
-                                                                </div>
-                                                                <p class="mt-1 text-[11px] font-medium text-[#5b616e]">Format: jpg/jpeg/png, maks 3MB. Otomatis dikompres; jika tetap &gt; 3MB akan ditolak.</p>
-                                                                <p x-show="fileName" x-cloak class="mt-1 text-xs font-semibold text-[#05b169]" x-text="'Terpilih: ' + fileName"></p>
-                                                            </div>
-                                                            <div class="flex justify-end gap-2 pt-2">
-                                                                <button type="button" @click="openAjukan = false"
-                                                                        class="rounded-xl border-2 border-[#0047d6]/25 bg-white px-4 py-2 text-sm font-bold text-[#0047d6] hover:bg-[#0047d6]/5">
-                                                                    Batal
-                                                                </button>
-                                                                <button type="submit"
-                                                                        class="rounded-xl bg-[#05b169] px-5 py-2 text-sm font-bold text-white hover:bg-[#049a5b]">
-                                                                    Kirim Pengajuan
-                                                                </button>
-                                                            </div>
-                                                        </form>
-                                                    </div>
-                                                </div>
+                                                @include('siswa.partials.modal-ajukan-ttd', [
+                                                    'action'      => route('siswa.jurnal.ajukan', $jurnal->id),
+                                                    'judul'       => 'Ajukan Jurnal — ' . $tgl,
+                                                    'catatanLama' => $jurnal->catatan_instruktur,
+                                                    'lapis'       => 'z-50',
+                                                ])
                                             </div>
                                         @endif
                                     </div>
@@ -439,10 +374,16 @@
                                             @else
                                                 <p class="text-sm text-[#5b616e]">Tidak ada</p>
                                             @endif
-                                            @if($jurnal->foto_bukti)
+                                            @if($jurnal->ttd_instruktur)
+                                                <div class="mt-3">
+                                                    <p class="text-xs font-bold uppercase tracking-wide text-[#5b616e] mb-1">Paraf Instruktur (digital)</p>
+                                                    <img src="{{ asset('storage/'.$jurnal->ttd_instruktur) }}" alt="Paraf instruktur"
+                                                         style="max-height:60px;width:auto;max-width:220px;">
+                                                </div>
+                                            @elseif($jurnal->foto_bukti)
                                                 <a href="{{ asset('storage/'.$jurnal->foto_bukti) }}" download target="_blank"
                                                    class="mt-2 inline-flex items-center text-[11px] font-bold text-[#0047d6] hover:underline">
-                                                    Download Bukti Fisik
+                                                    Download Bukti Fisik (lama)
                                                 </a>
                                             @endif
                                         </div>
@@ -455,10 +396,14 @@
 </button>
                                         @endif
                                         <div class="flex gap-2">
-                                            <a href="{{ route('cetak.jurnal', ['jurnal_id' => $jurnal->id]) }}" target="_blank"
-                                               class="flex flex-1 items-center justify-center rounded-xl bg-[#0047d6] px-3 py-2.5 text-xs font-bold text-white transition hover:bg-[#0038aa]">
-                                                {{ $jurnal->status === 'disetujui' ? 'PDF Final' : 'Cetak Draf' }}
-                                            </a>
+                                            {{-- Tombol cetak per baris hanya untuk jurnal yang SUDAH DISETUJUI.
+                                                 Tombol "Cetak Draf" (jurnal draft/diajukan) dihilangkan. --}}
+                                            @if($jurnal->status === 'disetujui')
+                                                <a href="{{ route('cetak.jurnal', ['jurnal_id' => $jurnal->id]) }}" target="_blank"
+                                                   class="flex flex-1 items-center justify-center rounded-xl bg-[#0047d6] px-3 py-2.5 text-xs font-bold text-white transition hover:bg-[#0038aa]">
+                                                    PDF Final
+                                                </a>
+                                            @endif
                                             @if($jurnal->status !== 'disetujui')
                                                 <a href="{{ route('siswa.jurnal.edit', $jurnal->id) }}"
                                                    class="flex flex-1 items-center justify-center rounded-xl bg-[#0047d6]/10 px-3 py-2.5 text-xs font-bold text-[#0047d6] transition hover:bg-[#0047d6]/20">
@@ -482,74 +427,12 @@
 
                             {{-- ===== MODAL AJUKAN (mobile) ===== --}}
                             @if($jurnal->status === 'draft')
-                               <div x-show="openAjukan" x-cloak
-     x-transition:enter="transition ease-out duration-300"
-     x-transition:enter-start="opacity-0"
-     x-transition:enter-end="opacity-100"
-     x-transition:leave="transition ease-in duration-200"
-     x-transition:leave-start="opacity-100"
-     x-transition:leave-end="opacity-0"
-     class="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4"
-     @keydown.escape.window="openAjukan = false">
-    <div x-show="openAjukan"
-         x-transition:enter="transition ease-out duration-300 delay-[50ms]"
-         x-transition:enter-start="opacity-0 translate-y-full sm:translate-y-0 sm:scale-95"
-         x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
-         x-transition:leave="transition ease-in duration-200"
-         x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
-         x-transition:leave-end="opacity-0 translate-y-full sm:translate-y-0 sm:scale-95"
-         class="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl bg-white shadow-xl text-left"
-         @click.outside="openAjukan = false">
-                                        <div class="flex items-center justify-between border-b-2 border-[#0047d6]/15 px-5 py-3">
-                                            <h3 class="text-base font-bold text-black">
-                                                Ajukan Jurnal — {{ $tgl }}
-                                            </h3>
-                                            <button type="button" @click="openAjukan = false"
-                                                    class="text-2xl leading-none text-[#5b616e] hover:text-black">&times;</button>
-                                        </div>
-                                        <form method="POST" action="{{ route('siswa.jurnal.ajukan', $jurnal->id) }}"
-                                              enctype="multipart/form-data" class="space-y-4 p-5">
-                                            @csrf
-                                            @method('PUT')
-                                            <div>
-                                                <label class="block text-xs font-bold uppercase tracking-wide text-black mb-1">
-                                                    Catatan / Nilai dari Instruktur
-                                                </label>
-                                                <textarea name="catatan_instruktur" rows="3" required
-                                                          class="w-full rounded-xl border-2 border-[#0047d6]/25 bg-white px-3 py-2.5 text-sm font-medium text-black focus:border-[#0047d6] focus:ring-2 focus:ring-[#0047d6]/30"
-                                                          placeholder="Ketik ulang catatan/nilai manual dari instruktur...">{{ old('catatan_instruktur') }}</textarea>
-                                            </div>
-                                            <div x-data="fotoBuktiPicker">
-                                                <label class="block text-xs font-bold uppercase tracking-wide text-black mb-1">
-                                                    Foto Bukti Fisik (lembar berparaf)
-                                                </label>
-                                                <input type="file" name="foto_bukti" x-ref="finalInput" accept="image/*" class="hidden">
-                                                <input type="file" x-ref="galeri" accept="image/*" class="hidden" @change="pilih($event)" data-no-compress>
-                                                <div class="flex flex-wrap gap-2">
-                                                    <button type="button" @click="$refs.galeri.click()"
-                                                            class="inline-flex items-center gap-1.5 rounded-xl border-2 border-[#0047d6] bg-white px-4 py-2.5 text-sm font-bold text-[#0047d6] transition hover:bg-[#0047d6]/5">
-                                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                                            <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                                                        </svg>
-                                                        Pilih Foto
-                                                    </button>
-                                                </div>
-                                                <p class="mt-1 text-[11px] font-medium text-[#5b616e]">Format: jpg/jpeg/png, maks 3MB. Otomatis dikompres; jika tetap &gt; 3MB akan ditolak.</p>
-                                                <p x-show="fileName" x-cloak class="mt-1 text-xs font-semibold text-[#05b169]" x-text="'Terpilih: ' + fileName"></p>
-                                            </div>
-                                            <div class="flex justify-end gap-2 pt-2">
-                                                <button type="button" @click="openAjukan = false"
-                                                        class="rounded-xl border-2 border-[#0047d6]/25 bg-white px-4 py-2 text-sm font-bold text-[#0047d6] hover:bg-[#0047d6]/5">
-                                                    Batal
-                                                </button>
-                                                <button type="submit"
-                                                        class="rounded-xl bg-[#05b169] px-5 py-2 text-sm font-bold text-white hover:bg-[#049a5b]">
-                                                    Kirim Pengajuan
-                                                </button>
-                                            </div>
-                                        </form>
-                                    </div>
-                                </div>
+                            @include('siswa.partials.modal-ajukan-ttd', [
+                                'action'      => route('siswa.jurnal.ajukan', $jurnal->id),
+                                'judul'       => 'Ajukan Jurnal — ' . $tgl,
+                                'catatanLama' => $jurnal->catatan_instruktur,
+                                'lapis'       => 'z-[60]',
+                            ])
                             @endif
                         </div>
                     @empty

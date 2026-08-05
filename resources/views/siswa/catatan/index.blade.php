@@ -161,57 +161,18 @@
                                                 Cetak Draf PDF
                                             </a>
                                             @if($item->status !== 'disetujui')
-                                                <div x-data="{ openAjukan: false, preview: '' }" class="w-full">
+                                                <div x-data="{ openAjukan: false }" class="w-full">
                                                     <button type="button" @click="openAjukan = true"
                                                             class="w-full inline-flex items-center justify-center rounded-xl bg-[#05b169] px-3 py-1.5 text-xs font-bold text-white transition hover:bg-[#049458] focus:outline-none focus:ring-2 focus:ring-[#05b169]/30">
                                                         {{ $item->status === 'diajukan' ? 'Ajukan Ulang' : 'Ajukan' }}
                                                     </button>
-                                                    <div x-show="openAjukan" x-cloak
-                                                         class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
-                                                         @keydown.escape.window="openAjukan = false">
-                                                        <div @click.outside="openAjukan = false" x-transition
-                                                             class="w-full max-w-lg rounded-2xl bg-white shadow-xl text-left">
-                                                            <div class="flex items-center justify-between border-b px-5 py-3">
-                                                                <h3 class="font-bold text-black">Ajukan Bukti Fisik</h3>
-                                                                <button type="button" @click="openAjukan = false" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
-                                                            </div>
-                                                            <form action="{{ route('siswa.catatan.ajukan', $item->id) }}" method="POST" enctype="multipart/form-data">
-                                                                @csrf
-                                                                @method('PUT')
-                                                                <div class="max-h-[65vh] overflow-auto p-5 space-y-4">
-                                                                    <p class="rounded-lg bg-[#0047d6]/5 p-3 text-xs font-medium text-[#5b616e]">
-                                                                        Cetak draf, minta paraf/catatan instruktur di lembar fisik, foto lembar tersebut, lalu unggah di sini.
-                                                                    </p>
-                                                                    <div>
-                                                                        <label class="block text-xs font-bold uppercase tracking-wide text-black mb-1">
-                                                                            Catatan / Nilai dari Instruktur <span class="text-red-500">*</span>
-                                                                        </label>
-                                                                        <textarea name="catatan_instruktur" rows="3" required
-                                                                                  class="w-full rounded-xl border-2 border-[#0047d6]/25 bg-white px-3 py-2.5 text-sm font-medium text-black focus:border-[#0047d6] focus:ring-2 focus:ring-[#0047d6]/30"
-                                                                                  placeholder="Ketik ulang catatan/nilai yang ditulis instruktur...">{{ old('catatan_instruktur', $item->catatan_instruktur) }}</textarea>
-                                                                    </div>
-                                                                    <div>
-                                                                        <label class="block text-xs font-bold uppercase tracking-wide text-black mb-1">
-                                                                            Foto Bukti Fisik (lembar berparaf) <span class="text-red-500">*</span>
-                                                                        </label>
-                                                                        <input type="file" name="foto_bukti"
-                                                                               accept="image/*" required
-                                                                               @change="preview = URL.createObjectURL($event.target.files[0])"
-                                                                               class="block w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-[#0047d6] file:text-white hover:file:bg-[#0038aa] file:cursor-pointer">
-                                                                        <p class="mt-1 text-xs text-[#5b616e]">Unggah file foto (jpg/png). Otomatis dikompres, maks 3MB. Jika tetap melebihi 3MB akan ditolak.</p>
-                                                                       
-                                                                       
-                                                                    </div>
-                                                                </div>
-                                                                <div class="flex justify-end gap-2 border-t px-5 py-3">
-                                                                    <button type="button" @click="openAjukan = false"
-                                                                            class="rounded-xl border-2 border-[#0047d6]/25 bg-white px-4 py-2 text-sm font-bold text-[#0047d6] hover:bg-[#0047d6]/5">Batal</button>
-                                                                    <button type="submit"
-                                                                            class="rounded-xl bg-[#05b169] px-4 py-2 text-sm font-bold text-white transition hover:bg-[#049458]">Kirim Pengajuan</button>
-                                                                </div>
-                                                            </form>
-                                                        </div>
-                                                    </div>
+
+                                                    @include('siswa.partials.modal-ajukan-ttd', [
+                                                        'action'      => route('siswa.catatan.ajukan', $item->id),
+                                                        'judul'       => 'Ajukan Catatan — ' . $item->nama_pekerjaan,
+                                                        'catatanLama' => $item->catatan_instruktur,
+                                                        'lapis'       => 'z-50',
+                                                    ])
                                                 </div>
                                                 <a href="{{ route('siswa.catatan.edit', $item->id) }}"
                                                    class="inline-flex items-center justify-center rounded-xl bg-[#d98200] px-3 py-1.5 text-xs font-bold text-white transition hover:bg-[#b56d00] focus:outline-none focus:ring-2 focus:ring-[#d98200]/30">
@@ -348,21 +309,22 @@
                                         </div>
 
                                         <div>
-                                            <p class="text-xs font-bold uppercase tracking-wide text-[#5b616e] mb-1">Bukti Fisik</p>
-                                            @if($item->foto_bukti)
-                                                <div class="flex flex-wrap gap-2">
-                                                    <a href="{{ asset('storage/' . $item->foto_bukti) }}" download target="_blank" rel="noopener"
-                                                       class="inline-flex items-center rounded-full bg-[#05b169] px-3 py-1.5 text-xs font-bold text-white transition hover:bg-[#049458]">
-                                                        Lihat Bukti
-                                                    </a>
-                                                    <a href="{{ asset('storage/' . $item->foto_bukti) }}" download
-                                                       download="bukti-{{ $item->user->nisn ?? $item->user_id }}-{{ $item->id . '.' . $extBukti }}"
-                                                       class="inline-flex items-center rounded-full border-2 border-[#05b169] bg-white px-3 py-1.5 text-xs font-bold text-[#05b169] transition hover:bg-[#05b169]/5">
-                                                        Download Bukti
-                                                    </a>
-                                                </div>
+                                            <p class="text-xs font-bold uppercase tracking-wide text-[#5b616e] mb-1">Paraf Instruktur</p>
+                                            @if($item->ttd_instruktur)
+                                                <img src="{{ asset('storage/' . $item->ttd_instruktur) }}" alt="Tanda tangan instruktur"
+                                                     style="max-height:60px;width:auto;max-width:220px;">
+                                                <p class="mt-1 text-[11px] font-bold text-[#05b169]">
+                                                    Ditandatangani digital{{ $item->ttd_signed_at ? ' · ' . $item->ttd_signed_at->translatedFormat('d M Y H:i') : '' }}
+                                                </p>
+                                            @elseif($item->foto_bukti)
+                                                {{-- Data lama: pengajuan versi foto lembar berparaf --}}
+                                                <a href="{{ asset('storage/' . $item->foto_bukti) }}" download target="_blank" rel="noopener"
+                                                   download="bukti-{{ $item->user->nisn ?? $item->user_id }}-{{ $item->id . '.' . $extBukti }}"
+                                                   class="inline-flex items-center rounded-full bg-[#05b169] px-3 py-1.5 text-xs font-bold text-white transition hover:bg-[#049458]">
+                                                    Lihat Bukti (lama)
+                                                </a>
                                             @else
-                                                <p class="text-sm italic text-[#5b616e]">Belum ada bukti</p>
+                                                <p class="text-sm italic text-[#5b616e]">Belum ditandatangani</p>
                                             @endif
                                         </div>
                                     </div>
@@ -371,7 +333,6 @@
                                         @if($item->status !== 'disetujui')
                                            <button type="button" @click="detail = false; setTimeout(() => openAjukan = true, 250)"
         class="flex w-full items-center justify-center gap-2 rounded-xl bg-[#05b169] px-4 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-[#049a5b]">
-    Ajukan
     {{ $item->status === 'diajukan' ? 'Ajukan Ulang' : 'Ajukan' }}
 </button>
                                          
@@ -407,66 +368,12 @@
 
                             {{-- ===== MODAL AJUKAN (mobile) ===== --}}
                             @if($item->status !== 'disetujui')
-                               <div x-show="openAjukan" x-cloak
-     x-transition:enter="transition ease-out duration-300"
-     x-transition:enter-start="opacity-0"
-     x-transition:enter-end="opacity-100"
-     x-transition:leave="transition ease-in duration-200"
-     x-transition:leave-start="opacity-100"
-     x-transition:leave-end="opacity-0"
-     class="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4"
-     @keydown.escape.window="openAjukan = false">
-    <div x-show="openAjukan"
-         x-transition:enter="transition ease-out duration-300 delay-[50ms]"
-         x-transition:enter-start="opacity-0 translate-y-full sm:translate-y-0 sm:scale-95"
-         x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
-         x-transition:leave="transition ease-in duration-200"
-         x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
-         x-transition:leave-end="opacity-0 translate-y-full sm:translate-y-0 sm:scale-95"
-         class="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl bg-white shadow-xl text-left"
-         @click.outside="openAjukan = false">
-                                        <div class="flex items-center justify-between border-b px-5 py-3">
-                                            <h3 class="font-bold text-black">Ajukan Bukti Fisik</h3>
-                                            <button type="button" @click="openAjukan = false" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
-                                        </div>
-                                        <form action="{{ route('siswa.catatan.ajukan', $item->id) }}" method="POST" enctype="multipart/form-data">
-                                            @csrf
-                                            @method('PUT')
-                                            <div class="max-h-[65vh] overflow-auto p-5 space-y-4">
-                                                <p class="rounded-lg bg-[#0047d6]/5 p-3 text-xs font-medium text-[#5b616e]">
-                                                    Cetak draf, minta paraf/catatan instruktur di lembar fisik, foto lembar tersebut, lalu unggah di sini.
-                                                </p>
-                                                <div>
-                                                    <label class="block text-xs font-bold uppercase tracking-wide text-black mb-1">
-                                                        Catatan / Nilai dari Instruktur <span class="text-red-500">*</span>
-                                                    </label>
-                                                    <textarea name="catatan_instruktur" rows="3" required
-                                                              class="w-full rounded-xl border-2 border-[#0047d6]/25 bg-white px-3 py-2.5 text-sm font-medium text-black focus:border-[#0047d6] focus:ring-2 focus:ring-[#0047d6]/30"
-                                                              placeholder="Ketik ulang catatan/nilai yang ditulis instruktur...">{{ old('catatan_instruktur', $item->catatan_instruktur) }}</textarea>
-                                                </div>
-                                                <div>
-                                                    <label class="block text-xs font-bold uppercase tracking-wide text-black mb-1">
-                                                        Foto Bukti Fisik (lembar berparaf) <span class="text-red-500">*</span>
-                                                    </label>
-                                                    <input type="file" name="foto_bukti"
-                                                           accept="image/*" required
-                                                           @change="preview = URL.createObjectURL($event.target.files[0])"
-                                                           class="block w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-[#0047d6] file:text-white hover:file:bg-[#0038aa] file:cursor-pointer">
-                                                    <p class="mt-1 text-xs text-[#5b616e]">Unggah file foto (jpg/png). Otomatis dikompres, maks 3MB. Jika tetap melebihi 3MB akan ditolak.</p>
-                                                    <template x-if="preview">
-                                                        <img loading="lazy" decoding="async" :src="preview" class="mt-3 h-40 rounded-lg border object-cover" alt="Preview bukti">
-                                                    </template>
-                                                </div>
-                                            </div>
-                                            <div class="flex justify-end gap-2 border-t px-5 py-3">
-                                                <button type="button" @click="openAjukan = false"
-                                                        class="rounded-xl border-2 border-[#0047d6]/25 bg-white px-4 py-2 text-sm font-bold text-[#0047d6] hover:bg-[#0047d6]/5">Batal</button>
-                                                <button type="submit"
-                                                        class="rounded-xl bg-[#05b169] px-4 py-2 text-sm font-bold text-white transition hover:bg-[#049458]">Kirim Pengajuan</button>
-                                            </div>
-                                        </form>
-                                    </div>
-                                </div>
+                            @include('siswa.partials.modal-ajukan-ttd', [
+                                'action'      => route('siswa.catatan.ajukan', $item->id),
+                                'judul'       => 'Ajukan Catatan — ' . $item->nama_pekerjaan,
+                                'catatanLama' => $item->catatan_instruktur,
+                                'lapis'       => 'z-[60]',
+                            ])
                             @endif
                         </div>
                     @empty

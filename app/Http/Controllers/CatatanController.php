@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\CatatanKegiatan;
 use App\Support\ImageCompressor;
+use App\Support\TandaTangan;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -97,9 +98,12 @@ public function destroySiswa($id)
             ->with('error', 'Catatan yang sudah disetujui tidak dapat dihapus.');
     }
 
+    // Bersihkan berkas: foto bukti versi lama + tanda tangan digital
     if ($catatan->foto_bukti) {
         \Illuminate\Support\Facades\Storage::disk('public')->delete($catatan->foto_bukti);
     }
+
+    TandaTangan::hapus($catatan->ttd_instruktur);
 
     $catatan->delete();
 
@@ -148,34 +152,49 @@ public function indexGuru(Request $request)
 
   
 // ===================== AJUKAN (SISWA) =====================
+/**
+ * ALUR BARU: tanpa unggah foto lembar berparaf.
+ * Instruktur menandatangani langsung di web/HP (kanvas tanda tangan digital).
+ */
 public function ajukanSiswa(Request $request, $id)
 {
     $catatan = CatatanKegiatan::where('user_id', Auth::id())->findOrFail($id);
 
     $validated = $request->validate([
-        'catatan_instruktur' => 'required|string',
-        'foto_bukti'         => 'required|image|mimes:jpeg,png,jpg|max:3072',
+        'catatan_instruktur'  => 'required|string',
+        'ttd_instruktur'      => ['required', 'string', function ($atribut, $nilai, $gagal) {
+            if (! TandaTangan::valid($nilai)) {
+                $gagal('Tanda tangan digital tidak terbaca. Mohon minta instruktur menandatangani ulang.');
+            }
+        }],
     ], [
         'catatan_instruktur.required' => 'Catatan/nilai dari instruktur wajib diketik ulang.',
-        'foto_bukti.required'         => 'Foto bukti fisik lembar berparaf wajib diunggah.',
-        'foto_bukti.image'            => 'File harus berupa gambar.',
-        'foto_bukti.mimes'            => 'Format foto harus jpeg, png, atau jpg.',
-        'foto_bukti.max'              => 'Ukuran foto maksimal 3MB.',
+        'ttd_instruktur.required'     => 'Tanda tangan digital instruktur wajib diisi.',
     ]);
 
-    if ($catatan->foto_bukti) {
-        Storage::disk('public')->delete($catatan->foto_bukti);
+    $path = TandaTangan::simpan($validated['ttd_instruktur'], 'ttd/catatan');
+
+    if (! $path) {
+        return back()->with('error', 'Tanda tangan digital gagal disimpan. Silakan coba lagi.');
     }
-    $path = ImageCompressor::store($request->file('foto_bukti'), 'bukti_fisik/catatan');
+
+    // Pengajuan ulang: buang tanda tangan lama
+    TandaTangan::hapus($catatan->ttd_instruktur);
+
+    // Nama instruktur TIDAK diketik lagi: diambil otomatis dari data perusahaan siswa.
+    $namaTtd = Auth::user()->instruktur->name ?? null;
+    $namaTtd = $namaTtd === 'Belum Diatur' ? null : $namaTtd;
 
     $catatan->update([
-        'catatan_instruktur' => $validated['catatan_instruktur'],
-        'foto_bukti'         => $path,
-        'status'             => 'diajukan',
+        'catatan_instruktur'  => $validated['catatan_instruktur'],
+        'ttd_instruktur'      => $path,
+        'ttd_instruktur_nama' => $namaTtd,
+        'ttd_signed_at'       => now(),
+        'status'              => 'diajukan',
     ]);
 
     return redirect()->route('siswa.catatan.index')
-        ->with('success', 'Catatan Kegiatan berhasil diajukan ke Guru Pembimbing.');
+        ->with('success', 'Catatan berhasil diajukan. Tanda tangan instruktur otomatis tercetak pada bagian paraf.');
 }
 
 // ===================== VALIDASI (GURU) =====================

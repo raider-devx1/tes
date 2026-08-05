@@ -122,7 +122,7 @@
                                 <th class="px-4 py-3.5 font-bold w-[18%]">Perencanaan</th>
                                 <th class="px-4 py-3.5 font-bold w-[18%]">Hasil / Pelaksanaan</th>
                                 <th class="px-4 py-3.5 font-bold w-[14%]">Catatan Instruktur</th>
-                                <th class="px-4 py-3.5 text-center font-bold w-[9%]">Status &amp; Bukti</th>
+                                <th class="px-4 py-3.5 text-center font-bold w-[9%]">Status &amp; Paraf</th>
                                 <th class="px-4 py-3.5 text-center font-bold w-16">Cetak</th>
                                 <th class="px-4 py-3.5 text-center font-bold w-24">Aksi</th>
                             </tr>
@@ -159,10 +159,18 @@
                                     </td>
                                     <td class="px-4 py-4 text-center">
                                         <span class="inline-flex items-center justify-center rounded-full px-3 py-1 text-xs font-bold {{ $badge }} mb-2">{{ $label }}</span>
-                                        @if($item->foto_bukti)
-                                            <a href="{{ asset('storage/' . $item->foto_bukti) }}" download target="_blank"
-                                               class="block text-[11px] font-bold text-[#0047d6] hover:underline whitespace-nowrap">Lihat Bukti Fisik &#8599;</a>
-                                        @endif
+
+                                        {{-- Paraf digital instruktur: bisa dilihat & diunduh --}}
+                                        <div class="flex justify-center">
+                                            <x-paraf-instruktur :ttd="$item->ttd_instruktur"
+                                                                :nama="$item->ttd_instruktur_nama"
+                                                                :waktu="$item->ttd_signed_at"
+                                                                :foto-lama="$item->foto_bukti"
+                                                                :tinggi="40"
+                                                                judul="Paraf Instruktur — {{ $item->user->name ?? '-' }}"
+                                                                unduh-nama="paraf-catatan-{{ $item->id }}"
+                                                                kosong="Belum ada paraf" />
+                                        </div>
                                     </td>
                                     <td class="px-4 py-4 text-center">
                                         <a href="{{ route('cetak.catatan', ['siswa_id' => $item->user_id, 'catatan_id' => $item->id]) }}" target="_blank"
@@ -180,6 +188,9 @@
                                                         'catatan_instruktur' => $item->catatan_instruktur,
                                                         'status' => $item->status,
                                                         'foto_bukti_url' => $item->foto_bukti ? asset('storage/'.$item->foto_bukti) : null,
+                                                        'ttd_url' => $item->ttd_instruktur ? asset('storage/'.$item->ttd_instruktur) : null,
+                                                        'ttd_nama' => $item->ttd_instruktur_nama,
+                                                        'ttd_waktu' => optional($item->ttd_signed_at)->format('d/m/Y H:i'),
                                                     ]))"
                                                     class="w-full rounded-lg border-2 border-[#0047d6]/30 px-3 py-1.5 text-xs font-bold text-[#0047d6] hover:bg-[#0047d6]/5">Edit</button>
                                             <button type="button"
@@ -244,6 +255,9 @@
                                                     'status' => $item->status,
                                                     'status_label' => $label ?? ($item->status),
                                                     'foto_bukti_url' => $item->foto_bukti ? asset('storage/'.$item->foto_bukti) : null,
+                                                    'ttd_url' => $item->ttd_instruktur ? asset('storage/'.$item->ttd_instruktur) : null,
+                                                    'ttd_nama' => $item->ttd_instruktur_nama,
+                                                    'ttd_waktu' => optional($item->ttd_signed_at)->format('d/m/Y H:i'),
                                                     'cetak_url' => route('cetak.catatan', ['siswa_id' => $item->user_id, 'catatan_id' => $item->id]),
                                                     'destroy_url' => route('admin.monitoring.catatan.destroy', $item->id),
                                                 ]))"
@@ -326,14 +340,34 @@
                             <p class="mt-0.5 text-sm italic text-[#5b616e]">-</p>
                         </template>
                     </div>
-                    <template x-if="detailData.foto_bukti_url">
-                        <div>
-                            <p class="text-[11px] font-bold uppercase tracking-wide text-[#5b616e]">Bukti Fisik</p>
+                    {{-- Paraf digital instruktur --}}
+                    <div>
+                        <p class="text-[11px] font-bold uppercase tracking-wide text-[#5b616e]">Paraf Digital Instruktur</p>
+                        <template x-if="detailData.ttd_url">
+                            <div class="mt-1 rounded-xl border-2 border-[#05b169]/40 bg-white p-3">
+                                <img :src="detailData.ttd_url" alt="Paraf digital instruktur" style="height:56px; width:auto; max-width:100%;">
+                                <p class="mt-2 text-[11px] font-semibold text-[#5b616e]">
+                                    <span class="font-bold text-black">Nama:</span> <span x-text="detailData.ttd_nama || '-'"></span>
+                                    &middot;
+                                    <span class="font-bold text-black">Waktu:</span> <span x-text="detailData.ttd_waktu || '-'"></span>
+                                </p>
+                                <div class="mt-2 flex flex-wrap gap-2">
+                                    <a :href="detailData.ttd_url" target="_blank" rel="noopener"
+                                       class="inline-flex items-center rounded-xl bg-[#0047d6] px-3 py-2 text-xs font-bold text-white transition hover:bg-[#0038aa]">Buka Gambar</a>
+                                    <a :href="detailData.ttd_url" :download="'paraf-catatan-' + (detailData.id || '') + '.png'"
+                                       class="inline-flex items-center rounded-xl border-2 border-[#0047d6] bg-white px-3 py-2 text-xs font-bold text-[#0047d6] transition hover:bg-[#0047d6]/5">Unduh Paraf</a>
+                                </div>
+                            </div>
+                        </template>
+                        <template x-if="!detailData.ttd_url && detailData.foto_bukti_url">
                             <a :href="detailData.foto_bukti_url" download target="_blank" class="mt-1 inline-block">
-                                <img loading="lazy" decoding="async" :src="detailData.foto_bukti_url" alt="Bukti" class="max-h-48 rounded-lg border-2 border-[#0047d6]/15 object-cover">
+                                <img loading="lazy" decoding="async" :src="detailData.foto_bukti_url" alt="Bukti fisik (lama)" class="max-h-48 rounded-lg border-2 border-[#0047d6]/15 object-cover">
                             </a>
-                        </div>
-                    </template>
+                        </template>
+                        <template x-if="!detailData.ttd_url && !detailData.foto_bukti_url">
+                            <p class="mt-0.5 text-sm italic text-[#5b616e]">Belum ada paraf instruktur.</p>
+                        </template>
+                    </div>
                 </div>
 
                 {{-- AKSI DALAM MODAL DETAIL --}}
@@ -415,17 +449,50 @@
                         </select>
                     </div>
                     <div>
-                        <label class="mb-1 block text-xs font-bold uppercase tracking-wide text-black">Foto Bukti Fisik (opsional)</label>
-                        <template x-if="form.foto_bukti_url">
-                            <div class="mb-1 flex items-center gap-3">
-                                <a :href="form.foto_bukti_url" download target="_blank" class="text-[11px] font-bold text-[#0047d6] hover:underline">Lihat bukti saat ini</a>
-                                <label class="inline-flex items-center gap-1 text-[11px] font-semibold text-[#cf202f]">
-                                    <input type="checkbox" name="hapus_foto_bukti" value="1"> Hapus foto
-                                </label>
+                        {{-- ===== TANDA TANGAN DIGITAL INSTRUKTUR (OPSIONAL) ===== --}}
+                        <div class="rounded-xl border-2 border-[#0047d6]/15 bg-[#0047d6]/5 p-3">
+                            <p class="text-xs font-bold uppercase tracking-wide text-black">Tanda Tangan Digital Instruktur (opsional)</p>
+                            <p class="mt-0.5 text-[11px] font-medium text-[#5b616e]">Instruktur bisa memaraf langsung di kotak di bawah (mendukung layar HP). Unggah foto lembar berparaf sudah tidak diperlukan.</p>
+
+                            {{-- paraf yang sudah tersimpan (mode edit) --}}
+                            <template x-if="form.ttd_url">
+                                <div class="mt-2 rounded-xl border-2 border-[#05b169]/40 bg-white p-2">
+                                    <p class="text-[10px] font-bold uppercase tracking-wide text-[#05b169]">Paraf tersimpan</p>
+                                    <img :src="form.ttd_url" alt="Paraf digital instruktur" style="height:48px; width:auto; max-width:100%; margin-top:4px;">
+                                    <div class="mt-1 flex flex-wrap items-center gap-3">
+                                        <a :href="form.ttd_url" target="_blank" rel="noopener" class="text-[11px] font-bold text-[#0047d6] hover:underline">Lihat</a>
+                                        <a :href="form.ttd_url" :download="'paraf-catatan-' + (form.id || '') + '.png'" class="text-[11px] font-bold text-[#0047d6] hover:underline">Unduh paraf</a>
+                                        <label class="inline-flex items-center gap-1 text-[11px] font-semibold text-[#cf202f]">
+                                            <input type="checkbox" name="hapus_ttd_instruktur" value="1"> Hapus paraf
+                                        </label>
+                                    </div>
+                                    <p class="mt-1 text-[10px] font-medium text-[#5b616e]">Menandatangani ulang di kotak bawah otomatis mengganti paraf lama.</p>
+                                </div>
+                            </template>
+
+                            <div class="mt-2">
+                                <x-ttd-pad name="ttd_instruktur"
+                                           label="Paraf / Tanda Tangan Instruktur"
+                                           :tinggi="150"
+                                           :wajib="false" />
+                                <p class="mt-1 text-[11px] text-[#5b616e]">Diparaf oleh:
+                                    <span class="font-semibold text-black" x-text="namaInstrukturForm || 'Instruktur (nama belum diatur admin)'"></span>
+                                </p>
                             </div>
-                        </template>
-                        <input type="file" name="foto_bukti" accept="image/*"
-                               class="block w-full text-sm text-gray-600 file:mr-3 file:rounded-lg file:border-0 file:bg-[#eef0f3] file:px-3 file:py-2 file:text-sm file:font-semibold file:text-[#0a0b0d]">
+
+                            {{-- data lama: masih memakai foto lembar berparaf --}}
+                            <template x-if="form.foto_bukti_url">
+                                <div class="mt-2 rounded-xl border-2 border-dashed border-[#d98200]/40 bg-white p-2">
+                                    <p class="text-[10px] font-bold uppercase tracking-wide text-[#d98200]">Data lama: foto lembar berparaf</p>
+                                    <div class="mt-1 flex flex-wrap items-center gap-3">
+                                        <a :href="form.foto_bukti_url" download target="_blank" class="text-[11px] font-bold text-[#0047d6] hover:underline">Lihat foto lama</a>
+                                        <label class="inline-flex items-center gap-1 text-[11px] font-semibold text-[#cf202f]">
+                                            <input type="checkbox" name="hapus_foto_bukti" value="1"> Hapus foto lama
+                                        </label>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
                     </div>
                     <div class="flex gap-2 pt-2">
                         <button type="submit" :disabled="!siswaCocok" :class="!siswaCocok ? 'opacity-50 cursor-not-allowed' : ''"
@@ -473,7 +540,7 @@
             const daftarSiswa = @js($siswaList);
             const storeUrl = @js(route('admin.monitoring.catatan.store'));
             const baseUrl = @js(url('admin/monitoring/catatan'));
-            const kosong = () => ({ id: null, nisn: '', nama_pekerjaan: '', perencanaan_kegiatan: '', pelaksanaan_kegiatan: '', catatan_instruktur: '', status: 'draft', foto_bukti_url: null });
+            const kosong = () => ({ id: null, nisn: '', nama_pekerjaan: '', perencanaan_kegiatan: '', pelaksanaan_kegiatan: '', catatan_instruktur: '', status: 'draft', foto_bukti_url: null, ttd_url: null, ttd_nama: '' });
 
             return {
                 open: false,
@@ -499,9 +566,20 @@
                     if (!nisn) return null;
                     return daftarSiswa.find(s => String(s.nisn).trim() === nisn) || null;
                 },
+
+                // Nama instruktur otomatis (teks "Diparaf oleh" di bawah kanvas paraf).
+                get namaInstrukturForm() {
+                    const s = this.siswaCocok;
+                    return (s && s.instruktur_nama) ? s.instruktur_nama : (this.form.ttd_nama || '');
+                },
                 get actionUrl() { return this.mode === 'create' ? storeUrl : baseUrl + '/' + this.form.id; },
 
-                tambah() { this.mode = 'create'; this.form = kosong(); this.open = true; },
+                tambah() { this.mode = 'create'; this.form = kosong(); this.resetParaf(); this.open = true; },
+
+                // Kosongkan kanvas tanda tangan agar paraf sebelumnya tidak terbawa.
+                resetParaf() {
+                    document.querySelectorAll('[data-ttd] [data-ttd-clear]').forEach(function (tombol) { tombol.click(); });
+                },
 
                 edit(d) {
                     const s = daftarSiswa.find(x => String(x.id) === String(d.user_id));
@@ -515,7 +593,10 @@
                         catatan_instruktur: d.catatan_instruktur || '',
                         status: d.status || 'draft',
                         foto_bukti_url: d.foto_bukti_url || null,
+                        ttd_url: d.ttd_url || null,
+                        ttd_nama: d.ttd_nama || '',
                     };
+                    this.resetParaf();
                     this.open = true;
                 },
 
@@ -535,6 +616,8 @@
                         catatan_instruktur: d.catatan_instruktur,
                         status: d.status,
                         foto_bukti_url: d.foto_bukti_url,
+                        ttd_url: d.ttd_url,
+                        ttd_nama: d.ttd_nama,
                     });
                 },
 

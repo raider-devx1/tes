@@ -114,6 +114,33 @@
                                         (NIP: {{ $obs->guru->nip ?? '-' }})
                                         &middot; {{ \Carbon\Carbon::parse($obs->hari_tanggal)->format('d M Y') }}
                                     </p>
+
+                                    {{-- Cuplikan paraf digital: terlihat langsung tanpa membuka detail --}}
+                                    <div class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2">
+                                        <div class="flex items-center gap-1.5">
+                                            <span class="text-[10px] font-bold uppercase tracking-wide text-[#5b616e]">Paraf Guru</span>
+                                            @if($obs->ttd_guru)
+                                                <img src="{{ asset('storage/' . $obs->ttd_guru) }}" alt="Paraf guru pembimbing"
+                                                     class="rounded border border-[#05b169]/40 bg-white"
+                                                     style="height:20px; width:auto; max-width:80px;">
+                                            @else
+                                                <span class="text-[10px] font-semibold italic text-[#cf202f]">belum ada</span>
+                                            @endif
+                                        </div>
+                                        <div class="flex items-center gap-1.5">
+                                            <span class="text-[10px] font-bold uppercase tracking-wide text-[#5b616e]">Paraf Instruktur</span>
+                                            @if($obs->ttd_instruktur)
+                                                <img src="{{ asset('storage/' . $obs->ttd_instruktur) }}" alt="Paraf instruktur"
+                                                     class="rounded border border-[#05b169]/40 bg-white"
+                                                     style="height:20px; width:auto; max-width:80px;">
+                                            @else
+                                                <span class="text-[10px] font-semibold italic text-[#cf202f]">belum ada</span>
+                                            @endif
+                                        </div>
+                                        @if($obs->foto_lembar_observasi && ! $obs->ttd_guru && ! $obs->ttd_instruktur)
+                                            <span class="inline-flex items-center rounded-full bg-[#5b616e]/10 px-2 py-0.5 text-[10px] font-bold text-[#5b616e]">Pengajuan lama (foto lembar berparaf)</span>
+                                        @endif
+                                    </div>
                                 </div>
                                 <div class="flex flex-shrink-0 items-center gap-2">
                                     <button type="button" @click="detail = true"
@@ -209,24 +236,63 @@
                                             @endif
                                         </div>
                                         <div>
-                                            <p class="text-xs font-bold uppercase tracking-wide text-[#5b616e] mb-2">Bukti Foto</p>
-                                            @if ($obs->foto_dokumentasi || $obs->foto_lembar_observasi)
+                                            <p class="text-xs font-bold uppercase tracking-wide text-[#5b616e] mb-2">Bukti Foto Observasi</p>
+                                            @if ($obs->foto_dokumentasi)
                                                 <div class="flex flex-wrap gap-2">
-                                                    @if ($obs->foto_dokumentasi)
-                                                        <a href="{{ asset('storage/' . $obs->foto_dokumentasi) }}" target="_blank" rel="noopener"
-                                                           class="inline-flex items-center gap-1 rounded-full bg-[#0047d6]/10 px-3 py-1.5 text-xs font-bold text-[#0047d6] transition hover:bg-[#0047d6]/20">Foto Dokumentasi</a>
-                                                    @endif
-                                                    @if ($obs->foto_lembar_observasi)
-                                                        <a href="{{ asset('storage/' . $obs->foto_lembar_observasi) }}" target="_blank" rel="noopener"
-                                                           class="inline-flex items-center gap-1 rounded-full bg-[#05b169]/10 px-3 py-1.5 text-xs font-bold text-[#05b169] transition hover:bg-[#05b169]/20">Lembar Berparaf</a>
-                                                    @endif
+                                                    <a href="{{ asset('storage/' . $obs->foto_dokumentasi) }}" target="_blank" rel="noopener"
+                                                       class="inline-flex items-center gap-1 rounded-full bg-[#0047d6]/10 px-3 py-1.5 text-xs font-bold text-[#0047d6] transition hover:bg-[#0047d6]/20">Lihat Foto Observasi</a>
+                                                    <a href="{{ asset('storage/' . $obs->foto_dokumentasi) }}" download
+                                                       class="inline-flex items-center gap-1 rounded-full border-2 border-[#0047d6] bg-white px-3 py-1.5 text-xs font-bold text-[#0047d6] transition hover:bg-[#0047d6]/5">Unduh Foto</a>
                                                 </div>
                                             @else
-                                                <p class="text-sm text-[#5b616e]">Belum ada foto yang diunggah guru.</p>
+                                                <p class="text-sm text-[#5b616e]">Belum ada foto observasi yang diunggah guru.</p>
+                                            @endif
+                                        </div>
+
+                                        {{-- ===== PARAF DIGITAL YANG HARUS DIPERIKSA WAKASEK ===== --}}
+                                        <div class="rounded-xl border-2 border-[#0047d6]/15 bg-[#0047d6]/5 p-3">
+                                            <p class="mb-3 text-xs font-bold uppercase tracking-wide text-[#5b616e]">Paraf Digital untuk Divalidasi</p>
+                                            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                                <div class="rounded-lg border-2 border-[#0047d6]/10 bg-white p-2">
+                                                    <p class="mb-1.5 text-[11px] font-bold text-black">1. Guru Pembimbing</p>
+                                                    <x-paraf-instruktur :ttd="$obs->ttd_guru"
+                                                                        :nama="$obs->ttd_guru_nama ?: ($obs->guru->name ?? null)"
+                                                                        :waktu="$obs->ttd_guru_signed_at"
+                                                                        :tinggi="54"
+                                                                        label="Paraf guru pembimbing"
+                                                                        peran-label="Nama guru pembimbing"
+                                                                        judul="Paraf Guru Pembimbing — {{ $obs->guru->name ?? '-' }}"
+                                                                        unduh-nama="paraf-guru-observasi-{{ $obs->id }}"
+                                                                        kosong="Belum ada paraf guru pembimbing" />
+                                                </div>
+                                                <div class="rounded-lg border-2 border-[#0047d6]/10 bg-white p-2">
+                                                    <p class="mb-1.5 text-[11px] font-bold text-black">2. Instruktur</p>
+                                                    <x-paraf-instruktur :ttd="$obs->ttd_instruktur"
+                                                                        :nama="$obs->ttd_instruktur_nama"
+                                                                        :waktu="$obs->ttd_instruktur_signed_at"
+                                                                        :tinggi="54"
+                                                                        label="Paraf instruktur"
+                                                                        peran-label="Nama instruktur"
+                                                                        judul="Paraf Instruktur — {{ $obs->user->name ?? '-' }}"
+                                                                        unduh-nama="paraf-instruktur-observasi-{{ $obs->id }}"
+                                                                        kosong="Belum ada paraf instruktur" />
+                                                </div>
+                                            </div>
+
+                                            @if ($obs->foto_lembar_observasi)
+                                                <a href="{{ asset('storage/' . $obs->foto_lembar_observasi) }}" target="_blank" rel="noopener"
+                                                   class="mt-3 inline-flex items-center gap-1 rounded-full border-2 border-[#5b616e]/30 bg-white px-3 py-1.5 text-[11px] font-bold text-[#5b616e] transition hover:bg-[#5b616e]/5">Lembar Berparaf (pengajuan lama)</a>
+                                            @elseif (! $obs->ttd_guru || ! $obs->ttd_instruktur)
+                                                <p class="mt-3 rounded-lg border-l-4 border-[#cf202f] bg-[#cf202f]/5 px-3 py-2 text-[11px] font-semibold text-[#cf202f]">
+                                                    Paraf belum lengkap. Minta guru pembimbing mengajukan ulang dengan paraf guru dan paraf instruktur sebelum Anda validasi.
+                                                </p>
                                             @endif
                                         </div>
                                     </div>
                                     <div class="sticky bottom-0 space-y-2 border-t-2 border-[#0047d6]/15 bg-white px-5 py-4">
+                                        @if($isDiajukan)
+                                            <p class="text-center text-[11px] font-semibold text-[#5b616e]">Periksa paraf guru pembimbing &amp; instruktur di atas sebelum memvalidasi.</p>
+                                        @endif
                                         <a href="{{ route('cetak.observasi', ['siswa_id' => $obs->user_id, 'observasi_id' => $obs->id]) }}" target="_blank"
                                            class="flex w-full items-center justify-center gap-1.5 rounded-xl bg-[#0047d6] px-3 py-2.5 text-xs font-bold text-white transition hover:bg-[#0038aa]">
                                             Cetak PDF

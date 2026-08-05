@@ -21,7 +21,10 @@ class Jurnal extends Model
         'periode_id',   // periode PKL tempat data ini dibuat (diisi otomatis)
         'hari_tanggal',
         'status',                 // draft | diajukan | disetujui
-        'foto_bukti',
+        'foto_bukti',             // kolom lama (alur foto bukti fisik) - dibiarkan untuk data lama
+        'ttd_instruktur',         // path PNG tanda tangan digital instruktur
+        'ttd_instruktur_nama',    // nama yang dicetak di bawah paraf
+        'ttd_signed_at',          // waktu instruktur menandatangani
         'catatan_instruktur',
         'status_persetujuan',     // kolom lama (dibiarkan agar tidak merusak data lama)
         'disetujui_oleh',
@@ -30,9 +33,16 @@ class Jurnal extends Model
     ];
 
     protected $casts = [
-        'hari_tanggal' => 'date',
-        'validated_at' => 'datetime',
+        'hari_tanggal'  => 'date',
+        'validated_at'  => 'datetime',
+        'ttd_signed_at' => 'datetime',
     ];
+
+    /** Sudah ditandatangani instruktur secara digital? */
+    public function sudahDitandatangani(): bool
+    {
+        return ! empty($this->ttd_instruktur);
+    }
 
     public function siswa()
     {

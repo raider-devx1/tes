@@ -215,6 +215,18 @@
 
                                 <td class="px-4 py-3 text-center">
                                     <span class="inline-block rounded-full px-3 py-1 text-xs font-bold {{ $badgeStatus }}">{{ $labelStatus }}</span>
+
+                                    {{-- Paraf digital instruktur: langsung terlihat di kolom Status --}}
+                                    <div class="mt-2 flex justify-center">
+                                        <x-paraf-instruktur :ttd="$jurnal->ttd_instruktur"
+                                                            :nama="$jurnal->ttd_instruktur_nama"
+                                                            :waktu="$jurnal->ttd_signed_at"
+                                                            :foto-lama="$jurnal->foto_bukti"
+                                                            :tinggi="42"
+                                                            judul="Paraf Instruktur — {{ $jurnal->siswa->name ?? '-' }}"
+                                                            unduh-nama="paraf-jurnal-{{ $jurnal->siswa->nisn ?? $jurnal->id }}-{{ $jurnal->id }}"
+                                                            kosong="Belum ada paraf instruktur" />
+                                    </div>
                                 </td>
 
                                 {{-- ===== VALIDASI ===== --}}
@@ -255,9 +267,21 @@
                                                     <div class="space-y-3 px-5 py-4">
                                                         <p class="text-sm font-medium text-black">
                                                             Jurnal tanggal <span class="font-bold">{{ $jurnal->hari_tanggal->format('d/m/Y') }}</span>.
-                                                            Pastikan Anda telah memeriksa bukti fisik melalui tombol
-                                                            <span class="font-bold text-[#0047d6]">Lihat Bukti</span> sebelum menyetujui.
+                                                            Periksa paraf digital instruktur di bawah ini sebelum menyetujui.
                                                         </p>
+
+                                                        {{-- Paraf digital instruktur (klik gambar untuk memperbesar) --}}
+                                                        <div class="rounded-xl border-2 border-[#0047d6]/15 bg-[#0047d6]/5 p-3">
+                                                            <p class="mb-2 text-xs font-bold uppercase tracking-wide text-[#5b616e]">Paraf Instruktur</p>
+                                                            <x-paraf-instruktur :ttd="$jurnal->ttd_instruktur"
+                                                                                :nama="$jurnal->ttd_instruktur_nama"
+                                                                                :waktu="$jurnal->ttd_signed_at"
+                                                                                :foto-lama="$jurnal->foto_bukti"
+                                                                                :tinggi="64"
+                                                                                judul="Paraf Instruktur — {{ $jurnal->siswa->name ?? '-' }}"
+                                                                                unduh-nama="paraf-jurnal-{{ $jurnal->siswa->nisn ?? $jurnal->id }}-{{ $jurnal->id }}"
+                                                                                kosong="Instruktur belum memberi paraf digital" />
+                                                        </div>
                                                         @if($jurnal->catatan_instruktur)
                                                             <div class="rounded-lg border-l-4 border-[#d98200] bg-[#d98200]/5 p-3">
                                                                 <p class="text-xs font-bold uppercase tracking-wide text-[#5b616e]">Catatan Instruktur</p>
@@ -333,9 +357,15 @@
                         <div class="flex items-center justify-between gap-3">
                             <div class="min-w-0">
                                 <p class="font-bold text-black truncate">{{ $jurnal->siswa->name ?? '-' }}</p>
-                                <div class="mt-1 flex items-center gap-2">
+                                <div class="mt-1 flex flex-wrap items-center gap-2">
                                     <span class="text-xs font-medium text-[#5b616e]">{{ $jurnal->hari_tanggal->format('d/m/Y') }}</span>
                                     <span class="inline-block rounded-full px-2.5 py-0.5 text-[11px] font-bold {{ $badgeStatus }}">{{ $labelStatus }}</span>
+                                    @if($jurnal->ttd_instruktur)
+                                        {{-- Cuplikan kecil paraf instruktur --}}
+                                        <img src="{{ asset('storage/'.$jurnal->ttd_instruktur) }}" alt="Paraf instruktur"
+                                             class="rounded border border-[#05b169]/40 bg-white"
+                                             style="height:18px; width:auto; max-width:64px;">
+                                    @endif
                                 </div>
                             </div>
                             <button type="button" @click="detail = true"
@@ -390,6 +420,18 @@
                                         <div>
                                             <p class="text-xs font-bold uppercase tracking-wide text-[#5b616e]">Status</p>
                                             <span class="inline-block rounded-full px-3 py-1 text-xs font-bold {{ $badgeStatus }}">{{ $labelStatus }}</span>
+
+                                            {{-- Paraf digital instruktur --}}
+                                            <div class="mt-2">
+                                                <x-paraf-instruktur :ttd="$jurnal->ttd_instruktur"
+                                                                    :nama="$jurnal->ttd_instruktur_nama"
+                                                                    :waktu="$jurnal->ttd_signed_at"
+                                                                    :foto-lama="$jurnal->foto_bukti"
+                                                                    :tinggi="44"
+                                                                    judul="Paraf Instruktur — {{ $jurnal->siswa->name ?? '-' }}"
+                                                                    unduh-nama="paraf-jurnal-{{ $jurnal->siswa->nisn ?? $jurnal->id }}-{{ $jurnal->id }}"
+                                                                    kosong="Belum ada paraf instruktur" />
+                                            </div>
                                         </div>
                                     </div>
 

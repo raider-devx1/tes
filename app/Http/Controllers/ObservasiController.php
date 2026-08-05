@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Observasi;
 use App\Models\User;
 use App\Support\ImageCompressor;
+use App\Support\TandaTangan;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -170,9 +171,69 @@ class ObservasiController extends Controller
     }
 
     /**
+     * Validasi + penyimpanan bukti pengajuan lembar observasi (ALUR BARU).
+     *
+     * Guru TIDAK lagi memotret lembar observasi yang sudah diparaf. Yang dikirim:
+     *   - foto_dokumentasi : BUKTI FOTO OBSERVASI (wajib, tetap berupa unggahan foto)
+     *   - ttd_guru         : paraf digital guru pembimbing (kanvas di web/HP, wajib)
+     *   - ttd_instruktur   : paraf digital instruktur, dibubuhkan di bawah paraf guru (wajib)
+     *
+     * @return array<string, mixed> data siap dipakai $observasi->update()
+     */
+    private function simpanBuktiObservasi(Request $request, Observasi $observasi): array
+    {
+        // Aturan khusus: isi input harus berupa data URL gambar hasil kanvas.
+        $aturanParaf = function ($atribut, $nilai, $gagal) {
+            if (! TandaTangan::valid($nilai)) {
+                $gagal('Paraf digital tidak terbaca. Mohon bubuhkan ulang paraf pada kotak yang tersedia.');
+            }
+        };
+
+        $request->validate([
+            'foto_dokumentasi' => 'required|image|mimes:jpeg,png,jpg|max:3072',
+            'ttd_guru'         => ['required', 'string', $aturanParaf],
+            'ttd_instruktur'   => ['required', 'string', $aturanParaf],
+        ], [
+            'foto_dokumentasi.required' => 'Bukti foto observasi wajib diunggah.',
+            'foto_dokumentasi.image'    => 'Bukti foto observasi harus berupa gambar.',
+            'foto_dokumentasi.mimes'    => 'Format bukti foto observasi harus JPG, JPEG, atau PNG.',
+            'foto_dokumentasi.max'      => 'Ukuran bukti foto observasi maksimal 3 MB.',
+            'ttd_guru.required'         => 'Paraf digital guru pembimbing wajib diisi.',
+            'ttd_instruktur.required'   => 'Paraf digital instruktur wajib diisi.',
+        ]);
+
+        // Bersihkan bukti lama bila mengajukan / memvalidasi ulang.
+        if ($observasi->foto_dokumentasi && Storage::disk('public')->exists($observasi->foto_dokumentasi)) {
+            Storage::disk('public')->delete($observasi->foto_dokumentasi);
+        }
+        // Foto lembar berparaf (alur lama) tidak dipakai lagi -> ikut dibersihkan.
+        if ($observasi->foto_lembar_observasi && Storage::disk('public')->exists($observasi->foto_lembar_observasi)) {
+            Storage::disk('public')->delete($observasi->foto_lembar_observasi);
+        }
+        TandaTangan::hapus($observasi->ttd_guru);
+        TandaTangan::hapus($observasi->ttd_instruktur);
+
+        $namaInstruktur = $observasi->user->instruktur->name ?? null;
+        if ($namaInstruktur === 'Belum Diatur') {
+            $namaInstruktur = null;
+        }
+
+        return [
+            'foto_dokumentasi'         => ImageCompressor::store($request->file('foto_dokumentasi'), 'observasi/dokumentasi'),
+            'foto_lembar_observasi'    => null, // alur lama dinonaktifkan
+            'ttd_guru'                 => TandaTangan::simpan($request->input('ttd_guru'), 'ttd/observasi/guru'),
+            'ttd_guru_nama'            => Auth::user()->name ?? null,
+            'ttd_guru_signed_at'       => now(),
+            'ttd_instruktur'           => TandaTangan::simpan($request->input('ttd_instruktur'), 'ttd/observasi/instruktur'),
+            'ttd_instruktur_nama'      => $namaInstruktur,
+            'ttd_instruktur_signed_at' => now(),
+        ];
+    }
+
+    /**
      * VALIDASI oleh Guru Pembimbing.
-     * Guru mengunggah foto dokumentasi kegiatan + foto lembar observasi yang sudah
-     * diparaf instruktur & guru pembimbing. Status -> tervalidasi.
+     * Guru mengunggah bukti foto observasi + membubuhkan paraf digital guru
+     * pembimbing & instruktur langsung di layar. Status -> tervalidasi.
      * Setelah ini, hasil cetak PDF menampilkan keterangan "SUDAH DIVALIDASI".
      */
     public function validasiGuru(Request $request, $id)
@@ -181,38 +242,14 @@ class ObservasiController extends Controller
             ->where('guru_id', Auth::id())
             ->firstOrFail();
 
-        $request->validate([
-            'foto_dokumentasi'      => 'required|image|mimes:jpeg,png,jpg|max:3072',
-            'foto_lembar_observasi' => 'required|image|mimes:jpeg,png,jpg|max:3072',
-        ], [
-            'foto_dokumentasi.required'      => 'Foto dokumentasi kegiatan/kunjungan wajib diunggah.',
-            'foto_dokumentasi.image'         => 'Foto dokumentasi harus berupa gambar.',
-            'foto_dokumentasi.mimes'         => 'Format foto dokumentasi harus JPG, JPEG, atau PNG.',
-            'foto_dokumentasi.max'           => 'Ukuran foto dokumentasi maksimal 3 MB.',
-            'foto_lembar_observasi.required' => 'Foto lembar observasi yang sudah diparaf wajib diunggah.',
-            'foto_lembar_observasi.image'    => 'Foto lembar observasi harus berupa gambar.',
-            'foto_lembar_observasi.mimes'    => 'Format foto lembar observasi harus JPG, JPEG, atau PNG.',
-            'foto_lembar_observasi.max'      => 'Ukuran foto lembar observasi maksimal 3 MB.',
-        ]);
+        $data = $this->simpanBuktiObservasi($request, $observasi);
 
-        // Hapus foto lama bila ada (validasi ulang)
-        if ($observasi->foto_dokumentasi && Storage::disk('public')->exists($observasi->foto_dokumentasi)) {
-            Storage::disk('public')->delete($observasi->foto_dokumentasi);
-        }
-        if ($observasi->foto_lembar_observasi && Storage::disk('public')->exists($observasi->foto_lembar_observasi)) {
-            Storage::disk('public')->delete($observasi->foto_lembar_observasi);
-        }
+        $data['status']               = 'tervalidasi';
+        $data['diajukan_at']          = $observasi->diajukan_at ?: now();
+        $data['validated_by_guru_id'] = Auth::id();
+        $data['validated_at']         = now();
 
-        $fotoDokumentasiPath = ImageCompressor::store($request->file('foto_dokumentasi'), 'observasi/dokumentasi');
-        $fotoLembarPath      = ImageCompressor::store($request->file('foto_lembar_observasi'), 'observasi/lembar');
-
-        $observasi->update([
-            'foto_dokumentasi'      => $fotoDokumentasiPath,
-            'foto_lembar_observasi' => $fotoLembarPath,
-            'status'                => 'tervalidasi',
-            'validated_by_guru_id'  => Auth::id(),
-            'validated_at'          => now(),
-        ]);
+        $observasi->update($data);
 
         return redirect()->route('guru.observasi.index')
             ->with('success', 'Lembar observasi berhasil divalidasi. Hasil cetak kini menampilkan keterangan "SUDAH DIVALIDASI".');
@@ -221,8 +258,9 @@ class ObservasiController extends Controller
     /**
      * AJUKAN VALIDASI oleh Guru Pembimbing (alur baru).
      *
-     * Guru mengunggah foto dokumentasi kegiatan + foto lembar observasi yang
-     * sudah diparaf instruktur & guru pembimbing, lalu MENGAJUKAN (seperti siswa).
+     * Guru mengunggah BUKTI FOTO OBSERVASI + membubuhkan PARAF DIGITAL langsung
+     * di layar (paraf guru pembimbing, lalu paraf instruktur di bawahnya),
+     * kemudian MENGAJUKAN (seperti siswa pada jurnal & catatan).
      *   - Guru biasa  : status -> diajukan (menunggu divalidasi Wakasek).
      *   - Guru Wakasek: boleh langsung validasi sendiri -> status tervalidasi.
      */
@@ -232,38 +270,10 @@ class ObservasiController extends Controller
             ->where('guru_id', Auth::id())
             ->firstOrFail();
 
-        $request->validate([
-            'foto_dokumentasi'      => 'required|image|mimes:jpeg,png,jpg|max:3072',
-            'foto_lembar_observasi' => 'required|image|mimes:jpeg,png,jpg|max:3072',
-        ], [
-            'foto_dokumentasi.required'      => 'Foto dokumentasi kegiatan/kunjungan wajib diunggah.',
-            'foto_dokumentasi.image'         => 'Foto dokumentasi harus berupa gambar.',
-            'foto_dokumentasi.mimes'         => 'Format foto dokumentasi harus JPG, JPEG, atau PNG.',
-            'foto_dokumentasi.max'           => 'Ukuran foto dokumentasi maksimal 3 MB.',
-            'foto_lembar_observasi.required' => 'Foto lembar observasi yang sudah diparaf wajib diunggah.',
-            'foto_lembar_observasi.image'    => 'Foto lembar observasi harus berupa gambar.',
-            'foto_lembar_observasi.mimes'    => 'Format foto lembar observasi harus JPG, JPEG, atau PNG.',
-            'foto_lembar_observasi.max'      => 'Ukuran foto lembar observasi maksimal 3 MB.',
-        ]);
-
-        // Hapus foto lama bila mengajukan ulang.
-        if ($observasi->foto_dokumentasi && Storage::disk('public')->exists($observasi->foto_dokumentasi)) {
-            Storage::disk('public')->delete($observasi->foto_dokumentasi);
-        }
-        if ($observasi->foto_lembar_observasi && Storage::disk('public')->exists($observasi->foto_lembar_observasi)) {
-            Storage::disk('public')->delete($observasi->foto_lembar_observasi);
-        }
-
-        $fotoDokumentasiPath = ImageCompressor::store($request->file('foto_dokumentasi'), 'observasi/dokumentasi');
-        $fotoLembarPath      = ImageCompressor::store($request->file('foto_lembar_observasi'), 'observasi/lembar');
-
         $isWakasek = (bool) (Auth::user()->is_wakasek ?? false);
 
-        $data = [
-            'foto_dokumentasi'      => $fotoDokumentasiPath,
-            'foto_lembar_observasi' => $fotoLembarPath,
-            'diajukan_at'           => now(),
-        ];
+        $data = $this->simpanBuktiObservasi($request, $observasi);
+        $data['diajukan_at'] = now();
 
         if ($isWakasek) {
             // Wakasek boleh memvalidasi lembar observasinya sendiri secara langsung.
@@ -296,6 +306,10 @@ class ObservasiController extends Controller
         if ($observasi->foto_lembar_observasi && Storage::disk('public')->exists($observasi->foto_lembar_observasi)) {
             Storage::disk('public')->delete($observasi->foto_lembar_observasi);
         }
+
+        // Berkas paraf digital ikut dibersihkan.
+        TandaTangan::hapus($observasi->ttd_guru);
+        TandaTangan::hapus($observasi->ttd_instruktur);
 
         $observasi->delete();
 

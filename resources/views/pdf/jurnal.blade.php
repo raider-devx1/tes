@@ -12,6 +12,13 @@
         table.data-jurnal th { text-align: center; font-weight: bold; }
         .footer-note { font-style: italic; font-size: 10px; margin-top: 5px; }
 
+        /* Kolom paraf: tanda tangan digital instruktur (hasil kanvas di web/HP).
+           Selector ikut menyertakan "table.data-jurnal td" supaya vertical-align
+           di sini menang atas aturan umum "vertical-align: top" di atas,
+           sehingga paraf benar-benar di tengah kotak (horizontal & vertikal). */
+        table.data-jurnal td.ttd-cell { text-align: center; vertical-align: middle; }
+        .ttd-cell img { display: block; margin: 0 auto; }
+
         /* Badge tanda tangan digital terverifikasi */
         .verified {
             border: 1.5px solid #16a34a;
@@ -89,11 +96,16 @@
                         @endif
                     </td>
                     <td> {{ $row->catatan_instruktur ?? '-' }} </td>
-                    <td>
-                        {{-- Kolom paraf instruktur SELALU dicetak kosong (hanya tempat paraf basah),
-                             baik jurnal sudah divalidasi/disetujui maupun belum. --}}
-                        <br><br><br>
-                        <div class="text-center">( .................... )</div>
+                    <td class="ttd-cell">
+                        @php $ttdParaf = \App\Support\TandaTangan::dataUri($row->ttd_instruktur); @endphp
+                        @if($ttdParaf)
+                            {{-- Paraf otomatis: HANYA gambar tanda tangan digital instruktur, tanpa nama & tanpa tanggal --}}
+                            <img src="{{ $ttdParaf }}" alt="Paraf instruktur" style="height:26px; width:auto;">
+                        @else
+                            {{-- Belum ditandatangani: sediakan ruang paraf basah seperti sebelumnya --}}
+                            <br><br><br>
+                            <div class="text-center">( .................... )</div>
+                        @endif
                     </td>
                 </tr>
                 @empty
@@ -104,9 +116,7 @@
             </tbody>
         </table>
 
-        <div class="footer-note">
-            * Catatan diberikan oleh instruktur pada setiap kegiatan atau waktu tertentu
-        </div>
+       
     </div>
 
 @empty

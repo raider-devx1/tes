@@ -41,16 +41,35 @@ class LoginRequest extends FormRequest
     {
         $this->ensureIsNotRateLimited();
 
-        $login = $this->input('login');
+        // Rapikan input: spasi, tab, baris baru, dan spasi tak-terputus (U+00A0)
+        // sering ikut terbawa saat NIP/NISN disalin dari Excel atau WhatsApp.
+        $login = preg_replace('/[\s\x{00A0}]+/u', '', (string) $this->input('login'));
 
-        // Cari user: prioritas NISN -> NIP -> Email
+        // Laravel SENGAJA tidak memangkas spasi pada field password
+        // (lihat $except pada middleware TrimStrings). Versi rapi disiapkan
+        // sebagai cadangan pencocokan.
+        $passwordRapi = trim((string) $this->input('password'));
+
+        // Cari user: prioritas NISN -> NIP -> Email.
+        // orWhere dibungkus satu grup agar tidak bertabrakan dengan penyaring
+        // lain (mis. soft delete) dan tidak salah mengambil baris.
         $user = User::query()
-            ->where('nisn', $login)
-            ->orWhere('nip', $login)
-            ->orWhere('email', $login)
+            ->where(function ($query) use ($login) {
+                $query->where('nisn', $login)
+                      ->orWhere('nip', $login)
+                      ->orWhere('email', $login);
+            })
             ->first();
 
-        if (! $user || ! Hash::check($this->input('password'), $user->password)) {
+        // Cocokkan password apa adanya lebih dulu, lalu versi yang sudah
+        // dirapikan. Ini menyelamatkan akun yang password tersimpannya
+        // terlanjur mengandung spasi hasil salin-tempel admin.
+        $cocok = $user && (
+            Hash::check($this->input('password'), $user->password)
+            || Hash::check($passwordRapi, $user->password)
+        );
+
+        if (! $cocok) {
             RateLimiter::hit($this->throttleKey());
 
             throw ValidationException::withMessages([

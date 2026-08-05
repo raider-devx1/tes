@@ -18,8 +18,12 @@
         .text-center { text-align: center !important; }
         .paraf-col { width: 80px; }
 
-        /* Kolom paraf pada hasil cetak SELALU dibiarkan kosong (untuk paraf basah),
-           baik lembar sudah divalidasi maupun belum. */
+        /* Kolom paraf: hasil PARAF DIGITAL (kanvas di web/HP) otomatis dicetak di sini.
+           Bila belum ada paraf digital, kolom dibiarkan kosong untuk paraf basah.
+           Selector dibuat lebih spesifik (.data-table td.paraf-cell) supaya menang
+           dari aturan .data-table td { vertical-align: top; } di atas. */
+        .data-table td.paraf-cell { text-align: center; vertical-align: middle; }
+        .data-table td.paraf-cell img { display: block; margin: 0 auto; }
         .sign-text { font-family: 'Helvetica', Arial, sans-serif; font-size: 9pt; font-weight: bold; color: #000; }
 
         .footer-note { font-size: 9pt; color: #000; margin-top: 8px; }
@@ -34,8 +38,13 @@
 @forelse($lembar as $data)
     @php
         extract($data);
-        // Status validasi TIDAK lagi dicetak pada lembar; kolom paraf selalu kosong.
+        // Status validasi TIDAK dicetak pada lembar.
         $sudahValidasi = ($status ?? 'draft') === 'tervalidasi';
+
+        // Paraf digital -> data URI base64 agar DomPDF tidak bergantung pada
+        // symlink public/storage maupun izin folder di shared hosting.
+        $parafInstruktur = \App\Support\TandaTangan::dataUri($ttd_instruktur ?? null);
+        $parafGuru       = \App\Support\TandaTangan::dataUri($ttd_guru ?? null);
     @endphp
 
     <div class="lembar">
@@ -66,10 +75,22 @@
                     <td class="text-center"> {{ $loop->iteration }} </td>
                     <td>{!! nl2br(e($item->permasalahan)) !!}</td>
                     <td>{!! nl2br(e($item->solusi)) !!}</td>
-                    {{-- Paraf instruktur: SELALU kosong, tanpa tulisan apa pun. --}}
-                    <td class="text-center sign-text">&nbsp;</td>
-                    {{-- Paraf guru pembimbing: SELALU kosong, tanpa tulisan apa pun. --}}
-                    <td class="text-center sign-text">&nbsp;</td>
+                    {{-- Paraf instruktur: hasil paraf digital, tanpa nama di bawahnya. --}}
+                    <td class="paraf-cell">
+                        @if($parafInstruktur)
+                            <img src="{{ $parafInstruktur }}" alt="Paraf instruktur" style="height:24px; width:auto;">
+                        @else
+                            &nbsp;
+                        @endif
+                    </td>
+                    {{-- Paraf guru pembimbing: hasil paraf digital, tanpa nama di bawahnya. --}}
+                    <td class="paraf-cell">
+                        @if($parafGuru)
+                            <img src="{{ $parafGuru }}" alt="Paraf guru pembimbing" style="height:24px; width:auto;">
+                        @else
+                            &nbsp;
+                        @endif
+                    </td>
                 </tr>
                 @empty
                 <tr>
@@ -79,8 +100,9 @@
             </tbody>
         </table>
 
-        {{-- Catatan validasi sengaja TIDAK dicetak: lembar hasil cetak dibiarkan
-             polos agar paraf instruktur & guru pembimbing diisi manual. --}}
+        {{-- Keterangan validasi sengaja TIDAK dicetak. Kolom paraf otomatis terisi
+             paraf digital instruktur & guru pembimbing bila sudah dibubuhkan;
+             bila belum, kolom tetap polos untuk diparaf manual. --}}
     </div>
 
 @empty

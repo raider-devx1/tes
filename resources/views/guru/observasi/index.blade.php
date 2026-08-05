@@ -231,18 +231,33 @@
                                         @endif
                                     </td>
                                     <td class="px-4 py-3 text-center">
-                                        @if ($obs->foto_dokumentasi || $obs->foto_lembar_observasi)
+                                        @if ($obs->foto_dokumentasi || $obs->ttd_guru || $obs->ttd_instruktur || $obs->foto_lembar_observasi)
                                             <div class="flex flex-col items-center gap-1.5">
                                                 @if ($obs->foto_dokumentasi)
                                                     <a href="{{ asset('storage/' . $obs->foto_dokumentasi) }}" download target="_blank" rel="noopener"
                                                        class="inline-flex items-center gap-1 rounded-full bg-[#0047d6]/10 px-3 py-1.5 text-xs font-bold text-[#0047d6] transition hover:bg-[#0047d6]/20">
-                                                        Foto Dokumentasi
+                                                        Bukti Foto Observasi
                                                     </a>
                                                 @endif
+                                                @if ($obs->ttd_guru)
+                                                    <div class="text-center">
+                                                        <img src="{{ asset('storage/' . $obs->ttd_guru) }}" alt="Paraf guru pembimbing"
+                                                             style="max-height:28px; width:auto; max-width:110px; margin:0 auto;">
+                                                        <span class="block text-[10px] font-bold text-[#049458]">Paraf Guru</span>
+                                                    </div>
+                                                @endif
+                                                @if ($obs->ttd_instruktur)
+                                                    <div class="text-center">
+                                                        <img src="{{ asset('storage/' . $obs->ttd_instruktur) }}" alt="Paraf instruktur"
+                                                             style="max-height:28px; width:auto; max-width:110px; margin:0 auto;">
+                                                        <span class="block text-[10px] font-bold text-[#049458]">Paraf Instruktur</span>
+                                                    </div>
+                                                @endif
                                                 @if ($obs->foto_lembar_observasi)
+                                                    {{-- Data lama: bukti masih berupa foto lembar berparaf --}}
                                                     <a href="{{ asset('storage/' . $obs->foto_lembar_observasi) }}" download target="_blank" rel="noopener"
-                                                       class="inline-flex items-center gap-1 rounded-full bg-[#05b169]/10 px-3 py-1.5 text-xs font-bold text-[#05b169] transition hover:bg-[#05b169]/20">
-                                                        Lembar Berparaf
+                                                       class="inline-flex items-center gap-1 rounded-full bg-[#5b616e]/10 px-3 py-1.5 text-xs font-bold text-[#5b616e] transition hover:bg-[#5b616e]/20">
+                                                        Lembar Berparaf (lama)
                                                     </a>
                                                 @endif
                                             </div>
@@ -300,46 +315,11 @@
                                                     <button type="button" @click="showValidasi = false"
                                                             class="text-2xl leading-none text-[#5b616e] hover:text-black">&times;</button>
                                                 </div>
-                                                <p class="mb-4 text-sm text-[#5b616e]">
-                                                    Unggah foto dokumentasi kegiatan dan foto lembar observasi yang sudah diparaf
-                                                    <span class="font-semibold text-black">instruktur &amp; guru pembimbing</span>.
-                                                    @if($isWakasek)
-                                                        Karena Anda berstatus <span class="font-bold text-black">Wakasek</span>, lembar akan langsung <span class="font-bold text-black">tervalidasi</span> dan hasil cetak menampilkan <span class="font-bold text-black">SUDAH DIVALIDASI</span>.
-                                                    @else
-                                                        Setelah diajukan, lembar berstatus <span class="font-bold text-black">menunggu divalidasi</span> oleh Wakasek yang ditetapkan admin.
-                                                    @endif
-                                                </p>
-                                                <form method="POST" action="{{ route('guru.observasi.ajukan', $obs->id) }}"
-                                                      enctype="multipart/form-data" class="space-y-4">
-                                                    @csrf
-                                                    @method('PUT')
-                                                    <div>
-                                                        <label class="block text-sm font-bold text-black mb-1">
-                                                            Foto Dokumentasi Kegiatan <span class="text-red-500">*</span>
-                                                        </label>
-                                                        <input type="file" name="foto_dokumentasi" accept="image/*" required
-                                                               class="w-full text-sm text-gray-600 rounded-lg border border-gray-300 bg-white file:mr-4 file:py-2 file:px-4 file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
-                                                        <p class="mt-1 text-xs text-gray-500">Wajib. Format JPG/JPEG/PNG, maksimal 3 MB.</p>
-                                                    </div>
-                                                    <div>
-                                                        <label class="block text-sm font-bold text-black mb-1">
-                                                            Foto Lembar Observasi (Sudah Diparaf) <span class="text-red-500">*</span>
-                                                        </label>
-                                                        <input type="file" name="foto_lembar_observasi" accept="image/*" required
-                                                               class="w-full text-sm text-gray-600 rounded-lg border border-gray-300 bg-white file:mr-4 file:py-2 file:px-4 file:border-0 file:text-sm file:font-medium file:bg-green-50 file:text-green-700 hover:file:bg-green-100">
-                                                        <p class="mt-1 text-xs text-gray-500">Wajib. Foto lembar fisik yang sudah diparaf instruktur &amp; guru pembimbing.</p>
-                                                    </div>
-                                                    <div class="flex justify-end gap-2 pt-2">
-                                                        <button type="button" @click="showValidasi = false"
-                                                                class="inline-flex items-center rounded-xl border-2 border-[#0047d6]/25 bg-white px-4 py-2 text-sm font-bold text-[#0047d6] transition hover:bg-[#0047d6]/5">
-                                                            Batal
-                                                        </button>
-                                                        <button type="submit"
-                                                                class="inline-flex items-center rounded-xl bg-[#05b169] px-5 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-[#049457]">
-                                                            {{ $isWakasek ? 'Simpan & Validasi' : 'Ajukan Sekarang' }}
-                                                        </button>
-                                                    </div>
-                                                </form>
+                                                {{-- Form ajukan: bukti foto observasi + paraf digital guru & instruktur --}}
+                                                @include('guru.partials.form-ajukan-observasi', [
+                                                    'obs'       => $obs,
+                                                    'isWakasek' => $isWakasek,
+                                                ])
                                             </div>
                                         </div>
                                     </td>
@@ -478,19 +458,33 @@
                                         </div>
                                         {{-- Foto --}}
                                         <div>
-                                            <p class="text-xs font-bold uppercase tracking-wide text-[#5b616e] mb-2">Foto</p>
-                                            @if ($obs->foto_dokumentasi || $obs->foto_lembar_observasi)
-                                                <div class="flex flex-wrap gap-2">
+                                            <p class="text-xs font-bold uppercase tracking-wide text-[#5b616e] mb-2">Bukti &amp; Paraf</p>
+                                            @if ($obs->foto_dokumentasi || $obs->ttd_guru || $obs->ttd_instruktur || $obs->foto_lembar_observasi)
+                                                <div class="space-y-3">
                                                     @if ($obs->foto_dokumentasi)
                                                         <a href="{{ asset('storage/' . $obs->foto_dokumentasi) }}" download target="_blank" rel="noopener"
                                                            class="inline-flex items-center gap-1 rounded-full bg-[#0047d6]/10 px-3 py-1.5 text-xs font-bold text-[#0047d6] transition hover:bg-[#0047d6]/20">
-                                                            Foto Dokumentasi
+                                                            Bukti Foto Observasi
                                                         </a>
+                                                    @endif
+                                                    @if ($obs->ttd_guru)
+                                                        <div>
+                                                            <p class="text-[11px] font-bold text-[#5b616e]">Paraf Guru Pembimbing</p>
+                                                            <img src="{{ asset('storage/' . $obs->ttd_guru) }}" alt="Paraf guru pembimbing"
+                                                                 style="max-height:50px; width:auto; max-width:200px;">
+                                                        </div>
+                                                    @endif
+                                                    @if ($obs->ttd_instruktur)
+                                                        <div>
+                                                            <p class="text-[11px] font-bold text-[#5b616e]">Paraf Instruktur</p>
+                                                            <img src="{{ asset('storage/' . $obs->ttd_instruktur) }}" alt="Paraf instruktur"
+                                                                 style="max-height:50px; width:auto; max-width:200px;">
+                                                        </div>
                                                     @endif
                                                     @if ($obs->foto_lembar_observasi)
                                                         <a href="{{ asset('storage/' . $obs->foto_lembar_observasi) }}" download target="_blank" rel="noopener"
-                                                           class="inline-flex items-center gap-1 rounded-full bg-[#05b169]/10 px-3 py-1.5 text-xs font-bold text-[#05b169] transition hover:bg-[#05b169]/20">
-                                                            Lembar Berparaf
+                                                           class="inline-flex items-center gap-1 rounded-full bg-[#5b616e]/10 px-3 py-1.5 text-xs font-bold text-[#5b616e] transition hover:bg-[#5b616e]/20">
+                                                            Lembar Berparaf (lama)
                                                         </a>
                                                     @endif
                                                 </div>
@@ -557,46 +551,11 @@
                                         <button type="button" @click="showValidasi = false"
                                                 class="text-2xl leading-none text-[#5b616e] hover:text-black">&times;</button>
                                     </div>
-                                    <p class="mb-4 text-sm text-[#5b616e]">
-                                        Unggah foto dokumentasi kegiatan dan foto lembar observasi yang sudah diparaf
-                                        <span class="font-semibold text-black">instruktur &amp; guru pembimbing</span>.
-                                        @if($isWakasek)
-                                            Karena Anda berstatus <span class="font-bold text-black">Wakasek</span>, lembar akan langsung <span class="font-bold text-black">tervalidasi</span> dan hasil cetak menampilkan <span class="font-bold text-black">SUDAH DIVALIDASI</span>.
-                                        @else
-                                            Setelah diajukan, lembar berstatus <span class="font-bold text-black">menunggu divalidasi</span> oleh Wakasek yang ditetapkan admin.
-                                        @endif
-                                    </p>
-                                    <form method="POST" action="{{ route('guru.observasi.ajukan', $obs->id) }}"
-                                          enctype="multipart/form-data" class="space-y-4">
-                                        @csrf
-                                        @method('PUT')
-                                        <div>
-                                            <label class="block text-sm font-bold text-black mb-1">
-                                                Foto Dokumentasi Kegiatan <span class="text-red-500">*</span>
-                                            </label>
-                                            <input type="file" name="foto_dokumentasi" accept="image/*" required
-                                                   class="w-full text-sm text-gray-600 rounded-lg border border-gray-300 bg-white file:mr-4 file:py-2 file:px-4 file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
-                                            <p class="mt-1 text-xs text-gray-500">Wajib. Format JPG/JPEG/PNG, maksimal 3 MB.</p>
-                                        </div>
-                                        <div>
-                                            <label class="block text-sm font-bold text-black mb-1">
-                                                Foto Lembar Observasi (Sudah Diparaf) <span class="text-red-500">*</span>
-                                            </label>
-                                            <input type="file" name="foto_lembar_observasi" accept="image/*" required
-                                                   class="w-full text-sm text-gray-600 rounded-lg border border-gray-300 bg-white file:mr-4 file:py-2 file:px-4 file:border-0 file:text-sm file:font-medium file:bg-green-50 file:text-green-700 hover:file:bg-green-100">
-                                            <p class="mt-1 text-xs text-gray-500">Wajib. Foto lembar fisik yang sudah diparaf instruktur &amp; guru pembimbing.</p>
-                                        </div>
-                                        <div class="flex justify-end gap-2 pt-2">
-                                            <button type="button" @click="showValidasi = false"
-                                                    class="inline-flex items-center rounded-xl border-2 border-[#0047d6]/25 bg-white px-4 py-2 text-sm font-bold text-[#0047d6] transition hover:bg-[#0047d6]/5">
-                                                Batal
-                                            </button>
-                                            <button type="submit"
-                                                    class="inline-flex items-center rounded-xl bg-[#05b169] px-5 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-[#049457]">
-                                                Simpan Validasi
-                                            </button>
-                                        </div>
-                                    </form>
+                                    {{-- Form ajukan: bukti foto observasi + paraf digital guru & instruktur --}}
+                                    @include('guru.partials.form-ajukan-observasi', [
+                                        'obs'       => $obs,
+                                        'isWakasek' => $isWakasek,
+                                    ])
                                 </div>
                             </div>
                         </div>

@@ -23,7 +23,10 @@ class CatatanKegiatan extends Model
         'perencanaan_kegiatan',
         'pelaksanaan_kegiatan',
         'status',              // draft | diajukan | disetujui
-        'foto_bukti',
+        'foto_bukti',             // kolom lama (alur foto bukti fisik) - dibiarkan untuk data lama
+        'ttd_instruktur',         // path PNG tanda tangan digital instruktur
+        'ttd_instruktur_nama',    // nama yang dicetak di bawah paraf
+        'ttd_signed_at',          // waktu instruktur menandatangani
         'catatan_instruktur',
         'is_approved',         // kolom lama (dibiarkan)
         'validated_by_guru_id',
@@ -31,8 +34,15 @@ class CatatanKegiatan extends Model
     ];
 
     protected $casts = [
-        'validated_at' => 'datetime',
+        'validated_at'  => 'datetime',
+        'ttd_signed_at' => 'datetime',
     ];
+
+    /** Sudah ditandatangani instruktur secara digital? */
+    public function sudahDitandatangani(): bool
+    {
+        return ! empty($this->ttd_instruktur);
+    }
 
     public function user()
     {

@@ -124,7 +124,7 @@
                                 <div class="flex items-center justify-between border-b border-gray-100 px-5 py-4">
                                     <div>
                                         <h3 class="text-base font-bold text-gray-800">Atur Jumlah Hadir / Izin / Sakit / Alpha</h3>
-                                        <p class="text-xs font-medium text-[#5b616e]">Tentukan jumlah hari tiap status, sistem yang menuliskan tanggalnya.</p>
+                                        <p class="text-xs font-medium text-[#5b616e]">Tentukan jumlah hari tiap status, sistem yang menuliskan tanggalnya. <span class="font-bold text-[#2563EB]">Bisa untuk beberapa NISN sekaligus.</span> <span class="font-bold text-[#cf202f]">Tidak ikut memvalidasi absensi.</span></p>
                                     </div>
                                     <button type="button" @click="open=false" class="text-2xl leading-none text-gray-400 hover:text-black">&times;</button>
                                 </div>
@@ -139,20 +139,57 @@
                                     </div>
                                     <input type="hidden" name="mode" :value="mode">
 
-                                    {{-- Pencarian NISN --}}
+                                    {{-- Pencarian NISN: BOLEH BEBERAPA NISN SEKALIGUS --}}
                                     <div x-show="mode==='nisn'" x-cloak>
-                                        <label class="mb-1 block text-xs font-bold uppercase tracking-wide text-black">NISN Siswa</label>
-                                        <div class="flex gap-2">
-                                            <input type="text" x-model="nisn" @keydown.enter.prevent="cari()" inputmode="numeric" placeholder="Masukkan NISN siswa..."
-                                                   class="w-full rounded-xl border-2 border-[#2563EB]/25 bg-white px-4 py-2.5 text-sm font-medium text-black placeholder-[#a8acb3] focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/30">
-                                            <button type="button" @click="cari()" class="shrink-0 rounded-xl bg-[#2563EB] px-4 py-2.5 text-sm font-bold text-white hover:bg-[#1d4ed8]">Cari</button>
+                                        <label class="mb-1 block text-xs font-bold uppercase tracking-wide text-black">
+                                            NISN Siswa
+                                            <span class="ml-1 rounded bg-[#2563EB]/10 px-1.5 py-0.5 text-[10px] font-bold normal-case tracking-normal text-[#2563EB]">boleh lebih dari satu</span>
+                                        </label>
+                                        <textarea x-model="nisn" rows="2"
+                                                  placeholder="Tulis / tempel beberapa NISN, pisahkan dengan koma, spasi, atau baris baru. Contoh: 0012345678, 0012345679"
+                                                  class="w-full rounded-xl border-2 border-[#2563EB]/25 bg-white px-4 py-2.5 text-sm font-medium text-black placeholder-[#a8acb3] focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/30"></textarea>
+                                        <input type="hidden" name="nisn" :value="daftarNisn.join(',')">
+
+                                        <div class="mt-2 flex flex-wrap items-center gap-2">
+                                            <button type="button" @click="cari()" class="rounded-lg bg-[#2563EB] px-3 py-1.5 text-[11px] font-bold text-white hover:bg-[#1d4ed8]">Cari / Muat Angka</button>
+                                            <button type="button" @click="isiSemuaAktif()" class="rounded-lg border-2 border-[#2563EB]/30 bg-white px-3 py-1.5 text-[11px] font-bold text-[#2563EB] hover:bg-[#2563EB]/10">Isi semua siswa aktif</button>
+                                            <button type="button" @click="kosongkanNisn()" x-show="daftarNisn.length" x-cloak class="rounded-lg border-2 border-[#cf202f]/30 bg-white px-3 py-1.5 text-[11px] font-bold text-[#cf202f] hover:bg-[#cf202f]/10">Kosongkan</button>
+                                            <span x-show="daftarNisn.length" x-cloak class="text-[11px] font-bold text-[#5b616e]">
+                                                <span x-text="nisnCocok.length"></span> siswa ditemukan
+                                                <span x-show="nisnTidakCocok.length" class="text-[#cf202f]">&middot; <span x-text="nisnTidakCocok.length"></span> tidak ditemukan</span>
+                                            </span>
                                         </div>
-                                        <input type="hidden" name="nisn" :value="nisn">
+
+                                        {{-- Daftar NISN terpilih: klik untuk membuang satu NISN --}}
+                                        <div x-show="daftarNisn.length" x-cloak class="mt-2 flex flex-wrap gap-1.5">
+                                            <template x-for="n in nisnCocok" :key="'ok-' + n">
+                                                <button type="button" @click="hapusNisn(n)" class="inline-flex items-center gap-1 rounded-full bg-[#2563EB]/10 px-2.5 py-1 text-[11px] font-bold text-[#2563EB] hover:bg-[#2563EB]/20">
+                                                    <span x-text="namaNisn(n)"></span>
+                                                    <span class="text-sm leading-none">&times;</span>
+                                                </button>
+                                            </template>
+                                            <template x-for="n in nisnTidakCocok" :key="'no-' + n">
+                                                <button type="button" @click="hapusNisn(n)" class="inline-flex items-center gap-1 rounded-full bg-[#cf202f]/10 px-2.5 py-1 text-[11px] font-bold text-[#cf202f] hover:bg-[#cf202f]/20">
+                                                    <span x-text="n + ' (tidak ada)'"></span>
+                                                    <span class="text-sm leading-none">&times;</span>
+                                                </button>
+                                            </template>
+                                        </div>
+
                                         <p x-show="memuat" x-cloak class="mt-1 text-xs font-medium text-[#5b616e]">Memuat data absensi siswa...</p>
                                         <p x-show="pesanError" x-cloak x-text="pesanError" class="mt-1 text-xs font-bold text-[#cf202f]"></p>
 
-                                        {{-- Informasi absensi siswa yang ditemukan --}}
-                                        <div x-show="info" x-cloak class="mt-3 rounded-xl border-2 border-[#2563EB]/20 bg-[#2563EB]/5 px-4 py-3">
+                                        {{-- Banyak NISN: angka yang sama diterapkan ke tiap siswa --}}
+                                        <div x-show="nisnCocok.length > 1" x-cloak class="mt-3 rounded-xl border-2 border-[#d98200]/30 bg-[#d98200]/5 px-4 py-3">
+                                            <p class="text-xs font-bold text-[#d98200]">Mode banyak siswa: <span x-text="nisnCocok.length"></span> siswa terpilih</p>
+                                            <p class="mt-1 text-[11px] font-medium text-[#5b616e]">Jumlah Hadir / Izin / Sakit / Alpha di bawah diterapkan <span class="font-bold">sama untuk setiap siswa</span> yang dipilih. Rincian angka absensi per siswa hanya ditampilkan bila NISN yang diisi hanya satu. Siswa yang hari kerjanya tidak mencukupi akan dilewati dan dilaporkan setelah proses.</p>
+                                            <div class="mt-2 flex flex-wrap gap-2">
+                                                <button type="button" @click="nolkan()" class="rounded-lg bg-white px-3 py-1.5 text-[11px] font-bold text-[#cf202f] hover:bg-[#cf202f]/10">Nolkan semua</button>
+                                            </div>
+                                        </div>
+
+                                        {{-- Informasi absensi siswa yang ditemukan (hanya bila 1 NISN) --}}
+                                        <div x-show="info && nisnCocok.length === 1" x-cloak class="mt-3 rounded-xl border-2 border-[#2563EB]/20 bg-[#2563EB]/5 px-4 py-3">
                                             <p class="text-sm font-bold text-black" x-text="info?.siswa?.name"></p>
                                             <p class="text-xs font-medium text-[#5b616e]">
                                                 NISN <span x-text="info?.siswa?.nisn"></span> &middot;
@@ -255,7 +292,7 @@
                                             <option value="senin_sabtu">Senin - Sabtu (hanya Minggu dilewati)</option>
                                         </select>
                                         <p class="mt-1 text-xs font-medium text-[#5b616e]">
-                                            <span x-show="mode==='nisn'">Jadwal ini disimpan khusus untuk siswa tersebut — mis. siswa yang tetap masuk sampai Sabtu.</span>
+                                            <span x-show="mode==='nisn'">Jadwal ini disimpan khusus untuk <span class="font-bold">setiap siswa yang dipilih</span> — mis. siswa yang tetap masuk sampai Sabtu.</span>
                                             <span x-show="mode==='semua'" x-cloak>Jadwal ini disimpan sebagai jadwal global sekolah.</span>
                                             Hari libur dilewati: dikosongkan tanpa baris absensi dan tidak ditandai Alpha otomatis.
                                         </p>
@@ -311,12 +348,240 @@
 
                                     <div class="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs font-medium text-emerald-700">
                                         Cara kerja: sistem <span class="font-bold">hanya mengedit status kehadiran</span> pada tanggal yang sudah ada &mdash; <span class="font-bold">foto dokumentasi dan jam absen siswa tetap utuh</span>. Tanggal yang belum ada absensinya akan <span class="font-bold">dibuat baru</span> dengan jam masuk/pulang otomatis tepat waktu dan foto bukti kosong (opsional). Penghapusan hanya terjadi bila semua jumlah diisi 0 atau opsi hapus seluruh riwayat dicentang.
+                                        <span class="mt-1 block font-bold text-[#d98200]">Status validasi TIDAK diubah di sini: baris lama tetap seperti semula dan baris baru dibuat sebagai draft. Gunakan tombol &ldquo;Validasi Absensi&rdquo; untuk menyetujui atau membatalkan validasi.</span>
                                     </div>
 
                                     <div class="flex justify-end gap-2 pt-1">
                                         <button type="button" @click="open=false" class="rounded-xl border-2 border-[#2563EB]/25 bg-white px-4 py-2 text-sm font-bold text-[#2563EB] hover:bg-[#2563EB]/5">Batal</button>
                                         <button type="submit" :disabled="!bolehKirim" :class="!bolehKirim ? 'opacity-40 cursor-not-allowed' : 'hover:opacity-90'"
                                                 class="rounded-xl bg-[#d98200] px-4 py-2 text-sm font-bold text-white">Terapkan Jumlah</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+
+                {{-- ===== TOMBOL: VALIDASI ABSENSI (TERPISAH DARI ATUR JUMLAH) ===== --}}
+                <div x-data="validasiMassal(@js($rekapSiswaList), @js(route('admin.monitoring.absensi.validasi-pratinjau')))"
+                     x-effect="document.body.style.overflow = open ? 'hidden' : ''" class="inline-block">
+                    <button type="button" @click="bukaModal()"
+                            class="inline-flex items-center justify-center gap-1.5 rounded-lg bg-[#05b169] px-4 py-2.5 text-sm font-semibold text-white hover:opacity-90">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        Validasi Absensi
+                    </button>
+
+                    <template x-teleport="body">
+                        <div x-show="open" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4" @keydown.escape.window="open=false">
+                            <div class="absolute inset-0 bg-black/50" @click="open=false"></div>
+                            <div class="relative flex max-h-[90vh] w-full max-w-2xl flex-col rounded-2xl bg-white shadow-xl">
+                                <div class="flex items-center justify-between border-b border-gray-100 px-5 py-4">
+                                    <div>
+                                        <h3 class="text-base font-bold text-gray-800">Validasi Absensi</h3>
+                                        <p class="text-xs font-medium text-[#5b616e]">Setujui atau batalkan validasi absensi. Jumlah hari, jam absen, dan foto bukti tidak diubah.</p>
+                                    </div>
+                                    <button type="button" @click="open=false" class="text-2xl leading-none text-gray-400 hover:text-black">&times;</button>
+                                </div>
+
+                                <form method="POST" action="{{ route('admin.monitoring.absensi.validasi') }}" x-ref="formValidasi" class="overflow-y-auto px-5 py-4 space-y-4 text-left" @submit.prevent>
+                                    @csrf
+                                    {{-- Nilai hidden diisi tepat sebelum submit oleh kirim() agar selalu sinkron. --}}
+                                    <input type="hidden" name="mode" x-ref="inputMode" value="nisn">
+                                    <input type="hidden" name="jenis_tanggal" x-ref="inputJenis" value="rentang">
+                                    <input type="hidden" name="aksi" x-ref="inputAksi" value="setujui">
+                                    <input type="hidden" name="nisn" x-ref="inputNisn" value="">
+
+                                    {{-- 1) LINGKUP: beberapa NISN atau semua siswa --}}
+                                    <div class="flex gap-2">
+                                        <button type="button" @click="setMode('nisn')" :class="mode==='nisn' ? 'bg-[#2563EB] text-white' : 'bg-gray-100 text-gray-600'" class="flex-1 rounded-lg px-3 py-2 text-sm font-semibold">Per NISN (bisa banyak)</button>
+                                        <button type="button" @click="setMode('semua')" :class="mode==='semua' ? 'bg-[#2563EB] text-white' : 'bg-gray-100 text-gray-600'" class="flex-1 rounded-lg px-3 py-2 text-sm font-semibold">Semua Siswa</button>
+                                    </div>
+
+                                    {{-- 1a) Daftar NISN: boleh lebih dari satu sekaligus --}}
+                                    <div x-show="mode==='nisn'" x-cloak class="space-y-2">
+                                        <label class="block text-xs font-bold uppercase tracking-wide text-black">NISN Siswa (boleh lebih dari satu)</label>
+                                        <textarea x-model="nisnInput" @input="hasil=null" rows="3"
+                                                  placeholder="Contoh: 0051234567, 0051234568 0051234569 — pisahkan dengan koma, spasi, atau baris baru (bisa ditempel dari Excel)."
+                                                  class="w-full rounded-xl border-2 border-[#2563EB]/25 bg-white px-4 py-2.5 text-sm font-medium text-black placeholder-[#a8acb3] focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/30"></textarea>
+                                        <div class="flex flex-wrap items-center gap-2">
+                                            <button type="button" @click="periksa()" class="rounded-xl bg-[#2563EB] px-4 py-2 text-sm font-bold text-white hover:bg-[#1d4ed8]">Periksa NISN</button>
+                                            <button type="button" @click="isiSemuaAktif()" class="rounded-lg border-2 border-[#2563EB]/30 bg-white px-3 py-1.5 text-[11px] font-bold text-[#2563EB] hover:bg-[#2563EB]/10">Isi semua siswa aktif</button>
+                                            <button type="button" @click="kosongkanNisn()" class="rounded-lg border-2 border-[#cf202f]/30 bg-white px-3 py-1.5 text-[11px] font-bold text-[#cf202f] hover:bg-[#cf202f]/5">Kosongkan</button>
+                                            <span class="text-[11px] font-medium text-[#5b616e]">Terbaca <span class="font-bold" x-text="daftarNisn.length"></span> NISN &middot; cocok <span class="font-bold text-[#05b169]" x-text="nisnCocok.length"></span></span>
+                                        </div>
+
+                                        <div x-show="nisnCocok.length" x-cloak class="flex flex-wrap gap-1.5">
+                                            <template x-for="n in nisnCocok" :key="n">
+                                                <span class="inline-flex items-center gap-1 rounded-lg bg-[#05b169]/10 px-2 py-1 text-[11px] font-bold text-[#05b169]">
+                                                    <span x-text="n"></span>
+                                                    <span class="font-medium text-[#5b616e]" x-text="namaNisn(n)"></span>
+                                                    <button type="button" @click="hapusNisn(n)" class="text-[#cf202f]">&times;</button>
+                                                </span>
+                                            </template>
+                                        </div>
+
+                                        <div x-show="nisnTidakCocok.length" x-cloak class="flex flex-wrap gap-1.5">
+                                            <template x-for="n in nisnTidakCocok" :key="n">
+                                                <span class="inline-flex items-center gap-1 rounded-lg bg-[#cf202f]/10 px-2 py-1 text-[11px] font-bold text-[#cf202f]">
+                                                    <span x-text="n"></span>
+                                                    <span class="font-medium">tidak ditemukan</span>
+                                                    <button type="button" @click="hapusNisn(n)">&times;</button>
+                                                </span>
+                                            </template>
+                                        </div>
+                                    </div>
+
+                                    {{-- 1b) Semua siswa --}}
+                                    <div x-show="mode==='semua'" x-cloak class="space-y-2 rounded-xl border-2 border-[#d98200]/30 bg-[#d98200]/5 px-4 py-3">
+                                        <p class="text-xs font-bold text-[#d98200]">Validasi diterapkan ke SEMUA siswa PKL periode berjalan.</p>
+                                        <label class="flex items-start gap-2 text-[11px] font-medium text-[#5b616e]">
+                                            <input type="checkbox" name="semua_periode" value="1" x-model="semuaPeriode" @change="hasil=null" :disabled="mode!=='semua'" class="mt-0.5 rounded border-[#d98200]/40 text-[#d98200] focus:ring-[#d98200]">
+                                            <span>Sertakan juga siswa <span class="font-bold">semua periode</span> (arsip angkatan lama). Biarkan kosong bila hanya periode berjalan.</span>
+                                        </label>
+                                    </div>
+
+                                    {{-- 2) FILTER HARI / TANGGAL --}}
+                                    <div class="space-y-2">
+                                        <label class="block text-xs font-bold uppercase tracking-wide text-black">Filter Hari / Tanggal</label>
+                                        <div class="flex flex-wrap gap-2">
+                                            <button type="button" @click="setJenis('tanggal')" :class="jenisTanggal==='tanggal' ? 'bg-[#2563EB] text-white' : 'bg-white text-[#2563EB] hover:bg-[#2563EB]/10'" class="rounded-lg border-2 border-[#2563EB]/30 px-3 py-1.5 text-xs font-bold">Hari tertentu</button>
+                                            <button type="button" @click="setJenis('rentang')" :class="jenisTanggal==='rentang' ? 'bg-[#2563EB] text-white' : 'bg-white text-[#2563EB] hover:bg-[#2563EB]/10'" class="rounded-lg border-2 border-[#2563EB]/30 px-3 py-1.5 text-xs font-bold">Rentang tanggal</button>
+                                            <button type="button" @click="setJenis('semua')" :class="jenisTanggal==='semua' ? 'bg-[#2563EB] text-white' : 'bg-white text-[#2563EB] hover:bg-[#2563EB]/10'" class="rounded-lg border-2 border-[#2563EB]/30 px-3 py-1.5 text-xs font-bold">Semua tanggal</button>
+                                        </div>
+
+                                        {{-- Satu hari tertentu --}}
+                                        <div x-show="jenisTanggal==='tanggal'" x-cloak class="space-y-2">
+                                            <input type="date" name="tanggal" x-model="tanggal" @change="hasil=null"
+                                                   :disabled="jenisTanggal!=='tanggal'" :required="jenisTanggal==='tanggal'"
+                                                   class="w-full rounded-xl border-2 border-[#2563EB]/25 bg-white px-3 py-2.5 text-sm font-medium text-black focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/30">
+                                            <div class="flex flex-wrap gap-2">
+                                                <button type="button" @click="pilihTanggal('hariIni')" class="rounded-lg border-2 border-[#2563EB]/30 bg-white px-3 py-1.5 text-[11px] font-bold text-[#2563EB] hover:bg-[#2563EB]/10">Hari Ini</button>
+                                                <button type="button" @click="pilihTanggal('kemarin')" class="rounded-lg border-2 border-[#2563EB]/30 bg-white px-3 py-1.5 text-[11px] font-bold text-[#2563EB] hover:bg-[#2563EB]/10">Kemarin</button>
+                                            </div>
+                                        </div>
+
+                                        {{-- Rentang tanggal --}}
+                                        <div x-show="jenisTanggal==='rentang'" x-cloak class="space-y-2">
+                                            <div class="grid grid-cols-2 gap-3">
+                                                <div>
+                                                    <label class="mb-1 block text-[11px] font-bold uppercase tracking-wide text-[#5b616e]">Tanggal Mulai</label>
+                                                    <input type="date" name="tanggal_mulai" x-model="mulai" @change="hasil=null"
+                                                           :disabled="jenisTanggal!=='rentang'" :required="jenisTanggal==='rentang'"
+                                                           class="w-full rounded-xl border-2 border-[#2563EB]/25 bg-white px-3 py-2.5 text-sm font-medium text-black focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/30">
+                                                </div>
+                                                <div>
+                                                    <label class="mb-1 block text-[11px] font-bold uppercase tracking-wide text-[#5b616e]">Tanggal Selesai</label>
+                                                    <input type="date" name="tanggal_selesai" x-model="selesai" @change="hasil=null"
+                                                           :disabled="jenisTanggal!=='rentang'" :required="jenisTanggal==='rentang'"
+                                                           class="w-full rounded-xl border-2 border-[#2563EB]/25 bg-white px-3 py-2.5 text-sm font-medium text-black focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/30">
+                                                </div>
+                                            </div>
+                                            <div class="flex flex-wrap gap-2">
+                                                <button type="button" @click="pilihTanggal('bulanIni')" class="rounded-lg border-2 border-[#2563EB]/30 bg-white px-3 py-1.5 text-[11px] font-bold text-[#2563EB] hover:bg-[#2563EB]/10">Bulan Ini</button>
+                                                <button type="button" @click="pilihTanggal('7hari')" class="rounded-lg border-2 border-[#2563EB]/30 bg-white px-3 py-1.5 text-[11px] font-bold text-[#2563EB] hover:bg-[#2563EB]/10">7 Hari Terakhir</button>
+                                                <button type="button" @click="pilihTanggal('bulanLalu')" class="rounded-lg border-2 border-[#2563EB]/30 bg-white px-3 py-1.5 text-[11px] font-bold text-[#2563EB] hover:bg-[#2563EB]/10">Bulan Lalu</button>
+                                            </div>
+                                        </div>
+
+                                        <p x-show="jenisTanggal==='semua'" x-cloak class="rounded-xl border-2 border-[#cf202f]/25 bg-[#cf202f]/5 px-4 py-2.5 text-xs font-medium text-[#cf202f]">
+                                            Seluruh riwayat absensi (tanpa batas tanggal) akan diproses.
+                                        </p>
+                                    </div>
+
+                                    {{-- 3) FILTER STATUS KEHADIRAN --}}
+                                    <div>
+                                        <label class="mb-1 block text-xs font-bold uppercase tracking-wide text-black">Status Kehadiran yang Divalidasi</label>
+                                        <div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                                            <label class="flex items-center gap-2 rounded-xl border-2 border-green-200 px-3 py-2 text-xs font-bold text-green-600">
+                                                <input type="checkbox" name="status[]" value="Hadir" x-model="statusPilih" @change="hasil=null" class="rounded border-green-300 text-green-600 focus:ring-green-500"> Hadir
+                                            </label>
+                                            <label class="flex items-center gap-2 rounded-xl border-2 border-blue-200 px-3 py-2 text-xs font-bold text-blue-600">
+                                                <input type="checkbox" name="status[]" value="Izin" x-model="statusPilih" @change="hasil=null" class="rounded border-blue-300 text-blue-600 focus:ring-blue-500"> Izin
+                                            </label>
+                                            <label class="flex items-center gap-2 rounded-xl border-2 border-amber-200 px-3 py-2 text-xs font-bold text-amber-500">
+                                                <input type="checkbox" name="status[]" value="Sakit" x-model="statusPilih" @change="hasil=null" class="rounded border-amber-300 text-amber-500 focus:ring-amber-500"> Sakit
+                                            </label>
+                                            <label class="flex items-center gap-2 rounded-xl border-2 border-red-200 px-3 py-2 text-xs font-bold text-red-500">
+                                                <input type="checkbox" name="status[]" value="Alpha" x-model="statusPilih" @change="hasil=null" class="rounded border-red-300 text-red-500 focus:ring-red-500"> Alpha
+                                            </label>
+                                        </div>
+                                        <p class="mt-1 text-[11px] font-medium text-[#5b616e]">Bila semua dikosongkan, semua status kehadiran ikut diproses.</p>
+                                    </div>
+
+                                    {{-- 4) SUMBER DATA YANG DIVALIDASI --}}
+                                    <div>
+                                        <label class="mb-1 block text-xs font-bold uppercase tracking-wide text-black">Yang Divalidasi</label>
+                                        <select name="sumber" x-model="sumber" @change="hasil=null" class="w-full rounded-xl border-2 border-[#2563EB]/25 bg-white px-3 py-2.5 text-sm font-medium text-black focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/30">
+                                            <option value="semua">Semua yang belum tervalidasi (draft &amp; diajukan)</option>
+                                            <option value="diajukan">Hanya yang diajukan siswa</option>
+                                            <option value="draft">Hanya yang masih draft</option>
+                                        </select>
+                                        <p class="mt-1 text-[11px] font-medium text-[#5b616e]">Pilihan ini dipakai saat menyetujui. Untuk <span class="font-bold">Batalkan Validasi</span>, sistem selalu memproses baris yang statusnya sudah disetujui.</p>
+                                    </div>
+
+                                    {{-- 5) PRATINJAU --}}
+                                    <div class="space-y-2">
+                                        <div class="flex flex-wrap items-center gap-2">
+                                            <button type="button" @click="periksa()" class="rounded-lg bg-[#2563EB]/10 px-3 py-1.5 text-[11px] font-bold text-[#2563EB] hover:bg-[#2563EB]/20">Hitung pratinjau</button>
+                                            <span x-show="memuat" x-cloak class="text-[11px] font-medium text-[#5b616e]">Menghitung...</span>
+                                            <span x-show="pesanError" x-cloak x-text="pesanError" class="text-[11px] font-bold text-[#cf202f]"></span>
+                                        </div>
+
+                                        <div x-show="hasil" x-cloak class="rounded-xl border-2 border-[#2563EB]/20 bg-[#2563EB]/5 px-4 py-3">
+                                            <p class="text-[11px] font-bold uppercase tracking-wide text-[#5b616e]">Pratinjau pada filter ini</p>
+                                            <div class="mt-1 grid grid-cols-2 gap-2 text-center sm:grid-cols-4">
+                                                <div class="rounded-lg bg-white px-2 py-1.5">
+                                                    <p class="text-[10px] font-bold uppercase text-[#5b616e]">Siswa</p>
+                                                    <p class="text-base font-extrabold text-black" x-text="hasil?.jumlah_siswa ?? 0"></p>
+                                                </div>
+                                                <div class="rounded-lg bg-white px-2 py-1.5">
+                                                    <p class="text-[10px] font-bold uppercase text-[#5b616e]">Total baris</p>
+                                                    <p class="text-base font-extrabold text-black" x-text="hasil?.ringkasan?.total ?? 0"></p>
+                                                </div>
+                                                <div class="rounded-lg bg-white px-2 py-1.5">
+                                                    <p class="text-[10px] font-bold uppercase text-[#d98200]">Belum validasi</p>
+                                                    <p class="text-base font-extrabold text-[#d98200]" x-text="hasil?.ringkasan?.belum ?? 0"></p>
+                                                </div>
+                                                <div class="rounded-lg bg-white px-2 py-1.5">
+                                                    <p class="text-[10px] font-bold uppercase text-[#05b169]">Tervalidasi</p>
+                                                    <p class="text-base font-extrabold text-[#05b169]" x-text="hasil?.ringkasan?.disetujui ?? 0"></p>
+                                                </div>
+                                            </div>
+
+                                            <div x-show="hasil?.daftar?.length" x-cloak class="mt-2 max-h-40 overflow-y-auto rounded-lg bg-white">
+                                                <table class="w-full text-left text-[11px]">
+                                                    <thead class="bg-slate-50 text-[10px] font-bold uppercase text-[#5b616e]">
+                                                        <tr><th class="px-2 py-1">Siswa</th><th class="px-2 py-1 text-center">Total</th><th class="px-2 py-1 text-center">Belum</th><th class="px-2 py-1 text-center">Valid</th></tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <template x-for="row in (hasil?.daftar ?? [])" :key="row.nisn">
+                                                            <tr class="border-t border-gray-100">
+                                                                <td class="px-2 py-1"><span class="font-bold" x-text="row.name"></span> <span class="text-[#5b616e]" x-text="'(' + row.nisn + ')'"></span></td>
+                                                                <td class="px-2 py-1 text-center font-bold" x-text="row.total"></td>
+                                                                <td class="px-2 py-1 text-center font-bold text-[#d98200]" x-text="row.belum"></td>
+                                                                <td class="px-2 py-1 text-center font-bold text-[#05b169]" x-text="row.disetujui"></td>
+                                                            </tr>
+                                                        </template>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+
+                                            <p x-show="hasil?.tidak_ditemukan?.length" x-cloak class="mt-2 text-[11px] font-bold text-[#cf202f]">
+                                                NISN tidak ditemukan: <span x-text="(hasil?.tidak_ditemukan ?? []).join(', ')"></span>
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div class="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs font-medium text-emerald-700">
+                                        Aksi ini hanya mengubah <span class="font-bold">status validasi</span> absensi (Tervalidasi / Draft). Jumlah hari Hadir/Izin/Sakit/Alpha, jam absen, dan foto bukti <span class="font-bold">tidak disentuh</span>.
+                                    </div>
+
+                                    <div class="flex flex-wrap justify-end gap-2 pt-1">
+                                        <button type="button" @click="open=false" class="rounded-xl border-2 border-[#2563EB]/25 bg-white px-4 py-2 text-sm font-bold text-[#2563EB] hover:bg-[#2563EB]/5">Batal</button>
+                                        <button type="button" @click="kirim('batalkan')" :disabled="!bolehKirim" :class="!bolehKirim ? 'opacity-40 cursor-not-allowed' : 'hover:bg-[#cf202f]/5'"
+                                                class="rounded-xl border-2 border-[#cf202f] bg-white px-4 py-2 text-sm font-bold text-[#cf202f]">Batalkan Validasi</button>
+                                        <button type="button" @click="kirim('setujui')" :disabled="!bolehKirim" :class="!bolehKirim ? 'opacity-40 cursor-not-allowed' : 'hover:opacity-90'"
+                                                class="rounded-xl bg-[#05b169] px-4 py-2 text-sm font-bold text-white">Validasi (Setujui)</button>
                                     </div>
                                 </form>
                             </div>
@@ -590,6 +855,17 @@
                     <option value="Izin"  @selected(request('status') === 'Izin')>Izin</option>
                     <option value="Sakit" @selected(request('status') === 'Sakit')>Sakit</option>
                     <option value="Alpha" @selected(request('status') === 'Alpha')>Alpha</option>
+                </select>
+            </div>
+            {{-- Filter STATUS VALIDASI absensi: draft / menunggu divalidasi / tervalidasi --}}
+            <div>
+                <label class="block text-xs text-gray-500 mb-1">Status Validasi</label>
+                <select name="status_validasi" class="rounded-lg border-gray-200 text-sm focus:border-[#2563EB] focus:ring-[#2563EB]">
+                    <option value="">Semua</option>
+                    <option value="belum" @selected(request('status_validasi') === 'belum')>Belum Tervalidasi (Draft + Menunggu)</option>
+                    <option value="draft" @selected(request('status_validasi') === 'draft')>Draft</option>
+                    <option value="diajukan" @selected(request('status_validasi') === 'diajukan')>Menunggu Divalidasi</option>
+                    <option value="disetujui" @selected(request('status_validasi') === 'disetujui')>Tervalidasi</option>
                 </select>
             </div>
             <div>
@@ -1104,11 +1380,12 @@
     <script>
         document.addEventListener('alpine:init', () => {
             /* ===== Atur jumlah Hadir/Izin/Sakit/Alpha (per NISN atau semua siswa) ===== */
+            /* Atur Jumlah H/I/S/A: satu ATAU beberapa NISN sekaligus / semua siswa. */
             Alpine.data('rekapMassal', (list, urlRekap, hariKerjaGlobal) => ({
                 open: false,
                 mode: 'nisn',
-                nisn: '',
-                info: null,          // hasil dari server: data + rekap absensi siswa
+                nisn: '',            // boleh memuat BANYAK NISN (koma/titik koma/spasi/baris baru)
+                info: null,          // rincian dari server, hanya dipakai bila tepat 1 NISN
                 memuat: false,
                 pesanError: '',
                 list: Array.isArray(list) ? list : [],
@@ -1192,27 +1469,87 @@
                     return !!this.form.mulai && this.form.mulai === this.form.selesai;
                 },
 
+                /* ===== Dukungan BANYAK NISN ===== */
+
+                /* Daftar NISN unik hasil pemisahan koma / titik koma / spasi / baris baru. */
+                get daftarNisn() {
+                    return [...new Set(
+                        String(this.nisn || '').split(/[\s,;]+/).map((x) => x.trim()).filter((x) => x !== '')
+                    )];
+                },
+
+                /* NISN yang ada pada daftar siswa halaman ini. */
+                get nisnCocok() {
+                    if (!this.list.length) return this.daftarNisn;
+                    return this.daftarNisn.filter((n) => this.list.some((x) => String(x.nisn) === n));
+                },
+
+                get nisnTidakCocok() {
+                    if (!this.list.length) return [];
+                    return this.daftarNisn.filter((n) => !this.list.some((x) => String(x.nisn) === n));
+                },
+
+                namaNisn(n) {
+                    const s = this.list.find((x) => String(x.nisn) === String(n));
+                    return s ? (s.name + ' (' + n + ')') : String(n);
+                },
+
+                hapusNisn(n) {
+                    this.nisn = this.daftarNisn.filter((x) => x !== String(n)).join(', ');
+                    if (this.nisnCocok.length !== 1) this.info = null;
+                },
+
+                kosongkanNisn() {
+                    this.nisn = '';
+                    this.info = null;
+                    this.pesanError = '';
+                },
+
+                /* Isi semua siswa PKL aktif pada daftar halaman ini. */
+                isiSemuaAktif() {
+                    const berNisn = this.list.filter((x) => String(x.nisn || '') !== '');
+                    const aktif   = berNisn.filter((x) => String(x.statusPkl || '').toLowerCase() === 'aktif');
+                    const dipakai = aktif.length ? aktif : berNisn;
+
+                    this.nisn = dipakai.map((x) => String(x.nisn)).join(', ');
+                    this.info = null;
+                    this.pesanError = dipakai.length ? '' : 'Tidak ada siswa pada daftar.';
+                },
+
                 /*
                  * Cari siswa lewat NISN, lalu tampilkan jumlah Hadir/Izin/Sakit/Alpha
                  * miliknya saat ini. Angka itu langsung dimuat ke kolom isian supaya
                  * admin tinggal mengedit seperlunya.
                  */
                 async cari() {
-                    const n = (this.nisn || '').trim();
+                    const daftar = this.daftarNisn;
                     this.info = null;
 
-                    if (!n) {
-                        this.pesanError = 'Masukkan NISN terlebih dahulu.';
+                    if (!daftar.length) {
+                        this.pesanError = 'Masukkan minimal satu NISN terlebih dahulu.';
+                        return;
+                    }
+
+                    if (daftar.length > 300) {
+                        this.pesanError = 'Terlalu banyak NISN sekaligus. Maksimal 300 NISN per proses.';
                         return;
                     }
 
                     // Pengecekan cepat di daftar lokal agar salah ketik langsung ketahuan.
-                    if (this.list.length && !this.list.some((x) => String(x.nisn) === n)) {
-                        this.pesanError = 'NISN tidak ditemukan.';
+                    if (!this.nisnCocok.length) {
+                        this.pesanError = 'Tidak ada NISN yang cocok dengan daftar siswa.';
                         return;
                     }
 
-                    this.pesanError = '';
+                    this.pesanError = this.nisnTidakCocok.length
+                        ? (this.nisnTidakCocok.length + ' NISN tidak ditemukan dan akan dilewati: '
+                            + this.nisnTidakCocok.slice(0, 5).join(', '))
+                        : '';
+
+                    // Rincian angka absensi hanya masuk akal untuk SATU siswa.
+                    if (this.nisnCocok.length !== 1) return;
+
+                    const n = this.nisnCocok[0];
                     this.memuat = true;
 
                     try {
@@ -1311,7 +1648,7 @@
                  * artinya rekap absensi dikosongkan menjadi 0.
                  */
                 get bolehKirim() {
-                    if (this.mode === 'nisn' && !this.info) return false;
+                    if (this.mode === 'nisn' && !this.nisnCocok.length) return false;
                     if (!this.form.mulai || !this.form.selesai) return false;
                     if (this.totalDiminta > this.hariTersedia) return false;
                     return true;
@@ -1325,7 +1662,9 @@
 
                     const sasaran = this.mode === 'semua'
                         ? 'SEMUA siswa PKL periode berjalan'
-                        : (this.info?.siswa?.name || 'siswa terpilih');
+                        : (this.nisnCocok.length > 1
+                            ? (this.nisnCocok.length + ' siswa terpilih')
+                            : (this.info?.siswa?.name || ('siswa NISN ' + (this.nisnCocok[0] || '-'))));
 
                     let pesan;
                     if (this.totalDiminta === 0 && this.form.statusSisa === '') {
@@ -1347,6 +1686,199 @@
                     }
                 },
             }));
+
+            /* ===== VALIDASI ABSENSI: beberapa NISN sekaligus / semua siswa ===== */
+            Alpine.data('validasiMassal', (list, urlPratinjau) => ({
+                open: false,
+                mode: 'nisn',            // 'nisn' (boleh banyak) atau 'semua'
+                nisnInput: '',
+                jenisTanggal: 'rentang', // 'tanggal' | 'rentang' | 'semua'
+                tanggal: '',
+                mulai: '',
+                selesai: '',
+                sumber: 'semua',
+                semuaPeriode: false,
+                statusPilih: ['Hadir', 'Izin', 'Sakit', 'Alpha'],
+                list: Array.isArray(list) ? list : [],
+                urlPratinjau: urlPratinjau || '',
+                memuat: false,
+                pesanError: '',
+                hasil: null,
+
+                tglStr(d) {
+                    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+                },
+
+                bukaModal() {
+                    const kini = new Date();
+                    this.mode         = 'nisn';
+                    this.nisnInput    = '';
+                    this.jenisTanggal = 'rentang';
+                    this.tanggal      = this.tglStr(kini);
+                    this.mulai        = this.tglStr(new Date(kini.getFullYear(), kini.getMonth(), 1));
+                    this.selesai      = this.tglStr(kini);
+                    this.sumber       = 'semua';
+                    this.semuaPeriode = false;
+                    this.statusPilih  = ['Hadir', 'Izin', 'Sakit', 'Alpha'];
+                    this.hasil        = null;
+                    this.pesanError   = '';
+                    this.memuat       = false;
+                    this.open         = true;
+                },
+
+                /* Daftar NISN hasil parsing: koma / titik koma / spasi / baris baru. */
+                get daftarNisn() {
+                    return (this.nisnInput || '')
+                        .split(/[\s,;]+/)
+                        .map(s => s.trim())
+                        .filter(s => s !== '')
+                        .filter((v, i, arr) => arr.indexOf(v) === i);
+                },
+                get nisnCocok() {
+                    return this.daftarNisn.filter(n => this.list.some(x => String(x.nisn) === n));
+                },
+                get nisnTidakCocok() {
+                    return this.daftarNisn.filter(n => ! this.list.some(x => String(x.nisn) === n));
+                },
+                namaNisn(n) {
+                    const found = this.list.find(x => String(x.nisn) === n);
+                    return found ? found.name : '';
+                },
+                hapusNisn(n) {
+                    this.nisnInput = this.daftarNisn.filter(x => x !== n).join(', ');
+                    this.hasil = null;
+                },
+                kosongkanNisn() {
+                    this.nisnInput = '';
+                    this.hasil = null;
+                    this.pesanError = '';
+                },
+                isiSemuaAktif() {
+                    this.nisnInput = this.list
+                        .filter(x => x.statusPkl === 'aktif' || x.statusPkl === undefined)
+                        .map(x => x.nisn)
+                        .filter(n => n)
+                        .join(', ');
+                    this.hasil = null;
+                },
+
+                setMode(m) {
+                    this.mode = m;
+                    this.hasil = null;
+                    this.pesanError = '';
+                },
+                setJenis(j) {
+                    this.jenisTanggal = j;
+                    this.hasil = null;
+                },
+                pilihTanggal(pintasan) {
+                    const kini = new Date();
+
+                    if (pintasan === 'hariIni') {
+                        this.tanggal = this.tglStr(kini);
+                    } else if (pintasan === 'kemarin') {
+                        const k = new Date(kini);
+                        k.setDate(k.getDate() - 1);
+                        this.tanggal = this.tglStr(k);
+                    } else if (pintasan === 'bulanIni') {
+                        this.mulai   = this.tglStr(new Date(kini.getFullYear(), kini.getMonth(), 1));
+                        this.selesai = this.tglStr(kini);
+                    } else if (pintasan === '7hari') {
+                        const m = new Date(kini);
+                        m.setDate(m.getDate() - 6);
+                        this.mulai   = this.tglStr(m);
+                        this.selesai = this.tglStr(kini);
+                    } else if (pintasan === 'bulanLalu') {
+                        this.mulai   = this.tglStr(new Date(kini.getFullYear(), kini.getMonth() - 1, 1));
+                        this.selesai = this.tglStr(new Date(kini.getFullYear(), kini.getMonth(), 0));
+                    }
+
+                    this.hasil = null;
+                },
+
+                /* Hitung berapa baris absensi yang akan terkena aksi validasi. */
+                async periksa() {
+                    if (! this.urlPratinjau) return;
+
+                    if (this.mode === 'nisn' && this.daftarNisn.length === 0) {
+                        this.pesanError = 'Masukkan minimal satu NISN.';
+                        this.hasil = null;
+                        return;
+                    }
+
+                    this.memuat = true;
+                    this.pesanError = '';
+
+                    const params = new URLSearchParams();
+                    params.set('mode', this.mode);
+                    params.set('jenis_tanggal', this.jenisTanggal);
+                    params.set('nisn', this.mode === 'nisn' ? this.daftarNisn.join(',') : '');
+                    params.set('status', this.statusPilih.join(','));
+                    params.set('semua_periode', this.semuaPeriode ? '1' : '0');
+
+                    if (this.jenisTanggal === 'tanggal') {
+                        params.set('tanggal', this.tanggal);
+                    } else if (this.jenisTanggal === 'rentang') {
+                        params.set('tanggal_mulai', this.mulai);
+                        params.set('tanggal_selesai', this.selesai);
+                    }
+
+                    try {
+                        const res  = await fetch(this.urlPratinjau + '?' + params.toString(), {
+                            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                        });
+                        const data = await res.json();
+
+                        if (! res.ok || data.ok === false) {
+                            this.hasil = null;
+                            this.pesanError = data.pesan || 'Gagal mengambil pratinjau.';
+                        } else {
+                            this.hasil = data;
+                            this.pesanError = '';
+                        }
+                    } catch (e) {
+                        this.hasil = null;
+                        this.pesanError = 'Gagal menghubungi server.';
+                    } finally {
+                        this.memuat = false;
+                    }
+                },
+
+                get labelCakupan() {
+                    if (this.jenisTanggal === 'tanggal')  return 'tanggal ' + this.tanggal;
+                    if (this.jenisTanggal === 'rentang')  return 'rentang ' + this.mulai + ' s.d. ' + this.selesai;
+                    return 'SELURUH riwayat absensi';
+                },
+
+                get bolehKirim() {
+                    if (this.mode === 'nisn' && this.nisnCocok.length === 0) return false;
+                    if (this.jenisTanggal === 'tanggal' && ! this.tanggal) return false;
+                    if (this.jenisTanggal === 'rentang' && (! this.mulai || ! this.selesai)) return false;
+                    return true;
+                },
+
+                kirim(aksi) {
+                    if (! this.bolehKirim) return;
+
+                    const sasaran = this.mode === 'nisn'
+                        ? (this.nisnCocok.length + ' siswa (NISN: ' + this.nisnCocok.join(', ') + ')')
+                        : (this.semuaPeriode ? 'SEMUA siswa dari semua periode' : 'SEMUA siswa PKL periode berjalan');
+
+                    const pesan = aksi === 'setujui'
+                        ? 'Validasi (setujui) absensi ' + sasaran + ' pada ' + this.labelCakupan + '?'
+                        : 'BATALKAN validasi absensi ' + sasaran + ' pada ' + this.labelCakupan + '? Status akan kembali menjadi draft.';
+
+                    if (! window.confirm(pesan)) return;
+
+                    /* Isi nilai hidden secara langsung agar pasti terkirim. */
+                    this.$refs.inputMode.value  = this.mode;
+                    this.$refs.inputJenis.value = this.jenisTanggal;
+                    this.$refs.inputAksi.value  = aksi;
+                    this.$refs.inputNisn.value  = this.mode === 'nisn' ? this.nisnCocok.join(',') : '';
+
+                    this.$refs.formValidasi.submit();
+                },
+            }))
 
             Alpine.data('jamFinder', (list, urlTemplate) => ({
                 open: false,

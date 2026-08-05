@@ -261,6 +261,11 @@ class CetakPdfController extends Controller
     'nama_guru'        => $siswa->guru->name ?? 'Belum Diatur',
     'pekerjaan_projek' => $obs->pekerjaan_projek ?? '-',
     'foto_dokumentasi' => $obs->foto_dokumentasi,
+    // Paraf digital: otomatis dicetak pada kolom PARAF INST. & PARAF PEMB.
+    'ttd_guru'            => $obs->ttd_guru,
+    'ttd_guru_nama'       => $obs->ttd_guru_nama,
+    'ttd_instruktur'      => $obs->ttd_instruktur,
+    'ttd_instruktur_nama' => $obs->ttd_instruktur_nama,
     'status'           => $obs->status ?? 'draft',
     'validated_at'     => $obs->validated_at,
     'rows'             => $rows,
