@@ -6,6 +6,7 @@ use App\Models\Absensi;
 use App\Models\Pengaturan;
 use App\Models\User;
 use App\Support\ImageCompressor;
+use App\Support\TandaTangan;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -365,22 +366,78 @@ class AbsensiController extends Controller
         $aksi = $request->input('aksi', 'valid');
 
         if ($aksi === 'tolak') {
+            // Pengajuan dikembalikan ke siswa. Paraf lama (bila ada) ikut dihapus
+            // supaya tidak ada tanda tangan menggantung pada data berstatus draft.
+            TandaTangan::hapus($absensi->ttd_guru);
+
             $absensi->update([
                 'status_validasi'      => 'draft',
                 'validated_by_guru_id' => null,
                 'validated_at'         => null,
+                'ttd_guru'             => null,
+                'ttd_guru_nama'        => null,
+                'ttd_guru_signed_at'   => null,
             ]);
 
             return back()->with('success', 'Pengajuan ditolak. Absensi dikembalikan ke siswa (draft).');
         }
 
+        if ($aksi === 'batal') {
+            // MEMBATALKAN VALIDASI yang sudah terlanjur dilakukan guru.
+            // Absensi dikembalikan ke status "diajukan" (menunggu validasi), bukan draft,
+            // supaya guru bisa langsung memvalidasi & menandatangani ulang tanpa perlu
+            // menunggu siswa mengajukan lagi. Paraf lama dihapus dari penyimpanan.
+            if ($absensi->status_validasi !== 'disetujui') {
+                return back()->with('error', 'Absensi ini belum divalidasi, jadi tidak ada validasi yang bisa dibatalkan.');
+            }
+
+            TandaTangan::hapus($absensi->ttd_guru);
+
+            $absensi->update([
+                'status_validasi'      => 'diajukan',
+                'validated_by_guru_id' => null,
+                'validated_at'         => null,
+                'ttd_guru'             => null,
+                'ttd_guru_nama'        => null,
+                'ttd_guru_signed_at'   => null,
+            ]);
+
+            return back()->with('success', 'Validasi dibatalkan. Paraf digital dihapus dan absensi kembali menunggu validasi.');
+        }
+
+        // MENYETUJUI: tanda tangan digital guru WAJIB ada.
+        // Kanvas di halaman guru mengirim gambar berupa data URL PNG base64.
+        $validated = $request->validate([
+            'ttd_guru' => ['required', 'string', function ($atribut, $nilai, $gagal) {
+                if (! TandaTangan::valid($nilai)) {
+                    $gagal('Tanda tangan digital tidak terbaca. Mohon tanda tangani ulang pada kotak yang tersedia.');
+                }
+            }],
+        ], [
+            'ttd_guru.required' => 'Tanda tangan digital wajib dibubuhkan sebelum absensi divalidasi.',
+        ]);
+
+        $path = TandaTangan::simpan($validated['ttd_guru'], 'ttd/absensi/guru');
+
+        if (! $path) {
+            return back()
+                ->with('error', 'Tanda tangan digital gagal disimpan. Mohon ulangi tanda tangan lalu kirim kembali.')
+                ->withErrors(['ttd_guru' => 'Tanda tangan digital gagal disimpan.']);
+        }
+
+        // Ganti paraf lama bila absensi ini pernah divalidasi lalu diajukan ulang.
+        TandaTangan::hapus($absensi->ttd_guru);
+
         $absensi->update([
             'status_validasi'      => 'disetujui',
             'validated_by_guru_id' => Auth::id(),
             'validated_at'         => now(),
+            'ttd_guru'             => $path,
+            'ttd_guru_nama'        => Auth::user()->name ?? null,
+            'ttd_guru_signed_at'   => now(),
         ]);
 
-        return back()->with('success', 'Absensi berhasil divalidasi (disetujui).');
+        return back()->with('success', 'Absensi berhasil divalidasi dan ditandatangani secara digital.');
     }
 
     /**

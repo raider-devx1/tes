@@ -27,14 +27,21 @@ class Absensi extends Model
         'jam_pulang',
         'status_validasi',   // draft | diajukan | disetujui
         'foto_bukti',
+
+        // --- Tanda tangan digital guru pembimbing saat memvalidasi absensi ---
+        'ttd_guru',            // path berkas paraf di disk 'public' (mis. ttd/absensi/guru/xxx.png)
+        'ttd_guru_nama',       // nama guru yang membubuhkan paraf
+        'ttd_guru_signed_at',  // waktu paraf dibubuhkan
+
         'catatan_instruktur',
         'validated_by_guru_id',
         'validated_at',
     ];
 
     protected $casts = [
-        'tanggal'      => 'date',
-        'validated_at' => 'datetime',
+        'tanggal'            => 'date',
+        'validated_at'       => 'datetime',
+        'ttd_guru_signed_at' => 'datetime',
     ];
 
     /*

@@ -357,20 +357,22 @@
                                     <div class="flex flex-col items-center gap-2">
                                         <span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-bold {{ $svBadge }}">{{ $svLabel }}</span>
                                         @if($a->foto_bukti)
-                                            <div class="flex flex-wrap items-center justify-center gap-2">
-                                                <a href="{{ asset('storage/'.$a->foto_bukti) }}" download target="_blank" rel="noopener"
-                                                   class="inline-flex items-center gap-1 rounded-lg border-2 border-[#0047d6]/25 bg-white px-3 py-1.5 text-xs font-bold text-[#0047d6] transition hover:bg-[#0047d6]/5">Lihat Bukti</a>
+                                            <div x-data class="flex flex-wrap items-center justify-center gap-2">
+                                                {{-- Lihat Bukti: buka popup, TIDAK mengunduh & TIDAK pindah tab --}}
+                                                <button type="button"
+                                                        @click="$dispatch('buka-foto', { src: @js(asset('storage/'.$a->foto_bukti)), nama: @js($a->siswa->name ?? '-'), sub: @js(\Carbon\Carbon::parse($a->tanggal)->translatedFormat('d M Y')), unduh: @js('bukti-absensi-'.($a->siswa->nisn ?? $a->id).'-'.$a->id.'.'.$extBukti) })"
+                                                   class="inline-flex items-center gap-1 rounded-lg border-2 border-[#0047d6]/25 bg-white px-3 py-1.5 text-xs font-bold text-[#0047d6] transition hover:bg-[#0047d6]/5">Lihat Bukti</button>
                                                 <a href="{{ asset('storage/'.$a->foto_bukti) }}" download="bukti-absensi-{{ $a->siswa->nisn ?? $a->id }}-{{ $a->id . '.' . $extBukti }}"
                                                    class="inline-flex items-center gap-1 rounded-lg border-2 border-[#05b169]/40 bg-white px-3 py-1.5 text-xs font-bold text-[#05b169] transition hover:bg-[#05b169]/5">Download</a>
                                             </div>
                                         @endif
                                         @if($sv === 'diajukan')
                                             <div x-data="{ openValidasi: false }" class="inline-block">
-                                                <button type="button" @click="openValidasi = true" class="inline-flex items-center gap-1 rounded-lg bg-[#0047d6] px-3 py-1.5 text-xs font-bold text-white transition hover:bg-[#0038aa]">Validasi</button>
+                                                <button type="button" @click="openValidasi = true; window.ttdPadSiapkan && window.ttdPadSiapkan()" class="inline-flex items-center gap-1 rounded-lg bg-[#0047d6] px-3 py-1.5 text-xs font-bold text-white transition hover:bg-[#0038aa]">Validasi</button>
                                                 <template x-teleport="body">
                                                     <div x-show="openValidasi" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4" @keydown.escape.window="openValidasi=false">
                                                         <div class="absolute inset-0 bg-black/50" @click="openValidasi = false"></div>
-                                                        <div class="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-xl text-left">
+                                                        <div class="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-xl text-left" style="max-height:90vh; overflow-y:auto;">
                                                             <div class="flex items-center justify-between mb-4">
                                                                 <h3 class="text-lg font-bold text-black">Validasi Absensi</h3>
                                                                 <button type="button" @click="openValidasi = false" class="text-2xl leading-none text-[#5b616e] hover:text-black">&times;</button>
@@ -383,9 +385,16 @@
                                                                 @if($a->catatan_instruktur)<p><span class="font-bold">Catatan:</span> {{ $a->catatan_instruktur }}</p>@endif
                                                             </div>
                                                             <p class="text-xs text-[#5b616e] mb-4">Pastikan bukti fisik sudah diperiksa sebelum memvalidasi.</p>
-                                                            <div class="flex justify-end gap-2">
+                                                            {{-- Menyetujui WAJIB tanda tangan digital. Kanvas diletakkan DI DALAM form
+                                                                 "Valid" saja, sehingga tombol "Tolak" tetap bisa ditekan tanpa tanda tangan. --}}
+                                                            <form method="POST" action="{{ route('guru.absensi.validasi', $a->id) }}" class="space-y-2">
+                                                                @csrf @method('PUT')
+                                                                <input type="hidden" name="aksi" value="valid">
+                                                                <x-ttd-pad name="ttd_guru" label="Tanda Tangan Digital Guru Pembimbing" :tinggi="150" />
+                                                                <button type="submit" class="w-full rounded-xl bg-[#05b169] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#049a5b]">Setujui &amp; Tanda Tangani</button>
+                                                            </form>
+                                                            <div class="mt-3 flex justify-end">
                                                                 <form method="POST" action="{{ route('guru.absensi.validasi', $a->id) }}">@csrf @method('PUT')<input type="hidden" name="aksi" value="tolak"><button type="submit" class="rounded-xl border-2 border-[#cf202f]/40 bg-white px-4 py-2 text-sm font-bold text-[#cf202f] transition hover:bg-[#cf202f]/5">Tolak</button></form>
-                                                                <form method="POST" action="{{ route('guru.absensi.validasi', $a->id) }}">@csrf @method('PUT')<input type="hidden" name="aksi" value="valid"><button type="submit" class="rounded-xl bg-[#05b169] px-4 py-2 text-sm font-bold text-white transition hover:bg-[#049a5b]">Valid</button></form>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -393,6 +402,26 @@
                                             </div>
                                         @elseif($sv === 'disetujui')
                                             <span class="inline-flex items-center justify-center rounded-full bg-[#05b169]/10 px-3 py-1.5 text-xs font-bold text-[#05b169]">Tervalidasi</span>
+                                            @if($a->ttd_guru)
+                                                {{-- Paraf digital guru; gambar yang sama ikut tercetak di PDF absensi --}}
+                                                <x-paraf-instruktur :ttd="$a->ttd_guru"
+                                                                    :nama="$a->ttd_guru_nama"
+                                                                    :waktu="$a->ttd_guru_signed_at"
+                                                                    :tinggi="34"
+                                                                    judul="Paraf Digital Guru Pembimbing"
+                                                                    label="Paraf guru"
+                                                                    peran-label="Nama guru"
+                                                                    unduh-nama="paraf-absensi-{{ $a->id }}" />
+                                            @endif
+                                            {{-- Batalkan validasi: paraf digital dihapus & absensi kembali menunggu validasi --}}
+                                            <form method="POST" action="{{ route('guru.absensi.validasi', $a->id) }}"
+                                                  data-confirm="Batalkan validasi absensi ini?"
+                                                  data-confirm-text="Paraf digital yang sudah dibubuhkan akan dihapus dan absensi kembali berstatus Menunggu Validasi."
+                                                  data-confirm-yes="Ya, batalkan">
+                                                @csrf @method('PUT')
+                                                <input type="hidden" name="aksi" value="batal">
+                                                <button type="submit" class="inline-flex items-center gap-1 rounded-lg border-2 border-[#cf202f]/40 bg-white px-3 py-1.5 text-xs font-bold text-[#cf202f] transition hover:bg-[#cf202f]/5">Batalkan Validasi</button>
+                                            </form>
                                         @else
                                             <span class="text-xs font-medium text-[#5b616e]">Belum diajukan</span>
                                         @endif
@@ -439,7 +468,7 @@
                         $jp = $a->jam_pulang ? \Illuminate\Support\Str::substr($a->jam_pulang,0,5) : '';
                         $extBukti = $a->foto_bukti ? pathinfo($a->foto_bukti, PATHINFO_EXTENSION) : '';
                     @endphp
-                    <div x-data="{ detail: false }" x-effect="document.body.style.overflow = detail ? 'hidden' : ''"
+                    <div x-data="{ detail: false }" x-effect="window.detailTerbuka = detail; document.body.style.overflow = (detail || window.fotoPopupTerbuka) ? 'hidden' : ''"
                          class="rounded-2xl border-2 border-[#0047d6]/15 bg-white p-4 shadow-sm">
                         <div class="flex items-center justify-between gap-3">
                             <div class="min-w-0">
@@ -456,11 +485,11 @@
                         <div x-show="detail" x-cloak
                              x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
                              x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
-                             class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 p-0 sm:p-4" @keydown.escape.window="detail = false">
+                             class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 p-0 sm:p-4" @click.self="detail = false" @keydown.escape.window="if (! window.fotoPopupTerbuka) detail = false">
                             <div x-show="detail"
                                  x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-full sm:translate-y-0 sm:scale-95" x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
                                  x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100" x-transition:leave-end="opacity-0 translate-y-full sm:translate-y-0 sm:scale-95"
-                                 class="w-full sm:max-w-lg max-h-[90vh] overflow-y-auto rounded-t-2xl sm:rounded-2xl bg-white shadow-xl text-left" @click.outside="detail = false">
+                                 class="w-full sm:max-w-lg max-h-[90vh] overflow-y-auto rounded-t-2xl sm:rounded-2xl bg-white shadow-xl text-left">
                                 <div class="sticky top-0 flex items-center justify-between border-b-2 border-[#0047d6]/15 bg-white px-5 py-3">
                                     <h3 class="text-base font-bold text-black">Detail Absensi</h3>
                                     <button type="button" @click="detail = false" class="text-2xl leading-none text-[#5b616e] hover:text-black">&times;</button>
@@ -481,7 +510,9 @@
                                     @if($a->foto_bukti)
                                         <div><p class="text-xs font-bold uppercase tracking-wide text-[#5b616e] mb-1">Bukti Fisik</p>
                                             <div class="flex flex-wrap gap-2">
-                                                <a href="{{ asset('storage/'.$a->foto_bukti) }}" download target="_blank" rel="noopener" class="inline-flex items-center gap-1 rounded-full bg-[#0047d6] px-3 py-1.5 text-xs font-bold text-white transition hover:bg-[#0038aa]">Lihat Bukti</a>
+                                                <button type="button"
+                                                        @click="$dispatch('buka-foto', { src: @js(asset('storage/'.$a->foto_bukti)), nama: @js($a->siswa->name ?? '-'), sub: @js(\Carbon\Carbon::parse($a->tanggal)->translatedFormat('d M Y')), unduh: @js('bukti-absensi-'.($a->siswa->nisn ?? $a->id).'-'.$a->id.'.'.$extBukti) })"
+                                                        class="inline-flex items-center gap-1 rounded-full bg-[#0047d6] px-3 py-1.5 text-xs font-bold text-white transition hover:bg-[#0038aa]">Lihat Bukti</button>
                                                 <a href="{{ asset('storage/'.$a->foto_bukti) }}" download="bukti-absensi-{{ $a->siswa->nisn ?? $a->id }}-{{ $a->id . '.' . $extBukti }}" class="inline-flex items-center gap-1 rounded-full border-2 border-[#05b169]/40 bg-white px-3 py-1.5 text-xs font-bold text-[#05b169] transition hover:bg-[#05b169]/5">Download Bukti</a>
                                             </div>
                                         </div>
@@ -489,12 +520,34 @@
                                 </div>
                                 <div class="sticky bottom-0 space-y-2 border-t-2 border-[#0047d6]/15 bg-white px-5 py-4">
                                     @if($sv === 'diajukan')
-                                        <div class="flex gap-2">
-                                            <form method="POST" action="{{ route('guru.absensi.validasi', $a->id) }}" class="flex-1">@csrf @method('PUT')<input type="hidden" name="aksi" value="tolak"><button type="submit" class="w-full rounded-xl border-2 border-[#cf202f]/40 bg-white px-4 py-2.5 text-sm font-bold text-[#cf202f] transition hover:bg-[#cf202f]/5">Tolak</button></form>
-                                            <form method="POST" action="{{ route('guru.absensi.validasi', $a->id) }}" class="flex-1">@csrf @method('PUT')<input type="hidden" name="aksi" value="valid"><button type="submit" class="w-full rounded-xl bg-[#05b169] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#049a5b]">Valid</button></form>
-                                        </div>
+                                        {{-- Menyetujui WAJIB tanda tangan digital. Kanvas diletakkan DI DALAM form
+                                             "Valid" saja, sehingga tombol "Tolak" tetap bisa ditekan tanpa tanda tangan. --}}
+                                        <form method="POST" action="{{ route('guru.absensi.validasi', $a->id) }}" class="space-y-2">
+                                            @csrf @method('PUT')
+                                            <input type="hidden" name="aksi" value="valid">
+                                            <x-ttd-pad name="ttd_guru" label="Tanda Tangan Digital Guru Pembimbing" :tinggi="130" />
+                                            <button type="submit" class="w-full rounded-xl bg-[#05b169] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#049a5b]">Setujui &amp; Tanda Tangani</button>
+                                        </form>
+                                        <form method="POST" action="{{ route('guru.absensi.validasi', $a->id) }}">@csrf @method('PUT')<input type="hidden" name="aksi" value="tolak"><button type="submit" class="w-full rounded-xl border-2 border-[#cf202f]/40 bg-white px-4 py-2.5 text-sm font-bold text-[#cf202f] transition hover:bg-[#cf202f]/5">Tolak</button></form>
                                     @elseif($sv === 'disetujui')
                                         <p class="text-center text-sm font-bold text-[#05b169]">✓ Sudah Tervalidasi</p>
+                                        @if($a->ttd_guru)
+                                            {{-- Paraf digital guru; gambar yang sama ikut tercetak di PDF absensi --}}
+                                            <div class="rounded-xl border-2 border-[#05b169]/40 bg-white px-3 py-2 text-center">
+                                                <img src="{{ asset('storage/'.$a->ttd_guru) }}" alt="Paraf guru pembimbing" style="height:44px; width:auto; margin:0 auto; display:block;">
+                                                <p class="mt-1 text-[10px] font-bold uppercase tracking-wide text-[#05b169]">Paraf guru pembimbing</p>
+                                                @if($a->ttd_guru_nama)<p class="text-[10px] font-semibold text-[#5b616e]">{{ $a->ttd_guru_nama }}</p>@endif
+                                            </div>
+                                        @endif
+                                        {{-- Batalkan validasi: paraf digital dihapus & absensi kembali menunggu validasi --}}
+                                        <form method="POST" action="{{ route('guru.absensi.validasi', $a->id) }}"
+                                              data-confirm="Batalkan validasi absensi ini?"
+                                              data-confirm-text="Paraf digital yang sudah dibubuhkan akan dihapus dan absensi kembali berstatus Menunggu Validasi."
+                                              data-confirm-yes="Ya, batalkan">
+                                            @csrf @method('PUT')
+                                            <input type="hidden" name="aksi" value="batal">
+                                            <button type="submit" class="w-full rounded-xl border-2 border-[#cf202f]/40 bg-white px-4 py-2.5 text-sm font-bold text-[#cf202f] transition hover:bg-[#cf202f]/5">Batalkan Validasi</button>
+                                        </form>
                                     @else
                                         <p class="text-center text-sm font-medium text-[#5b616e]">Belum diajukan siswa</p>
                                     @endif
@@ -514,6 +567,53 @@
             {{-- ===== PAGINATION ===== --}}
             <div class="mt-4">{!! $absensi->links() !!}</div>
         </div>
+    </div>
+
+    {{-- ===== POPUP LIHAT BUKTI FOTO =====
+         Dipanggil dari tombol "Lihat Bukti" (tabel & kartu) lewat event 'buka-foto'.
+         Foto tampil di kotak melayang, ditutup dengan tanda X, tombol Tutup,
+         tombol Esc, atau klik area gelap di luar kotak. Tidak mengunduh apa pun. --}}
+    <div x-data="{ open:false, src:'', nama:'', sub:'', unduh:'bukti-absensi.jpg' }"
+         @buka-foto.window="src = $event.detail.src; nama = $event.detail.nama || ''; sub = $event.detail.sub || ''; unduh = $event.detail.unduh || 'bukti-absensi.jpg'; open = true"
+         {{-- Tandai popup foto sedang terbuka, dan JANGAN buka kunci gulir selama popup detail masih terbuka --}}
+         x-effect="window.fotoPopupTerbuka = open; document.body.style.overflow = (open || window.detailTerbuka) ? 'hidden' : ''">
+        <template x-teleport="body">
+            <div x-show="open" x-cloak
+                 x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+                 x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
+                 class="fixed inset-0 flex items-center justify-center p-4" style="z-index:60"
+                 @keydown.escape.window="open = false">
+
+                {{-- Lapisan gelap: klik untuk menutup --}}
+                <div class="absolute inset-0" style="background-color:rgba(0,0,0,.65)" @click="open = false"></div>
+
+                <div class="relative w-full max-w-3xl rounded-2xl bg-white shadow-xl">
+                    {{-- Kepala kotak + tombol X --}}
+                    <div class="flex items-start justify-between gap-3 border-b-2 border-[#0047d6]/15 px-5 py-3">
+                        <div class="min-w-0">
+                            <h3 class="text-base font-bold text-black">Bukti Absensi</h3>
+                            <p class="truncate text-xs font-medium text-[#5b616e]" x-text="[nama, sub].filter(Boolean).join(' \u2022 ')"></p>
+                        </div>
+                        <button type="button" @click="open = false" title="Tutup (Esc)" aria-label="Tutup"
+                                class="shrink-0 rounded-lg px-2 text-2xl leading-none text-[#5b616e] transition hover:bg-gray-100 hover:text-black">&times;</button>
+                    </div>
+
+                    {{-- Foto --}}
+                    <div class="flex items-center justify-center p-3" style="background-color:#f4f6fb">
+                        <img :src="src" alt="Bukti absensi" class="rounded-lg object-contain"
+                             style="max-height:70vh; max-width:100%">
+                    </div>
+
+                    {{-- Kaki kotak --}}
+                    <div class="flex flex-wrap items-center justify-end gap-2 border-t-2 border-[#0047d6]/15 px-5 py-3">
+                        <a :href="src" :download="unduh"
+                           class="inline-flex items-center gap-1 rounded-xl border-2 border-[#05b169]/40 bg-white px-4 py-2 text-sm font-bold text-[#05b169] transition hover:bg-[#05b169]/5">Download</a>
+                        <button type="button" @click="open = false"
+                                class="inline-flex items-center gap-1 rounded-xl bg-[#0047d6] px-4 py-2 text-sm font-bold text-white transition hover:bg-[#0038aa]">Tutup</button>
+                    </div>
+                </div>
+            </div>
+        </template>
     </div>
 
     {{-- ===== Alpine: pencarian & edit jam kerja siswa via NISN ===== --}}

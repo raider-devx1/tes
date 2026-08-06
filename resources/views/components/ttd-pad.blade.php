@@ -238,6 +238,13 @@
         siapkanSemua();
     }
 
+    /* Kanvas yang berada di dalam <template x-teleport> (mis. modal Validasi pada
+       halaman absensi guru) baru muncul di DOM setelah Alpine selesai memasang
+       komponen. Pindaian ulang di bawah ini membuat kanvas seperti itu tetap aktif.
+       Fungsi siapkan() punya penjaga __ttdSiap sehingga aman dipanggil berkali-kali. */
+    document.addEventListener('alpine:initialized', siapkanSemua);
+    window.ttdPadSiapkan = siapkanSemua;
+
     /* Tanda tangan wajib: cegah kirim bila kanvas masih kosong. */
     document.addEventListener('submit', function (e) {
         const form = e.target;

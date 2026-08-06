@@ -173,7 +173,7 @@
                                     </div>
                                 </td>
                                 <td class="px-4 py-3">
-                                    <div class="flex flex-col items-stretch gap-1.5">
+                                    <div x-data class="flex flex-col items-stretch gap-1.5">
                                         {{-- Cetak PDF: MERAH + ikon print --}}
                                         <a href="{{ route('cetak.catatan', ['siswa_id' => $item->user_id, 'catatan_id' => $item->id]) }}" target="_blank"
                                            class="inline-flex items-center justify-center gap-1.5 rounded-xl bg-[#cf202f] px-3 py-1.5 text-xs font-bold text-white transition hover:bg-[#a81824]">
@@ -184,10 +184,12 @@
                                         </a>
 
                                         @if($item->foto_bukti)
-                                            <a href="{{ asset('storage/' . $item->foto_bukti) }}" download target="_blank" rel="noopener"
-                                               class="inline-flex items-center justify-center rounded-xl bg-[#0047d6] px-3 py-1.5 text-xs font-bold text-white transition hover:bg-[#0038aa]">
+                                            {{-- Tombol lihat: membuka pop-up foto, tidak mengunduh & tidak pindah tab --}}
+                                            <button type="button"
+                                                    @click="$dispatch('buka-foto', { src: @js(asset('storage/' . $item->foto_bukti)), judul: 'Bukti Fisik', nama: @js($item->user->name ?? '-'), sub: @js($item->nama_pekerjaan), unduh: @js('bukti-'.($item->user->nisn ?? $item->user_id).'-'.$item->id.'.'.$extBukti) })"
+                                                    class="inline-flex items-center justify-center rounded-xl bg-[#0047d6] px-3 py-1.5 text-xs font-bold text-white transition hover:bg-[#0038aa]">
                                                 Lihat Bukti
-                                            </a>
+                                            </button>
                                             <a href="{{ asset('storage/' . $item->foto_bukti) }}" download
                                                download="bukti-{{ $item->user->nisn ?? $item->user_id }}-{{ $item->id . '.' . $extBukti }}"
                                                class="inline-flex items-center justify-center rounded-xl border-2 border-[#0047d6] bg-white px-3 py-1.5 text-xs font-bold text-[#0047d6] transition hover:bg-[#0047d6]/5">
@@ -289,7 +291,7 @@
                     @endphp
 
                   <div x-data="{ detail: false }"
-     x-effect="document.body.style.overflow = detail ? 'hidden' : ''"
+     x-effect="window.detailTerbuka = detail; document.body.style.overflow = (detail || window.fotoPopupTerbuka) ? 'hidden' : ''"
      class="rounded-2xl border-2 border-[#0047d6]/15 bg-white p-4 shadow-sm">
                         {{-- Ringkas: NAMA + AKSI --}}
                         <div class="flex items-center justify-between gap-3">
@@ -325,7 +327,8 @@
      x-transition:leave-start="opacity-100"
      x-transition:leave-end="opacity-0"
      class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 p-0 sm:p-4"
-     @keydown.escape.window="detail = false">
+     @click.self="detail = false"
+     @keydown.escape.window="if (!window.fotoPopupTerbuka) detail = false">
                          <div x-show="detail"
      x-transition:enter="transition ease-out duration-300"
      x-transition:enter-start="opacity-0 translate-y-full sm:translate-y-0 sm:scale-95"
@@ -333,8 +336,7 @@
      x-transition:leave="transition ease-in duration-200"
      x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
      x-transition:leave-end="opacity-0 translate-y-full sm:translate-y-0 sm:scale-95"
-     class="w-full sm:max-w-lg max-h-[90vh] overflow-y-auto rounded-t-2xl sm:rounded-2xl bg-white shadow-xl text-left"
-     @click.outside="detail = false">
+     class="w-full sm:max-w-lg max-h-[90vh] overflow-y-auto rounded-t-2xl sm:rounded-2xl bg-white shadow-xl text-left">
 
                                 <div class="sticky top-0 flex items-center justify-between border-b-2 border-[#0047d6]/15 bg-white px-5 py-3">
                                     <h3 class="text-base font-bold text-black">Detail Catatan</h3>
@@ -398,10 +400,12 @@
                                         <p class="text-xs font-bold uppercase tracking-wide text-[#5b616e] mb-1">Bukti Fisik</p>
                                         @if($item->foto_bukti)
                                             <div class="flex flex-wrap gap-2">
-                                                <a href="{{ asset('storage/' . $item->foto_bukti) }}" download target="_blank" rel="noopener"
-                                                   class="inline-flex items-center rounded-full bg-[#05b169] px-3 py-1.5 text-xs font-bold text-white transition hover:bg-[#049458]">
+                                                {{-- Tombol lihat: membuka pop-up foto, tidak mengunduh & tidak pindah tab --}}
+                                                <button type="button"
+                                                        @click="$dispatch('buka-foto', { src: @js(asset('storage/' . $item->foto_bukti)), judul: 'Bukti Fisik', nama: @js($item->user->name ?? '-'), sub: @js($item->nama_pekerjaan), unduh: @js('bukti-'.($item->user->nisn ?? $item->user_id).'-'.$item->id.'.'.$extBukti) })"
+                                                        class="inline-flex items-center rounded-full bg-[#05b169] px-3 py-1.5 text-xs font-bold text-white transition hover:bg-[#049458]">
                                                     Lihat Bukti
-                                                </a>
+                                                </button>
                                                 <a href="{{ asset('storage/' . $item->foto_bukti) }}" download
                                                    download="bukti-{{ $item->user->nisn ?? $item->user_id }}-{{ $item->id . '.' . $extBukti }}"
                                                    class="inline-flex items-center rounded-full border-2 border-[#05b169] bg-white px-3 py-1.5 text-xs font-bold text-[#05b169] transition hover:bg-[#05b169]/5">
@@ -462,5 +466,50 @@
             </div>
 
         </div>
+    </div>
+
+    {{-- ===== Pop-up lihat foto (tanpa unduh, tanpa pindah tab) =====
+         Foto tampil di kotak melayang, ditutup dengan tanda X, tombol Tutup,
+         tombol Esc, atau klik area gelap di luar kotak. --}}
+    <div x-data="{ open:false, src:'', judul:'Foto', nama:'', sub:'', unduh:'foto.jpg' }"
+         @buka-foto.window="src = $event.detail.src; judul = $event.detail.judul || 'Foto'; nama = $event.detail.nama || ''; sub = $event.detail.sub || ''; unduh = $event.detail.unduh || 'foto.jpg'; open = true"
+         x-effect="window.fotoPopupTerbuka = open; document.body.style.overflow = (open || window.detailTerbuka) ? 'hidden' : ''">
+        <template x-teleport="body">
+            <div x-show="open" x-cloak
+                 x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+                 x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
+                 class="fixed inset-0 flex items-center justify-center p-4" style="z-index:60"
+                 @keydown.escape.window="open = false">
+
+                {{-- Lapisan gelap: klik untuk menutup --}}
+                <div class="absolute inset-0" style="background-color:rgba(0,0,0,.65)" @click="open = false"></div>
+
+                <div class="relative w-full max-w-3xl rounded-2xl bg-white shadow-xl">
+                    {{-- Kepala kotak + tombol X --}}
+                    <div class="flex items-start justify-between gap-3 border-b-2 border-[#0047d6]/15 px-5 py-3">
+                        <div class="min-w-0">
+                            <h3 class="text-base font-bold text-black" x-text="judul"></h3>
+                            <p class="truncate text-xs font-medium text-[#5b616e]" x-text="[nama, sub].filter(Boolean).join(' \u2022 ')"></p>
+                        </div>
+                        <button type="button" @click="open = false" title="Tutup (Esc)" aria-label="Tutup"
+                                class="shrink-0 rounded-lg px-2 text-2xl leading-none text-[#5b616e] transition hover:bg-gray-100 hover:text-black">&times;</button>
+                    </div>
+
+                    {{-- Foto --}}
+                    <div class="flex items-center justify-center p-3" style="background-color:#f4f6fb">
+                        <img :src="src" alt="Bukti fisik" class="rounded-lg object-contain"
+                             style="max-height:70vh; max-width:100%">
+                    </div>
+
+                    {{-- Kaki kotak --}}
+                    <div class="flex flex-wrap items-center justify-end gap-2 border-t-2 border-[#0047d6]/15 px-5 py-3">
+                        <a :href="src" :download="unduh"
+                           class="inline-flex items-center gap-1 rounded-xl border-2 border-[#05b169]/40 bg-white px-4 py-2 text-sm font-bold text-[#05b169] transition hover:bg-[#05b169]/5">Download</a>
+                        <button type="button" @click="open = false"
+                                class="inline-flex items-center gap-1 rounded-xl bg-[#0047d6] px-4 py-2 text-sm font-bold text-white transition hover:bg-[#0038aa]">Tutup</button>
+                    </div>
+                </div>
+            </div>
+        </template>
     </div>
 </x-app-layout>

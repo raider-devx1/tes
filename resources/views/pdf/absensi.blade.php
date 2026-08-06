@@ -20,6 +20,10 @@
 
         .footer-note { font-style: italic; font-size: 10px; margin-top: 5px; }
 
+        /* Kolom paraf / tanda tangan digital guru pembimbing */
+        table.data-absensi td.ttd-cell { text-align: center; vertical-align: middle; }
+        .ttd-cell img { display: block; margin: 0 auto; }
+
         /* Badge tanda tangan digital terverifikasi */
         .verified {
             border: 1.5px solid #16a34a;
@@ -95,11 +99,16 @@
                     <td class="text-center"> {{ $row->jam_masuk ?? '-' }} </td>
                     <td class="text-center"> {{ $row->jam_pulang ?? '-' }} </td>
                     <td> {{ $row->catatan_instruktur ?? '-' }} </td>
-                    <td>
-                        {{-- Kolom paraf/validasi SELALU dicetak kosong (hanya tempat paraf basah),
-                             baik absensi sudah divalidasi maupun belum. --}}
-                        <br><br>
-                        <div class="text-center">( .................... )</div>
+                    <td class="ttd-cell">
+                        @php $ttdGuru = \App\Support\TandaTangan::dataUri($row->ttd_guru); @endphp
+                        @if($ttdGuru)
+                            {{-- HANYA gambar tanda tangan digital guru, tanpa nama & tanpa tanggal paraf --}}
+                            <img src="{{ $ttdGuru }}" alt="Paraf guru pembimbing" style="height:34px; width:auto;">
+                        @else
+                            {{-- Belum ditandatangani digital: ruang paraf basah seperti sebelumnya --}}
+                            <br><br>
+                            <div class="text-center">( .................... )</div>
+                        @endif
                     </td>
                 </tr>
                 @empty
@@ -131,9 +140,7 @@
             </tbody>
         </table>
 
-        <div class="footer-note">
-            * Kolom validasi sengaja dibiarkan kosong untuk paraf/tanda tangan basah Instruktur atau Guru Pembimbing.
-        </div>
+       
     </div>
 
 @empty
