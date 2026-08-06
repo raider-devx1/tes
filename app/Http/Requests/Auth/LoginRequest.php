@@ -34,7 +34,7 @@ class LoginRequest extends FormRequest
     /**
      * Pesan tunggal yang dipakai saat mode seragam aktif.
      */
-    private const PESAN_SERAGAM = 'NISN/NIP atau password yang Anda masukkan salah.';
+    private const PESAN_SERAGAM = 'NIS/NIP atau password yang Anda masukkan salah.';
 
     public function authorize(): bool
     {
@@ -62,8 +62,8 @@ class LoginRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'login.required'    => 'NISN/NIP wajib diisi.',
-            'login.string'      => 'Format NISN/NIP tidak valid.',
+            'login.required'    => 'NIS/NIP wajib diisi.',
+            'login.string'      => 'Format NIS/NIP tidak valid.',
             'password.required' => 'Password wajib diisi.',
             'password.string'   => 'Format password tidak valid.',
         ];
@@ -116,7 +116,7 @@ class LoginRequest extends FormRequest
             RateLimiter::hit($this->throttleKey());
 
             $pesan = self::PESAN_SPESIFIK
-                ? 'NISN/NIP tidak terdaftar. Periksa kembali penulisannya atau hubungi admin sekolah.'
+                ? 'NIS/NIP tidak terdaftar. Periksa kembali penulisannya atau hubungi admin sekolah.'
                 : self::PESAN_SERAGAM;
 
             throw ValidationException::withMessages([
