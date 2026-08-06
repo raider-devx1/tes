@@ -58,6 +58,23 @@
                         </div>
                     @endif
 
+                    {{-- ----- Peringatan Gagal Login (Bahasa Indonesia) ----- --}}
+                    @if ($errors->any())
+                        <div class="mt-4 flex items-start gap-3 rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+                            <svg class="h-5 w-5 flex-none text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
+                            </svg>
+                            <div>
+                                <p class="font-semibold">Login gagal</p>
+                                <ul class="mt-1 space-y-0.5 list-disc list-inside">
+                                    @foreach ($errors->all() as $pesan)
+                                        <li>{{ $pesan }}</li>
+                                    @endforeach
+                                </ul>
+                            </div>
+                        </div>
+                    @endif
+
                     <form method="POST" action="{{ route('login') }}" class="mt-6 space-y-5">
                         @csrf
 
@@ -87,7 +104,7 @@
         <input id="password" name="password" type="password"
                required autocomplete="current-password"
                class="block w-full rounded-lg border-slate-300 bg-white pl-3.5 pr-10 py-2.5 text-slate-900 shadow-sm
-                      focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 @error('password') border-red-400 @enderror">
+                      focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 @if ($errors->has('password') || $errors->has('login')) border-red-400 @endif">
         
         <button type="button" id="togglePassword" class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600">
             <svg id="eyeOpen" class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
@@ -137,8 +154,5 @@
             eyeClose.classList.toggle('hidden');
         });
     </script>
-</body>
-</html>
-
 </body>
 </html>

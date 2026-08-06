@@ -14,13 +14,35 @@ use Illuminate\Validation\ValidationException;
 
 class LoginRequest extends FormRequest
 {
+    /**
+     * Jumlah percobaan gagal sebelum login dikunci sementara.
+     */
+    private const MAKS_PERCOBAAN = 5;
+
+    /**
+     * Mode pesan peringatan.
+     *
+     * false = pesan seragam  -> "NISN/NIP atau password yang Anda masukkan salah."  << AKTIF
+     *         Lebih aman karena tidak membocorkan NISN/NIP mana yang terdaftar.
+     * true  = pesan spesifik -> "NISN/NIP tidak terdaftar" ATAU "Password salah".
+     *         Lebih ramah, tetapi memberi tahu akun mana yang ada di database.
+     *
+     * Cukup ubah true/false di sini, tidak perlu mengubah kode lain.
+     */
+    private const PESAN_SPESIFIK = false;
+
+    /**
+     * Pesan tunggal yang dipakai saat mode seragam aktif.
+     */
+    private const PESAN_SERAGAM = 'NISN/NIP atau password yang Anda masukkan salah.';
+
     public function authorize(): bool
     {
         return true;
     }
 
     /**
-     * Field login sekarang generik: bisa NISN (siswa), NIP (guru), atau Email (admin/instruktur).
+     * Field login generik: bisa NISN (siswa), NIP (guru), atau Email (admin/instruktur).
      *
      * @return array<string, ValidationRule|array<mixed>|string>
      */
@@ -29,6 +51,34 @@ class LoginRequest extends FormRequest
         return [
             'login'    => ['required', 'string'],
             'password' => ['required', 'string'],
+        ];
+    }
+
+    /**
+     * Pesan validasi dasar (kolom kosong / format salah) dalam Bahasa Indonesia.
+     *
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'login.required'    => 'NISN/NIP wajib diisi.',
+            'login.string'      => 'Format NISN/NIP tidak valid.',
+            'password.required' => 'Password wajib diisi.',
+            'password.string'   => 'Format password tidak valid.',
+        ];
+    }
+
+    /**
+     * Nama field yang tampil di pesan error bawaan Laravel.
+     *
+     * @return array<string, string>
+     */
+    public function attributes(): array
+    {
+        return [
+            'login'    => 'NISN/NIP',
+            'password' => 'Password',
         ];
     }
 
@@ -51,8 +101,6 @@ class LoginRequest extends FormRequest
         $passwordRapi = trim((string) $this->input('password'));
 
         // Cari user: prioritas NISN -> NIP -> Email.
-        // orWhere dibungkus satu grup agar tidak bertabrakan dengan penyaring
-        // lain (mis. soft delete) dan tidak salah mengambil baris.
         $user = User::query()
             ->where(function ($query) use ($login) {
                 $query->where('nisn', $login)
@@ -61,19 +109,38 @@ class LoginRequest extends FormRequest
             })
             ->first();
 
-        // Cocokkan password apa adanya lebih dulu, lalu versi yang sudah
-        // dirapikan. Ini menyelamatkan akun yang password tersimpannya
-        // terlanjur mengandung spasi hasil salin-tempel admin.
-        $cocok = $user && (
-            Hash::check($this->input('password'), $user->password)
-            || Hash::check($passwordRapi, $user->password)
-        );
+        // ------------------------------------------------------------------
+        // KASUS 1: NISN/NIP (atau email) tidak ditemukan di database
+        // ------------------------------------------------------------------
+        if (! $user) {
+            RateLimiter::hit($this->throttleKey());
+
+            $pesan = self::PESAN_SPESIFIK
+                ? 'NISN/NIP tidak terdaftar. Periksa kembali penulisannya atau hubungi admin sekolah.'
+                : self::PESAN_SERAGAM;
+
+            throw ValidationException::withMessages([
+                'login' => $pesan . $this->sisaPercobaan(),
+            ]);
+        }
+
+        // ------------------------------------------------------------------
+        // KASUS 2: akun ditemukan, tetapi password tidak cocok
+        // ------------------------------------------------------------------
+        $cocok = Hash::check((string) $this->input('password'), $user->password)
+            || Hash::check($passwordRapi, $user->password);
 
         if (! $cocok) {
             RateLimiter::hit($this->throttleKey());
 
+            $field = self::PESAN_SPESIFIK ? 'password' : 'login';
+
+            $pesan = self::PESAN_SPESIFIK
+                ? 'Password salah. Perhatikan huruf besar/kecil dan pastikan Caps Lock tidak aktif.'
+                : self::PESAN_SERAGAM;
+
             throw ValidationException::withMessages([
-                'login' => trans('auth.failed'),
+                $field => $pesan . $this->sisaPercobaan(),
             ]);
         }
 
@@ -83,23 +150,41 @@ class LoginRequest extends FormRequest
     }
 
     /**
+     * Info tambahan "sisa percobaan" supaya pengguna tidak kaget saat terkunci.
+     * Hanya muncul ketika sisa percobaan tinggal 1-2 kali.
+     */
+    private function sisaPercobaan(): string
+    {
+        $sisa = self::MAKS_PERCOBAAN - RateLimiter::attempts($this->throttleKey());
+
+        if ($sisa > 0 && $sisa <= 2) {
+            return ' Sisa ' . $sisa . ' kali percobaan sebelum login dikunci sementara.';
+        }
+
+        return '';
+    }
+
+    /**
+     * Peringatan saat percobaan login terlalu sering.
+     *
      * @throws ValidationException
      */
     public function ensureIsNotRateLimited(): void
     {
-        if (! RateLimiter::tooManyAttempts($this->throttleKey(), 5)) {
+        if (! RateLimiter::tooManyAttempts($this->throttleKey(), self::MAKS_PERCOBAAN)) {
             return;
         }
 
         event(new Lockout($this));
 
-        $seconds = RateLimiter::availableIn($this->throttleKey());
+        $detik = RateLimiter::availableIn($this->throttleKey());
+
+        $tunggu = $detik >= 60
+            ? ((int) ceil($detik / 60)) . ' menit'
+            : $detik . ' detik';
 
         throw ValidationException::withMessages([
-            'login' => trans('auth.throttle', [
-                'seconds' => $seconds,
-                'minutes' => ceil($seconds / 60),
-            ]),
+            'login' => 'Terlalu banyak percobaan login yang gagal. Silakan coba lagi dalam ' . $tunggu . '.',
         ]);
     }
 
