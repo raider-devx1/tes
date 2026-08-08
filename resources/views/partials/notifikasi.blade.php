@@ -4,6 +4,8 @@
     use App\Models\User;
     use Illuminate\Support\Facades\Cache;
 
+    use App\Models\Absensi;
+
     $me          = auth()->user();
     $hariIni     = \Carbon\Carbon::today();
     $tanggalIndo = $hariIni->locale('id')->translatedFormat('d F Y'); // contoh: 05 Juli 2026
@@ -66,6 +68,50 @@
             return $notifikasi;
         }
     );
+
+    /* ====== NOTIFIKASI: ABSENSI DITOLAK (TIDAK DI-CACHE) ======
+     | Sengaja dihitung di luar Cache::remember supaya peringatan langsung
+     | hilang begitu siswa selesai mengganti foto (tanpa menunggu 60 detik).
+     */
+    $notifTolak = [];
+
+    if ($me->role === 'siswa_pkl') {
+        $absensiDitolak = Absensi::where('siswa_id', $me->id)
+            ->where('foto_ditolak', true)
+            ->orderByDesc('tanggal')
+            ->get();
+
+        foreach ($absensiDitolak as $ad) {
+            // Hindari query ulang relasi siswa saat menghitung batas waktu.
+            $ad->setRelation('siswa', $me);
+
+            $batas = $ad->batasGantiFoto();
+
+            // Sudah lewat batas: ditangani oleh Absensi::tandaiAlpaFotoTidakDiganti().
+            if ($batas && now()->gt($batas)) {
+                continue;
+            }
+
+            $tglDitolak = \Carbon\Carbon::parse($ad->tanggal)->locale('id')->translatedFormat('d F Y');
+            $batasLabel = $batas ? $batas->format('H:i') . ' WITA' : 'jam pulang berakhir';
+
+            $notifTolak[] = [
+                'key'      => 'siswa-absensi-ditolak-' . $ad->id,
+                'warna'    => 'merah',
+                'judul'    => 'Absensi Anda Ditolak',
+                'pesan'    => "Absensi Anda tanggal {$tglDitolak} ditolak guru pembimbing. "
+                            . 'Mohon lakukan absensi ulang dengan mengganti foto sebelum ' . $batasLabel . '. '
+                            . 'Data jam absensi Anda tetap tersimpan dan Anda tidak dihitung Alpha selama foto sudah diganti. '
+                            . 'Absen pulang terkunci sampai foto diganti.'
+                            . ($ad->catatan_penolakan ? ' Catatan guru: ' . $ad->catatan_penolakan : ''),
+                'aksi_url' => route('siswa.absensi.index'),
+                'aksi'     => 'Ganti Foto Sekarang',
+            ];
+        }
+    }
+
+    // Peringatan penolakan selalu tampil paling atas.
+    $notifikasi = array_merge($notifTolak, $notifikasi);
 
     $jumlahNotif = count($notifikasi);
 @endphp
@@ -153,7 +199,19 @@
                                     'chip' => 'bg-[#0047d6]/12 text-[#0047d6]',
                                     'btn'  => 'bg-[#0047d6] hover:bg-[#0038aa] focus:ring-[#0047d6]/30',
                                 ],
-                            ][$n['warna']];
+                                // Tema untuk peringatan absensi ditolak.
+                                'merah' => [
+                                    'ring' => 'border-[#cf202f]/45',
+                                    'bg'   => 'bg-[#fdf2f3]',
+                                    'chip' => 'bg-[#cf202f]/15 text-[#8f1520]',
+                                    'btn'  => 'bg-[#cf202f] hover:bg-[#a81824] focus:ring-[#cf202f]/30',
+                                ],
+                            ][$n['warna']] ?? [
+                                'ring' => 'border-[#0047d6]/25',
+                                'bg'   => 'bg-[#eef3ff]',
+                                'chip' => 'bg-[#0047d6]/12 text-[#0047d6]',
+                                'btn'  => 'bg-[#0047d6] hover:bg-[#0038aa] focus:ring-[#0047d6]/30',
+                            ];
                         @endphp
 
                         <div x-data="{ key: '{{ $n['key'] }}' }"

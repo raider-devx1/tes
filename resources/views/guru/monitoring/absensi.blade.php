@@ -26,14 +26,19 @@
                             <span class="inline-block h-2 w-2 rounded-full bg-[#05b169]"></span>
                             Buka / Tutup Absensi
                         </button>
-                        <div x-show="open" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4" @keydown.escape.window="open=false">
+                        {{-- Responsif: lembar bawah (bottom sheet) di HP, dialog tengah di laptop --}}
+                        <div x-show="open" x-cloak class="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4" @keydown.escape.window="open=false">
                             <div class="absolute inset-0 bg-black/50" @click="open=false"></div>
-                            <div class="relative w-full max-w-md rounded-2xl bg-white shadow-xl">
-                                <div class="flex items-center justify-between border-b border-gray-100 px-5 py-4">
-                                    <h3 class="text-base font-bold text-black">Buka / Tutup Absensi</h3>
-                                    <button type="button" @click="open=false" class="text-2xl leading-none text-[#5b616e] hover:text-black">&times;</button>
+                            <div class="relative flex max-h-[92vh] w-full flex-col overflow-hidden rounded-t-3xl bg-white shadow-xl sm:max-h-[88vh] sm:max-w-lg sm:rounded-2xl">
+                                <div class="flex-none border-b border-gray-100 px-4 pb-3 pt-3 sm:px-5 sm:py-4">
+                                    <div class="mx-auto mb-3 h-1.5 w-10 rounded-full bg-[#d7dbe3] sm:hidden"></div>
+                                    <div class="flex items-center justify-between gap-3">
+                                        <h3 class="text-base font-bold text-black">Buka / Tutup Absensi</h3>
+                                        <button type="button" @click="open=false" aria-label="Tutup"
+                                                class="-mr-1 flex h-8 w-8 flex-none items-center justify-center rounded-lg text-2xl leading-none text-[#5b616e] transition hover:bg-black/5 hover:text-black">&times;</button>
+                                    </div>
                                 </div>
-                                <div class="px-5 py-4 space-y-4 text-left">
+                                <div class="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain px-4 py-4 pb-[calc(1rem+env(safe-area-inset-bottom))] text-left sm:px-5 sm:pb-4">
                                     <div class="flex gap-2">
                                         <button type="button" @click="mode='semua'" :class="mode==='semua' ? 'bg-[#0047d6] text-white' : 'bg-gray-100 text-[#5b616e]'" class="flex-1 rounded-lg px-3 py-2 text-sm font-bold">Semua Bimbingan</button>
                                         <button type="button" @click="mode='nisn'" :class="mode==='nisn' ? 'bg-[#0047d6] text-white' : 'bg-gray-100 text-[#5b616e]'" class="flex-1 rounded-lg px-3 py-2 text-sm font-bold">Per NISN</button>
@@ -370,12 +375,15 @@
                                             <div x-data="{ openValidasi: false }" class="inline-block">
                                                 <button type="button" @click="openValidasi = true; window.ttdPadSiapkan && window.ttdPadSiapkan()" class="inline-flex items-center gap-1 rounded-lg bg-[#0047d6] px-3 py-1.5 text-xs font-bold text-white transition hover:bg-[#0038aa]">Validasi</button>
                                                 <template x-teleport="body">
-                                                    <div x-show="openValidasi" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4" @keydown.escape.window="openValidasi=false">
+                                                    {{-- Responsif: lembar bawah (bottom sheet) di HP, dialog tengah di laptop --}}
+                                                    <div x-show="openValidasi" x-cloak class="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4" @keydown.escape.window="openValidasi=false">
                                                         <div class="absolute inset-0 bg-black/50" @click="openValidasi = false"></div>
-                                                        <div class="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-xl text-left" style="max-height:90vh; overflow-y:auto;">
-                                                            <div class="flex items-center justify-between mb-4">
-                                                                <h3 class="text-lg font-bold text-black">Validasi Absensi</h3>
-                                                                <button type="button" @click="openValidasi = false" class="text-2xl leading-none text-[#5b616e] hover:text-black">&times;</button>
+                                                        <div class="relative max-h-[92vh] w-full overflow-y-auto overscroll-contain rounded-t-3xl bg-white px-4 py-4 pb-[calc(1rem+env(safe-area-inset-bottom))] text-left shadow-xl sm:max-h-[88vh] sm:max-w-lg sm:rounded-2xl sm:p-6">
+                                                            <div class="mx-auto mb-3 h-1.5 w-10 rounded-full bg-[#d7dbe3] sm:hidden"></div>
+                                                            <div class="flex items-center justify-between gap-3 mb-4">
+                                                                <h3 class="text-base font-bold text-black sm:text-lg">Validasi Absensi</h3>
+                                                                <button type="button" @click="openValidasi = false" aria-label="Tutup"
+                                                                        class="-mr-1 flex h-8 w-8 flex-none items-center justify-center rounded-lg text-2xl leading-none text-[#5b616e] transition hover:bg-black/5 hover:text-black">&times;</button>
                                                             </div>
                                                             <div class="space-y-2 text-sm text-black mb-4">
                                                                 <p><span class="font-bold">Siswa:</span> {{ $a->siswa->name ?? '-' }}</p>
@@ -393,8 +401,9 @@
                                                                 <x-ttd-pad name="ttd_guru" label="Tanda Tangan Digital Guru Pembimbing" :tinggi="150" />
                                                                 <button type="submit" class="w-full rounded-xl bg-[#05b169] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#049a5b]">Setujui &amp; Tanda Tangani</button>
                                                             </form>
+                                                            {{-- Tombol "Tolak" membuka pop up: isi catatan -> Konfirmasi Tolak / Batal --}}
                                                             <div class="mt-3 flex justify-end">
-                                                                <form method="POST" action="{{ route('guru.absensi.validasi', $a->id) }}">@csrf @method('PUT')<input type="hidden" name="aksi" value="tolak"><button type="submit" class="rounded-xl border-2 border-[#cf202f]/40 bg-white px-4 py-2 text-sm font-bold text-[#cf202f] transition hover:bg-[#cf202f]/5">Tolak</button></form>
+                                                                @include('guru.partials.modal-tolak-absensi', ['a' => $a, 'varian' => 'desktop'])
                                                             </div>
                                                         </div>
                                                     </div>
@@ -528,7 +537,8 @@
                                             <x-ttd-pad name="ttd_guru" label="Tanda Tangan Digital Guru Pembimbing" :tinggi="130" />
                                             <button type="submit" class="w-full rounded-xl bg-[#05b169] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#049a5b]">Setujui &amp; Tanda Tangani</button>
                                         </form>
-                                        <form method="POST" action="{{ route('guru.absensi.validasi', $a->id) }}">@csrf @method('PUT')<input type="hidden" name="aksi" value="tolak"><button type="submit" class="w-full rounded-xl border-2 border-[#cf202f]/40 bg-white px-4 py-2.5 text-sm font-bold text-[#cf202f] transition hover:bg-[#cf202f]/5">Tolak</button></form>
+                                        {{-- Tombol "Tolak" membuka pop up: isi catatan -> Konfirmasi Tolak / Batal --}}
+                                        @include('guru.partials.modal-tolak-absensi', ['a' => $a, 'varian' => 'mobile'])
                                     @elseif($sv === 'disetujui')
                                         <p class="text-center text-sm font-bold text-[#05b169]">✓ Sudah Tervalidasi</p>
                                         @if($a->ttd_guru)
@@ -581,35 +591,40 @@
             <div x-show="open" x-cloak
                  x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
                  x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
-                 class="fixed inset-0 flex items-center justify-center p-4" style="z-index:60"
+                 class="fixed inset-0 flex items-end justify-center sm:items-center sm:p-4" style="z-index:60"
                  @keydown.escape.window="open = false">
 
                 {{-- Lapisan gelap: klik untuk menutup --}}
                 <div class="absolute inset-0" style="background-color:rgba(0,0,0,.65)" @click="open = false"></div>
 
-                <div class="relative w-full max-w-3xl rounded-2xl bg-white shadow-xl">
+                {{-- Responsif: lembar bawah (bottom sheet) di HP, dialog tengah di laptop --}}
+                <div class="relative flex max-h-[92vh] w-full flex-col overflow-hidden rounded-t-3xl bg-white shadow-xl sm:max-h-[90vh] sm:max-w-3xl sm:rounded-2xl">
                     {{-- Kepala kotak + tombol X --}}
-                    <div class="flex items-start justify-between gap-3 border-b-2 border-[#0047d6]/15 px-5 py-3">
-                        <div class="min-w-0">
-                            <h3 class="text-base font-bold text-black">Bukti Absensi</h3>
-                            <p class="truncate text-xs font-medium text-[#5b616e]" x-text="[nama, sub].filter(Boolean).join(' \u2022 ')"></p>
+                    <div class="flex-none border-b-2 border-[#0047d6]/15 px-4 pb-2.5 pt-3 sm:px-5 sm:py-3">
+                        <div class="mx-auto mb-2.5 h-1.5 w-10 rounded-full bg-[#d7dbe3] sm:hidden"></div>
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="min-w-0">
+                                <h3 class="text-base font-bold text-black">Bukti Absensi</h3>
+                                <p class="truncate text-xs font-medium text-[#5b616e]" x-text="[nama, sub].filter(Boolean).join(' \u2022 ')"></p>
+                            </div>
+                            <button type="button" @click="open = false" title="Tutup (Esc)" aria-label="Tutup"
+                                    class="-mr-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-2xl leading-none text-[#5b616e] transition hover:bg-gray-100 hover:text-black">&times;</button>
                         </div>
-                        <button type="button" @click="open = false" title="Tutup (Esc)" aria-label="Tutup"
-                                class="shrink-0 rounded-lg px-2 text-2xl leading-none text-[#5b616e] transition hover:bg-gray-100 hover:text-black">&times;</button>
                     </div>
 
                     {{-- Foto --}}
-                    <div class="flex items-center justify-center p-3" style="background-color:#f4f6fb">
-                        <img :src="src" alt="Bukti absensi" class="rounded-lg object-contain"
-                             style="max-height:70vh; max-width:100%">
+                    <div class="flex min-h-0 flex-1 items-center justify-center overflow-auto overscroll-contain p-3" style="background-color:#f4f6fb">
+                        <img :src="src" alt="Bukti absensi" class="max-h-[52vh] max-w-full rounded-lg object-contain sm:max-h-[70vh]">
                     </div>
 
                     {{-- Kaki kotak --}}
-                    <div class="flex flex-wrap items-center justify-end gap-2 border-t-2 border-[#0047d6]/15 px-5 py-3">
-                        <a :href="src" :download="unduh"
-                           class="inline-flex items-center gap-1 rounded-xl border-2 border-[#05b169]/40 bg-white px-4 py-2 text-sm font-bold text-[#05b169] transition hover:bg-[#05b169]/5">Download</a>
-                        <button type="button" @click="open = false"
-                                class="inline-flex items-center gap-1 rounded-xl bg-[#0047d6] px-4 py-2 text-sm font-bold text-white transition hover:bg-[#0038aa]">Tutup</button>
+                    <div class="flex-none border-t-2 border-[#0047d6]/15 px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:px-5 sm:pb-3">
+                        <div class="flex flex-col-reverse items-stretch gap-2 sm:flex-row sm:items-center sm:justify-end">
+                            <a :href="src" :download="unduh"
+                               class="inline-flex items-center justify-center gap-1 rounded-xl border-2 border-[#05b169]/40 bg-white px-4 py-3 text-sm font-bold text-[#05b169] transition hover:bg-[#05b169]/5 sm:py-2">Download</a>
+                            <button type="button" @click="open = false"
+                                    class="inline-flex items-center justify-center gap-1 rounded-xl bg-[#0047d6] px-4 py-3 text-sm font-bold text-white transition hover:bg-[#0038aa] sm:py-2">Tutup</button>
+                        </div>
                     </div>
                 </div>
             </div>

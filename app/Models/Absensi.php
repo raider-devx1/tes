@@ -36,12 +36,24 @@ class Absensi extends Model
         'catatan_instruktur',
         'validated_by_guru_id',
         'validated_at',
+
+        // --- Penolakan FOTO oleh guru pembimbing ---
+        // Absensi yang ditolak TIDAK dihapus & datanya TIDAK diubah.
+        // Siswa hanya wajib mengganti fotonya sebelum batas waktu.
+        'foto_ditolak',       // true = foto ditolak, wajib diganti siswa
+        'catatan_penolakan',  // alasan penolakan yang diketik guru
+        'foto_ditolak_at',    // waktu penolakan (dasar hitung batas waktu)
+        'foto_ditolak_by',    // id guru yang menolak
+        'foto_diganti_at',    // waktu siswa mengganti foto
     ];
 
     protected $casts = [
         'tanggal'            => 'date',
         'validated_at'       => 'datetime',
         'ttd_guru_signed_at' => 'datetime',
+        'foto_ditolak'       => 'boolean',
+        'foto_ditolak_at'    => 'datetime',
+        'foto_diganti_at'    => 'datetime',
     ];
 
     /*
@@ -57,6 +69,87 @@ class Absensi extends Model
     public function validator()
     {
         return $this->belongsTo(User::class, 'validated_by_guru_id')->withTrashed();
+    }
+
+    /** Guru yang menolak foto absensi ini. */
+    public function penolak()
+    {
+        return $this->belongsTo(User::class, 'foto_ditolak_by')->withTrashed();
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | PENOLAKAN FOTO: batas waktu & status
+    |--------------------------------------------------------------------------
+    | Aturan yang disepakati:
+    |  - Foto HANYA diambil pada absen JAM MASUK.
+    |  - Bila guru menolak, seluruh informasi absensi (tanggal, status, jam
+    |    masuk, jam pulang) TETAP. Siswa cukup mengganti fotonya saja.
+    |  - Batas waktu mengganti foto: sampai jendela JAM PULANG berakhir
+    |    (jam pulang efektif siswa + durasi absensi).
+    |  - Selama foto belum diganti, siswa TIDAK boleh absen pulang.
+    |  - Bila foto diganti sebelum batas waktu, absensi TIDAK menjadi Alpha.
+    */
+
+    /**
+     * Batas akhir siswa boleh mengganti foto yang ditolak.
+     *
+     * Acuan: tanggal PENOLAKAN (bukan tanggal absensi), karena guru bisa saja
+     * baru memeriksa absensi beberapa saat setelah siswa mengajukan. Bila guru
+     * menolak ketika jendela pulang hari itu SUDAH lewat, siswa otomatis diberi
+     * tenggang sampai jendela pulang hari berikutnya (supaya tidak langsung
+     * kedaluwarsa begitu ditolak).
+     */
+    public function batasGantiFoto(): ?Carbon
+    {
+        if (! $this->foto_ditolak) {
+            return null;
+        }
+
+        $tz = config('app.timezone', 'Asia/Makassar');
+
+        $siswa     = $this->relationLoaded('siswa') ? $this->siswa : $this->siswa()->first();
+        $jamPulang = $siswa
+            ? $siswa->jamPulangEfektif()
+            : Pengaturan::ambil('absensi_jam_pulang', '16:00');
+
+        $durasi = (int) Pengaturan::ambil('absensi_durasi_menit', 30);
+        if ($durasi <= 0) {
+            $durasi = 30;
+        }
+
+        $ditolakPada = $this->foto_ditolak_at
+            ? Carbon::parse($this->foto_ditolak_at)->setTimezone($tz)
+            : Carbon::parse($this->tanggal)->setTimezone($tz);
+
+        $batas = Carbon::parse($ditolakPada->format('Y-m-d') . ' ' . $jamPulang, $tz)
+            ->addMinutes($durasi);
+
+        // Ditolak setelah jendela pulang hari itu tertutup -> beri tenggang
+        // sampai jendela pulang hari berikutnya.
+        if ($ditolakPada->gt($batas)) {
+            $batas = $batas->addDay();
+        }
+
+        return $batas;
+    }
+
+    /** Foto ditolak DAN masih dalam batas waktu penggantian. */
+    public function getPerluGantiFotoAttribute(): bool
+    {
+        if (! $this->foto_ditolak) {
+            return false;
+        }
+
+        $batas = $this->batasGantiFoto();
+
+        return $batas ? Carbon::now(config('app.timezone', 'Asia/Makassar'))->lte($batas) : true;
+    }
+
+    /** Foto ditolak TAPI batas waktu penggantian sudah lewat. */
+    public function getGantiFotoKedaluwarsaAttribute(): bool
+    {
+        return $this->foto_ditolak && ! $this->perlu_ganti_foto;
     }
 
     /*
@@ -97,6 +190,11 @@ class Absensi extends Model
 
         $tz  = config('app.timezone', 'Asia/Makassar');
         $now = Carbon::now($tz);
+
+        // Foto yang ditolak tapi TIDAK diganti sampai batas waktu -> Alpha.
+        // Dipanggil lebih dulu (di luar guard cache Alpha harian) agar batas
+        // waktu ganti foto tetap ditegakkan walau baris absensi sudah ada.
+        static::tandaiAlpaFotoTidakDiganti($siswa);
 
         // OPTIMASI (hindari tulis-saat-GET yang membebani server):
         // Halaman absensi bisa dibuka berkali-kali. Tanpa guard, SETIAP request GET
@@ -196,6 +294,70 @@ class Absensi extends Model
             Cache::put($cacheKey, true, $berlakuSampai);
         } finally {
             $lock->release();
+        }
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Penandaan ALPHA untuk foto DITOLAK yang tidak diganti
+    |--------------------------------------------------------------------------
+    | Siswa yang fotonya ditolak guru diberi kesempatan mengganti foto sampai
+    | jendela JAM PULANG hari itu berakhir. Selama foto sudah diganti sebelum
+    | batas waktu, absensi TIDAK menjadi Alpha.
+    |
+    | Bila sampai batas waktu foto TETAP tidak diganti, absensi hari itu
+    | dianggap tidak terbukti dan ditandai Alpha. Jam masuk/pulang dikosongkan
+    | agar rekap & PDF konsisten dengan baris Alpha lainnya, dan alasannya
+    | dicatat pada kolom catatan_penolakan sebagai jejak.
+    */
+    public static function tandaiAlpaFotoTidakDiganti(User $siswa): void
+    {
+        $tz  = config('app.timezone', 'Asia/Makassar');
+        $now = Carbon::now($tz);
+
+        // Guard ringan: query hanya dijalankan maksimal sekali per 2 menit
+        // per siswa supaya halaman guru (yang memutar banyak siswa) tidak
+        // menambah puluhan query pada setiap request.
+        $cacheKey = "cek_foto_ditolak:{$siswa->id}";
+
+        if (Cache::has($cacheKey)) {
+            return;
+        }
+
+        Cache::put($cacheKey, true, $now->copy()->addMinutes(2));
+
+        $daftar = static::where('siswa_id', $siswa->id)
+            ->where('foto_ditolak', true)
+            ->get();
+
+        if ($daftar->isEmpty()) {
+            return;
+        }
+
+        foreach ($daftar as $absensi) {
+            $absensi->setRelation('siswa', $siswa);
+
+            $batas = $absensi->batasGantiFoto();
+
+            // Masih dalam batas waktu -> biarkan, siswa masih boleh ganti foto.
+            if (! $batas || $now->lte($batas)) {
+                continue;
+            }
+
+            $catatanLama = trim((string) $absensi->catatan_penolakan);
+            $keterangan  = 'Ditandai Alpha otomatis oleh sistem: foto tidak diganti sampai batas waktu '
+                . $batas->format('d/m/Y H:i') . ' WITA.';
+
+            $absensi->forceFill([
+                'status'            => 'Alpha',
+                'status_validasi'   => 'disetujui',
+                'jam_masuk'         => null,
+                'jam_pulang'        => null,
+                'foto_ditolak'      => false,
+                'catatan_penolakan' => $catatanLama !== ''
+                    ? $catatanLama . "\n" . $keterangan
+                    : $keterangan,
+            ])->save();
         }
     }
 }

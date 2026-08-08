@@ -297,6 +297,10 @@ Route::put('/catatan/{id}/ajukan', [CatatanController::class, 'ajukanSiswa'])->n
 Route::put('/absensi/jam/ajukan',  [AbsensiController::class, 'ajukanJamSiswa'])->name('absensi.jam.ajukan');
 Route::post('/absensi',            [AbsensiController::class, 'storeSiswa'])->name('absensi.store');
 
+// Ganti foto absensi yang DITOLAK guru pembimbing.
+// Data absensi (status & jam) tetap; yang diperbarui hanya fotonya.
+Route::post('/absensi/{id}/ganti-foto', [AbsensiController::class, 'gantiFotoSiswa'])->name('absensi.ganti-foto');
+
     });
 
    

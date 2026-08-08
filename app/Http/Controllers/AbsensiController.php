@@ -190,8 +190,26 @@ class AbsensiController extends Controller
             ->whereDate('tanggal', $jendela['now']->format('Y-m-d'))
             ->first();
 
+        if ($absensiHariIni) {
+            $absensiHariIni->setRelation('siswa', $siswa);
+        }
+
+        // ---- FOTO DITOLAK GURU: wajib diganti sebelum absen pulang ----
+        // Bisa saja yang ditolak adalah absensi hari SEBELUMNYA (guru baru
+        // memeriksa keesokan harinya), jadi dicari yang paling baru ditolak
+        // dan masih dalam batas waktu penggantian.
+        $absensiDitolak = Absensi::where('siswa_id', $siswa->id)
+            ->where('foto_ditolak', true)
+            ->orderByDesc('tanggal')
+            ->get()
+            ->each(fn ($a) => $a->setRelation('siswa', $siswa))
+            ->first(fn ($a) => $a->perlu_ganti_foto);
+
+        $batasGantiFoto = $absensiDitolak?->batasGantiFoto();
+
         return view('siswa.absensi.index', compact(
-            'absensis', 'rekap', 'bulan', 'jendela', 'siswa', 'jamAdmin', 'absensiHariIni'
+            'absensis', 'rekap', 'bulan', 'jendela', 'siswa', 'jamAdmin', 'absensiHariIni',
+            'absensiDitolak', 'batasGantiFoto'
         ));
     }
 
@@ -242,6 +260,28 @@ class AbsensiController extends Controller
             return back()->with('error', 'Absensi hari ini sudah disetujui dan tidak dapat diubah.');
         }
 
+        // ---- PALANG FOTO DITOLAK ----
+        // Selama masih ada absensi yang fotonya DITOLAK guru dan belum diganti,
+        // siswa tidak boleh melakukan absensi apa pun (termasuk ABSEN PULANG).
+        // Yang perlu dilakukan hanyalah mengganti foto lewat tombol
+        // "Ganti Foto Absensi" pada halaman absensi.
+        $ditolak = Absensi::where('siswa_id', $siswa->id)
+            ->where('foto_ditolak', true)
+            ->orderByDesc('tanggal')
+            ->first();
+
+        if ($ditolak) {
+            $ditolak->setRelation('siswa', $siswa);
+            $batas = $ditolak->batasGantiFoto();
+
+            return back()->with('error',
+                'Foto absensi tanggal ' . $ditolak->tanggal->format('d/m/Y') . ' ditolak guru pembimbing. '
+                . 'Anda belum bisa absen (termasuk absen pulang) sebelum mengganti foto tersebut. '
+                . 'Gunakan tombol "Ganti Foto Absensi", batas waktu sampai '
+                . ($batas ? $batas->format('d/m/Y H:i') . ' WITA.' : 'jendela jam pulang berakhir.')
+            );
+        }
+
         // Tahap "stempel pulang": sudah absen masuk (Hadir) & sedang fase pulang.
         $stempelPulang = $absensi->exists
             && $absensi->status === 'Hadir'
@@ -256,11 +296,20 @@ class AbsensiController extends Controller
             return back()->with('success', 'Jam pulang berhasil dicatat.');
         }
 
-        // ---- Tahap absen utama: status + foto wajib + catatan opsional ----
+        // ---- Tahap absen utama: status + foto kamera wajib + catatan opsional ----
+        //
+        // CATATAN PENTING (perubahan alur):
+        // Fitur UPLOAD berkas sudah DIHAPUS. Foto hanya boleh diambil LANGSUNG
+        // dari kamera perangkat (komponen <x-kamera-absensi />) dan dikirim
+        // sebagai data URL base64 pada field "foto_kamera", lalu dikompres
+        // otomatis oleh ImageCompressor::storeDataUrl().
+        //
+        // Foto HANYA diminta pada absen JAM MASUK, yaitu saat baris absensi
+        // hari ini belum memiliki foto. Absen pulang tidak meminta foto lagi.
         $status    = $request->input('status', 'Hadir');
         $labelFoto = $status === 'Hadir'
-            ? 'Foto bukti berada di tempat industri wajib diunggah.'
-            : 'Foto bukti izin/sakit wajib diunggah.';
+            ? 'Foto wajah dengan latar belakang tempat industri wajib diambil melalui kamera.'
+            : 'Foto bukti izin/sakit wajib diambil melalui kamera.';
 
         // Foto wajib bila belum ada foto tersimpan sebelumnya.
         $fotoRule = $absensi->foto_bukti ? 'nullable' : 'required';
@@ -268,19 +317,32 @@ class AbsensiController extends Controller
         $validated = $request->validate([
             'status'             => ['required', Rule::in(['Hadir', 'Izin', 'Sakit'])],
             'catatan_instruktur' => ['nullable', 'string', 'max:1000'],
-            'foto_bukti'         => [$fotoRule, 'image', 'mimes:jpeg,png,jpg', 'max:3072'],
+            'foto_kamera'        => [
+                $fotoRule,
+                'string',
+                function ($atribut, $nilai, $gagal) {
+                    if (filled($nilai) && ! ImageCompressor::validDataUrl($nilai)) {
+                        $gagal('Foto kamera tidak terbaca atau rusak. Silakan ambil ulang foto.');
+                    }
+                },
+            ],
         ], [
-            'foto_bukti.required' => $labelFoto,
-            'foto_bukti.image'    => 'File harus berupa gambar.',
-            'foto_bukti.mimes'    => 'Format foto harus jpeg, png, atau jpg.',
-            'foto_bukti.max'      => 'Ukuran foto maksimal 3MB.',
+            'foto_kamera.required' => $labelFoto,
+            'foto_kamera.string'   => 'Foto harus diambil melalui kamera pada halaman ini.',
         ]);
 
-        if ($request->hasFile('foto_bukti')) {
+        if (filled($validated['foto_kamera'] ?? null)) {
+            $pathFoto = ImageCompressor::storeDataUrl($validated['foto_kamera'], 'bukti_fisik/absensi');
+
+            if (! $pathFoto) {
+                return back()->with('error', 'Foto gagal disimpan. Silakan ambil ulang foto lalu kirim kembali.');
+            }
+
             if ($absensi->foto_bukti) {
                 Storage::disk('public')->delete($absensi->foto_bukti);
             }
-            $absensi->foto_bukti = ImageCompressor::store($request->file('foto_bukti'), 'bukti_fisik/absensi');
+
+            $absensi->foto_bukti = $pathFoto;
         }
 
         $absensi->status             = $validated['status'];
@@ -348,6 +410,84 @@ class AbsensiController extends Controller
         return back()->with('success', 'Usulan jam kerja industri berhasil diajukan ke guru pembimbing.');
     }
 
+    /**
+     * SISWA MENGGANTI FOTO ABSENSI YANG DITOLAK GURU.
+     *
+     * Aturan penting:
+     *  - SELURUH informasi absensi TETAP: tanggal, status (Hadir/Izin/Sakit),
+     *    jam masuk, dan jam pulang TIDAK diubah sama sekali.
+     *    Yang diperbarui HANYA fotonya.
+     *  - Batas waktu mengganti foto: sampai jendela JAM PULANG berakhir
+     *    (lihat Absensi::batasGantiFoto()).
+     *  - Selama foto sudah diganti sebelum batas waktu, absensi TIDAK menjadi
+     *    Alpha. Setelah diganti, absensi otomatis diajukan ulang ke guru.
+     */
+    public function gantiFotoSiswa(Request $request, $id)
+    {
+        $siswa = Auth::user();
+
+        $absensi = Absensi::where('id', $id)
+            ->where('siswa_id', $siswa->id)
+            ->firstOrFail();
+
+        $absensi->setRelation('siswa', $siswa);
+
+        if (! $absensi->foto_ditolak) {
+            return back()->with('error', 'Absensi ini tidak sedang ditolak, jadi tidak perlu mengganti foto.');
+        }
+
+        $batas = $absensi->batasGantiFoto();
+        $now   = \Carbon\Carbon::now(config('app.timezone', 'Asia/Makassar'));
+
+        if ($batas && $now->gt($batas)) {
+            return back()->with('error',
+                'Batas waktu mengganti foto sudah lewat (' . $batas->format('d/m/Y H:i') . ' WITA). '
+                . 'Absensi ini otomatis ditandai Alpha. Silakan hubungi guru pembimbing Anda.'
+            );
+        }
+
+        $validated = $request->validate([
+            'foto_kamera' => [
+                'required',
+                'string',
+                function ($atribut, $nilai, $gagal) {
+                    if (filled($nilai) && ! ImageCompressor::validDataUrl($nilai)) {
+                        $gagal('Foto kamera tidak terbaca atau rusak. Silakan ambil ulang foto.');
+                    }
+                },
+            ],
+        ], [
+            'foto_kamera.required' => 'Foto wajah dengan latar belakang tempat industri wajib diambil melalui kamera.',
+            'foto_kamera.string'   => 'Foto harus diambil melalui kamera pada halaman ini.',
+        ]);
+
+        $pathFoto = ImageCompressor::storeDataUrl($validated['foto_kamera'], 'bukti_fisik/absensi');
+
+        if (! $pathFoto) {
+            return back()->with('error', 'Foto gagal disimpan. Silakan ambil ulang foto lalu kirim kembali.');
+        }
+
+        // Foto lama dihapus supaya tidak menumpuk di penyimpanan hosting.
+        if ($absensi->foto_bukti) {
+            Storage::disk('public')->delete($absensi->foto_bukti);
+        }
+
+        // forceFill dipakai agar hanya kolom-kolom di bawah ini yang tersentuh.
+        // Kolom status, tanggal, jam_masuk, dan jam_pulang sengaja TIDAK ikut.
+        // catatan_penolakan dibiarkan sebagai riwayat alasan penolakan.
+        $absensi->forceFill([
+            'foto_bukti'      => $pathFoto,
+            'foto_ditolak'    => false,
+            'foto_diganti_at' => now(),
+            'status_validasi' => 'diajukan',
+        ])->save();
+
+        return back()->with('success',
+            'Foto absensi tanggal ' . $absensi->tanggal->format('d/m/Y') . ' berhasil diperbarui dan diajukan ulang '
+            . 'ke guru pembimbing. Data jam absensi Anda tetap tersimpan dan tidak dihitung Alpha.'
+        );
+    }
+
     /*
     |--------------------------------------------------------------------------
     | ROLE: GURU PEMBIMBING (validasi absensi & jam kerja)
@@ -366,20 +506,48 @@ class AbsensiController extends Controller
         $aksi = $request->input('aksi', 'valid');
 
         if ($aksi === 'tolak') {
-            // Pengajuan dikembalikan ke siswa. Paraf lama (bila ada) ikut dihapus
-            // supaya tidak ada tanda tangan menggantung pada data berstatus draft.
+            // ---- MENOLAK FOTO ABSENSI ----
+            // Guru wajib menuliskan alasan penolakan pada pop-up konfirmasi.
+            //
+            // PENTING: absensi TIDAK dihapus dan datanya TIDAK diubah.
+            // Tanggal, status, jam masuk, dan jam pulang TETAP seperti semula.
+            // Siswa hanya diminta MENGGANTI FOTO sampai jendela jam pulang
+            // berakhir, dan tidak akan dihitung Alpha selama foto sudah diganti.
+            $validated = $request->validate([
+                'catatan_penolakan' => ['required', 'string', 'min:5', 'max:1000'],
+            ], [
+                'catatan_penolakan.required' => 'Catatan alasan penolakan wajib diisi agar siswa tahu apa yang harus diperbaiki.',
+                'catatan_penolakan.min'      => 'Catatan penolakan minimal 5 karakter.',
+                'catatan_penolakan.max'      => 'Catatan penolakan maksimal 1000 karakter.',
+            ]);
+
+            // Paraf lama (bila ada) ikut dihapus supaya tidak ada tanda tangan
+            // menggantung pada data yang belum disetujui.
             TandaTangan::hapus($absensi->ttd_guru);
 
-            $absensi->update([
+            // Foto lama SENGAJA tidak dihapus di sini: guru masih bisa melihat
+            // foto yang ditolak sampai siswa menggantinya.
+            $absensi->forceFill([
                 'status_validasi'      => 'draft',
                 'validated_by_guru_id' => null,
                 'validated_at'         => null,
                 'ttd_guru'             => null,
                 'ttd_guru_nama'        => null,
                 'ttd_guru_signed_at'   => null,
-            ]);
 
-            return back()->with('success', 'Pengajuan ditolak. Absensi dikembalikan ke siswa (draft).');
+                'foto_ditolak'         => true,
+                'catatan_penolakan'    => $validated['catatan_penolakan'],
+                'foto_ditolak_at'      => now(),
+                'foto_ditolak_by'      => Auth::id(),
+                'foto_diganti_at'      => null,
+            ])->save();
+
+            $batas = $absensi->batasGantiFoto();
+
+            return back()->with('success',
+                'Absensi ditolak. Data absensi (status & jam) tetap tersimpan, siswa hanya diminta mengganti foto'
+                . ($batas ? ' paling lambat ' . $batas->format('d/m/Y H:i') . ' WITA.' : '.')
+            );
         }
 
         if ($aksi === 'batal') {
