@@ -522,22 +522,26 @@
                                             <p class="text-[11px] text-[#5b616e] mb-2">Tercetak di kolom kiri</p>
 
                                             {{-- Kotak pratinjau mengikuti pilihan di bawahnya --}}
-                                            <div class="mb-2 flex h-20 items-center justify-center overflow-hidden rounded-md border border-dashed border-gray-300 bg-gray-50 p-1">
+                                            {{-- Kotak pratinjau responsif.
+                                                 min-w-0 pada gambar itu WAJIB: sebagai flex item, gambar mendapat
+                                                 min-width: auto yang setara lebar aslinya, sehingga max-w-full
+                                                 diabaikan dan tanda tangan lebar menembus kotak di layar HP. --}}
+                                            <div class="mb-2 flex h-24 w-full items-center justify-center overflow-hidden rounded-md border border-dashed border-gray-300 bg-white p-1.5 sm:h-28">
                                                 <img x-show="ttdSumber === 'unggah' &amp;&amp; ttdPratinjau" x-cloak :src="ttdPratinjau"
-                                                     alt="Pratinjau tanda tangan baru" class="max-h-full max-w-full object-contain">
+                                                     alt="Pratinjau tanda tangan baru" class="h-auto max-h-full w-auto min-w-0 max-w-full object-contain">
 
                                                 @if($ttdGuruTersimpan)
                                                     <img x-show="ttdSumber === 'tersimpan'" x-cloak src="{{ $ttdGuruTersimpan }}"
-                                                         alt="Tanda tangan tersimpan" class="max-h-full max-w-full object-contain">
+                                                         alt="Tanda tangan tersimpan" class="h-auto max-h-full w-auto min-w-0 max-w-full object-contain">
                                                 @endif
 
                                                 @if($ttdNilaiPembimbing)
                                                     <img x-show="ttdSumber === 'tetap'" x-cloak src="{{ asset('storage/'.$ttdNilaiPembimbing) }}"
-                                                         alt="Tanda tangan pada penilaian ini" class="max-h-full max-w-full object-contain">
-                                                    <span x-show="ttdSumber === 'hapus'" x-cloak class="text-[11px] font-bold text-[#cf202f]">Akan dikosongkan</span>
+                                                         alt="Tanda tangan pada penilaian ini" class="h-auto max-h-full w-auto min-w-0 max-w-full object-contain">
+                                                    <span x-show="ttdSumber === 'hapus'" x-cloak class="px-2 text-center text-[11px] font-bold text-[#cf202f]">Akan dikosongkan</span>
                                                 @endif
 
-                                                <span x-show="ttdSumber === 'unggah' &amp;&amp; !ttdPratinjau" x-cloak class="text-[11px] text-gray-400">Belum ada berkas dipilih</span>
+                                                <span x-show="ttdSumber === 'unggah' &amp;&amp; !ttdPratinjau" x-cloak class="px-2 text-center text-[11px] text-gray-400">Belum ada berkas dipilih</span>
                                             </div>
 
                                             {{-- Pilihan sumber tanda tangan --}}
@@ -592,12 +596,14 @@
                                             <p class="text-xs font-bold text-black">Pembimbing Dunia Kerja</p>
                                             <p class="text-[11px] text-[#5b616e] mb-2">Instruktur industri, kolom kanan</p>
 
-                                            <div class="mb-2 flex h-20 items-center justify-center overflow-hidden rounded-md border border-dashed border-gray-300 bg-gray-50 p-1">
-                                                <img x-show="pratinjau" x-cloak :src="pratinjau" alt="Pratinjau tanda tangan" class="max-h-full max-w-full object-contain">
+                                            <div class="mb-2 flex h-24 w-full items-center justify-center overflow-hidden rounded-md border border-dashed border-gray-300 bg-white p-1.5 sm:h-28">
+                                                <img x-show="pratinjau" x-cloak :src="pratinjau" alt="Pratinjau tanda tangan"
+                                                     class="h-auto max-h-full w-auto min-w-0 max-w-full object-contain">
                                                 @if($ttdNilaiInstruktur)
-                                                    <img x-show="!pratinjau" src="{{ asset('storage/'.$ttdNilaiInstruktur) }}" alt="Tanda tangan tersimpan" class="max-h-full max-w-full object-contain">
+                                                    <img x-show="!pratinjau" src="{{ asset('storage/'.$ttdNilaiInstruktur) }}" alt="Tanda tangan tersimpan"
+                                                         class="h-auto max-h-full w-auto min-w-0 max-w-full object-contain">
                                                 @else
-                                                    <span x-show="!pratinjau" class="text-[11px] text-gray-400">Belum ada tanda tangan</span>
+                                                    <span x-show="!pratinjau" class="px-2 text-center text-[11px] text-gray-400">Belum ada tanda tangan</span>
                                                 @endif
                                             </div>
 

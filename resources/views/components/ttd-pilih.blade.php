@@ -80,9 +80,12 @@
         {{-- Pratinjau tanda tangan tersimpan --}}
         <div x-show="sumber === 'tersimpan'" x-cloak
              class="rounded-xl border-2 border-[#05b169] bg-white p-3">
-            <div class="flex h-16 items-center justify-center">
+            {{-- min-w-0 mencegah tanda tangan lebar menembus kotak di layar HP:
+                 sebagai flex item, gambar mendapat min-width: auto setara lebar
+                 aslinya sehingga max-w-full diabaikan. --}}
+            <div class="flex h-20 w-full items-center justify-center overflow-hidden sm:h-24">
                 <img src="{{ $tersimpan }}" alt="Tanda tangan tersimpan"
-                     class="max-h-full max-w-full object-contain">
+                     class="h-auto max-h-full w-auto min-w-0 max-w-full object-contain">
             </div>
             <p class="mt-1 text-center text-[11px] font-bold text-[#05b169]">
                 Tanda tangan tersimpan siap dipakai.

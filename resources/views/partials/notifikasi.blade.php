@@ -46,22 +46,87 @@
                     ->where('status_pkl', 'aktif')
                     ->pluck('id');
 
+                /* ---------- 1. OBSERVASI: CUKUP SEKALI PER PERIODE PKL ----------
+                 | Dulu penyaringnya per BULAN (whereMonth + whereYear), sehingga tiap
+                 | ganti bulan pengingat muncul lagi walaupun guru sudah pernah
+                 | mengobservasi siswa tersebut.
+                 |
+                 | Sekarang penyaringnya PERIODE PKL: begitu seorang siswa sudah pernah
+                 | diobservasi pada periode yang sedang berjalan, namanya tidak dihitung
+                 | lagi sampai periode berganti. Guru tetap BOLEH menambah observasi
+                 | kapan saja -- yang hilang hanya notifikasi pengingatnya, bukan
+                 | fiturnya.
+                 |
+                 | periodeBerjalan() berasal dari trait MilikPeriodePkl. Bila sekolah
+                 | belum menandai satu periode pun sebagai aktif, scope itu tidak
+                 | menyaring apa pun, sehingga aturannya menjadi "sekali seumur data".
+                 */
                 $sudahDiobservasiIds = Observasi::where('guru_id', $me->id)
-                    ->whereMonth('created_at', $hariIni->month)
-                    ->whereYear('created_at', $hariIni->year)
+                    ->periodeBerjalan()
                     ->pluck('user_id');
 
                 $belumObservasi = $siswaAktifIds->diff($sudahDiobservasiIds)->count();
 
                 if ($belumObservasi > 0) {
+                    $periodeBerjalan = \App\Support\KonteksPeriode::aktif();
+                    $labelPeriode    = $periodeBerjalan?->nama ?: 'periode PKL yang sedang berjalan';
+
                     $notifikasi[] = [
-                        'key'      => 'guru-observasi-' . $hariIni->format('Y-m'),
+                        // Kunci ikut periode, bukan bulan, supaya notifikasi tidak
+                        // "lahir baru" setiap tanggal 1.
+                        'key'      => 'guru-observasi-periode-' . ($periodeBerjalan?->id ?? 'semua'),
                         'warna'    => 'kuning',
                         'judul'    => 'Monitoring PKL Belum Dilakukan',
-                        'pesan'    => "Masih terdapat {$belumObservasi} siswa yang belum mendapatkan observasi bulan {$bulanIndo}.",
+                        'pesan'    => "Masih terdapat {$belumObservasi} siswa yang belum pernah Anda observasi selama {$labelPeriode}. "
+                                    . 'Pengingat ini hilang sendiri begitu setiap siswa sudah diobservasi satu kali, '
+                                    . 'dan Anda tetap bisa menambah observasi kapan saja.',
                         'aksi_url' => route('guru.observasi.index'),
                         'aksi'     => 'Lihat Daftar',
                     ];
+                }
+
+                /* ---------- 2 & 3. VALIDASI HARI INI: ABSENSI & JURNAL ----------
+                 | Nama kolomnya berbeda antar tabel:
+                 |   - absensis memakai 'status_validasi' (agar tidak bentrok dengan
+                 |     kolom 'status' yang berisi Hadir/Izin/Sakit/Alpha)
+                 |   - jurnals    memakai 'status'
+                 | Keduanya bernilai 'diajukan' saat menunggu tindakan guru pembimbing.
+                 |
+                 | Query dilewati bila guru belum punya siswa bimbingan aktif.
+                 */
+                if ($siswaAktifIds->isNotEmpty()) {
+                    $absensiMenunggu = Absensi::whereIn('siswa_id', $siswaAktifIds)
+                        ->whereDate('tanggal', $hariIni)
+                        ->where('status_validasi', 'diajukan')
+                        ->count();
+
+                    if ($absensiMenunggu > 0) {
+                        $notifikasi[] = [
+                            'key'      => 'guru-validasi-absensi-' . $hariIni->toDateString(),
+                            'warna'    => 'biru',
+                            'judul'    => 'Absensi Hari Ini Belum Divalidasi',
+                            'pesan'    => "Ada {$absensiMenunggu} absensi siswa tanggal {$tanggalIndo} yang masih menunggu validasi Anda. "
+                                        . 'Periksa foto absensinya, lalu setujui atau tolak.',
+                            'aksi_url' => route('guru.monitoring.absensi'),
+                            'aksi'     => 'Validasi Sekarang',
+                        ];
+                    }
+
+                    $jurnalMenunggu = Jurnal::whereIn('siswa_id', $siswaAktifIds)
+                        ->whereDate('hari_tanggal', $hariIni)
+                        ->where('status', 'diajukan')
+                        ->count();
+
+                    if ($jurnalMenunggu > 0) {
+                        $notifikasi[] = [
+                            'key'      => 'guru-validasi-jurnal-' . $hariIni->toDateString(),
+                            'warna'    => 'biru',
+                            'judul'    => 'Jurnal Hari Ini Belum Divalidasi',
+                            'pesan'    => "Ada {$jurnalMenunggu} jurnal siswa tanggal {$tanggalIndo} yang masih menunggu validasi Anda.",
+                            'aksi_url' => route('guru.monitoring.jurnal'),
+                            'aksi'     => 'Validasi Sekarang',
+                        ];
+                    }
                 }
             }
 

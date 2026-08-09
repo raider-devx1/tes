@@ -192,15 +192,27 @@
                                             <p class="rounded-lg border border-[#cf202f]/40 bg-[#cf202f]/5 px-3 py-2 text-xs font-bold text-[#cf202f]">{{ $message }}</p>
                                         @enderror
 
-                                        {{-- Pratinjau: berkas baru menimpa tampilan yang tersimpan --}}
+                                        {{-- Pratinjau: berkas baru menimpa tampilan yang tersimpan.
+
+                                             Tinggi kotak bertingkat: lebih ringkas di HP (h-24) dan lebih lega
+                                             di laptop (sm:h-32), dengan lebar penuh dan latar putih supaya
+                                             tinta tanda tangan terbaca jelas.
+
+                                             PENTING soal gambar di dalam kotak flex:
+                                             elemen gambar yang menjadi flex item mendapat min-width: auto, dan
+                                             untuk gambar nilai itu setara lebar aslinya. Akibatnya max-w-full
+                                             DIABAIKAN dan foto tanda tangan yang lebar menembus kotak saat
+                                             dibuka di HP. Karena itu min-w-0 wajib ada. --}}
                                         <div>
                                             <p class="mb-1 text-xs font-bold uppercase tracking-wide text-black">Pratinjau</p>
-                                            <div class="flex h-28 items-center justify-center overflow-hidden rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 p-2">
-                                                <img x-show="pratinjau" x-cloak :src="pratinjau" alt="Pratinjau tanda tangan baru" class="max-h-full max-w-full object-contain">
+                                            <div class="flex h-24 w-full items-center justify-center overflow-hidden rounded-xl border-2 border-dashed border-gray-300 bg-white p-2 sm:h-32">
+                                                <img x-show="pratinjau" x-cloak :src="pratinjau" alt="Pratinjau tanda tangan baru"
+                                                     class="h-auto max-h-full w-auto min-w-0 max-w-full object-contain">
                                                 @if($ttdSayaUrl)
-                                                    <img x-show="!pratinjau" src="{{ $ttdSayaUrl }}" alt="Tanda tangan tersimpan" class="max-h-full max-w-full object-contain">
+                                                    <img x-show="!pratinjau" src="{{ $ttdSayaUrl }}" alt="Tanda tangan tersimpan"
+                                                         class="h-auto max-h-full w-auto min-w-0 max-w-full object-contain">
                                                 @else
-                                                    <span x-show="!pratinjau" class="text-xs font-medium text-gray-400">Belum ada tanda tangan tersimpan</span>
+                                                    <span x-show="!pratinjau" class="px-2 text-center text-xs font-medium text-gray-400">Belum ada tanda tangan tersimpan</span>
                                                 @endif
                                             </div>
                                             <p class="mt-1 text-[11px] font-medium text-[#5b616e]">{{ $ttdSayaLabel }}</p>
@@ -726,7 +738,8 @@
                                         @if($a->ttd_guru)
                                             {{-- Paraf digital guru; gambar yang sama ikut tercetak di PDF absensi --}}
                                             <div class="rounded-xl border-2 border-[#05b169]/40 bg-white px-3 py-2 text-center">
-                                                <img src="{{ asset('storage/'.$a->ttd_guru) }}" alt="Paraf guru pembimbing" style="height:44px; width:auto; margin:0 auto; display:block;">
+                                                {{-- max-width menjaga paraf yang lebar tidak menembus kartu di HP --}}
+                                                <img src="{{ asset('storage/'.$a->ttd_guru) }}" alt="Paraf guru pembimbing" style="height:44px; width:auto; max-width:100%; object-fit:contain; margin:0 auto; display:block;">
                                                 <p class="mt-1 text-[10px] font-bold uppercase tracking-wide text-[#05b169]">Paraf guru pembimbing</p>
                                                 @if($a->ttd_guru_nama)<p class="text-[10px] font-semibold text-[#5b616e]">{{ $a->ttd_guru_nama }}</p>@endif
                                             </div>
