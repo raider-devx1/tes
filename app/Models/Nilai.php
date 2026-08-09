@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\MilikPeriodePkl;
+use App\Support\TandaTangan;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -46,10 +47,26 @@ class Nilai extends Model
         // Foto lembar penilaian instruktur (diunggah guru)
         'foto_lembar_instruktur',
 
+        // Tanda tangan yang ditempel otomatis pada hasil cetak PDF
+        'ttd_instruktur',
+        'ttd_instruktur_nama',
+        'ttd_instruktur_at',
+        'ttd_pembimbing',
+        'ttd_pembimbing_nama',
+        'ttd_pembimbing_at',
+
         'nilai_guru',
         'nilai_laporan',
         'nilai_akhir',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'ttd_instruktur_at' => 'datetime',
+            'ttd_pembimbing_at' => 'datetime',
+        ];
+    }
 
     // Relasi ke Siswa
     public function user(): BelongsTo
@@ -131,5 +148,38 @@ class Nilai extends Model
         }
 
         return round(array_sum($this->daftar_skor) / count($this->daftar_skor), 2);
+    }
+
+    /* ============ TANDA TANGAN UNTUK HASIL CETAK ============ */
+
+    /**
+     * Gambar tanda tangan Pembimbing Dunia Kerja (instruktur industri),
+     * sudah diskalakan agar pas di kotak tanda tangan PDF.
+     *
+     * @return array{src:string,lebar:int,tinggi:int}|null
+     */
+    public function ttdCetakInstruktur(
+        float $maksLebar = TandaTangan::CETAK_LEBAR,
+        float $maksTinggi = TandaTangan::CETAK_TINGGI
+    ): ?array {
+        return TandaTangan::ukuranCetak($this->ttd_instruktur, $maksLebar, $maksTinggi);
+    }
+
+    /**
+     * Gambar tanda tangan Guru Pembimbing, sudah diskalakan untuk PDF.
+     *
+     * @return array{src:string,lebar:int,tinggi:int}|null
+     */
+    public function ttdCetakPembimbing(
+        float $maksLebar = TandaTangan::CETAK_LEBAR,
+        float $maksTinggi = TandaTangan::CETAK_TINGGI
+    ): ?array {
+        return TandaTangan::ukuranCetak($this->ttd_pembimbing, $maksLebar, $maksTinggi);
+    }
+
+    /** True bila salah satu tanda tangan sudah diunggah. */
+    public function getAdaTtdCetakAttribute(): bool
+    {
+        return (bool) ($this->ttd_instruktur || $this->ttd_pembimbing);
     }
 }

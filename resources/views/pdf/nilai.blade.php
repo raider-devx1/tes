@@ -21,7 +21,12 @@
         table.hadir .judul-hadir { border:none; padding:0 0 4px 0; font-weight:bold; }
         .footer { width:100%; margin-top:10px; }
         .footer td { width:50%; vertical-align:top; text-align:left; }
-        .nama-ttd { margin-top:70px; }
+        /* Kotak tanda tangan: tingginya TETAP, baik tanda tangan sudah
+           diunggah maupun belum. Dengan begitu baris nama selalu sejajar
+           dan lembar kosong tetap punya ruang untuk tanda tangan basah. */
+        .kotak-ttd { height:66px; }
+        .kotak-ttd img { display:block; }
+        .nama-ttd { margin-top:4px; }
         .nip-ttd  { margin-top:2px; } /* NIP tepat di bawah nama */
 
         /* Tiap siswa 1 halaman; mulai halaman 1, tanpa halaman kosong */
@@ -50,6 +55,14 @@
             // Memastikan variabel berbentuk objek agar tidak error saat diakses di Blade
             $nilaiObj = (object) ($nilai ?? []);
             $kehadiranArr = (array) ($kehadiran ?? []);
+
+            // Tanda tangan yang ditempel ke kolom tanda tangan.
+            // Lebar/tinggi sengaja dihitung di PHP, bukan lewat CSS, karena
+            // DomPDF tidak menangani max-width/max-height pada <img> dengan
+            // andal. Pada lembar template kosong tanda tangan tidak dipasang.
+            $nilaiCetak    = ($nilai ?? null) instanceof \App\Models\Nilai ? $nilai : null;
+            $ttdInstruktur = (! $isTemplate && $nilaiCetak) ? $nilaiCetak->ttdCetakInstruktur() : null;
+            $ttdPembimbing = (! $isTemplate && $nilaiCetak) ? $nilaiCetak->ttdCetakPembimbing() : null;
         @endphp
 
         <div class="page">
@@ -120,11 +133,21 @@
                     <td>
                         <br>
                         Instruktur
+                        <div class="kotak-ttd">
+                            @if($ttdInstruktur)
+                                <img src="{{ $ttdInstruktur['src'] }}" width="{{ $ttdInstruktur['lebar'] }}" height="{{ $ttdInstruktur['tinggi'] }}" alt="Tanda tangan instruktur">
+                            @endif
+                        </div>
                         <div class="nama-ttd">  {{ $nama_instruktur ?? '' }}  </div>
                     </td>
                     <td>
                         .....................,  {{ $tanggal_cetak ?? '' }}  <br>
                         Guru Pembimbing,
+                        <div class="kotak-ttd">
+                            @if($ttdPembimbing)
+                                <img src="{{ $ttdPembimbing['src'] }}" width="{{ $ttdPembimbing['lebar'] }}" height="{{ $ttdPembimbing['tinggi'] }}" alt="Tanda tangan guru pembimbing">
+                            @endif
+                        </div>
                         <div class="nama-ttd"> {{ $nama_guru ?? '' }}  </div>
                         <div class="nip-ttd">NIP.  {{ $nip_guru ?? '' }} </div>
                     </td>

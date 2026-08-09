@@ -20,7 +20,19 @@
                 </div>
                 <div class="flex flex-wrap items-center gap-2">
                     {{-- BUKA / TUTUP ABSENSI (siswa bimbingan: semua / per NISN) --}}
-                    <div x-data="{ open:false, mode:'semua', nisn:'', list: @js($siswas->map(fn($s)=>['nisn'=>(string)$s->nisn,'name'=>$s->name])->values()), get cocok(){ const n=(this.nisn||'').trim(); return n ? (this.list.find(x=>x.nisn===n)||null) : null; } }" class="inline-block">
+                    <div x-data="{
+                            open:false, mode:'semua', nisn:'',
+                            durasi:30, tanpaBatas:false,
+                            list: @js($siswas->map(fn($s)=>['nisn'=>(string)$s->nisn,'name'=>$s->name])->values()),
+                            get cocok(){ const n=(this.nisn||'').trim(); return n ? (this.list.find(x=>x.nisn===n)||null) : null; },
+                            get menit(){ const n=parseInt(this.durasi,10); return Number.isFinite(n) ? n : 0; },
+                            get durasiValid(){ return this.tanpaBatas || (this.menit >= 1 && this.menit <= 1440); },
+                            get selesaiPukul(){
+                                if(this.tanpaBatas || this.menit < 1 || this.menit > 1440) return '';
+                                const t = new Date(Date.now() + this.menit * 60000);
+                                return ('0'+t.getHours()).slice(-2) + ':' + ('0'+t.getMinutes()).slice(-2);
+                            }
+                        }" class="inline-block">
                         <button type="button" @click="open=true"
                                 class="inline-flex items-center justify-center gap-1.5 rounded-xl border-2 border-[#05b169] bg-white px-4 py-2 text-sm font-bold text-[#05b169] transition hover:bg-[#05b169]/5">
                             <span class="inline-block h-2 w-2 rounded-full bg-[#05b169]"></span>
@@ -45,10 +57,59 @@
                                     </div>
                                     <p class="rounded-lg bg-amber-50 px-3 py-2 text-xs font-medium text-[#d98200]">Berlaku untuk siswa bimbingan Anda. Jika admin membuka absensi global, absensi tetap terbuka untuk semua.</p>
 
+                                    {{-- ===== LAMA ABSENSI DIBUKA (menutup sendiri) ===== --}}
+                                    <div class="space-y-2.5 rounded-xl border-2 border-[#05b169]/25 bg-[#05b169]/5 p-3">
+                                        <div>
+                                            <p class="text-xs font-bold uppercase tracking-wide text-black">Lama Absensi Dibuka</p>
+                                            <p class="text-[11px] font-medium text-[#5b616e]">Absensi menutup sendiri setelah waktu ini habis, jadi Anda tidak perlu menekan Tutup Absensi lagi.</p>
+                                        </div>
+
+                                        <div class="flex flex-wrap gap-1.5" :class="tanpaBatas ? 'pointer-events-none opacity-40' : ''">
+                                            <template x-for="m in [15, 30, 60, 120]" :key="m">
+                                                <button type="button" @click="durasi = m"
+                                                        :class="menit === m ? 'border-[#05b169] bg-[#05b169] text-white' : 'border-gray-200 bg-white text-[#5b616e]'"
+                                                        class="rounded-lg border-2 px-3 py-1.5 text-xs font-bold"
+                                                        x-text="m + ' menit'"></button>
+                                            </template>
+                                        </div>
+
+                                        <div class="flex flex-wrap items-center gap-2" :class="tanpaBatas ? 'pointer-events-none opacity-40' : ''">
+                                            <input type="number" x-model="durasi" min="1" max="1440" inputmode="numeric"
+                                                   class="w-24 rounded-xl border-gray-200 text-sm font-bold focus:border-[#05b169] focus:ring-[#05b169]">
+                                            <span class="text-xs font-semibold text-[#5b616e]">menit</span>
+                                            <span x-show="selesaiPukul !== ''" x-cloak class="text-xs font-bold text-[#05b169]">tertutup pukul <span x-text="selesaiPukul"></span> WITA</span>
+                                        </div>
+
+                                        <p x-show="!durasiValid" x-cloak class="text-[11px] font-bold text-[#cf202f]">Isi antara 1 sampai 1440 menit (maksimal 24 jam).</p>
+
+                                        <label class="flex items-start gap-2 text-[11px] font-semibold text-[#5b616e]">
+                                            <input type="checkbox" x-model="tanpaBatas" class="mt-0.5 rounded border-gray-300 text-[#d98200] focus:ring-[#d98200]">
+                                            <span>Tanpa batas waktu &mdash; absensi terus terbuka sampai ditutup manual.</span>
+                                        </label>
+                                    </div>
+
+                                    {{-- Daftar siswa yang absensinya sedang terbuka + sisa waktunya --}}
+                                    @php
+                                        $sedangDibuka = ($siswas ?? collect())->filter(fn ($s) => $s->bukaManualAktif())->values();
+                                    @endphp
+                                    @if($sedangDibuka->count())
+                                        <div class="rounded-xl border-2 border-[#05b169]/25 bg-white p-3">
+                                            <p class="text-xs font-bold uppercase tracking-wide text-[#05b169]">Sedang Dibuka ({{ $sedangDibuka->count() }})</p>
+                                            <ul class="mt-1.5 space-y-1 text-xs text-[#5b616e]">
+                                                @foreach($sedangDibuka as $sd)
+                                                    <li class="flex items-center justify-between gap-2">
+                                                        <span class="font-semibold text-black">{{ $sd->name }} <span class="font-normal text-[#5b616e]">({{ $sd->nisn }})</span></span>
+                                                        <span class="flex-none rounded-md bg-[#05b169]/10 px-2 py-0.5 font-bold text-[#05b169]">{{ $sd->labelSisaBuka() }}</span>
+                                                    </li>
+                                                @endforeach
+                                            </ul>
+                                        </div>
+                                    @endif
+
                                     <div x-show="mode==='semua'" class="space-y-3">
-                                        <p class="text-sm text-[#5b616e]">Buka absensi untuk <span class="font-bold text-black">semua siswa bimbingan Anda</span> tanpa mengikuti jadwal. Tutup untuk mengembalikan ke jadwal.</p>
+                                        <p class="text-sm text-[#5b616e]">Buka absensi untuk <span class="font-bold text-black">semua siswa bimbingan Anda</span> tanpa mengikuti jadwal, <span class="font-bold text-black" x-text="tanpaBatas ? 'tanpa batas waktu' : menit + ' menit'"></span>. Tombol Tutup hanya diperlukan bila ingin menutup lebih cepat.</p>
                                         <div class="flex gap-2">
-                                            <form method="POST" action="{{ route('guru.monitoring.absensi.buka') }}" class="flex-1">@csrf<input type="hidden" name="mode" value="semua"><input type="hidden" name="aksi" value="buka"><button type="submit" class="w-full rounded-xl bg-[#05b169] px-4 py-2.5 text-sm font-bold text-white hover:bg-[#049a5b]">Buka Semua</button></form>
+                                            <form method="POST" action="{{ route('guru.monitoring.absensi.buka') }}" class="flex-1">@csrf<input type="hidden" name="mode" value="semua"><input type="hidden" name="aksi" value="buka"><input type="hidden" name="durasi_menit" :value="durasi"><input type="hidden" name="tanpa_batas" :value="tanpaBatas ? 1 : 0"><button type="submit" :disabled="!durasiValid" :class="!durasiValid ? 'opacity-40 cursor-not-allowed' : 'hover:bg-[#049a5b]'" class="w-full rounded-xl bg-[#05b169] px-4 py-2.5 text-sm font-bold text-white">Buka Semua</button></form>
                                             <form method="POST" action="{{ route('guru.monitoring.absensi.buka') }}" class="flex-1">@csrf<input type="hidden" name="mode" value="semua"><input type="hidden" name="aksi" value="tutup"><button type="submit" class="w-full rounded-xl border-2 border-[#cf202f]/40 bg-white px-4 py-2.5 text-sm font-bold text-[#cf202f] hover:bg-[#cf202f]/5">Tutup Semua</button></form>
                                         </div>
                                     </div>
@@ -61,18 +122,137 @@
                                             <p x-show="nisn.trim()!=='' && !cocok" x-cloak class="mt-1 text-xs font-bold text-[#cf202f]">NISN bukan siswa bimbingan Anda / tidak ditemukan.</p>
                                         </div>
                                         <div class="flex gap-2">
-                                            <form method="POST" action="{{ route('guru.monitoring.absensi.buka') }}" class="flex-1">@csrf<input type="hidden" name="mode" value="nisn"><input type="hidden" name="nisn" :value="nisn"><input type="hidden" name="aksi" value="buka"><button type="submit" :disabled="!cocok" :class="!cocok ? 'opacity-40 cursor-not-allowed' : 'hover:bg-[#049a5b]'" class="w-full rounded-xl bg-[#05b169] px-4 py-2.5 text-sm font-bold text-white">Buka Siswa Ini</button></form>
+                                            <form method="POST" action="{{ route('guru.monitoring.absensi.buka') }}" class="flex-1">@csrf<input type="hidden" name="mode" value="nisn"><input type="hidden" name="nisn" :value="nisn"><input type="hidden" name="aksi" value="buka"><input type="hidden" name="durasi_menit" :value="durasi"><input type="hidden" name="tanpa_batas" :value="tanpaBatas ? 1 : 0"><button type="submit" :disabled="!cocok || !durasiValid" :class="(!cocok || !durasiValid) ? 'opacity-40 cursor-not-allowed' : 'hover:bg-[#049a5b]'" class="w-full rounded-xl bg-[#05b169] px-4 py-2.5 text-sm font-bold text-white">Buka Siswa Ini</button></form>
                                             <form method="POST" action="{{ route('guru.monitoring.absensi.buka') }}" class="flex-1">@csrf<input type="hidden" name="mode" value="nisn"><input type="hidden" name="nisn" :value="nisn"><input type="hidden" name="aksi" value="tutup"><button type="submit" :disabled="!cocok" :class="!cocok ? 'opacity-40 cursor-not-allowed' : 'hover:bg-[#cf202f]/5'" class="w-full rounded-xl border-2 border-[#cf202f]/40 bg-white px-4 py-2.5 text-sm font-bold text-[#cf202f]">Tutup Siswa Ini</button></form>
                                         </div>
-                                        @php $bukaGuru = isset($siswas) ? $siswas->where('absensi_dibuka', true) : collect(); @endphp
-                                        @if($bukaGuru->count())
-                                            <div class="rounded-lg bg-[#05b169]/5 px-3 py-2 text-xs text-[#05b169]">Sedang dibuka: @foreach($bukaGuru as $bg)<span class="font-semibold">{{ $bg->name }} ({{ $bg->nisn }})</span>@if(!$loop->last), @endif @endforeach</div>
-                                        @endif
+                                        <p class="text-[11px] font-medium text-[#5b616e]">Absensi siswa ini dibuka <span class="font-bold text-black" x-text="tanpaBatas ? 'tanpa batas waktu' : menit + ' menit'"></span> terhitung sejak tombol ditekan.</p>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
+                    {{-- ===== TANDA TANGAN SAYA (diunggah sekali, dipakai ulang saat menilai) ===== --}}
+                    @php
+                        $guruAktif    = auth()->user();
+                        $ttdSayaUrl   = $guruAktif && $guruAktif->punyaTtdTersimpan() ? $guruAktif->ttdTersimpanUrl() : null;
+                        $ttdSayaLabel = $guruAktif ? $guruAktif->labelTtdTersimpan() : '';
+                    @endphp
+                    <div x-data="{ open: {{ $errors->has('ttd_tersimpan') ? 'true' : 'false' }}, pratinjau: null, adaBerkas: false }"
+                         x-effect="document.body.style.overflow = open ? 'hidden' : ''"
+                         class="inline-block">
+                        <button type="button" @click="open = true"
+                                class="inline-flex items-center justify-center gap-1.5 rounded-xl border-2 border-[#0047d6] bg-white px-4 py-2 text-sm font-bold text-[#0047d6] transition hover:bg-[#0047d6]/5">
+                            Tanda Tangan Saya
+                            @if($ttdSayaUrl)
+                                <span class="rounded-md bg-[#05b169]/10 px-1.5 py-0.5 text-[10px] font-bold text-[#05b169]">Tersimpan</span>
+                            @else
+                                <span class="rounded-md bg-[#d98200]/10 px-1.5 py-0.5 text-[10px] font-bold text-[#d98200]">Belum ada</span>
+                            @endif
+                        </button>
+
+                        {{-- Responsif: lembar bawah (bottom sheet) di HP, dialog tengah di laptop --}}
+                        <template x-teleport="body">
+                            <div x-show="open" x-cloak
+                                 class="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4"
+                                 @keydown.escape.window="open = false">
+                                <div class="absolute inset-0 bg-black/50" @click="open = false"></div>
+
+                                <div x-show="open"
+                                     x-transition:enter="transition ease-out duration-300"
+                                     x-transition:enter-start="opacity-0 translate-y-full sm:translate-y-0 sm:scale-95"
+                                     x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
+                                     x-transition:leave="transition ease-in duration-200"
+                                     x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
+                                     x-transition:leave-end="opacity-0 translate-y-full sm:translate-y-0 sm:scale-95"
+                                     class="relative flex max-h-[92vh] w-full flex-col overflow-hidden rounded-t-3xl bg-white shadow-xl sm:max-h-[88vh] sm:max-w-lg sm:rounded-2xl">
+
+                                    {{-- Kepala --}}
+                                    <div class="flex-none border-b border-[#e6e9ef] px-4 pb-3 pt-3 sm:px-6 sm:pt-5">
+                                        <div class="mx-auto mb-3 h-1.5 w-10 rounded-full bg-[#d7dbe3] sm:hidden"></div>
+                                        <div class="flex items-start justify-between gap-3">
+                                            <div>
+                                                <h3 class="text-base font-bold text-black">Tanda Tangan Saya</h3>
+                                                <p class="text-[11px] font-medium text-[#5b616e]">Guru pembimbing &mdash; dipakai ulang saat memberi nilai.</p>
+                                            </div>
+                                            <button type="button" @click="open = false" aria-label="Tutup"
+                                                    class="-mr-1 flex h-8 w-8 flex-none items-center justify-center rounded-lg text-2xl leading-none text-gray-400 transition hover:bg-gray-100 hover:text-black">&times;</button>
+                                        </div>
+                                    </div>
+
+                                    {{-- Isi --}}
+                                    <div class="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain px-4 py-4 text-left sm:px-6">
+
+                                        <p class="text-xs font-medium text-[#5b616e]">
+                                            Unggah foto tanda tangan Anda <span class="font-bold text-black">sekali saja</span>. Setelah tersimpan,
+                                            tanda tangan ini tinggal dipilih pada pop up <span class="font-bold text-black">Beri Nilai</span>
+                                            tanpa perlu mengunggah berkas yang sama berulang kali.
+                                        </p>
+
+                                        @error('ttd_tersimpan')
+                                            <p class="rounded-lg border border-[#cf202f]/40 bg-[#cf202f]/5 px-3 py-2 text-xs font-bold text-[#cf202f]">{{ $message }}</p>
+                                        @enderror
+
+                                        {{-- Pratinjau: berkas baru menimpa tampilan yang tersimpan --}}
+                                        <div>
+                                            <p class="mb-1 text-xs font-bold uppercase tracking-wide text-black">Pratinjau</p>
+                                            <div class="flex h-28 items-center justify-center overflow-hidden rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 p-2">
+                                                <img x-show="pratinjau" x-cloak :src="pratinjau" alt="Pratinjau tanda tangan baru" class="max-h-full max-w-full object-contain">
+                                                @if($ttdSayaUrl)
+                                                    <img x-show="!pratinjau" src="{{ $ttdSayaUrl }}" alt="Tanda tangan tersimpan" class="max-h-full max-w-full object-contain">
+                                                @else
+                                                    <span x-show="!pratinjau" class="text-xs font-medium text-gray-400">Belum ada tanda tangan tersimpan</span>
+                                                @endif
+                                            </div>
+                                            <p class="mt-1 text-[11px] font-medium text-[#5b616e]">{{ $ttdSayaLabel }}</p>
+                                        </div>
+
+                                        {{-- Form unggah --}}
+                                        <form id="form-ttd-guru" method="POST" action="{{ route('guru.monitoring.absensi.ttd') }}" enctype="multipart/form-data" class="space-y-2">
+                                            @csrf
+                                            <label class="block text-xs font-bold uppercase tracking-wide text-black">Pilih berkas tanda tangan</label>
+                                            <input type="file" name="ttd_tersimpan" accept="image/png,image/jpeg"
+                                                   @change="adaBerkas = $event.target.files.length > 0; pratinjau = $event.target.files.length ? URL.createObjectURL($event.target.files[0]) : null"
+                                                   class="block w-full text-sm text-gray-700 file:mr-3 file:rounded-lg file:border-0 file:bg-[#0047d6] file:px-4 file:py-2 file:font-bold file:text-white">
+                                            <p class="text-[11px] font-medium text-[#5b616e]">
+                                                JPG atau PNG, maksimal 3 MB. Cukup foto tanda tangannya saja di atas kertas polos &mdash;
+                                                latar putih di sekelilingnya dipangkas otomatis supaya ukuran cetaknya selalu pas.
+                                            </p>
+                                        </form>
+
+                                        {{-- Form hapus dipisah supaya tidak terkena aturan wajib unggah --}}
+                                        @if($ttdSayaUrl)
+                                            <form id="form-ttd-guru-hapus" method="POST" action="{{ route('guru.monitoring.absensi.ttd') }}">
+                                                @csrf
+                                                <input type="hidden" name="hapus" value="1">
+                                            </form>
+                                        @endif
+                                    </div>
+
+                                    {{-- Kaki --}}
+                                    <div class="flex-none border-t border-[#e6e9ef] bg-white px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:px-6 sm:pb-3">
+                                        <div class="flex flex-col gap-2 sm:flex-row sm:justify-end">
+                                            @if($ttdSayaUrl)
+                                                <button type="submit" form="form-ttd-guru-hapus"
+                                                        class="w-full rounded-xl border-2 border-[#cf202f]/40 bg-white px-4 py-2.5 text-sm font-bold text-[#cf202f] transition hover:bg-[#cf202f]/5 sm:w-auto">
+                                                    Hapus
+                                                </button>
+                                            @endif
+                                            <button type="button" @click="open = false"
+                                                    class="w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-2.5 text-sm font-bold text-[#5b616e] transition hover:bg-gray-50 sm:w-auto">
+                                                Batal
+                                            </button>
+                                            <button type="submit" form="form-ttd-guru" :disabled="!adaBerkas"
+                                                    :class="!adaBerkas ? 'opacity-40 cursor-not-allowed' : 'hover:bg-[#0038aa]'"
+                                                    class="w-full rounded-xl bg-[#0047d6] px-4 py-2.5 text-sm font-bold text-white transition sm:w-auto">
+                                                Simpan Tanda Tangan
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+
                     <a href="{{ route('guru.dashboard') }}"
                        class="inline-flex items-center justify-center gap-1 rounded-xl border-2 border-[#0047d6]/25 bg-white px-4 py-2 text-sm font-bold text-[#0047d6] transition hover:bg-[#0047d6]/5">
                         Kembali ke Dashboard
@@ -398,7 +578,8 @@
                                                             <form method="POST" action="{{ route('guru.absensi.validasi', $a->id) }}" class="space-y-2">
                                                                 @csrf @method('PUT')
                                                                 <input type="hidden" name="aksi" value="valid">
-                                                                <x-ttd-pad name="ttd_guru" label="Tanda Tangan Digital Guru Pembimbing" :tinggi="150" />
+                                                                {{-- Guru bisa memilih: pakai tanda tangan tersimpan, atau gores di kanvas. --}}
+                                                                <x-ttd-pilih name="ttd_guru" label="Tanda Tangan Digital Guru Pembimbing" :tinggi="150" :tersimpan="$ttdSayaUrl" />
                                                                 <button type="submit" class="w-full rounded-xl bg-[#05b169] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#049a5b]">Setujui &amp; Tanda Tangani</button>
                                                             </form>
                                                             {{-- Tombol "Tolak" membuka pop up: isi catatan -> Konfirmasi Tolak / Batal --}}
@@ -534,7 +715,8 @@
                                         <form method="POST" action="{{ route('guru.absensi.validasi', $a->id) }}" class="space-y-2">
                                             @csrf @method('PUT')
                                             <input type="hidden" name="aksi" value="valid">
-                                            <x-ttd-pad name="ttd_guru" label="Tanda Tangan Digital Guru Pembimbing" :tinggi="130" />
+                                            {{-- Guru bisa memilih: pakai tanda tangan tersimpan, atau gores di kanvas. --}}
+                                            <x-ttd-pilih name="ttd_guru" label="Tanda Tangan Digital Guru Pembimbing" :tinggi="130" :tersimpan="$ttdSayaUrl" />
                                             <button type="submit" class="w-full rounded-xl bg-[#05b169] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#049a5b]">Setujui &amp; Tanda Tangani</button>
                                         </form>
                                         {{-- Tombol "Tolak" membuka pop up: isi catatan -> Konfirmasi Tolak / Batal --}}

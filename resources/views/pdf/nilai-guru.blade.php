@@ -101,6 +101,22 @@
             width: 100%;
             margin-top: 20px;
         }
+        /* Kotak gambar tanda tangan. Tingginya TETAP supaya baris nama di
+           bawahnya selalu sejajar, baik tanda tangan sudah diunggah maupun
+           belum. Ukuran gambarnya sendiri dihitung di PHP (lihat
+           App\Support\TandaTangan::ukuranCetak) karena DomPDF tidak
+           menangani max-width / max-height pada <img> dengan andal. */
+        .kotak-ttd {
+            width: 50%;
+            height: 70px;
+            text-align: left;
+            vertical-align: bottom;
+            border: none;
+            padding: 4px 5px 2px 0;
+        }
+        .kotak-ttd img {
+            display: block;
+        }
         /* Footer per halaman (mengikuti tiap siswa) */
         .page-footer {
             margin-top: 25px;
@@ -270,17 +286,34 @@
                         <p style="margin: 0;">Pembimbing Dunia Kerja,</p>
                     </td>
                 </tr>
-                {{-- BARIS 3: NAMA DAN NIP --}}
+                {{-- BARIS 3: GAMBAR TANDA TANGAN (menggantikan ruang kosong <br>) --}}
+                @php
+                    // Kiri = Guru Pembimbing, kanan = Pembimbing Dunia Kerja,
+                    // mengikuti urutan jabatan pada BARIS 2 di atas.
+                    $ttdPembimbing = optional($nilai ?? null)->ttdCetakPembimbing();
+                    $ttdInstruktur = optional($nilai ?? null)->ttdCetakInstruktur();
+                @endphp
+                <tr>
+                    <td class="kotak-ttd">
+                        @if($ttdPembimbing)
+                            <img src="{{ $ttdPembimbing['src'] }}" width="{{ $ttdPembimbing['lebar'] }}" height="{{ $ttdPembimbing['tinggi'] }}" alt="Tanda tangan guru pembimbing">
+                        @endif
+                    </td>
+                    <td class="kotak-ttd">
+                        @if($ttdInstruktur)
+                            <img src="{{ $ttdInstruktur['src'] }}" width="{{ $ttdInstruktur['lebar'] }}" height="{{ $ttdInstruktur['tinggi'] }}" alt="Tanda tangan pembimbing dunia kerja">
+                        @endif
+                    </td>
+                </tr>
+                {{-- BARIS 4: NAMA DAN NIP --}}
                 <tr>
                     <td style="width: 50%; text-align: left; vertical-align: top;">
-                        <br><br><br><br>
                         <p style="margin: 0;">
                             <span style="font-weight: bold; text-decoration: underline;">{{ $siswa->guru->name ?? 'M. ASRI, Amd.Kom' }}</span><br>
                             NIP. {{ $siswa->guru->nip ?? '197609102005021007' }}
                         </p>
                     </td>
                     <td style="width: 50%; text-align: left; vertical-align: top;">
-                        <br><br><br><br>
                         <p style="margin: 0;">
                             <span style="font-weight: bold; text-decoration: underline;">{{ $siswa->instruktur->name ?? 'MULFIANTI' }}</span><br>
                             NIP. {{ $siswa->instruktur->nip ?? '-' }}

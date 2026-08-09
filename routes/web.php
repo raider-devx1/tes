@@ -162,6 +162,8 @@ Route::delete('/monitoring/catatan/{catatan}', [MonitoringController::class, 'de
 
 Route::get('/monitoring/absensi', [MonitoringController::class, 'absensi'])->name('monitoring.absensi');
 Route::post('/monitoring/absensi/pengaturan', [MonitoringController::class, 'pengaturanAbsensi'])->name('monitoring.absensi.pengaturan');
+// Atur JADWAL hari kerja absensi: seluruh siswa (global) atau beberapa NISN sekaligus.
+Route::post('/monitoring/absensi/jadwal', [MonitoringController::class, 'jadwalAbsensi'])->name('monitoring.absensi.jadwal');
 Route::post('/monitoring/absensi/buka', [MonitoringController::class, 'bukaAbsensi'])->name('monitoring.absensi.buka');
 Route::post('/monitoring/absensi', [MonitoringController::class, 'storeAbsensi'])->name('monitoring.absensi.store');
 // Atur JUMLAH Hadir/Izin/Sakit/Alpha (per NISN atau semua siswa) dalam satu rentang tanggal.
@@ -226,6 +228,9 @@ Route::middleware(['role:guru_pembimbing'])->prefix('guru')->name('guru.')->grou
     // ---- MONITORING + VALIDASI ABSENSI ----
     Route::get('/monitoring/absensi', [GuruController::class, 'monitoringAbsensi'])->name('monitoring.absensi');
     Route::post('/monitoring/absensi/buka', [GuruController::class, 'bukaAbsensi'])->name('monitoring.absensi.buka');
+    // Tanda tangan tersimpan milik guru: diunggah sekali di halaman ini, lalu
+    // tinggal dipilih pada pop up "Beri Nilai" tanpa mengunggah ulang.
+    Route::post('/monitoring/absensi/tanda-tangan', [GuruController::class, 'simpanTtdTersimpan'])->name('monitoring.absensi.ttd');
     // Validasi & edit jam kerja industri siswa oleh guru pembimbing (letakkan sebelum rute generic).
     Route::put('/monitoring/absensi/jam/{siswa}/validasi', [AbsensiController::class, 'validasiJamByGuru'])->name('absensi.jam.validasi');
     Route::put('/monitoring/absensi/jam/{siswa}', [AbsensiController::class, 'updateJamByGuru'])->name('absensi.jam.update');

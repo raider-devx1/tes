@@ -342,8 +342,40 @@
     {{-- ====  MODAL "BERI NILAI" (selalu di DOM, di luar toggle)  ==== --}}
     {{-- ============================================================= --}}
     <div class="nilai-modals">
+        @php
+            // Tanda tangan tersimpan milik guru yang sedang login. Diunggah
+            // sekali lewat tombol "Tanda Tangan Saya" di halaman Monitoring
+            // Absensi, lalu tinggal dipilih di sini tanpa mengunggah ulang.
+            $guruAktif        = auth()->user();
+            $ttdGuruTersimpan = $guruAktif && $guruAktif->punyaTtdTersimpan()
+                ? $guruAktif->ttdTersimpanUrl()
+                : null;
+        @endphp
         @foreach ($siswa as $s)
-            <div x-data="{ open: false }" x-show="open" x-cloak
+            @php
+                $ttdNilaiPembimbing = optional($s->nilai)->ttd_pembimbing;
+                $ttdNilaiInstruktur = optional($s->nilai)->ttd_instruktur;
+                $adaFotoLama        = (bool) optional($s->nilai)->foto_lembar_instruktur;
+
+                // Pilihan bawaan tanda tangan pembimbing, berurutan:
+                // pakai yang sudah menempel -> pakai tanda tangan tersimpan -> unggah baru.
+                $sumberTtdAwal = $ttdNilaiPembimbing
+                    ? 'tetap'
+                    : ($ttdGuruTersimpan ? 'tersimpan' : 'unggah');
+
+                // Pop up dibuka lagi otomatis bila penyimpanan barusan gagal,
+                // supaya guru langsung melihat peringatannya di dalam form.
+                $modalGagal = $errors->any() && (string) old('user_id') === (string) $s->id;
+            @endphp
+            <div x-data="{
+                     open: {{ $modalGagal ? 'true' : 'false' }},
+                     fotoLama: {{ $adaFotoLama ? 'true' : 'false' }},
+                     fotoBaru: false,
+                     namaFoto: '',
+                     ttdSumber: @js(old('sumber_ttd_pembimbing', $sumberTtdAwal)),
+                     ttdPratinjau: null,
+                     get fotoOk() { return this.fotoLama || this.fotoBaru; }
+                 }" x-show="open" x-cloak
                  @open-nilai-{{ $s->id }}.window="open = true"
                  @keydown.escape.window="open = false"
                  x-effect="document.body.style.overflow = open ? 'hidden' : ''"
@@ -371,6 +403,18 @@
                             <input type="hidden" name="user_id" value="{{ $s->id }}">
                             <input type="hidden" name="guru_id" value="{{ auth()->id() }}">
                             <div class="space-y-6">
+                                {{-- ===== PERINGATAN GAGAL SIMPAN (tampil di dalam pop up) ===== --}}
+                                @if($modalGagal)
+                                    <div class="rounded-lg border-2 border-[#cf202f] bg-[#cf202f]/10 px-4 py-3">
+                                        <p class="text-sm font-bold text-[#cf202f]">Penilaian belum tersimpan. Periksa kembali:</p>
+                                        <ul class="mt-1 list-disc space-y-0.5 pl-5 text-xs font-semibold text-black">
+                                            @foreach ($errors->all() as $error)
+                                                <li>{{ $error }}</li>
+                                            @endforeach
+                                        </ul>
+                                    </div>
+                                @endif
+
                                 {{-- ===== IDENTITAS UNTUK HASIL CETAK (NIS / NISN) ===== --}}
                                 @php
                                     $labelIdentitas = optional($s->nilai)->label_identitas === 'nis' ? 'nis' : 'nisn';
@@ -424,18 +468,152 @@
                                     </p>
                                 </div>
 
-                                {{-- ===== UPLOAD FOTO LEMBAR INSTRUKTUR ===== --}}
-                                <div class="p-4 bg-[#0047d6]/5 rounded-lg border border-[#0047d6]/20">
-                                    <label class="block text-sm font-bold text-black mb-1">Foto Lembar Penilaian Instruktur</label>
-                                    <p class="text-xs text-[#5b616e] mb-2">Unggah foto lembar penilaian yang sudah diisi &amp; diparaf instruktur (JPG/PNG, maks 2 MB).</p>
+                                {{-- ===== UPLOAD FOTO LEMBAR INSTRUKTUR (WAJIB) ===== --}}
+                                <div class="p-4 rounded-lg border-2 transition"
+                                     :class="fotoOk ? 'bg-[#0047d6]/5 border-[#0047d6]/20' : 'bg-[#cf202f]/5 border-[#cf202f]'">
+                                    <label class="block text-sm font-bold text-black mb-1">
+                                        Foto Lembar Penilaian Instruktur <span class="text-[#cf202f]">*</span>
+                                    </label>
+                                    <p class="text-xs text-[#5b616e] mb-2">Unggah foto lembar penilaian yang sudah diisi &amp; diparaf instruktur (JPG/PNG, maks 3 MB).</p>
+
+                                    {{-- Peringatan wajib, muncul langsung di dalam pop up --}}
+                                    <div x-show="!fotoOk" x-cloak
+                                         class="mb-2 flex items-start gap-2 rounded-lg border border-[#cf202f]/40 bg-white px-3 py-2">
+                                        <span class="mt-0.5 flex h-4 w-4 flex-none items-center justify-center rounded-full bg-[#cf202f] text-[10px] font-bold leading-none text-white">!</span>
+                                        <p class="text-xs font-bold text-[#cf202f]">
+                                            Wajib unggah lembar penilaian instruktur. Penilaian tidak bisa disimpan sebelum foto ini dipilih.
+                                        </p>
+                                    </div>
+
                                     <input type="file" name="foto_lembar_instruktur" accept="image/*"
+                                           @change="fotoBaru = $event.target.files.length > 0; namaFoto = $event.target.files.length ? $event.target.files[0].name : ''"
                                            class="block w-full text-sm text-gray-700 file:mr-3 file:rounded-lg file:border-0 file:bg-[#0047d6] file:px-4 file:py-2 file:text-white file:font-bold">
+
+                                    {{-- Tanpa pratinjau gambar. Cukup keterangan singkat bahwa berkas sudah terpilih,
+                                         supaya pop up tidak jadi panjang dan tidak perlu ikut memuat gambarnya. --}}
+                                    <p x-show="namaFoto" x-cloak class="mt-2 flex items-start gap-1.5 text-xs font-bold text-[#05b169]">
+                                        <span class="flex-none">&check;</span>
+                                        <span class="min-w-0 break-all" x-text="'Foto terpilih: ' + namaFoto"></span>
+                                    </p>
+
                                     @if(optional($s->nilai)->foto_lembar_instruktur)
                                         <p class="text-xs mt-2">
                                             <a href="{{ asset('storage/'.$s->nilai->foto_lembar_instruktur) }}" download target="_blank" class="font-bold text-[#0047d6] underline">Lihat foto yang sudah diunggah</a>
                                             <span class="text-[#5b616e]"> (kosongkan bila tidak ingin mengganti)</span>
                                         </p>
                                     @endif
+                                </div>
+
+                                {{-- ===== TANDA TANGAN UNTUK HASIL CETAK PDF ===== --}}
+                                <div class="p-4 bg-[#05b169]/5 rounded-lg border border-[#05b169]/25">
+                                    <label class="block text-sm font-bold text-black mb-1">Tanda Tangan untuk Hasil Cetak</label>
+                                    <p class="text-xs text-[#5b616e] mb-3">
+                                        Unggah foto tanda tangannya saja, bukan seluruh lembar. Gambar otomatis dipasang
+                                        di kolom tanda tangan ketika penilaian dicetak ke PDF. Latar putih di sekelilingnya
+                                        dipangkas sendiri oleh sistem, jadi ukuran cetaknya selalu pas dan seragam.
+                                        Opsional &mdash; boleh dikosongkan (JPG/PNG, maks 3 MB).
+                                    </p>
+
+                                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+
+                                        {{-- ---------- GURU PEMBIMBING (kolom KIRI saat dicetak) ---------- --}}
+                                        <div class="rounded-lg border border-gray-200 bg-white p-3">
+                                            <p class="text-xs font-bold text-black">Guru Pembimbing</p>
+                                            <p class="text-[11px] text-[#5b616e] mb-2">Tercetak di kolom kiri</p>
+
+                                            {{-- Kotak pratinjau mengikuti pilihan di bawahnya --}}
+                                            <div class="mb-2 flex h-20 items-center justify-center overflow-hidden rounded-md border border-dashed border-gray-300 bg-gray-50 p-1">
+                                                <img x-show="ttdSumber === 'unggah' &amp;&amp; ttdPratinjau" x-cloak :src="ttdPratinjau"
+                                                     alt="Pratinjau tanda tangan baru" class="max-h-full max-w-full object-contain">
+
+                                                @if($ttdGuruTersimpan)
+                                                    <img x-show="ttdSumber === 'tersimpan'" x-cloak src="{{ $ttdGuruTersimpan }}"
+                                                         alt="Tanda tangan tersimpan" class="max-h-full max-w-full object-contain">
+                                                @endif
+
+                                                @if($ttdNilaiPembimbing)
+                                                    <img x-show="ttdSumber === 'tetap'" x-cloak src="{{ asset('storage/'.$ttdNilaiPembimbing) }}"
+                                                         alt="Tanda tangan pada penilaian ini" class="max-h-full max-w-full object-contain">
+                                                    <span x-show="ttdSumber === 'hapus'" x-cloak class="text-[11px] font-bold text-[#cf202f]">Akan dikosongkan</span>
+                                                @endif
+
+                                                <span x-show="ttdSumber === 'unggah' &amp;&amp; !ttdPratinjau" x-cloak class="text-[11px] text-gray-400">Belum ada berkas dipilih</span>
+                                            </div>
+
+                                            {{-- Pilihan sumber tanda tangan --}}
+                                            <div class="space-y-1.5">
+                                                @if($ttdNilaiPembimbing)
+                                                    <label class="flex cursor-pointer items-start gap-2 text-[11px] font-medium text-[#5b616e]">
+                                                        <input type="radio" name="sumber_ttd_pembimbing" value="tetap" x-model="ttdSumber"
+                                                               class="mt-0.5 border-gray-300 text-[#05b169] focus:ring-[#05b169]">
+                                                        <span>Pakai yang sudah ada di penilaian ini</span>
+                                                    </label>
+                                                @endif
+
+                                                @if($ttdGuruTersimpan)
+                                                    <label class="flex cursor-pointer items-start gap-2 text-[11px] font-medium text-[#5b616e]">
+                                                        <input type="radio" name="sumber_ttd_pembimbing" value="tersimpan" x-model="ttdSumber"
+                                                               class="mt-0.5 border-gray-300 text-[#05b169] focus:ring-[#05b169]">
+                                                        <span><span class="font-bold text-[#05b169]">Pakai tanda tangan tersimpan</span> &mdash; tidak perlu unggah ulang</span>
+                                                    </label>
+                                                @else
+                                                    <p class="rounded-md bg-[#fff8e6] px-2 py-1.5 text-[11px] font-medium text-[#8a6100]">
+                                                        Belum punya tanda tangan tersimpan. Unggah sekali lewat tombol
+                                                        <span class="font-bold">Tanda Tangan Saya</span> di halaman Monitoring Absensi
+                                                        supaya bisa langsung dipilih di sini.
+                                                    </p>
+                                                @endif
+
+                                                <label class="flex cursor-pointer items-start gap-2 text-[11px] font-medium text-[#5b616e]">
+                                                    <input type="radio" name="sumber_ttd_pembimbing" value="unggah" x-model="ttdSumber"
+                                                           class="mt-0.5 border-gray-300 text-[#05b169] focus:ring-[#05b169]">
+                                                    <span>Unggah tanda tangan baru</span>
+                                                </label>
+
+                                                @if($ttdNilaiPembimbing)
+                                                    <label class="flex cursor-pointer items-start gap-2 text-[11px] font-medium text-[#cf202f]">
+                                                        <input type="radio" name="sumber_ttd_pembimbing" value="hapus" x-model="ttdSumber"
+                                                               class="mt-0.5 border-gray-300 text-[#cf202f] focus:ring-[#cf202f]">
+                                                        <span>Hapus tanda tangan dari penilaian ini</span>
+                                                    </label>
+                                                @endif
+                                            </div>
+
+                                            {{-- Berkas hanya diperlukan saat memilih "unggah baru" --}}
+                                            <div x-show="ttdSumber === 'unggah'" x-cloak class="mt-2">
+                                                <input type="file" name="ttd_pembimbing" accept="image/png,image/jpeg"
+                                                       @change="ttdPratinjau = $event.target.files.length ? URL.createObjectURL($event.target.files[0]) : null"
+                                                       class="block w-full text-xs text-gray-700 file:mr-2 file:rounded-md file:border-0 file:bg-[#05b169] file:px-3 file:py-1.5 file:font-bold file:text-white">
+                                            </div>
+                                        </div>
+
+                                        {{-- ---------- PEMBIMBING DUNIA KERJA (kolom KANAN saat dicetak) ---------- --}}
+                                        <div x-data="{ pratinjau: null }" class="rounded-lg border border-gray-200 bg-white p-3">
+                                            <p class="text-xs font-bold text-black">Pembimbing Dunia Kerja</p>
+                                            <p class="text-[11px] text-[#5b616e] mb-2">Instruktur industri, kolom kanan</p>
+
+                                            <div class="mb-2 flex h-20 items-center justify-center overflow-hidden rounded-md border border-dashed border-gray-300 bg-gray-50 p-1">
+                                                <img x-show="pratinjau" x-cloak :src="pratinjau" alt="Pratinjau tanda tangan" class="max-h-full max-w-full object-contain">
+                                                @if($ttdNilaiInstruktur)
+                                                    <img x-show="!pratinjau" src="{{ asset('storage/'.$ttdNilaiInstruktur) }}" alt="Tanda tangan tersimpan" class="max-h-full max-w-full object-contain">
+                                                @else
+                                                    <span x-show="!pratinjau" class="text-[11px] text-gray-400">Belum ada tanda tangan</span>
+                                                @endif
+                                            </div>
+
+                                            <input type="file" name="ttd_instruktur" accept="image/png,image/jpeg"
+                                                   @change="pratinjau = $event.target.files.length ? URL.createObjectURL($event.target.files[0]) : null"
+                                                   class="block w-full text-xs text-gray-700 file:mr-2 file:rounded-md file:border-0 file:bg-[#05b169] file:px-3 file:py-1.5 file:font-bold file:text-white">
+
+                                            @if($ttdNilaiInstruktur)
+                                                <label class="mt-2 flex items-center gap-2 text-[11px] font-medium text-[#cf202f]">
+                                                    <input type="checkbox" name="hapus_ttd_instruktur" value="1"
+                                                           class="rounded border-gray-300 text-[#cf202f] focus:ring-[#cf202f]">
+                                                    Hapus tanda tangan ini
+                                                </label>
+                                            @endif
+                                        </div>
+                                    </div>
                                 </div>
 
                                 {{-- ===== BAGIAN A: NILAI DARI INSTRUKTUR ===== --}}
@@ -491,8 +669,10 @@
                                 class="rounded-xl px-5 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-200 focus:outline-none focus:ring-4 focus:ring-gray-100">
                             Batal
                         </button>
-                        <button type="submit" form="form-nilai-{{ $s->id }}"
-                                class="inline-flex items-center rounded-xl bg-[#0047d6] px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-[#0038aa] focus:outline-none focus:ring-4 focus:ring-[#0047d6]/30">
+                        <button type="submit" form="form-nilai-{{ $s->id }}" :disabled="!fotoOk"
+                                :class="!fotoOk ? 'opacity-40 cursor-not-allowed' : 'hover:bg-[#0038aa]'"
+                                :title="!fotoOk ? 'Unggah dulu foto lembar penilaian instruktur' : ''"
+                                class="inline-flex items-center rounded-xl bg-[#0047d6] px-5 py-2.5 text-sm font-bold text-white shadow-sm transition focus:outline-none focus:ring-4 focus:ring-[#0047d6]/30">
                             Simpan
                         </button>
                     </div>

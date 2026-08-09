@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Models\Jurnal;
 use App\Models\PeriodePkl;
 use App\Models\Absensi;
+use App\Support\TandaTangan;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -107,6 +108,10 @@ public function index(Request $request)
         ->where('status_pkl', 'aktif')
         ->pluck('id');
 
+    // Tutup sendiri pembukaan absensi yang batas waktunya sudah lewat, supaya
+    // guru tidak perlu menekan tombol "Tutup Absensi" lagi (pengganti cron).
+    User::tutupBukaKedaluwarsa($siswaIds->all());
+
     // Tandai otomatis Alpha (logika controller, menggantikan scheduler).
     User::whereIn('id', $siswaIds)->get()
         ->each(fn ($s) => Absensi::sinkronkanAlpa($s));
@@ -151,20 +156,55 @@ public function index(Request $request)
  * Guru membuka / menutup absensi siswa BIMBINGANNYA tanpa mengikuti jadwal jam.
  *  - mode "semua" : semua siswa bimbingan guru ini.
  *  - mode "nisn"  : satu siswa (dicocokkan NISN & harus bimbingannya).
- *  - aksi "buka"  : terbuka bebas waktu; "tutup" : kembali ikut jadwal.
+ *  - aksi "buka"  : terbuka di luar jadwal; "tutup" : kembali ikut jadwal.
+ *
+ * BATAS WAKTU BUKA:
+ * Saat membuka, guru menentukan absensi dibuka berapa MENIT (bawaan 30 menit).
+ * Tenggatnya disimpan di users.absensi_dibuka_sampai, lalu absensi menutup
+ * sendiri begitu tenggat lewat sehingga guru tidak perlu menekan tombol
+ * "Tutup Absensi" lagi. Centang "tanpa batas waktu" untuk perilaku lama.
  */
 public function bukaAbsensi(Request $request)
 {
     $mode = $request->input('mode') === 'nisn' ? 'nisn' : 'semua';
     $buka = $request->input('aksi') === 'buka';
 
+    $data = $request->validate([
+        'durasi_menit' => ['nullable', 'integer', 'min:1', 'max:' . User::BUKA_MENIT_MAKS],
+        'tanpa_batas'  => ['nullable', 'boolean'],
+    ], [
+        'durasi_menit.integer' => 'Lama absensi dibuka harus berupa angka menit.',
+        'durasi_menit.min'     => 'Lama absensi dibuka minimal 1 menit.',
+        'durasi_menit.max'     => 'Lama absensi dibuka maksimal ' . User::BUKA_MENIT_MAKS . ' menit (24 jam).',
+    ]);
+
+    $tanpaBatas = $request->boolean('tanpa_batas');
+    $durasi     = (int) ($data['durasi_menit'] ?? User::BUKA_MENIT_DEFAULT);
+
+    if ($durasi < 1 || $durasi > User::BUKA_MENIT_MAKS) {
+        $durasi = User::BUKA_MENIT_DEFAULT;
+    }
+
+    // null = tanpa batas waktu; saat menutup, tenggat lama ikut dibersihkan.
+    $sampai = ($buka && ! $tanpaBatas) ? now()->addMinutes($durasi) : null;
+
+    $nilai = [
+        'absensi_dibuka'        => $buka,
+        'absensi_dibuka_sampai' => $sampai,
+    ];
+
+    // Keterangan tenggat untuk pesan flash.
+    $ket = $sampai
+        ? "selama {$durasi} menit (otomatis tertutup pukul " . $sampai->format('H:i') . ' WITA)'
+        : 'tanpa batas waktu (perlu ditutup manual)';
+
     $base = User::siswa()->where('guru_id', Auth::id());
 
     if ($mode === 'semua') {
-        (clone $base)->update(['absensi_dibuka' => $buka]);
+        (clone $base)->update($nilai);
 
         return back()->with('success', $buka
-            ? 'Absensi DIBUKA untuk semua siswa bimbingan Anda (bebas waktu).'
+            ? "Absensi DIBUKA untuk semua siswa bimbingan Anda {$ket}."
             : 'Absensi ditutup untuk semua siswa bimbingan Anda. Kembali mengikuti jadwal.');
     }
 
@@ -178,12 +218,66 @@ public function bukaAbsensi(Request $request)
         return back()->with('error', "Siswa bimbingan dengan NISN {$nisn} tidak ditemukan.");
     }
 
-    $siswa->absensi_dibuka = $buka;
-    $siswa->save();
+    $siswa->forceFill($nilai)->save();
 
     return back()->with('success', $buka
-        ? "Absensi untuk {$siswa->name} (NISN {$nisn}) DIBUKA (bebas waktu)."
+        ? "Absensi untuk {$siswa->name} (NISN {$nisn}) DIBUKA {$ket}."
         : "Absensi untuk {$siswa->name} (NISN {$nisn}) ditutup (kembali ikut jadwal).");
+}
+
+/*
+|--------------------------------------------------------------------------
+| TANDA TANGAN TERSIMPAN MILIK GURU PEMBIMBING
+|--------------------------------------------------------------------------
+| Guru mengunggah tanda tangannya SEKALI dari halaman Monitoring Absensi.
+| Sesudah tersimpan, tanda tangan itu tinggal dipilih pada pop up "Beri
+| Nilai" sehingga guru tidak perlu mengunggah berkas yang sama berulang.
+|
+| Berkasnya diproses sama seperti tanda tangan penilaian: latar diratakan
+| ke putih, margin kosong dipangkas, lalu diperkecil. Dengan begitu ukuran
+| cetaknya di PDF nanti sudah pasti seragam.
+*/
+public function simpanTtdTersimpan(Request $request)
+{
+    $guru = Auth::user();
+
+    // ---- Hapus tanda tangan tersimpan ----
+    if ($request->boolean('hapus')) {
+        TandaTangan::hapus($guru->ttd_tersimpan);
+
+        $guru->forceFill([
+            'ttd_tersimpan'    => null,
+            'ttd_tersimpan_at' => null,
+        ])->save();
+
+        return back()->with('success', 'Tanda tangan tersimpan sudah dihapus.');
+    }
+
+    // ---- Simpan / ganti tanda tangan ----
+    $request->validate([
+        'ttd_tersimpan' => ['required', 'image', 'mimes:jpeg,png,jpg', 'max:3072'],
+    ], [
+        'ttd_tersimpan.required' => 'Pilih dulu berkas tanda tangan yang ingin disimpan.',
+        'ttd_tersimpan.image'    => 'Tanda tangan harus berupa gambar (JPG/JPEG/PNG).',
+        'ttd_tersimpan.mimes'    => 'Format tanda tangan harus JPG, JPEG, atau PNG.',
+        'ttd_tersimpan.max'      => 'Ukuran tanda tangan maksimal 3 MB.',
+    ]);
+
+    $path = TandaTangan::simpanUnggahan($request->file('ttd_tersimpan'), 'ttd/guru/tersimpan');
+
+    // Gagal diproses -> biarkan tanda tangan lama supaya tidak ikut hilang.
+    if ($path === null) {
+        return back()->with('error', 'Gambar tanda tangan tidak bisa diproses. Coba unggah foto lain (JPG/PNG, maks 3 MB).');
+    }
+
+    TandaTangan::hapus($guru->ttd_tersimpan);
+
+    $guru->forceFill([
+        'ttd_tersimpan'    => $path,
+        'ttd_tersimpan_at' => now(),
+    ])->save();
+
+    return back()->with('success', 'Tanda tangan tersimpan diperbarui. Sekarang tinggal dipilih saat memberi nilai.');
 }
 
 }

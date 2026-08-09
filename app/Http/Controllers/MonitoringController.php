@@ -12,6 +12,7 @@ use App\Support\TandaTangan;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
@@ -827,23 +828,38 @@ public function absensi(Request $request)
     $tanggalDefault = $tanggal ?: date('Y-m-d');
 
     // Pengaturan jam & batas absensi yang berlaku untuk SEMUA siswa.
+    $hariKerjaGlobal   = User::hariKerjaGlobal();
     $pengaturanAbsensi = [
         'jam_masuk'    => Pengaturan::ambil('absensi_jam_masuk', '08:00'),
         'jam_pulang'   => Pengaturan::ambil('absensi_jam_pulang', '16:00'),
         'durasi_menit' => (int) Pengaturan::ambil('absensi_durasi_menit', 30),
-        // Jadwal hari kerja global: 'senin_jumat' (default) atau 'senin_sabtu'.
-        'hari_kerja'       => User::hariKerjaGlobal(),
-        'hari_kerja_label' => User::hariKerjaGlobal() === User::HARI_KERJA_SENIN_SABTU
-            ? 'Senin - Sabtu'
-            : 'Senin - Jumat',
+        // Jadwal hari kerja global: senin_jumat (bawaan) | senin_sabtu | senin_minggu.
+        'hari_kerja'            => $hariKerjaGlobal,
+        'hari_kerja_label'      => User::labelJadwal($hariKerjaGlobal),
+        'hari_kerja_keterangan' => User::keteranganJadwal($hariKerjaGlobal),
     ];
+
+    // BERSIH-BERSIH OTOMATIS: pembukaan absensi yang batas waktunya sudah lewat
+    // dimatikan di sini, baik yang global (tabel pengaturans) maupun per-siswa
+    // (kolom users.absensi_dibuka_sampai). Karena dijalankan saat halaman ini
+    // dimuat, absensi menutup sendiri tanpa perlu cron/scheduler dan tanpa
+    // admin harus menekan tombol "Tutup".
+    Pengaturan::bersihkanPaksaKedaluwarsa();
+    User::tutupBukaKedaluwarsa();
 
     // Status buka-paksa absensi global, kini TERPISAH untuk fase masuk & pulang.
     // Flag lama absensi_paksa_buka (bila masih '1') dianggap membuka keduanya.
     $legacyGlobal = Pengaturan::ambil('absensi_paksa_buka', '0') === '1';
-    $paksaMasuk   = $legacyGlobal || Pengaturan::ambil('absensi_paksa_buka_masuk', '0') === '1';
-    $paksaPulang  = $legacyGlobal || Pengaturan::ambil('absensi_paksa_buka_pulang', '0') === '1';
+    $paksaMasuk   = $legacyGlobal || Pengaturan::paksaBukaAktif('masuk');
+    $paksaPulang  = $legacyGlobal || Pengaturan::paksaBukaAktif('pulang');
     $paksaBuka    = $paksaMasuk || $paksaPulang;
+
+    // Sisa waktu buka-paksa global per fase untuk ditampilkan di modal & banner.
+    // Nilai '' berarti fase itu tidak sedang dibuka-paksa lewat tenggat.
+    $paksaSisa = [
+        'masuk'  => Pengaturan::labelSisaPaksa('masuk'),
+        'pulang' => Pengaturan::labelSisaPaksa('pulang'),
+    ];
 
     // Siswa yang absensinya dibuka manual per-orang (di luar buka global).
     // Lintas periode: siswa angkatan lama yang absensinya masih dibuka manual
@@ -853,7 +869,7 @@ public function absensi(Request $request)
             ->orWhere('absensi_dibuka_masuk', true)
             ->orWhere('absensi_dibuka_pulang', true))
         ->orderBy('name')
-        ->get(['id', 'name', 'nisn', 'absensi_dibuka', 'absensi_dibuka_masuk', 'absensi_dibuka_pulang']);
+        ->get(['id', 'name', 'nisn', 'absensi_dibuka', 'absensi_dibuka_masuk', 'absensi_dibuka_pulang', 'absensi_dibuka_sampai']);
 
     // Data jam kerja industri per siswa (untuk pencarian & edit via NISN oleh admin).
     $siswaJam = User::siswa()->withoutTrashed()
@@ -864,6 +880,22 @@ public function absensi(Request $request)
     // Pengajuan jam yang masih menunggu validasi admin.
     $usulanJam = $siswaJam->where('status_jam_usulan', 'diajukan')->values();
 
+    // Data JADWAL HARI KERJA per siswa untuk modal "Jadwal Absensi".
+    // Dipakai untuk mencocokkan NISN yang ditempel admin (boleh banyak sekaligus)
+    // dan menampilkan jadwal yang sedang berlaku bagi tiap siswa.
+    $siswaJadwal = $siswaJam->map(fn ($s) => [
+        'nisn'       => (string) $s->nisn,
+        'name'       => $s->name,
+        'kelas'      => $s->kelas ?? '-',
+        'status_pkl' => $s->status_pkl ?? '-',
+        'hari_kerja' => (string) ($s->hari_kerja ?? ''),
+        'label'      => $s->labelHariKerja(),
+        'khusus'     => $s->pakaiHariKerjaKhusus(),
+    ])->values();
+
+    // Siswa yang memakai jadwal KHUSUS (pengecualian dari jadwal global).
+    $jadwalKhususList = $siswaJadwal->where('khusus', true)->values();
+
     // Jam global admin sebagai acuan tampilan.
     $jamAdmin = [
         'masuk'  => $pengaturanAbsensi['jam_masuk'],
@@ -871,7 +903,7 @@ public function absensi(Request $request)
     ];
 
     return view('admin.monitoring.absensi', array_merge(
-        compact('absensi', 'q', 'status', 'statusPkl', 'statusValidasi', 'tanggal', 'bulan', 'kelas', 'jurusan', 'rekap', 'tanggalDefault', 'pengaturanAbsensi', 'paksaBuka', 'paksaMasuk', 'paksaPulang', 'siswaJam', 'usulanJam', 'jamAdmin'),
+        compact('absensi', 'q', 'status', 'statusPkl', 'statusValidasi', 'tanggal', 'bulan', 'kelas', 'jurusan', 'rekap', 'tanggalDefault', 'pengaturanAbsensi', 'paksaBuka', 'paksaMasuk', 'paksaPulang', 'paksaSisa', 'siswaJam', 'usulanJam', 'jamAdmin', 'siswaJadwal', 'jadwalKhususList'),
         ['siswaList' => $this->siswaList(), 'dibukaList' => $dibukaList],
         $this->opsiFilter()
     ));
@@ -969,7 +1001,7 @@ public function pengaturanAbsensi(Request $request)
         'absensi_durasi_menit' => ['required', 'integer', 'min:1', 'max:1440'],
         // Jadwal hari kerja GLOBAL. Siswa yang jadwalnya berbeda tetap bisa
         // diatur satu per satu lewat pencarian NISN (kolom users.hari_kerja).
-        'absensi_hari_kerja'   => ['nullable', Rule::in([User::HARI_KERJA_SENIN_JUMAT, User::HARI_KERJA_SENIN_SABTU])],
+        'absensi_hari_kerja'   => ['nullable', Rule::in(User::daftarHariKerja())],
     ], [
         'absensi_jam_masuk.required'    => 'Jam masuk wajib diisi.',
         'absensi_jam_masuk.date_format' => 'Format jam masuk harus HH:MM.',
@@ -984,20 +1016,161 @@ public function pengaturanAbsensi(Request $request)
 
     $hariKerja = $data['absensi_hari_kerja'] ?? User::HARI_KERJA_SENIN_JUMAT;
     Pengaturan::simpan('absensi_hari_kerja', $hariKerja);
+    $this->lupakanCacheAbsensi();
 
-    $labelHariKerja = $hariKerja === User::HARI_KERJA_SENIN_SABTU ? 'Senin - Sabtu' : 'Senin - Jumat';
+    return back()->with('success', 'Pengaturan absensi berhasil disimpan. Jadwal hari kerja: '
+        . User::labelJadwal($hariKerja) . ' (' . User::keteranganJadwal($hariKerja) . ').');
+}
 
-    return back()->with('success', "Pengaturan absensi berhasil disimpan. Jadwal hari kerja: {$labelHariKerja}"
-        . ($hariKerja === User::HARI_KERJA_SENIN_JUMAT
-            ? ' (Sabtu & Minggu dilewati, tanpa baris absensi dan tidak ditandai Alpha).'
-            : ' (hanya Minggu yang dilewati).'));
+/**
+ * ATUR JADWAL HARI KERJA ABSENSI
+ * -----------------------------------------------------------------------
+ * Dua mode:
+ *  - mode "semua" : mengubah jadwal GLOBAL sekolah, tersimpan pada tabel
+ *                   `pengaturans` (kunci: absensi_hari_kerja).
+ *  - mode "nisn"  : mengubah jadwal KHUSUS milik BEBERAPA siswa sekaligus
+ *                   (kolom users.hari_kerja). NISN boleh ditempel banyak,
+ *                   dipisah koma / titik koma / spasi / baris baru.
+ *
+ * Pilihan jadwal: senin_jumat, senin_sabtu, senin_minggu.
+ * Khusus mode "nisn", nilai kosong berarti HAPUS jadwal khusus sehingga
+ * siswa tersebut kembali mengikuti jadwal global.
+ */
+public function jadwalAbsensi(Request $request)
+{
+    $data = $request->validate([
+        'mode'         => ['required', Rule::in(['semua', 'nisn'])],
+        'nisn'         => ['required_if:mode,nisn', 'nullable', 'string', 'max:5000'],
+        // '' hanya sah pada mode nisn (artinya: ikut jadwal global).
+        'hari_kerja'   => ['nullable', 'string', Rule::in(array_merge([''], User::daftarHariKerja()))],
+        'hapus_khusus' => ['nullable', 'boolean'],
+    ], [
+        'nisn.required_if' => 'NISN wajib diisi untuk mode per NISN.',
+        'hari_kerja.in'    => 'Pilihan jadwal hari kerja tidak dikenali.',
+    ]);
+
+    $jadwal = (string) ($data['hari_kerja'] ?? '');
+
+    // ================= MODE SELURUH SISWA (jadwal global) =================
+    if ($data['mode'] === 'semua') {
+        if ($jadwal === '') {
+            return back()->with('error', 'Pilih salah satu jadwal hari kerja terlebih dahulu.');
+        }
+
+        Pengaturan::simpan('absensi_hari_kerja', $jadwal);
+
+        $pesan = 'Jadwal absensi SELURUH siswa disetel ke ' . User::labelJadwal($jadwal)
+            . ' (' . User::keteranganJadwal($jadwal) . ').';
+
+        if ($request->boolean('hapus_khusus')) {
+            // Samakan semua siswa: jadwal khusus per orang dibuang.
+            $jumlah = User::siswa()->withoutTrashed()
+                ->whereNotNull('hari_kerja')
+                ->update(['hari_kerja' => null]);
+
+            $pesan .= ' ' . $jumlah . ' jadwal khusus per siswa ikut dihapus, jadi semua siswa memakai jadwal ini.';
+        } else {
+            $sisa = User::siswa()->withoutTrashed()->whereNotNull('hari_kerja')->count();
+
+            if ($sisa > 0) {
+                $pesan .= ' Catatan: ' . $sisa . ' siswa masih memakai jadwal khusus sendiri dan TIDAK terpengaruh.';
+            }
+        }
+
+        $this->lupakanCacheAbsensi();
+
+        return back()->with('success', $pesan);
+    }
+
+    // ============== MODE PER NISN (boleh banyak sekaligus) ===============
+    $daftarNisn = $this->pecahDaftar($data['nisn'] ?? '');
+
+    if (empty($daftarNisn)) {
+        return back()->with('error', 'Masukkan minimal satu NISN.');
+    }
+
+    if (count($daftarNisn) > 300) {
+        return back()->with('error', 'Terlalu banyak NISN sekaligus. Maksimal 300 NISN per proses.');
+    }
+
+    $sasaran = User::siswa()->withoutTrashed()
+        ->whereIn('nisn', $daftarNisn)
+        ->orderBy('name')
+        ->get();
+
+    $tidakDitemukan = array_values(array_diff(
+        $daftarNisn,
+        $sasaran->pluck('nisn')->map(fn ($n) => (string) $n)->all()
+    ));
+
+    if ($sasaran->isEmpty()) {
+        return back()->with('error', 'Tidak ada siswa yang cocok dengan NISN: '
+            . implode(', ', array_slice($daftarNisn, 0, 10))
+            . (count($daftarNisn) > 10 ? ' ...' : '') . '.');
+    }
+
+    // Kosong = hapus jadwal khusus (kembali ikut jadwal global).
+    $nilaiBaru = $jadwal === '' ? null : $jadwal;
+    $diubah    = 0;
+
+    foreach ($sasaran as $siswaSasaran) {
+        if ((string) ($siswaSasaran->hari_kerja ?? '') !== (string) ($nilaiBaru ?? '')) {
+            $siswaSasaran->hari_kerja = $nilaiBaru;
+            $siswaSasaran->save();
+            $diubah++;
+        }
+    }
+
+    $pesan = $nilaiBaru === null
+        ? 'Jadwal khusus dihapus untuk ' . $sasaran->count() . ' siswa; sekarang mengikuti jadwal global ('
+            . User::labelJadwal(User::hariKerjaGlobal()) . ').'
+        : 'Jadwal ' . User::labelJadwal($nilaiBaru) . ' (' . User::keteranganJadwal($nilaiBaru)
+            . ') disimpan untuk ' . $sasaran->count() . ' siswa: '
+            . $sasaran->take(8)->pluck('name')->implode(', ')
+            . ($sasaran->count() > 8 ? ', dan ' . ($sasaran->count() - 8) . ' lainnya' : '') . '.';
+
+    if ($diubah === 0) {
+        $pesan .= ' Tidak ada perubahan karena jadwalnya memang sudah sama.';
+    }
+
+    if (! empty($tidakDitemukan)) {
+        $pesan .= ' NISN tidak ditemukan: ' . implode(', ', array_slice($tidakDitemukan, 0, 15))
+            . (count($tidakDitemukan) > 15 ? ' ...' : '') . '.';
+    }
+
+    $this->lupakanCacheAbsensi($sasaran->pluck('id')->all());
+
+    return back()->with('success', $pesan);
+}
+
+/**
+ * Bersihkan guard cache sinkronisasi Alpha agar jadwal yang baru langsung
+ * berlaku, tanpa menunggu cache harian kedaluwarsa sendiri.
+ *
+ * @param  array<int>|null  $siswaIds  null = seluruh siswa
+ */
+private function lupakanCacheAbsensi(?array $siswaIds = null): void
+{
+    $tanggal = now()->format('Y-m-d');
+
+    $ids = $siswaIds !== null
+        ? $siswaIds
+        : User::siswa()->withoutTrashed()->pluck('id')->all();
+
+    foreach ($ids as $id) {
+        Cache::forget("sinkron_alpa:{$id}:{$tanggal}");
+    }
 }
 
 /**
  * Admin membuka / menutup absensi tanpa mengikuti jadwal jam.
  *  - mode "semua" : buka/tutup untuk SEMUA siswa (flag global absensi_paksa_buka).
  *  - mode "nisn"  : buka/tutup untuk SATU siswa (dicocokkan berdasarkan NISN).
- *  - aksi "buka"  : absensi terbuka bebas waktu; "tutup" : kembali ikut jadwal.
+ *  - aksi "buka"  : absensi terbuka di luar jadwal; "tutup" : kembali ikut jadwal.
+ *
+ * Pembukaan diberi BATAS WAKTU (default 30 menit) sehingga absensi menutup
+ * sendiri dan admin tidak perlu menekan "Tutup" lagi. Centang "tanpa batas"
+ * untuk memakai perilaku lama.
  */
 public function bukaAbsensi(Request $request)
 {
@@ -1016,30 +1189,58 @@ public function bukaAbsensi(Request $request)
     $kenaMasuk  = $target === 'masuk'  || $target === 'semua';
     $kenaPulang = $target === 'pulang' || $target === 'semua';
 
+    // LAMA PEMBUKAAN. Nilai di luar jangkauan dikembalikan ke bawaan agar aksi
+    // admin tidak pernah gagal hanya karena angka menit yang aneh.
+    $data = $request->validate([
+        'durasi_menit' => ['nullable', 'integer', 'min:1', 'max:' . Pengaturan::PAKSA_MENIT_MAKS],
+        'tanpa_batas'  => ['nullable', 'boolean'],
+    ], [
+        'durasi_menit.integer' => 'Lama absensi dibuka harus berupa angka menit.',
+        'durasi_menit.min'     => 'Lama absensi dibuka minimal 1 menit.',
+        'durasi_menit.max'     => 'Lama absensi dibuka maksimal ' . Pengaturan::PAKSA_MENIT_MAKS . ' menit (24 jam).',
+    ]);
+
+    $tanpaBatas = $request->boolean('tanpa_batas');
+    $durasi     = (int) ($data['durasi_menit'] ?? Pengaturan::PAKSA_MENIT_DEFAULT);
+
+    if ($durasi < 1 || $durasi > Pengaturan::PAKSA_MENIT_MAKS) {
+        $durasi = Pengaturan::PAKSA_MENIT_DEFAULT;
+    }
+
+    // null = tanpa batas waktu. Aksi "tutup" tidak pernah memasang tenggat.
+    $sampai = ($buka && ! $tanpaBatas) ? now()->addMinutes($durasi) : null;
+
+    $ket = $sampai
+        ? "selama {$durasi} menit (otomatis tertutup pukul {$sampai->format('H:i')} WITA)"
+        : 'tanpa batas waktu (perlu ditutup manual)';
+
     if ($mode === 'semua') {
+        // aturPaksa() sekaligus menyimpan / membersihkan batas waktunya.
         if ($kenaMasuk) {
-            Pengaturan::simpan('absensi_paksa_buka_masuk', $buka ? '1' : '0');
+            Pengaturan::aturPaksa('masuk', $buka, $sampai);
         }
         if ($kenaPulang) {
-            Pengaturan::simpan('absensi_paksa_buka_pulang', $buka ? '1' : '0');
+            Pengaturan::aturPaksa('pulang', $buka, $sampai);
         }
 
         // Flag lama (membuka kedua fase sekaligus) tidak dipakai lagi; matikan
         // agar tidak "mengunci" kedua fase tetap terbuka.
         Pengaturan::simpan('absensi_paksa_buka', '0');
 
-        // Saat menutup SEMUA, kembalikan juga pembukaan per-siswa ke jadwal.
+        // Saat menutup SEMUA, kembalikan juga pembukaan per-siswa ke jadwal
+        // sekaligus menghapus tenggatnya supaya tidak tertinggal.
         if (! $buka && $target === 'semua') {
             // SENGAJA tetap dibatasi periode berjalan: ini operasi tulis massal.
             User::siswaBerjalan()->update([
                 'absensi_dibuka'        => false,
                 'absensi_dibuka_masuk'  => false,
                 'absensi_dibuka_pulang' => false,
+                'absensi_dibuka_sampai' => null,
             ]);
         }
 
         return back()->with('success', $buka
-            ? "{$labelTarget} DIBUKA untuk semua siswa (bebas waktu). Fase lain tetap mengikuti jadwal."
+            ? "{$labelTarget} DIBUKA untuk semua siswa {$ket}. Fase lain tetap mengikuti jadwal."
             : "{$labelTarget} ditutup untuk semua siswa (kembali mengikuti jadwal jam).");
     }
 
@@ -1062,10 +1263,19 @@ public function bukaAbsensi(Request $request)
     }
     // Flag lama tidak dipakai lagi untuk buka per-siswa; pastikan mati.
     $siswa->absensi_dibuka = false;
+
+    // Tenggat dipakai bersama oleh seluruh fase milik siswa ini. Saat menutup,
+    // tenggat baru dihapus kalau memang tidak ada fase lain yang masih terbuka.
+    if ($buka) {
+        $siswa->absensi_dibuka_sampai = $sampai;
+    } elseif (! $siswa->absensi_dibuka_masuk && ! $siswa->absensi_dibuka_pulang) {
+        $siswa->absensi_dibuka_sampai = null;
+    }
+
     $siswa->save();
 
     return back()->with('success', $buka
-        ? "{$labelTarget} untuk {$siswa->name} (NISN {$nisn}) DIBUKA (bebas waktu)."
+        ? "{$labelTarget} untuk {$siswa->name} (NISN {$nisn}) DIBUKA {$ket}."
         : "{$labelTarget} untuk {$siswa->name} (NISN {$nisn}) ditutup (kembali ikut jadwal).");
 }
 
@@ -1624,7 +1834,7 @@ public function aturRekapAbsensi(Request $request)
         'jumlah_alpha'    => ['required', 'integer', 'min:0', 'max:400'],
         'status_sisa'     => ['nullable', Rule::in(['', 'Hadir', 'Izin', 'Sakit', 'Alpha'])],
         // '' = biarkan jadwal apa adanya, selain itu ubah jadwal hari kerja.
-        'hari_kerja'      => ['nullable', Rule::in(['', User::HARI_KERJA_SENIN_JUMAT, User::HARI_KERJA_SENIN_SABTU])],
+        'hari_kerja'      => ['nullable', Rule::in(array_merge([''], User::daftarHariKerja()))],
         'reset_total'     => ['nullable', 'boolean'],
         // Hanya berlaku bila rentang = 1 hari: paksa tanggal itu walau bukan
         // hari kerja (mis. Sabtu/Minggu yang absensinya dibuka admin).

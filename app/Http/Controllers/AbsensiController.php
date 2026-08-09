@@ -78,16 +78,36 @@ class AbsensiController extends Controller
         // fase lainnya tetap mengikuti jadwal jam.
         // Kompatibilitas mundur: flag lama absensi_paksa_buka / users.absensi_dibuka
         // dianggap membuka KEDUA fase (masuk & pulang).
+        //
+        // BATAS WAKTU: pembukaan manual boleh diberi tenggat, baik per-siswa
+        // (kolom users.absensi_dibuka_sampai) maupun global (kunci pengaturan
+        // absensi_paksa_buka_<fase>_sampai). Begitu tenggat lewat, flag yang
+        // bersangkutan diabaikan sehingga absensi menutup sendiri tanpa perlu
+        // menekan tombol "Tutup Absensi". Nilai kosong/null = tanpa batas waktu.
+        $bukaSiswaAktif = $siswa ? ! $siswa->bukaManualKedaluwarsa() : false;
+        $bukaSampai     = ($siswa && $bukaSiswaAktif) ? $siswa->absensi_dibuka_sampai : null;
+
         $legacyGlobal = Pengaturan::ambil('absensi_paksa_buka', '0') === '1';
-        $legacySiswa  = $siswa ? (bool) $siswa->absensi_dibuka : false;
+        $legacySiswa  = $bukaSiswaAktif && (bool) $siswa->absensi_dibuka;
+
+        // Tenggat buka-paksa global per fase (null = tanpa batas waktu).
+        $paksaMasukAktif  = Pengaturan::paksaBukaAktif('masuk');
+        $paksaPulangAktif = Pengaturan::paksaBukaAktif('pulang');
 
         $masukPaksa = $legacyGlobal || $legacySiswa
-            || Pengaturan::ambil('absensi_paksa_buka_masuk', '0') === '1'
-            || ($siswa ? (bool) $siswa->absensi_dibuka_masuk : false);
+            || $paksaMasukAktif
+            || ($bukaSiswaAktif && (bool) $siswa->absensi_dibuka_masuk);
 
         $pulangPaksa = $legacyGlobal || $legacySiswa
-            || Pengaturan::ambil('absensi_paksa_buka_pulang', '0') === '1'
-            || ($siswa ? (bool) $siswa->absensi_dibuka_pulang : false);
+            || $paksaPulangAktif
+            || ($bukaSiswaAktif && (bool) $siswa->absensi_dibuka_pulang);
+
+        // Tenggat terdekat yang sedang menahan absensi tetap terbuka. Dipakai
+        // hanya untuk info di layar siswa; null berarti tanpa batas waktu.
+        $paksaSampai = collect([
+            $paksaMasukAktif ? Pengaturan::tenggatPaksa('masuk') : null,
+            $paksaPulangAktif ? Pengaturan::tenggatPaksa('pulang') : null,
+        ])->filter()->min();
 
         $masukTerbuka  = $masukJadwal  || $masukPaksa;
         $pulangTerbuka = $pulangJadwal || $pulangPaksa;
@@ -113,6 +133,8 @@ class AbsensiController extends Controller
             'masuk_terbuka'  => $masukTerbuka,
             'pulang_terbuka' => $pulangTerbuka,
             'durasi'       => $durasi,
+            'buka_sampai'  => $bukaSampai,
+            'paksa_sampai' => $paksaSampai,
             'jam_masuk'    => $masukStart->format('H:i'),
             'jam_pulang'   => $pulangStart->format('H:i'),
             'masuk_start'  => $masukStart,
@@ -574,23 +596,52 @@ class AbsensiController extends Controller
         }
 
         // MENYETUJUI: tanda tangan digital guru WAJIB ada.
-        // Kanvas di halaman guru mengirim gambar berupa data URL PNG base64.
-        $validated = $request->validate([
-            'ttd_guru' => ['required', 'string', function ($atribut, $nilai, $gagal) {
-                if (! TandaTangan::valid($nilai)) {
-                    $gagal('Tanda tangan digital tidak terbaca. Mohon tanda tangani ulang pada kotak yang tersedia.');
-                }
-            }],
-        ], [
-            'ttd_guru.required' => 'Tanda tangan digital wajib dibubuhkan sebelum absensi divalidasi.',
-        ]);
+        //
+        // Guru punya DUA cara membubuhkan tanda tangan, dipilih di halaman absensi:
+        //   sumber_ttd = 'tersimpan' -> pakai berkas yang sudah diunggah lewat tombol
+        //                               "Tanda Tangan Saya" (kolom users.ttd_tersimpan)
+        //   sumber_ttd = 'canvas'    -> menggores di kanvas, dikirim sebagai data URL PNG
+        //
+        // Nilai selain 'tersimpan' selalu dianggap 'canvas' supaya perilaku lama
+        // tetap jalan walaupun form tidak mengirim field ini sama sekali.
+        $sumberTtd = $request->input('sumber_ttd') === 'tersimpan' ? 'tersimpan' : 'canvas';
+        $guru      = Auth::user();
 
-        $path = TandaTangan::simpan($validated['ttd_guru'], 'ttd/absensi/guru');
+        if ($sumberTtd === 'tersimpan') {
+            if (! $guru || ! $guru->punyaTtdTersimpan()) {
+                return back()->withErrors([
+                    'ttd_guru' => 'Anda belum punya tanda tangan tersimpan. Unggah dulu lewat tombol "Tanda Tangan Saya" di halaman ini, atau tanda tangani langsung di kanvas.',
+                ]);
+            }
 
-        if (! $path) {
-            return back()
-                ->with('error', 'Tanda tangan digital gagal disimpan. Mohon ulangi tanda tangan lalu kirim kembali.')
-                ->withErrors(['ttd_guru' => 'Tanda tangan digital gagal disimpan.']);
+            // Berkasnya DISALIN, bukan ditautkan. Jadi kalau nanti guru mengganti
+            // tanda tangan tersimpannya, absensi yang sudah tervalidasi tidak
+            // ikut berubah dan arsip cetakannya tetap utuh.
+            $path = TandaTangan::salin($guru->ttd_tersimpan, 'ttd/absensi/guru');
+
+            if (! $path) {
+                return back()
+                    ->with('error', 'Tanda tangan tersimpan gagal dipakai. Coba unggah ulang tanda tangan Anda, atau tanda tangani di kanvas.')
+                    ->withErrors(['ttd_guru' => 'Tanda tangan tersimpan tidak bisa dibaca.']);
+            }
+        } else {
+            $validated = $request->validate([
+                'ttd_guru' => ['required', 'string', function ($atribut, $nilai, $gagal) {
+                    if (! TandaTangan::valid($nilai)) {
+                        $gagal('Tanda tangan digital tidak terbaca. Mohon tanda tangani ulang pada kotak yang tersedia.');
+                    }
+                }],
+            ], [
+                'ttd_guru.required' => 'Tanda tangan digital wajib dibubuhkan sebelum absensi divalidasi. Atau pilih "Pakai tanda tangan tersimpan".',
+            ]);
+
+            $path = TandaTangan::simpan($validated['ttd_guru'], 'ttd/absensi/guru');
+
+            if (! $path) {
+                return back()
+                    ->with('error', 'Tanda tangan digital gagal disimpan. Mohon ulangi tanda tangan lalu kirim kembali.')
+                    ->withErrors(['ttd_guru' => 'Tanda tangan digital gagal disimpan.']);
+            }
         }
 
         // Ganti paraf lama bila absensi ini pernah divalidasi lalu diajukan ulang.
@@ -605,7 +656,9 @@ class AbsensiController extends Controller
             'ttd_guru_signed_at'   => now(),
         ]);
 
-        return back()->with('success', 'Absensi berhasil divalidasi dan ditandatangani secara digital.');
+        return back()->with('success', $sumberTtd === 'tersimpan'
+            ? 'Absensi berhasil divalidasi memakai tanda tangan tersimpan Anda.'
+            : 'Absensi berhasil divalidasi dan ditandatangani secara digital.');
     }
 
     /**

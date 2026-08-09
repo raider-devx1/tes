@@ -22,40 +22,109 @@
             </div>
             <div class="flex flex-wrap gap-2">
                 {{-- BUKA / TUTUP ABSENSI (semua siswa / per NISN) --}}
-                <div x-data="{ open:false, mode:'semua', nisn:'', list: @js($siswaList->map(fn($s)=>['nisn'=>(string)$s->nisn,'name'=>$s->name])->values()), get cocok(){ const n=(this.nisn||'').trim(); return n ? (this.list.find(x=>x.nisn===n)||null) : null; } }" class="inline-block">
+                <div x-data="{
+                        open:false, mode:'semua', nisn:'',
+                        durasi:30, tanpaBatas:false,
+                        list: @js($siswaList->map(fn($s)=>['nisn'=>(string)$s->nisn,'name'=>$s->name])->values()),
+                        get cocok(){ const n=(this.nisn||'').trim(); return n ? (this.list.find(x=>x.nisn===n)||null) : null; },
+                        get menit(){ const n=parseInt(this.durasi,10); return Number.isFinite(n) ? n : 0; },
+                        get durasiValid(){ return this.tanpaBatas || (this.menit >= 1 && this.menit <= 1440); },
+                        get selesaiPukul(){
+                            if(this.tanpaBatas || this.menit < 1 || this.menit > 1440) return '';
+                            const t = new Date(Date.now() + this.menit*60000);
+                            return ('0'+t.getHours()).slice(-2) + ':' + ('0'+t.getMinutes()).slice(-2);
+                        }
+                    }" x-effect="document.body.style.overflow = open ? 'hidden' : ''" class="inline-block">
                     <button type="button" @click="open=true"
                             class="inline-flex items-center justify-center gap-1.5 rounded-lg {{ $paksaBuka ? 'bg-[#05b169] text-white hover:bg-[#049a5b]' : 'border border-[#05b169] text-[#05b169] hover:bg-[#05b169]/5' }} px-4 py-2.5 text-sm font-semibold">
                         <span class="inline-block h-2 w-2 rounded-full {{ $paksaBuka ? 'bg-white' : 'bg-[#05b169]' }}"></span>
                         {{ $paksaBuka ? 'Absensi Dibuka' : 'Buka / Tutup Absensi' }}
                     </button>
-                    <div x-show="open" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4" @keydown.escape.window="open=false">
+
+                    {{-- Diteleport ke <body> supaya tidak terjepit overflow tabel di halaman ini --}}
+                    <template x-teleport="body">
+                    <div x-show="open" x-cloak
+                         x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+                         x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
+                         class="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4" @keydown.escape.window="open=false">
                         <div class="absolute inset-0 bg-black/50" @click="open=false"></div>
-                        <div class="relative w-full max-w-md rounded-2xl bg-white shadow-xl">
-                            <div class="flex items-center justify-between border-b border-gray-100 px-5 py-4">
-                                <h3 class="text-base font-bold text-gray-800">Buka / Tutup Absensi</h3>
-                                <button type="button" @click="open=false" class="text-2xl leading-none text-gray-400 hover:text-black">&times;</button>
+
+                        <div x-show="open"
+                             x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-full sm:translate-y-0 sm:scale-95" x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
+                             x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100" x-transition:leave-end="opacity-0 translate-y-full sm:translate-y-0 sm:scale-95"
+                             class="relative flex max-h-[92vh] w-full flex-col overflow-hidden rounded-t-3xl bg-white shadow-xl sm:max-h-[88vh] sm:max-w-lg sm:rounded-2xl">
+                            {{-- HEADER (diam, tidak ikut digulir) --}}
+                            <div class="flex-none border-b border-[#e6e9ef] px-4 pb-3 pt-3 sm:px-6 sm:pt-5">
+                                <div class="mx-auto mb-3 h-1.5 w-10 rounded-full bg-[#d7dbe3] sm:hidden"></div>
+                                <div class="flex items-start justify-between gap-3">
+                                    <div>
+                                        <h3 class="text-base font-bold text-gray-800">Buka / Tutup Absensi</h3>
+                                        <p class="mt-0.5 text-xs font-medium text-[#5b616e]">Buka absensi di luar jadwal untuk <span class="font-bold text-[#2563EB]">semua siswa</span> atau <span class="font-bold text-[#2563EB]">per NISN</span>.</p>
+                                    </div>
+                                    <button type="button" @click="open=false" aria-label="Tutup"
+                                            class="-mr-1 flex h-8 w-8 flex-none items-center justify-center rounded-lg text-2xl leading-none text-gray-400 hover:bg-gray-100 hover:text-black">&times;</button>
+                                </div>
                             </div>
-                            <div class="px-5 py-4 space-y-4 text-left">
+
+                            {{-- BODY (bisa digulir) --}}
+                            <div class="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain px-4 py-4 text-left sm:px-6">
                                 <div class="flex gap-2">
                                     <button type="button" @click="mode='semua'" :class="mode==='semua' ? 'bg-[#2563EB] text-white' : 'bg-gray-100 text-gray-600'" class="flex-1 rounded-lg px-3 py-2 text-sm font-semibold">Semua Siswa</button>
                                     <button type="button" @click="mode='nisn'" :class="mode==='nisn' ? 'bg-[#2563EB] text-white' : 'bg-gray-100 text-gray-600'" class="flex-1 rounded-lg px-3 py-2 text-sm font-semibold">Per NISN</button>
                                 </div>
 
+                                {{-- ===== LAMA ABSENSI DIBUKA (otomatis tertutup) ===== --}}
+                                <div class="rounded-xl border border-[#05b169]/30 bg-[#05b169]/5 p-3 space-y-2.5">
+                                    <div>
+                                        <p class="text-xs font-bold uppercase tracking-wide text-gray-800">Lama Absensi Dibuka</p>
+                                        <p class="text-[11px] leading-relaxed text-gray-500">Absensi menutup sendiri setelah waktu ini habis, jadi tidak perlu menekan tombol Tutup lagi. Berlaku untuk semua tombol <span class="font-semibold">Buka</span> di bawah.</p>
+                                    </div>
+
+                                    <div class="flex flex-wrap gap-1.5" :class="tanpaBatas ? 'opacity-40 pointer-events-none' : ''">
+                                        <template x-for="m in [15, 30, 60, 120]" :key="m">
+                                            <button type="button" @click="durasi = m"
+                                                    :class="menit === m ? 'bg-[#05b169] text-white border-[#05b169]' : 'bg-white text-gray-600 border-gray-200'"
+                                                    class="rounded-lg border px-3 py-1.5 text-xs font-semibold"
+                                                    x-text="m + ' menit'"></button>
+                                        </template>
+                                    </div>
+
+                                    <div class="flex flex-wrap items-center gap-2" :class="tanpaBatas ? 'opacity-40 pointer-events-none' : ''">
+                                        <input type="number" x-model="durasi" min="1" max="1440" inputmode="numeric"
+                                               class="w-24 rounded-lg border-gray-200 text-sm font-semibold focus:border-[#05b169] focus:ring-[#05b169]">
+                                        <span class="text-xs font-semibold text-gray-500">menit</span>
+                                        <span x-show="selesaiPukul !== ''" x-cloak class="text-xs font-bold text-[#05b169]">&rarr; tertutup pukul <span x-text="selesaiPukul"></span></span>
+                                    </div>
+
+                                    <p x-show="!durasiValid" x-cloak class="text-[11px] font-bold text-[#cf202f]">Isi antara 1 sampai 1440 menit (maksimal 24 jam).</p>
+
+                                    <label class="flex items-start gap-2 text-[11px] font-semibold text-gray-500">
+                                        <input type="checkbox" x-model="tanpaBatas" class="mt-0.5 rounded border-gray-300 text-[#d98200] focus:ring-[#d98200]">
+                                        <span>Tanpa batas waktu &mdash; absensi terus terbuka sampai ditutup manual.</span>
+                                    </label>
+                                </div>
+
                                 <div x-show="mode==='semua'" class="space-y-3">
                                     <p class="text-sm text-gray-600">Buka absensi untuk <span class="font-bold">semua siswa</span> tanpa mengikuti jadwal jam. Tutup untuk mengembalikan semua ke jadwal.</p>
+                                    @php
+                                        $sisaMasuk   = $paksaSisa['masuk'] ?? '';
+                                        $sisaPulang  = $paksaSisa['pulang'] ?? '';
+                                        $labelMasuk  = $paksaMasuk  ? 'DIBUKA (' . ($sisaMasuk  !== '' ? $sisaMasuk  : 'bebas waktu') . ')' : 'Ikut jadwal';
+                                        $labelPulang = $paksaPulang ? 'DIBUKA (' . ($sisaPulang !== '' ? $sisaPulang : 'bebas waktu') . ')' : 'Ikut jadwal';
+                                    @endphp
                                     <div class="rounded-lg bg-gray-50 px-3 py-2 text-xs text-gray-600">
-                                        <span class="font-semibold">Masuk:</span> <span class="{{ $paksaMasuk ? 'font-bold text-[#05b169]' : 'text-gray-500' }}">{{ $paksaMasuk ? 'DIBUKA (bebas waktu)' : 'Ikut jadwal' }}</span>
+                                        <span class="font-semibold">Masuk:</span> <span class="{{ $paksaMasuk ? 'font-bold text-[#05b169]' : 'text-gray-500' }}">{{ $labelMasuk }}</span>
                                         <span class="mx-1 text-gray-300">|</span>
-                                        <span class="font-semibold">Pulang:</span> <span class="{{ $paksaPulang ? 'font-bold text-[#05b169]' : 'text-gray-500' }}">{{ $paksaPulang ? 'DIBUKA (bebas waktu)' : 'Ikut jadwal' }}</span>
+                                        <span class="font-semibold">Pulang:</span> <span class="{{ $paksaPulang ? 'font-bold text-[#05b169]' : 'text-gray-500' }}">{{ $labelPulang }}</span>
                                     </div>
                                     <div class="grid grid-cols-2 gap-2">
-                                        <form method="POST" action="{{ route('admin.monitoring.absensi.buka') }}">@csrf<input type="hidden" name="mode" value="semua"><input type="hidden" name="target" value="masuk"><input type="hidden" name="aksi" value="buka"><button type="submit" class="w-full rounded-lg bg-[#05b169] px-3 py-2 text-xs font-semibold text-white hover:bg-[#049a5b]">Buka Masuk</button></form>
+                                        <form method="POST" action="{{ route('admin.monitoring.absensi.buka') }}">@csrf<input type="hidden" name="mode" value="semua"><input type="hidden" name="target" value="masuk"><input type="hidden" name="aksi" value="buka"><input type="hidden" name="durasi_menit" :value="durasi"><input type="hidden" name="tanpa_batas" :value="tanpaBatas ? 1 : 0"><button type="submit" :disabled="!durasiValid" :class="!durasiValid ? 'opacity-40 cursor-not-allowed' : 'hover:bg-[#049a5b]'" class="w-full rounded-lg bg-[#05b169] px-3 py-2 text-xs font-semibold text-white">Buka Masuk</button></form>
                                         <form method="POST" action="{{ route('admin.monitoring.absensi.buka') }}">@csrf<input type="hidden" name="mode" value="semua"><input type="hidden" name="target" value="masuk"><input type="hidden" name="aksi" value="tutup"><button type="submit" class="w-full rounded-lg border border-[#cf202f] px-3 py-2 text-xs font-semibold text-[#cf202f] hover:bg-[#cf202f]/5">Tutup Masuk</button></form>
-                                        <form method="POST" action="{{ route('admin.monitoring.absensi.buka') }}">@csrf<input type="hidden" name="mode" value="semua"><input type="hidden" name="target" value="pulang"><input type="hidden" name="aksi" value="buka"><button type="submit" class="w-full rounded-lg bg-[#05b169] px-3 py-2 text-xs font-semibold text-white hover:bg-[#049a5b]">Buka Pulang</button></form>
+                                        <form method="POST" action="{{ route('admin.monitoring.absensi.buka') }}">@csrf<input type="hidden" name="mode" value="semua"><input type="hidden" name="target" value="pulang"><input type="hidden" name="aksi" value="buka"><input type="hidden" name="durasi_menit" :value="durasi"><input type="hidden" name="tanpa_batas" :value="tanpaBatas ? 1 : 0"><button type="submit" :disabled="!durasiValid" :class="!durasiValid ? 'opacity-40 cursor-not-allowed' : 'hover:bg-[#049a5b]'" class="w-full rounded-lg bg-[#05b169] px-3 py-2 text-xs font-semibold text-white">Buka Pulang</button></form>
                                         <form method="POST" action="{{ route('admin.monitoring.absensi.buka') }}">@csrf<input type="hidden" name="mode" value="semua"><input type="hidden" name="target" value="pulang"><input type="hidden" name="aksi" value="tutup"><button type="submit" class="w-full rounded-lg border border-[#cf202f] px-3 py-2 text-xs font-semibold text-[#cf202f] hover:bg-[#cf202f]/5">Tutup Pulang</button></form>
                                     </div>
-                                    <div class="flex gap-2">
-                                        <form method="POST" action="{{ route('admin.monitoring.absensi.buka') }}" class="flex-1">@csrf<input type="hidden" name="mode" value="semua"><input type="hidden" name="target" value="semua"><input type="hidden" name="aksi" value="buka"><button type="submit" class="w-full rounded-lg bg-[#05b169] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#049a5b]">Buka Semua</button></form>
+                                    <div class="flex flex-col gap-2 sm:flex-row">
+                                        <form method="POST" action="{{ route('admin.monitoring.absensi.buka') }}" class="flex-1">@csrf<input type="hidden" name="mode" value="semua"><input type="hidden" name="target" value="semua"><input type="hidden" name="aksi" value="buka"><input type="hidden" name="durasi_menit" :value="durasi"><input type="hidden" name="tanpa_batas" :value="tanpaBatas ? 1 : 0"><button type="submit" :disabled="!durasiValid" :class="!durasiValid ? 'opacity-40 cursor-not-allowed' : 'hover:bg-[#049a5b]'" class="w-full rounded-lg bg-[#05b169] px-4 py-2.5 text-sm font-semibold text-white">Buka Semua</button></form>
                                         <form method="POST" action="{{ route('admin.monitoring.absensi.buka') }}" class="flex-1">@csrf<input type="hidden" name="mode" value="semua"><input type="hidden" name="target" value="semua"><input type="hidden" name="aksi" value="tutup"><button type="submit" class="w-full rounded-lg border border-[#cf202f] px-4 py-2.5 text-sm font-semibold text-[#cf202f] hover:bg-[#cf202f]/5">Tutup Semua</button></form>
                                     </div>
                                     <p class="rounded-lg bg-[#d98200]/10 px-3 py-2 text-[11px] leading-relaxed text-[#d98200]">Jika absensi dibuka admin, siswa <span class="font-semibold">tetap bisa absen walau hari Sabtu/Minggu</span> (di luar jadwal hari kerja). Hari libur yang tidak dibuka tetap kosong dan tidak otomatis Alpha.</p>
@@ -69,29 +138,193 @@
                                         <p x-show="nisn.trim()!=='' && !cocok" x-cloak class="mt-1 text-xs font-semibold text-[#cf202f]">NISN tidak ditemukan.</p>
                                     </div>
                                     <div class="grid grid-cols-2 gap-2">
-                                        <form method="POST" action="{{ route('admin.monitoring.absensi.buka') }}">@csrf<input type="hidden" name="mode" value="nisn"><input type="hidden" name="nisn" :value="nisn"><input type="hidden" name="target" value="masuk"><input type="hidden" name="aksi" value="buka"><button type="submit" :disabled="!cocok" :class="!cocok ? 'opacity-40 cursor-not-allowed' : 'hover:bg-[#049a5b]'" class="w-full rounded-lg bg-[#05b169] px-3 py-2 text-xs font-semibold text-white">Buka Masuk</button></form>
+                                        <form method="POST" action="{{ route('admin.monitoring.absensi.buka') }}">@csrf<input type="hidden" name="mode" value="nisn"><input type="hidden" name="nisn" :value="nisn"><input type="hidden" name="target" value="masuk"><input type="hidden" name="aksi" value="buka"><input type="hidden" name="durasi_menit" :value="durasi"><input type="hidden" name="tanpa_batas" :value="tanpaBatas ? 1 : 0"><button type="submit" :disabled="!cocok || !durasiValid" :class="(!cocok || !durasiValid) ? 'opacity-40 cursor-not-allowed' : 'hover:bg-[#049a5b]'" class="w-full rounded-lg bg-[#05b169] px-3 py-2 text-xs font-semibold text-white">Buka Masuk</button></form>
                                         <form method="POST" action="{{ route('admin.monitoring.absensi.buka') }}">@csrf<input type="hidden" name="mode" value="nisn"><input type="hidden" name="nisn" :value="nisn"><input type="hidden" name="target" value="masuk"><input type="hidden" name="aksi" value="tutup"><button type="submit" :disabled="!cocok" :class="!cocok ? 'opacity-40 cursor-not-allowed' : 'hover:bg-[#cf202f]/5'" class="w-full rounded-lg border border-[#cf202f] px-3 py-2 text-xs font-semibold text-[#cf202f]">Tutup Masuk</button></form>
-                                        <form method="POST" action="{{ route('admin.monitoring.absensi.buka') }}">@csrf<input type="hidden" name="mode" value="nisn"><input type="hidden" name="nisn" :value="nisn"><input type="hidden" name="target" value="pulang"><input type="hidden" name="aksi" value="buka"><button type="submit" :disabled="!cocok" :class="!cocok ? 'opacity-40 cursor-not-allowed' : 'hover:bg-[#049a5b]'" class="w-full rounded-lg bg-[#05b169] px-3 py-2 text-xs font-semibold text-white">Buka Pulang</button></form>
+                                        <form method="POST" action="{{ route('admin.monitoring.absensi.buka') }}">@csrf<input type="hidden" name="mode" value="nisn"><input type="hidden" name="nisn" :value="nisn"><input type="hidden" name="target" value="pulang"><input type="hidden" name="aksi" value="buka"><input type="hidden" name="durasi_menit" :value="durasi"><input type="hidden" name="tanpa_batas" :value="tanpaBatas ? 1 : 0"><button type="submit" :disabled="!cocok || !durasiValid" :class="(!cocok || !durasiValid) ? 'opacity-40 cursor-not-allowed' : 'hover:bg-[#049a5b]'" class="w-full rounded-lg bg-[#05b169] px-3 py-2 text-xs font-semibold text-white">Buka Pulang</button></form>
                                         <form method="POST" action="{{ route('admin.monitoring.absensi.buka') }}">@csrf<input type="hidden" name="mode" value="nisn"><input type="hidden" name="nisn" :value="nisn"><input type="hidden" name="target" value="pulang"><input type="hidden" name="aksi" value="tutup"><button type="submit" :disabled="!cocok" :class="!cocok ? 'opacity-40 cursor-not-allowed' : 'hover:bg-[#cf202f]/5'" class="w-full rounded-lg border border-[#cf202f] px-3 py-2 text-xs font-semibold text-[#cf202f]">Tutup Pulang</button></form>
                                     </div>
-                                    <div class="flex gap-2">
-                                        <form method="POST" action="{{ route('admin.monitoring.absensi.buka') }}" class="flex-1">@csrf<input type="hidden" name="mode" value="nisn"><input type="hidden" name="nisn" :value="nisn"><input type="hidden" name="target" value="semua"><input type="hidden" name="aksi" value="buka"><button type="submit" :disabled="!cocok" :class="!cocok ? 'opacity-40 cursor-not-allowed' : 'hover:bg-[#049a5b]'" class="w-full rounded-lg bg-[#05b169] px-4 py-2.5 text-sm font-semibold text-white">Buka Semua (Siswa Ini)</button></form>
+                                    <div class="flex flex-col gap-2 sm:flex-row">
+                                        <form method="POST" action="{{ route('admin.monitoring.absensi.buka') }}" class="flex-1">@csrf<input type="hidden" name="mode" value="nisn"><input type="hidden" name="nisn" :value="nisn"><input type="hidden" name="target" value="semua"><input type="hidden" name="aksi" value="buka"><input type="hidden" name="durasi_menit" :value="durasi"><input type="hidden" name="tanpa_batas" :value="tanpaBatas ? 1 : 0"><button type="submit" :disabled="!cocok || !durasiValid" :class="(!cocok || !durasiValid) ? 'opacity-40 cursor-not-allowed' : 'hover:bg-[#049a5b]'" class="w-full rounded-lg bg-[#05b169] px-4 py-2.5 text-sm font-semibold text-white">Buka Semua (Siswa Ini)</button></form>
                                         <form method="POST" action="{{ route('admin.monitoring.absensi.buka') }}" class="flex-1">@csrf<input type="hidden" name="mode" value="nisn"><input type="hidden" name="nisn" :value="nisn"><input type="hidden" name="target" value="semua"><input type="hidden" name="aksi" value="tutup"><button type="submit" :disabled="!cocok" :class="!cocok ? 'opacity-40 cursor-not-allowed' : 'hover:bg-[#cf202f]/5'" class="w-full rounded-lg border border-[#cf202f] px-4 py-2.5 text-sm font-semibold text-[#cf202f]">Tutup Semua (Siswa Ini)</button></form>
                                     </div>
                                     <p class="rounded-lg bg-[#d98200]/10 px-3 py-2 text-[11px] leading-relaxed text-[#d98200]">Jika absensi siswa ini dibuka admin, siswa <span class="font-semibold">tetap bisa absen walau hari Sabtu/Minggu</span> (di luar jadwal hari kerjanya). Hari libur yang tidak dibuka tetap kosong dan tidak otomatis Alpha.</p>
                                     @if(isset($dibukaList) && count($dibukaList))
-                                        <div class="rounded-lg bg-[#05b169]/5 px-3 py-2 text-xs text-[#05b169]">Dibuka per-siswa: @foreach($dibukaList as $d)@php $mk=$d->absensi_dibuka_masuk||$d->absensi_dibuka; $pl=$d->absensi_dibuka_pulang||$d->absensi_dibuka; $fx=$mk&&$pl?'Masuk+Pulang':($mk?'Masuk':'Pulang'); @endphp<span class="font-semibold">{{ $d->name }} ({{ $d->nisn }}) [{{ $fx }}]</span>@if(!$loop->last), @endif @endforeach</div>
+                                        <div class="rounded-lg border border-[#05b169]/25 bg-white px-3 py-2">
+                                            <p class="text-xs font-bold uppercase tracking-wide text-[#05b169]">Sedang Dibuka Per-Siswa ({{ count($dibukaList) }})</p>
+                                            <ul class="mt-1.5 space-y-1 text-xs text-gray-600">
+                                                @foreach($dibukaList as $d)
+                                                    @php
+                                                        $mk = $d->absensi_dibuka_masuk  || $d->absensi_dibuka;
+                                                        $pl = $d->absensi_dibuka_pulang || $d->absensi_dibuka;
+                                                        $fx = $mk && $pl ? 'Masuk+Pulang' : ($mk ? 'Masuk' : 'Pulang');
+                                                    @endphp
+                                                    <li class="flex items-center justify-between gap-2">
+                                                        <span><span class="font-semibold text-gray-800">{{ $d->name }}</span> <span class="text-gray-500">({{ $d->nisn }})</span> <span class="text-[10px] font-bold uppercase text-[#2563EB]">{{ $fx }}</span></span>
+                                                        <span class="flex-none rounded-md bg-[#05b169]/10 px-2 py-0.5 font-bold text-[#05b169]">{{ $d->labelSisaBuka() }}</span>
+                                                    </li>
+                                                @endforeach
+                                            </ul>
+                                        </div>
                                     @endif
                                 </div>
                             </div>
+
+                            {{-- FOOTER (diam, aman dari area gestur HP) --}}
+                            <div class="flex-none border-t border-[#e6e9ef] bg-white px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:px-6 sm:pb-3">
+                                <button type="button" @click="open=false"
+                                        class="w-full rounded-lg border border-[#e6e9ef] px-4 py-3 text-sm font-semibold text-[#5b616e] hover:bg-gray-50 sm:w-auto sm:py-2">Tutup Jendela</button>
+                            </div>
                         </div>
                     </div>
+                    </template>
                 </div>
                 <button type="button" @click="pengaturanOpen=true"
                         class="inline-flex items-center justify-center gap-1.5 rounded-lg border border-[#2563EB] px-4 py-2.5 text-sm font-semibold text-[#2563EB] hover:bg-blue-50">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                     Pengaturan Absensi
                 </button>
+
+                {{-- ===== TOMBOL + MODAL: JADWAL ABSENSI (SELURUH SISWA / PER NISN) ===== --}}
+                <div x-data="jadwalHariKerja(@js($siswaJadwal), @js($pengaturanAbsensi['hari_kerja'] ?? 'senin_jumat'), @js($pengaturanAbsensi['hari_kerja_label'] ?? 'Senin - Jumat'))"
+                     x-effect="document.body.style.overflow = open ? 'hidden' : ''" class="inline-block">
+                    <button type="button" @click="bukaModal()"
+                            class="inline-flex items-center justify-center gap-1.5 rounded-lg border border-[#d98200] px-4 py-2.5 text-sm font-semibold text-[#d98200] hover:bg-[#fff8e6]">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                        Jadwal Absensi
+                    </button>
+
+                    <template x-teleport="body">
+                        <div x-show="open" x-cloak class="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4" @keydown.escape.window="open=false">
+                            <div class="absolute inset-0 bg-black/50" @click="open=false"></div>
+
+                            <div class="relative flex max-h-[92vh] w-full flex-col overflow-hidden rounded-t-3xl bg-white shadow-xl sm:max-h-[88vh] sm:max-w-lg sm:rounded-2xl">
+                                {{-- HEADER --}}
+                                <div class="flex-none border-b border-[#e6e9ef] px-4 pb-3 pt-3 sm:px-6 sm:pt-5">
+                                    <div class="mx-auto mb-3 h-1.5 w-10 rounded-full bg-[#d7dbe3] sm:hidden"></div>
+                                    <div class="flex items-start justify-between gap-3">
+                                        <div>
+                                            <h3 class="text-base font-bold text-gray-800">Jadwal Absensi</h3>
+                                            <p class="mt-0.5 text-xs font-medium text-[#5b616e]">Atur hari kerja absensi untuk <span class="font-bold text-[#2563EB]">seluruh siswa</span> atau <span class="font-bold text-[#2563EB]">beberapa NISN sekaligus</span>.</p>
+                                        </div>
+                                        <button type="button" @click="open=false" aria-label="Tutup"
+                                                class="-mr-1 flex h-8 w-8 flex-none items-center justify-center rounded-lg text-2xl leading-none text-gray-400 hover:bg-gray-100 hover:text-black">&times;</button>
+                                    </div>
+                                </div>
+
+                                <form method="POST" action="{{ route('admin.monitoring.absensi.jadwal') }}"
+                                      class="flex min-h-0 flex-1 flex-col" @submit="kirim($event)">
+                                    @csrf
+                                    <input type="hidden" name="mode" :value="mode">
+
+                                    {{-- BODY (bisa digulir) --}}
+                                    <div class="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain px-4 py-4 text-left sm:px-6">
+                                        {{-- Jadwal global yang berlaku sekarang --}}
+                                        <div class="rounded-xl border border-blue-100 bg-blue-50/60 px-3 py-2.5 text-xs text-gray-600">
+                                            Jadwal global sekarang:
+                                            <span class="font-bold text-gray-800" x-text="labelGlobal"></span>.
+                                            <template x-if="jumlahKhusus > 0">
+                                                <span><span class="font-bold text-[#d98200]" x-text="jumlahKhusus + ' siswa'"></span> memakai jadwal khusus sendiri.</span>
+                                            </template>
+                                        </div>
+
+                                        {{-- PILIH LINGKUP: seluruh siswa atau per NISN --}}
+                                        <div>
+                                            <label class="mb-1.5 block text-xs font-bold uppercase tracking-wide text-black">Berlaku Untuk</label>
+                                            <div class="grid grid-cols-2 gap-2">
+                                                <button type="button" @click="pilihMode('semua')"
+                                                        :class="mode==='semua' ? 'border-[#2563EB] bg-[#2563EB] text-white' : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'"
+                                                        class="rounded-xl border-2 px-3 py-2.5 text-sm font-bold">Seluruh Siswa</button>
+                                                <button type="button" @click="pilihMode('nisn')"
+                                                        :class="mode==='nisn' ? 'border-[#2563EB] bg-[#2563EB] text-white' : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'"
+                                                        class="rounded-xl border-2 px-3 py-2.5 text-sm font-bold">Per NISN</button>
+                                            </div>
+                                        </div>
+
+                                        {{-- DAFTAR NISN (hanya mode per NISN) --}}
+                                        <div x-show="mode==='nisn'" x-cloak>
+                                            <label class="mb-1 block text-xs font-bold uppercase tracking-wide text-black">NISN Siswa</label>
+                                            <textarea name="nisn" x-model="nisn" rows="3" :disabled="mode!=='nisn'"
+                                                      placeholder="Boleh banyak sekaligus, mis. 0012345678, 0012345679, 0012345680"
+                                                      class="w-full rounded-xl border-2 border-[#2563EB]/25 bg-white px-3 py-2.5 text-sm font-medium text-black focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/30"></textarea>
+                                            <p class="mt-1 text-[11px] text-gray-500">Pisahkan dengan koma, titik koma, spasi, atau baris baru (bisa langsung ditempel dari Excel). Maksimal 300 NISN.</p>
+
+                                            {{-- Ringkasan hasil pencocokan NISN --}}
+                                            <div x-show="daftarNisn.length > 0" x-cloak class="mt-2 space-y-1.5">
+                                                <div x-show="cocok.length > 0" class="rounded-lg bg-[#05b169]/10 px-3 py-2 text-[11px] text-[#05b169]">
+                                                    <span class="font-bold" x-text="cocok.length + ' NISN ditemukan'"></span>:
+                                                    <span x-text="cocok.slice(0, 10).map(s => s.name).join(', ')"></span><span x-show="cocok.length > 10" x-text="' dan ' + (cocok.length - 10) + ' lainnya'"></span>
+                                                </div>
+                                                <div x-show="tidakCocok.length > 0" class="rounded-lg bg-[#fdf2f3] px-3 py-2 text-[11px] text-[#8f1520]">
+                                                    <span class="font-bold" x-text="tidakCocok.length + ' NISN tidak ditemukan'"></span>:
+                                                    <span x-text="tidakCocok.slice(0, 10).join(', ')"></span><span x-show="tidakCocok.length > 10" x-text="' ...'"></span>
+                                                    <span class="block">NISN ini akan dilewati.</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {{-- PILIH JADWAL HARI KERJA --}}
+                                        <div>
+                                            <label class="mb-1.5 block text-xs font-bold uppercase tracking-wide text-black">Jadwal Hari Kerja</label>
+                                            <div class="space-y-2">
+                                                <template x-for="opsi in opsiJadwal" :key="opsi.nilai">
+                                                    <label class="flex cursor-pointer items-start gap-2.5 rounded-xl border-2 px-3 py-2.5"
+                                                           :class="pilihan === opsi.nilai ? 'border-[#2563EB] bg-[#2563EB]/5' : 'border-gray-200 bg-white hover:bg-gray-50'">
+                                                        <input type="radio" name="hari_kerja" :value="opsi.nilai" x-model="pilihan"
+                                                               class="mt-0.5 border-gray-300 text-[#2563EB] focus:ring-[#2563EB]">
+                                                        <span class="min-w-0">
+                                                            <span class="block text-sm font-bold text-gray-800" x-text="opsi.label"></span>
+                                                            <span class="block text-[11px] text-gray-500" x-text="opsi.ket"></span>
+                                                        </span>
+                                                    </label>
+                                                </template>
+                                            </div>
+                                        </div>
+
+                                        {{-- Samakan semua siswa (hanya mode seluruh siswa) --}}
+                                        <label x-show="mode==='semua'" x-cloak
+                                               class="flex cursor-pointer items-start gap-2 rounded-xl bg-[#fff8e6] px-3 py-2.5 text-[11px] font-medium text-[#8a6100]">
+                                            <input type="checkbox" name="hapus_khusus" value="1" x-model="hapusKhusus" :disabled="mode!=='semua'"
+                                                   class="mt-0.5 rounded border-[#f5b301] text-[#d98200] focus:ring-[#d98200]">
+                                            <span>Samakan semua siswa: hapus juga jadwal khusus per siswa (<span class="font-bold" x-text="jumlahKhusus"></span> siswa) supaya semuanya memakai jadwal di atas.</span>
+                                        </label>
+
+                                        {{-- Daftar siswa yang memakai jadwal khusus --}}
+                                        @if($jadwalKhususList->count() > 0)
+                                            <details class="rounded-xl border border-gray-200 bg-white px-3 py-2.5">
+                                                <summary class="cursor-pointer text-xs font-bold text-gray-700">Lihat {{ $jadwalKhususList->count() }} siswa dengan jadwal khusus</summary>
+                                                <ul class="mt-2 max-h-40 space-y-1 overflow-y-auto text-[11px] text-gray-600">
+                                                    @foreach($jadwalKhususList as $jk)
+                                                        <li class="flex items-center justify-between gap-2 border-b border-gray-100 pb-1 last:border-0">
+                                                            <span class="min-w-0 truncate"><span class="font-semibold text-gray-800">{{ $jk['name'] }}</span> <span class="text-gray-400">({{ $jk['nisn'] }})</span></span>
+                                                            <span class="flex-none font-bold text-[#d98200]">{{ $jk['label'] }}</span>
+                                                        </li>
+                                                    @endforeach
+                                                </ul>
+                                            </details>
+                                        @endif
+
+                                        <p class="rounded-xl bg-gray-50 px-3 py-2.5 text-[11px] text-gray-500">
+                                            Hari yang bukan hari kerja dilewati: tidak dibuatkan baris absensi dan <span class="font-semibold">tidak ditandai Alpha otomatis</span>.
+                                            <span x-show="mode==='nisn'" x-cloak>Jadwal per NISN menimpa jadwal global untuk siswa tersebut.</span>
+                                        </p>
+                                    </div>
+
+                                    {{-- FOOTER (tetap terlihat) --}}
+                                    <div class="flex-none border-t border-[#e6e9ef] bg-white px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:px-6 sm:pb-3">
+                                        <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                                            <button type="button" @click="open=false"
+                                                    class="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm font-bold text-gray-600 hover:bg-gray-50 sm:w-auto sm:py-2">Batal</button>
+                                            <button type="submit" :disabled="!bolehKirim"
+                                                    :class="!bolehKirim ? 'cursor-not-allowed opacity-40' : 'hover:bg-blue-700'"
+                                                    class="w-full rounded-lg bg-[#2563EB] px-4 py-3 text-sm font-bold text-white sm:w-auto sm:py-2">Simpan Jadwal</button>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+
                 <button type="button" @click="cetakOpen=true"
                         class="inline-flex items-center justify-center gap-1.5 rounded-lg bg-[#cf202f] px-4 py-2.5 text-sm font-semibold text-white hover:opacity-90">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
@@ -290,6 +523,7 @@
                                             <option value="">Ikut jadwal yang berlaku sekarang (<span x-text="labelJadwalAktif"></span>)</option>
                                             <option value="senin_jumat">Senin - Jumat (Sabtu &amp; Minggu dilewati)</option>
                                             <option value="senin_sabtu">Senin - Sabtu (hanya Minggu dilewati)</option>
+                                            <option value="senin_minggu">Senin - Minggu (tanpa hari libur)</option>
                                         </select>
                                         <p class="mt-1 text-xs font-medium text-[#5b616e]">
                                             <span x-show="mode==='nisn'">Jadwal ini disimpan khusus untuk <span class="font-bold">setiap siswa yang dipilih</span> — mis. siswa yang tetap masuk sampai Sabtu.</span>
@@ -775,25 +1009,36 @@
 
         {{-- STATUS BUKA-PAKSA ABSENSI --}}
         @if($paksaMasuk || $paksaPulang)
+            @php
+                $bannerSisa = collect([$paksaSisa['masuk'] ?? '', $paksaSisa['pulang'] ?? ''])
+                    ->filter(fn ($s) => $s !== '' && $s !== 'tanpa batas waktu')
+                    ->unique()
+                    ->implode(' / ');
+            @endphp
             <div class="flex items-start gap-2 rounded-xl border border-[#05b169]/40 bg-[#05b169]/5 px-4 py-3 text-sm font-medium text-[#05b169]">
                 <span class="mt-1 inline-block h-2 w-2 flex-shrink-0 rounded-full bg-[#05b169]"></span>
                 <span>
                     @if($paksaMasuk && $paksaPulang)
                         Absensi <span class="font-bold">MASUK &amp; PULANG DIBUKA untuk semua siswa</span> tanpa mengikuti jadwal jam.
                     @elseif($paksaMasuk)
-                        Absensi <span class="font-bold">MASUK DIBUKA untuk semua siswa</span> (bebas waktu). Absen pulang tetap mengikuti jadwal jam.
+                        Absensi <span class="font-bold">MASUK DIBUKA untuk semua siswa</span>. Absen pulang tetap mengikuti jadwal jam.
                     @else
-                        Absensi <span class="font-bold">PULANG DIBUKA untuk semua siswa</span> (bebas waktu). Absen masuk tetap mengikuti jadwal jam.
+                        Absensi <span class="font-bold">PULANG DIBUKA untuk semua siswa</span>. Absen masuk tetap mengikuti jadwal jam.
+                    @endif
+                    @if($bannerSisa !== '')
+                        Menutup sendiri <span class="font-bold">{{ $bannerSisa }}</span>.
+                    @else
+                        Tanpa batas waktu, perlu ditutup manual.
                     @endif
                     Buka menu <span class="font-bold">Buka / Tutup Absensi</span> untuk mengubah.
                 </span>
             </div>
         @elseif(isset($dibukaList) && count($dibukaList))
             <div class="rounded-xl border border-[#05b169]/40 bg-[#05b169]/5 px-4 py-3 text-sm font-medium text-[#05b169]">
-                <span class="font-bold">Absensi dibuka (bebas waktu)</span> untuk {{ count($dibukaList) }} siswa berikut:
+                <span class="font-bold">Absensi dibuka manual</span> untuk {{ count($dibukaList) }} siswa berikut:
                 <span class="mt-1.5 flex flex-wrap gap-1.5">
                     @foreach($dibukaList as $d)
-                        <span class="inline-block rounded-full border border-[#05b169]/30 bg-white px-2 py-0.5 text-xs font-semibold text-[#05b169]">{{ $d->name }} ({{ $d->nisn }})</span>
+                        <span class="inline-block rounded-full border border-[#05b169]/30 bg-white px-2 py-0.5 text-xs font-semibold text-[#05b169]">{{ $d->name }} ({{ $d->nisn }}) &middot; {{ $d->labelSisaBuka() }}</span>
                     @endforeach
                 </span>
             </div>
@@ -804,8 +1049,15 @@
             Pengaturan berlaku untuk <span class="font-bold text-gray-800">semua siswa</span>:
             jam masuk <span class="font-bold text-gray-800">{{ substr($pengaturanAbsensi['jam_masuk'],0,5) }}</span>,
             jam pulang <span class="font-bold text-gray-800">{{ substr($pengaturanAbsensi['jam_pulang'],0,5) }}</span>,
-            batas absensi <span class="font-bold text-gray-800">{{ $pengaturanAbsensi['durasi_menit'] }} menit</span>.
+            batas absensi <span class="font-bold text-gray-800">{{ $pengaturanAbsensi['durasi_menit'] }} menit</span>,
+            jadwal <span class="font-bold text-gray-800">{{ $pengaturanAbsensi['hari_kerja_label'] }}</span>
+            <span class="text-gray-500">({{ $pengaturanAbsensi['hari_kerja_keterangan'] ?? '' }})</span>.
             <span class="text-gray-500">(Siswa dengan jam khusus industri yang disetujui guru akan memakai jamnya sendiri.)</span>
+            @if($jadwalKhususList->count() > 0)
+                <br>
+                <span class="font-semibold text-[#d98200]">{{ $jadwalKhususList->count() }} siswa memakai jadwal khusus</span>
+                <span class="text-gray-500">&mdash; ubah lewat tombol &ldquo;Jadwal Absensi&rdquo;.</span>
+            @endif
         </div>
 
         {{-- STATISTIK REKAP --}}
@@ -1081,8 +1333,9 @@
                         <select name="absensi_hari_kerja" class="w-full rounded-lg border-gray-200 text-sm focus:border-[#2563EB] focus:ring-[#2563EB]">
                             <option value="senin_jumat" @selected(($pengaturanAbsensi['hari_kerja'] ?? 'senin_jumat') === 'senin_jumat')>Senin - Jumat (Sabtu &amp; Minggu libur)</option>
                             <option value="senin_sabtu" @selected(($pengaturanAbsensi['hari_kerja'] ?? 'senin_jumat') === 'senin_sabtu')>Senin - Sabtu (hanya Minggu libur)</option>
+                            <option value="senin_minggu" @selected(($pengaturanAbsensi['hari_kerja'] ?? 'senin_jumat') === 'senin_minggu')>Senin - Minggu (tanpa hari libur)</option>
                         </select>
-                        <p class="mt-1 text-[11px] text-gray-500">Hari libur dilewati: tidak ada baris absensi dan <span class="font-semibold">tidak ditandai Alpha otomatis</span>. Siswa yang jadwalnya berbeda dapat diatur satu per satu lewat pencarian NISN pada tombol &ldquo;Atur Jumlah H/I/S/A&rdquo;.</p>
+                        <p class="mt-1 text-[11px] text-gray-500">Hari libur dilewati: tidak ada baris absensi dan <span class="font-semibold">tidak ditandai Alpha otomatis</span>. Untuk mengatur jadwal <span class="font-semibold">beberapa NISN sekaligus</span>, gunakan tombol &ldquo;Jadwal Absensi&rdquo;.</p>
                     </div>
                     <div class="flex gap-2 pt-2">
                         <button type="submit" class="flex-1 rounded-lg bg-[#2563EB] px-4 py-2.5 text-sm font-bold text-white hover:bg-blue-700">Simpan Pengaturan</button>
@@ -1381,6 +1634,120 @@
         document.addEventListener('alpine:init', () => {
             /* ===== Atur jumlah Hadir/Izin/Sakit/Alpha (per NISN atau semua siswa) ===== */
             /* Atur Jumlah H/I/S/A: satu ATAU beberapa NISN sekaligus / semua siswa. */
+            /* ================== JADWAL HARI KERJA ABSENSI ==================
+             * Mengatur hari kerja absensi untuk SELURUH siswa (jadwal global)
+             * atau untuk BEBERAPA NISN sekaligus (jadwal khusus per siswa).
+             */
+            Alpine.data('jadwalHariKerja', (list, jadwalGlobal, labelGlobal) => ({
+                open: false,
+                mode: 'semua',                       // 'semua' | 'nisn'
+                nisn: '',
+                pilihan: jadwalGlobal || 'senin_jumat',
+                hapusKhusus: false,
+                list: Array.isArray(list) ? list : [],
+                jadwalGlobal: jadwalGlobal || 'senin_jumat',
+                labelGlobal: labelGlobal || 'Senin - Jumat',
+
+                bukaModal() {
+                    this.mode = 'semua';
+                    this.nisn = '';
+                    this.pilihan = this.jadwalGlobal;
+                    this.hapusKhusus = false;
+                    this.open = true;
+                },
+
+                pilihMode(m) {
+                    this.mode = m;
+
+                    // Mode "semua" WAJIB memilih salah satu jadwal (tidak boleh kosong).
+                    if (m === 'semua') {
+                        if (this.pilihan === '') this.pilihan = this.jadwalGlobal;
+                        this.hapusKhusus = false;
+                    }
+                },
+
+                /* Opsi jadwal. "Ikut jadwal global" hanya tersedia pada mode NISN. */
+                get opsiJadwal() {
+                    const dasar = [
+                        { nilai: 'senin_jumat', label: 'Senin - Jumat', ket: 'Sabtu & Minggu dilewati' },
+                        { nilai: 'senin_sabtu', label: 'Senin - Sabtu', ket: 'hanya Minggu yang dilewati' },
+                        { nilai: 'senin_minggu', label: 'Senin - Minggu', ket: 'tanpa hari libur, absensi diisi setiap hari' },
+                    ];
+
+                    if (this.mode === 'nisn') {
+                        dasar.push({
+                            nilai: '',
+                            label: 'Ikut jadwal global',
+                            ket: 'hapus jadwal khusus siswa, kembali ke ' + this.labelGlobal,
+                        });
+                    }
+                    return dasar;
+                },
+
+                /* NISN yang ditempel admin: dipisah koma / titik koma / spasi / baris baru. */
+                get daftarNisn() {
+                    return (this.nisn || '')
+                        .split(/[\s,;]+/)
+                        .map((v) => v.trim())
+                        .filter((v) => v !== '')
+                        .filter((v, i, a) => a.indexOf(v) === i);
+                },
+
+                get cocok() {
+                    return this.daftarNisn
+                        .map((n) => this.list.find((s) => String(s.nisn) === n))
+                        .filter((s) => !!s);
+                },
+
+                get tidakCocok() {
+                    return this.daftarNisn.filter((n) => !this.list.some((s) => String(s.nisn) === n));
+                },
+
+                get jumlahKhusus() {
+                    return this.list.filter((s) => s.khusus).length;
+                },
+
+                get bolehKirim() {
+                    if (this.mode === 'semua') return this.pilihan !== '';
+                    return this.cocok.length > 0;
+                },
+
+                labelPilihan() {
+                    const o = this.opsiJadwal.find((x) => x.nilai === this.pilihan);
+                    return o ? o.label : 'Senin - Jumat';
+                },
+
+                kirim(e) {
+                    if (!this.bolehKirim) {
+                        e.preventDefault();
+                        return;
+                    }
+
+                    if (this.mode === 'semua') {
+                        let pesan = 'Ubah jadwal absensi SELURUH siswa menjadi ' + this.labelPilihan() + '?';
+
+                        if (this.hapusKhusus && this.jumlahKhusus > 0) {
+                            pesan += ' Jadwal khusus milik ' + this.jumlahKhusus + ' siswa juga akan DIHAPUS.';
+                        }
+
+                        if (!window.confirm(pesan)) {
+                            e.preventDefault();
+                            return;
+                        }
+                    } else if (this.tidakCocok.length > 0) {
+                        const pesan = this.tidakCocok.length + ' NISN tidak ditemukan dan akan dilewati. '
+                            + 'Lanjutkan untuk ' + this.cocok.length + ' siswa yang ditemukan?';
+
+                        if (!window.confirm(pesan)) {
+                            e.preventDefault();
+                            return;
+                        }
+                    }
+
+                    this.open = false;
+                },
+            }));
+
             Alpine.data('rekapMassal', (list, urlRekap, hariKerjaGlobal) => ({
                 open: false,
                 mode: 'nisn',
@@ -1609,12 +1976,15 @@
                 },
 
                 get labelJadwalAktif() {
+                    if (this.jadwalAktif === 'senin_minggu') return 'Senin - Minggu';
                     return this.jadwalAktif === 'senin_sabtu' ? 'Senin - Sabtu' : 'Senin - Jumat';
                 },
 
                 /*
                  * Jumlah HARI KERJA pada rentang tanggal terpilih.
-                 * Minggu selalu dilewati; Sabtu dilewati bila jadwal Senin-Jumat.
+                 * Senin-Jumat  : Sabtu & Minggu dilewati.
+                 * Senin-Sabtu  : hanya Minggu yang dilewati.
+                 * Senin-Minggu : tidak ada hari yang dilewati.
                  */
                 get hariTersedia() {
                     if (!this.form.mulai || !this.form.selesai) return 0;
@@ -1626,12 +1996,13 @@
                     const selesai = new Date(this.form.selesai + 'T00:00:00');
                     if (isNaN(mulai) || isNaN(selesai) || selesai < mulai) return 0;
 
-                    const sampaiSabtu = this.jadwalAktif === 'senin_sabtu';
+                    const sampaiMinggu = this.jadwalAktif === 'senin_minggu';
+                    const sampaiSabtu = sampaiMinggu || this.jadwalAktif === 'senin_sabtu';
                     let jumlah = 0;
 
                     for (let d = new Date(mulai); d <= selesai; d.setDate(d.getDate() + 1)) {
                         const hari = d.getDay(); // 0 = Minggu, 6 = Sabtu
-                        if (hari === 0) continue;
+                        if (hari === 0 && !sampaiMinggu) continue;
                         if (hari === 6 && !sampaiSabtu) continue;
                         jumlah++;
                     }
