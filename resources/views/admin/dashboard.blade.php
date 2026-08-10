@@ -12,7 +12,7 @@
         $persenHadir    = $totalKehadiran > 0 ? round($kehadiran['Hadir'] / $totalKehadiran * 100, 1) : 0;
 
         $totalJurnal    = array_sum($jurnalStatus);
-        $totalCatatan   = array_sum($catatanStatus);
+       
         $totalObservasi = array_sum($observasiStatus);
 
         $totalSiswaJurusan = $perJurusan->sum();
@@ -85,23 +85,7 @@
             </ul>
         </div>
 
-        {{-- ---- Catatan Kegiatan ---- --}}
-        <div class="bg-white rounded-2xl shadow-sm border border-blue-200 p-5">
-            <h4 class="font-bold text-black mb-4">Catatan Kegiatan</h4>
-            <canvas id="chartCatatan" height="160"></canvas>
-            <ul class="mt-4 space-y-1.5 text-sm">
-                @foreach($catatanStatus as $status => $jumlah)
-                    <li class="flex items-center justify-between rounded-lg bg-blue-50 px-3 py-2">
-                        <span class="font-medium text-black">{{ $status }}</span>
-                        <span class="font-bold text-blue-700">{{ $jumlah }} catatan</span>
-                    </li>
-                @endforeach
-                <li class="flex items-center justify-between rounded-lg bg-blue-600 px-3 py-2 text-white">
-                    <span class="font-semibold">Total catatan</span>
-                    <span class="font-bold">{{ $totalCatatan }}</span>
-                </li>
-            </ul>
-        </div>
+      
 
         {{-- ---- Observasi ---- --}}
         <div class="bg-white rounded-2xl shadow-sm border border-blue-200 p-5">
@@ -190,15 +174,7 @@
             options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
         });
 
-        new Chart(document.getElementById('chartCatatan'), {
-            type: 'bar',
-            data: {
-                labels: @json(array_keys($catatanStatus)),
-                datasets: [{ label: 'Catatan', data: @json(array_values($catatanStatus)),
-                    backgroundColor: ['#00ff08', '#fa0000'], borderRadius: 6 }]
-            },
-            options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
-        });
+      
 
         new Chart(document.getElementById('chartObservasi'), {
             type: 'bar',

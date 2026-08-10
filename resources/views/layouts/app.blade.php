@@ -168,10 +168,7 @@
                             class="block px-3 py-2 text-[13px] rounded-lg transition-all {{ request()->routeIs('admin.monitoring.jurnal') ? 'text-blue-600 font-semibold' : 'text-slate-500 hover:text-slate-900' }}">
                             Jurnal Kegiatan
                         </a>
-                        <a href="{{ route('admin.monitoring.catatan') }}"
-                            class="block px-3 py-2 text-[13px] rounded-lg transition-all {{ request()->routeIs('admin.monitoring.catatan') ? 'text-blue-600 font-semibold' : 'text-slate-500 hover:text-slate-900' }}">
-                            Catatan Kegiatan
-                        </a>
+                       
                         <a href="{{ route('admin.monitoring.absensi') }}"
                             class="block px-3 py-2 text-[13px] rounded-lg transition-all {{ request()->routeIs('admin.monitoring.absensi') ? 'text-blue-600 font-semibold' : 'text-slate-500 hover:text-slate-900' }}">
                             Absensi Siswa
