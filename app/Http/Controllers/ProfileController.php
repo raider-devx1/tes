@@ -24,8 +24,8 @@ class ProfileController extends Controller
 
     /**
      * Perbarui informasi profil pengguna.
-     * Nama & foto boleh diubah semua peran; email hanya instruktur & admin.
-     * NIP/NISN tidak pernah diubah dari halaman ini.
+     * Nama, nomor HP, & foto boleh diubah semua peran (siswa, guru, admin);
+     * email hanya admin. NIP/NISN tidak pernah diubah dari halaman ini.
      */
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
@@ -61,6 +61,12 @@ class ProfileController extends Controller
         if ($user->isDirty('email')) {
             $berubah[] = 'email';
             $user->email_verified_at = null;
+        }
+
+        // Nomor HP: dihitung berubah juga ketika dikosongkan (diisi -> NULL),
+        // supaya siswa/guru mendapat konfirmasi bahwa nomornya benar-benar dihapus.
+        if ($user->isDirty('no_hp')) {
+            $berubah[] = 'nomor HP';
         }
 
         if ($user->isDirty('foto')) {

@@ -23,8 +23,8 @@
             {{-- ===== HEADER ===== --}}
             <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                 <div>
-                    <h2 class="text-xl md:text-2xl font-bold tracking-tight text-black">Monitoring &amp; Validasi Jurnal Siswa</h2>
-                    <p class="text-sm font-medium text-[#5b616e] mt-1">Pantau jurnal siswa bimbingan Anda dan lakukan validasi bukti fisik.</p>
+                    <h2 class="text-xl md:text-2xl font-bold tracking-tight text-black">Monitoring &amp; Validasi Jurnal Murid</h2>
+                    <p class="text-sm font-medium text-[#5b616e] mt-1">Pantau jurnal Murid bimbingan Anda dan lakukan validasi bukti fisik.</p>
                 </div>
                 <a href="{{ route('guru.dashboard') }}"
                    class="inline-flex items-center justify-center gap-1 rounded-xl border-2 border-[#0047d6]/25 bg-white px-4 py-2 text-sm font-bold text-[#0047d6] transition hover:bg-[#0047d6]/5">
@@ -67,7 +67,7 @@
             {{-- ===== CETAK SEMUA ===== --}}
             <div class="rounded-2xl border-2 border-[#0047d6]/15 bg-white p-4 sm:p-6 shadow-sm flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                 <div>
-                    <h3 class="text-lg font-bold tracking-tight text-black">Jurnal Kegiatan Siswa Bimbingan</h3>
+                    <h3 class="text-lg font-bold tracking-tight text-black">Jurnal Kegiatan Murid Bimbingan</h3>
                     <p class="text-xs font-medium text-[#5b616e]">
                         Tombol <span class="font-bold text-black">Cetak Semua PDF</span> mencetak jurnal sesuai
                         <span class="font-bold text-black">filter tanggal</span> di bawah. Bila tanggal dikosongkan, otomatis mencetak jurnal <span class="font-bold text-black">hari ini</span> (1 siswa per halaman).

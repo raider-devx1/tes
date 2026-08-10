@@ -11,14 +11,74 @@
     $tanggalIndo = $hariIni->locale('id')->translatedFormat('d F Y'); // contoh: 05 Juli 2026
     $bulanIndo   = $hariIni->locale('id')->translatedFormat('F');      // contoh: Juli
 
+    /* ================= GERBANG NOTIFIKASI PENGINGAT =================
+     | Seluruh notifikasi yang sifatnya MENGINGATKAN (mengisi jurnal, catatan,
+     | absensi, serta validasi absensi/jurnal oleh guru) hanya boleh muncul
+     | pada HARI KERJA di DALAM JAM KERJA. Pengingat ditahan bila:
+     |
+     |   1. hari ini TANGGAL MERAH yang didaftarkan admin pada menu
+     |      Pengaturan > Tanggal Merah, atau
+     |   2. hari ini bukan hari kerja menurut jadwal (mis. Minggu), atau
+     |   3. sekarang berada di LUAR jam kerja, yaitu sebelum jam masuk atau
+     |      setelah jam pulang ditambah toleransi durasi absensi.
+     |
+     | Jam kerja siswa memakai jam EFEKTIF miliknya (jam industri bila sudah
+     | disetujui guru); guru/admin memakai jam global pada tabel pengaturans.
+     |
+     | CATATAN: peringatan "Absensi Anda Ditolak" di bagian bawah SENGAJA tidak
+     | ikut ditahan. Itu bukan pengingat rutin, melainkan tenggat yang bisa
+     | membuat siswa dihitung Alpha, dan batas waktunya sendiri sudah terkunci
+     | di dalam jam kerja hari yang bersangkutan.
+     */
+    $liburHariIni = \App\Models\HariLibur::namaLibur($hariIni);
+
+    $tzNotif       = config('app.timezone', 'Asia/Makassar');
+    $sekarangNotif = \Carbon\Carbon::now($tzNotif);
+
+    $jamMasukNotif = $me->role === 'siswa_pkl'
+        ? $me->jamMasukEfektif()
+        : \App\Models\Pengaturan::ambil('absensi_jam_masuk', '08:00');
+
+    $jamPulangNotif = $me->role === 'siswa_pkl'
+        ? $me->jamPulangEfektif()
+        : \App\Models\Pengaturan::ambil('absensi_jam_pulang', '16:00');
+
+    $durasiNotif = (int) \App\Models\Pengaturan::ambil('absensi_durasi_menit', 30);
+    if ($durasiNotif <= 0) {
+        $durasiNotif = 30;
+    }
+
+    try {
+        $awalKerja  = \Carbon\Carbon::parse($hariIni->format('Y-m-d') . ' ' . $jamMasukNotif, $tzNotif);
+        $akhirKerja = \Carbon\Carbon::parse($hariIni->format('Y-m-d') . ' ' . $jamPulangNotif, $tzNotif)
+            ->addMinutes($durasiNotif);
+
+        $dalamJamKerja = $sekarangNotif->betweenIncluded($awalKerja, $akhirKerja);
+    } catch (\Throwable $e) {
+        // Jam pada pengaturan rusak: jangan sampai notifikasi hilang total.
+        $dalamJamKerja = true;
+    }
+
+    $bolehIngatkan = $liburHariIni === null
+        && $me->adalahHariKerja($hariIni)
+        && $dalamJamKerja;
+
     // Cache notifikasi per-user per-hari (TTL 60 detik) agar query TIDAK berjalan
     // pada SETIAP load dashboard. Mengurangi beban DB saat banyak user online.
     // Staleness maksimal 60 detik (mis. reminder jurnal hilang <= 1 menit setelah diisi).
+    // Status gerbang ikut masuk kunci cache supaya hasil "jam kerja" dan
+    // "di luar jam kerja" tidak pernah saling tertukar.
     $notifikasi = Cache::remember(
-        "notif_dashboard:{$me->id}:{$hariIni->toDateString()}",
+        "notif_dashboard:{$me->id}:{$hariIni->toDateString()}:" . ($bolehIngatkan ? 'kerja' : 'diam'),
         60,
-        function () use ($me, $hariIni, $tanggalIndo, $bulanIndo) {
+        function () use ($me, $hariIni, $tanggalIndo, $bulanIndo, $bolehIngatkan) {
             $notifikasi = [];
+
+            // Tanggal merah / bukan hari kerja / di luar jam kerja: tidak ada
+            // pengingat apa pun yang dimunculkan.
+            if (! $bolehIngatkan) {
+                return $notifikasi;
+            }
 
             /* ================= SISWA PKL ================= */
             if ($me->role === 'siswa_pkl') {

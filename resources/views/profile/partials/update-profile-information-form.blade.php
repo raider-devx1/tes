@@ -8,9 +8,9 @@
 
         <p class="mt-1 text-sm text-gray-600">
             @if(in_array($role, ['admin'], true))
-                Perbarui informasi nama, email, dan foto akun Anda.
+                Perbarui informasi nama, email, nomor HP, dan foto akun Anda.
             @else
-                Perbarui nama dan foto akun Anda.
+                Perbarui nama, nomor HP, dan foto akun Anda.
             @endif
         </p>
     </header>
@@ -55,6 +55,32 @@
             <x-input-label for="name" :value="__('Name')" />
             <x-text-input id="name" name="name" type="text" class="mt-1 block w-full" :value="old('name', $user->name)" required autofocus autocomplete="name" />
             <x-input-error class="mt-2" :messages="$errors->get('name')" />
+        </div>
+
+        {{-- ===== NOMOR HP (siswa, guru pembimbing, & admin) ===== --}}
+        <div>
+            <x-input-label for="no_hp" :value="__('Nomor HP')" />
+
+            {{--
+                type="tel" + inputmode="tel" membuat papan ketik angka yang
+                langsung muncul di HP, jadi siswa tidak perlu berpindah mode.
+                maxlength="20" menyamai lebar kolom users.no_hp.
+            --}}
+            <x-text-input id="no_hp"
+                          name="no_hp"
+                          type="tel"
+                          inputmode="tel"
+                          maxlength="20"
+                          class="mt-1 block w-full"
+                          :value="old('no_hp', $user->no_hp)"
+                          autocomplete="tel"
+                          placeholder="Contoh: 081234567890" />
+
+            <p class="mt-1 text-xs text-gray-500">
+                Boleh dikosongkan. Angka saja, boleh diawali <span class="font-semibold">+</span> dan dipisah spasi atau strip. Maksimal 20 karakter.
+            </p>
+
+            <x-input-error class="mt-2" :messages="$errors->get('no_hp')" />
         </div>
 
         @if(in_array($role, ['admin'], true))

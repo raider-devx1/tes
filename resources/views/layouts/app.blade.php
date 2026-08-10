@@ -242,7 +242,7 @@
                 </a>
                 <div class="pt-4 px-3 mb-2 text-xs font-semibold text-slate-400 tracking-wider uppercase">Konfigurasi</div>
                 {{-- Pengaturan --}}
-                <div x-data="{ open: {{ request()->routeIs('admin.riwayat.index', 'admin.akun-admin.*', 'profile.edit') ? 'true' : 'false' }} }">
+                <div x-data="{ open: {{ request()->routeIs('admin.hari-libur.*', 'admin.riwayat.index', 'admin.akun-admin.*', 'profile.edit') ? 'true' : 'false' }} }">
                     <button @click="open = !open"
                         class="group w-full flex items-center justify-between px-3 py-2.5 rounded-xl font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all duration-150">
                         <span class="flex items-center gap-3">
@@ -257,6 +257,10 @@
                         </svg>
                     </button>
                     <div x-show="open" x-collapse class="ml-5 mt-1 border-l-2 border-slate-100 pl-3 space-y-1" x-cloak>
+                        <a href="{{ route('admin.hari-libur.index') }}"
+                            class="block px-3 py-2 text-[13px] rounded-lg transition-all {{ request()->routeIs('admin.hari-libur.*') ? 'text-blue-600 font-semibold' : 'text-slate-500 hover:text-slate-900' }}">
+                            Tanggal Merah
+                        </a>
                         <a href="{{ route('admin.riwayat.index') }}"
                             class="block px-3 py-2 text-[13px] rounded-lg transition-all {{ request()->routeIs('admin.riwayat.index') ? 'text-blue-600 font-semibold' : 'text-slate-500 hover:text-slate-900' }}">
                             Riwayat Aktivitas

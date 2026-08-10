@@ -18,7 +18,16 @@
         $totalSiswaJurusan = $perJurusan->sum();
         $jumlahJurusan     = $perJurusan->count();
 
-        $sudahDinilai = max($totalSiswa - $statusNilai['Belum'], 0);
+        // Pengurangnya WAJIB $siswaAktif, bukan $totalSiswa.
+        // Sejak grafik disaring hanya untuk siswa aktif, $statusNilai['Belum']
+        // pun hanya menghitung siswa aktif. Bila dikurangkan dari total seluruh
+        // angkatan, angka "Dinilai lengkap" akan melonjak jauh di atas kenyataan
+        // karena lulusan angkatan lama ikut dianggap sudah dinilai.
+        $sudahDinilai = max($siswaAktif - $statusNilai['Belum'], 0);
+
+        $catatanSaring = $siswaDikecualikan > 0
+            ? "{$siswaDikecualikan} siswa lain tidak ikut dihitung ({$siswaSelesai} sudah selesai, {$siswaBelum} belum mulai)."
+            : 'Saat ini tidak ada siswa berstatus selesai atau belum mulai pada periode ini.';
     @endphp
 
     {{-- ================= KARTU RINGKASAN ================= --}}
@@ -30,6 +39,8 @@
             </div>
         @endforeach
     </div>
+
+   
 
     {{-- ================= GRAFIK + POIN INFORMASI ================= --}}
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">

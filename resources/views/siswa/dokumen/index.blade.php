@@ -59,7 +59,7 @@
                     <form action="{{ route('siswa.dokumen.store') }}" method="POST" enctype="multipart/form-data" class="space-y-5">
                         @csrf
                         <div>
-                            <label class="block font-semibold mb-1">Surat Penerimaan Industri (PDF, maks 2MB)</label>
+                            <label class="block font-semibold mb-1">berita acara penerimaan industri siswa (PDF, maks 2MB)</label>
                             <p class="text-xs text-gray-500 mb-2">Scan/foto surat balasan penerimaan dari industri.</p>
                             <input type="file" name="surat_penerimaan" accept=".pdf"
                                    class="border border-gray-200 p-2 rounded-lg w-full text-sm">

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Absensi;
+use App\Models\HariLibur;
 use App\Models\Pengaturan;
 use App\Models\User;
 use App\Support\ImageCompressor;
@@ -124,10 +125,30 @@ class AbsensiController extends Controller
 
         $paksaBuka = $masukPaksa || $pulangPaksa;
 
+        // TANGGAL MERAH (didaftarkan admin di Pengaturan > Tanggal Merah).
+        // Pada hari itu absensi TIDAK PERLU diisi dan tidak pernah dihitung
+        // Alpha, sehingga jendela absensi dipaksa TERTUTUP sepanjang hari.
+        //
+        // PENGECUALIAN: bila admin memang MEMBUKA absensi secara manual (buka
+        // jam masuk dan/atau jam pulang, global maupun per-NISN), berarti
+        // sekolah sengaja mengadakan kegiatan pada hari libur tersebut.
+        // Pembukaan manual selalu menang atas aturan tanggal merah.
+        $namaLibur  = HariLibur::namaLibur($tanggal);
+        $liburAktif = $namaLibur !== null && ! $paksaBuka;
+
+        if ($liburAktif) {
+            $fase          = 'libur';
+            $terbuka       = false;
+            $masukTerbuka  = false;
+            $pulangTerbuka = false;
+        }
+
         return [
             'terbuka'      => $terbuka,
             'fase'         => $fase,
             'paksa'        => $paksaBuka,
+            'libur'        => $liburAktif,
+            'libur_nama'   => $namaLibur,
             'masuk_paksa'  => $masukPaksa,
             'pulang_paksa' => $pulangPaksa,
             'masuk_terbuka'  => $masukTerbuka,
@@ -149,6 +170,12 @@ class AbsensiController extends Controller
     private function pesanJadwal(array $jendela): string
     {
         $now = $jendela['now'];
+
+        // Tanggal merah: tidak ada jendela absensi yang perlu ditunggu.
+        if (! empty($jendela['libur'])) {
+            return 'Hari ini tanggal merah (' . $jendela['libur_nama']
+                . '). Absensi tidak perlu diisi dan Anda tidak dihitung Alpha.';
+        }
 
         if ($now->lt($jendela['masuk_start'])) {
             return 'Absensi jam masuk dibuka pukul ' . $jendela['masuk_start']->format('H:i') . ' WITA.';
@@ -252,6 +279,15 @@ class AbsensiController extends Controller
     {
         $siswa   = Auth::user();
         $jendela = $this->jendelaAbsensi($siswa);
+
+        // TANGGAL MERAH: hari libur nasional / cuti bersama yang didaftarkan
+        // admin. Absensi tidak perlu diisi dan hari itu tidak dihitung Alpha.
+        // Aturan ini otomatis mengalah bila admin membuka absensi secara
+        // manual (lihat jendelaAbsensi()), jadi di sini cukup memeriksa flag.
+        if (! empty($jendela['libur'])) {
+            return back()->with('error', 'Hari ini tanggal merah ('
+                . $jendela['libur_nama'] . '). Absensi tidak perlu diisi dan Anda tidak dihitung Alpha.');
+        }
 
         // JADWAL HARI KERJA: hari libur (Minggu, dan Sabtu bila jadwal siswa
         // hanya Senin-Jumat) normalnya tidak boleh diisi absensi. Hari itu

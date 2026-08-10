@@ -16,7 +16,7 @@
             <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                 <div>
                     <h2 class="text-xl md:text-2xl font-bold tracking-tight text-black">Monitoring &amp; Validasi Absensi</h2>
-                    <p class="text-sm font-medium text-[#5b616e] mt-1">Validasi bukti fisik &amp; jam kerja industri siswa bimbingan Anda.</p>
+                    <p class="text-sm font-medium text-[#5b616e] mt-1">Validasi bukti fisik &amp; jam kerja industri Murid bimbingan Anda.</p>
                 </div>
                 <div class="flex flex-wrap items-center gap-2">
                     {{-- BUKA / TUTUP ABSENSI (siswa bimbingan: semua / per NISN) --}}
@@ -465,7 +465,7 @@
             {{-- ===== CETAK SEMUA PDF ===== --}}
             <div class="rounded-2xl border-2 border-[#0047d6]/15 bg-white p-4 sm:p-6 shadow-sm flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                 <div>
-                    <h3 class="text-lg font-bold tracking-tight text-black">Rekap Absensi Siswa Bimbingan</h3>
+                    <h3 class="text-lg font-bold tracking-tight text-black">Rekap Absensi Murid Bimbingan</h3>
                     <p class="text-xs font-medium text-[#5b616e]">Tombol <span class="font-bold text-black">Cetak Semua PDF</span> mencetak rekap absensi seluruh siswa bimbingan Anda (1 siswa per halaman).</p>
                 </div>
                 <a href="{{ route('cetak.absensi.semua') }}" target="_blank" rel="noopener"

@@ -10,6 +10,7 @@ use App\Http\Controllers\DokumenController;
 use App\Http\Controllers\EvaluasiController;
 use App\Http\Controllers\GuruController;
 use App\Http\Controllers\GuruPembimbingController;
+use App\Http\Controllers\HariLiburController;
 use App\Http\Controllers\InformasiController;
 use App\Http\Controllers\InstrukturController;
 use App\Http\Controllers\JurnalController;
@@ -74,6 +75,18 @@ Route::get('/cetak/absensi-semua', [CetakPdfController::class, 'cetakAbsensiSemu
     // ============================================================
     Route::middleware(['role:admin'])->prefix('admin')->name('admin.')->group(function () {
         Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
+
+        // ---- PENGATURAN: TANGGAL MERAH (HARI LIBUR) ----
+        // PENTING: rute '/hari-libur/tahun' WAJIB didaftarkan SEBELUM
+        // '/hari-libur/{hariLibur}'. Bila urutannya tertukar, kata "tahun"
+        // akan ditangkap sebagai ID dan hapus-per-tahun tidak pernah jalan.
+        Route::get('/hari-libur', [HariLiburController::class, 'index'])->name('hari-libur.index');
+        Route::post('/hari-libur', [HariLiburController::class, 'store'])->name('hari-libur.store');
+        Route::post('/hari-libur/massal', [HariLiburController::class, 'storeMassal'])->name('hari-libur.massal');
+        Route::delete('/hari-libur/tahun', [HariLiburController::class, 'destroyTahun'])->name('hari-libur.destroy-tahun');
+        Route::put('/hari-libur/{hariLibur}/aktif', [HariLiburController::class, 'toggle'])->name('hari-libur.toggle');
+        Route::put('/hari-libur/{hariLibur}', [HariLiburController::class, 'update'])->name('hari-libur.update');
+        Route::delete('/hari-libur/{hariLibur}', [HariLiburController::class, 'destroy'])->name('hari-libur.destroy');
 
         // ---- PENGATURAN: RIWAYAT AKTIVITAS ----
         Route::get('/riwayat', [RiwayatController::class, 'index'])->name('riwayat.index');

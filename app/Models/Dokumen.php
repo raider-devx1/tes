@@ -32,7 +32,7 @@ class Dokumen extends Model
             'download' => ['admin', 'siswa_pkl', 'guru_pembimbing'],
         ],
         'surat_penerimaan' => [
-            'label'    => 'Surat Penerimaan Industri',
+            'label'    => 'berita acara penerimaan industri siswa',
             'upload'   => ['siswa_pkl', 'admin'],
             'lihat'    => ['siswa_pkl', 'guru_pembimbing', 'admin'],
             'download' => ['admin', 'guru_pembimbing'],

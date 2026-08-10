@@ -144,22 +144,7 @@
                         </svg>
                     </a>
 
-                    {{-- Catatan Kegiatan --}}
-                    <a href="{{ route('siswa.catatan.index') }}"
-                       class="group flex items-center gap-4 rounded-2xl bg-white border border-slate-100 px-4 py-4 sm:py-5 shadow-sm active:scale-[0.99] hover:border-[#8B5E34]/40 hover:shadow-md transition">
-                        <span class="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-[#0047d6]/10 text-[#0047d6]">
-                            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
-                            </svg>
-                        </span>
-                        <div class="min-w-0 flex-1">
-                            <h3 class="text-base sm:text-lg font-bold text-slate-900">Catatan Kegiatan</h3>
-                            <p class="text-sm text-slate-500 leading-snug">Isi refleksi, perencanaan, &amp; pelaksanaan kegiatan.</p>
-                        </div>
-                        <svg class="h-6 w-6 flex-shrink-0 text-[#8B5E34] group-hover:text-[#8B5E34] transition" fill="none" viewBox="0 0 24 24" stroke-width="2.2" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-                        </svg>
-                    </a>
+                   
 
                     {{-- Lembar Observasi --}}
                     <a href="{{ route('siswa.observasi.index') }}"

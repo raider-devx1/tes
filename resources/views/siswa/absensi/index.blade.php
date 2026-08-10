@@ -31,6 +31,7 @@
             faseServer: '{{ $jendela['fase'] }}',
             terbukaServer: {{ $jendela['terbuka'] ? 'true' : 'false' }},
             paksa: {{ ($jendela['paksa'] ?? false) ? 'true' : 'false' }},
+            libur: {{ ($jendela['libur'] ?? false) ? 'true' : 'false' }},
             masukPaksa: {{ ($jendela['masuk_paksa'] ?? false) ? 'true' : 'false' }},
             pulangPaksa: {{ ($jendela['pulang_paksa'] ?? false) ? 'true' : 'false' }},
             sudahHadir: {{ ($absensiHariIni && $absensiHariIni->status === 'Hadir' && $absensiHariIni->jam_masuk) ? 'true' : 'false' }},
@@ -292,6 +293,18 @@
                     <p class="text-xs font-medium text-[#5b616e]">Halaman absensi hanya dibuka <span class="font-bold">{{ (int) $jendela['durasi'] }} menit</span> saat jam masuk (pukul {{ substr($jamMasukEfektif,0,5) }}) lalu tertutup sampai jam pulang (pukul {{ substr($jamPulangEfektif,0,5) }}). Jika tidak absen sampai batas waktu, status otomatis <span class="font-bold text-[#cf202f]">Alpha</span>.</p>
                 </div>
 
+                @if (! empty($jendela['libur']))
+                    <div class="mb-4 rounded-xl border-2 border-[#cf202f] bg-[#cf202f]/10 px-4 py-3">
+                        <div class="flex items-start gap-2 text-sm font-bold text-[#cf202f]">
+                            <span class="mt-1.5 inline-block h-2.5 w-2.5 shrink-0 rounded-full bg-[#cf202f]"></span>
+                            <span>Hari ini tanggal merah: {{ $jendela['libur_nama'] }}</span>
+                        </div>
+                        <p class="mt-1 pl-4 text-xs font-semibold text-[#cf202f]">
+                            Absensi tidak perlu diisi dan hari ini tidak akan dihitung Alpha.
+                        </p>
+                    </div>
+                @endif
+
                 <div class="mb-4 rounded-xl border-2 px-4 py-3" :class="terbuka ? 'border-[#05b169] bg-[#05b169]/10' : 'border-[#cf202f] bg-[#cf202f]/10'">
                     <div class="flex items-center gap-2 text-sm font-bold" :class="terbuka ? 'text-[#05b169]' : 'text-[#cf202f]'">
                         <span class="inline-block h-2.5 w-2.5 rounded-full" :class="terbuka ? 'bg-[#05b169]' : 'bg-[#cf202f]'"></span>
@@ -530,8 +543,11 @@
                 paksa: cfg.paksa,
                 masukPaksa: cfg.masukPaksa,
                 pulangPaksa: cfg.pulangPaksa,
+                // TANGGAL MERAH: absensi tidak perlu diisi. Server sudah
+                // menutup jendelanya; flag ini menahan perhitungan ulang di
+                // browser supaya tidak membuka kembali saat jam masuk tiba.
+                libur: !!cfg.libur,
                 sudahHadir: cfg.sudahHadir,
-                sudahPulang: cfg.sudahPulang,
                 sudahPulang: cfg.sudahPulang,
                 // Ada foto absensi yang DITOLAK guru & belum diganti.
                 // Selama true: tombol absen & absen pulang dikunci.
@@ -551,6 +567,16 @@
                 hitung() {
                     const m = toMin(this.jamMasuk), p = toMin(this.jamPulang), d = this.durasi;
                     const n = this.nowMin;
+                    // TANGGAL MERAH: jendela tetap tertutup sepanjang hari,
+                    // jadi perhitungan jam di bawah tidak boleh dijalankan.
+                    if (this.libur) {
+                        this.fase = 'libur';
+                        this.terbuka = false;
+                        this.nowJam = String(Math.floor(n / 60)).padStart(2, '0') + ':' + String(n % 60).padStart(2, '0');
+                        this.statusLabel = 'Hari ini TANGGAL MERAH';
+                        this.countdownLabel = 'Absensi tidak perlu diisi dan Anda tidak dihitung Alpha.';
+                        return;
+                    }
                     let fase = 'tutup', terbuka = false;
                     if (n >= m && n <= m + d) { fase = 'masuk'; terbuka = true; }
                     else if (n >= p && n <= p + d) { fase = 'pulang'; terbuka = true; }

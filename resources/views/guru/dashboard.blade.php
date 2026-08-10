@@ -102,8 +102,8 @@
                             </svg>
                         </span>
                         <div class="min-w-0 flex-1">
-                            <h3 class="text-base sm:text-lg font-bold text-slate-900">Daftar Siswa &amp; Monitoring</h3>
-                            <p class="text-sm text-slate-500 leading-snug">Lihat semua siswa bimbingan dan pantau kegiatan mereka.</p>
+                            <h3 class="text-base sm:text-lg font-bold text-slate-900">Daftar Murid &amp; Monitoring</h3>
+                            <p class="text-sm text-slate-500 leading-snug">Lihat semua Murid bimbingan dan pantau kegiatan mereka.</p>
                         </div>
                         <svg class="h-6 w-6 flex-shrink-0 text-[#8B5E34] group-hover:text-[#0047d6] transition" fill="none" viewBox="0 0 24 24" stroke-width="2.2" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
@@ -119,8 +119,8 @@
                             </svg>
                         </span>
                         <div class="min-w-0 flex-1">
-                            <h3 class="text-base sm:text-lg font-bold text-slate-900">Jurnal Siswa</h3>
-                            <p class="text-sm text-slate-500 leading-snug">Baca &amp; setujui jurnal harian siswa.</p>
+                            <h3 class="text-base sm:text-lg font-bold text-slate-900">Jurnal Murid</h3>
+                            <p class="text-sm text-slate-500 leading-snug">Baca &amp; setujui jurnal harian Murid.</p>
                         </div>
                         <svg class="h-6 w-6 flex-shrink-0 text-[#8B5E34] group-hover:text-[#0047d6] transition" fill="none" viewBox="0 0 24 24" stroke-width="2.2" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
@@ -136,7 +136,7 @@
                             </svg>
                         </span>
                         <div class="min-w-0 flex-1">
-                            <h3 class="text-base sm:text-lg font-bold text-slate-900">Absensi Siswa</h3>
+                            <h3 class="text-base sm:text-lg font-bold text-slate-900">Absensi Murid</h3>
                             <p class="text-sm text-slate-500 leading-snug">Cek kehadiran: hadir, izin, sakit, alpha.</p>
                         </div>
                         <svg class="h-6 w-6 flex-shrink-0 text-[#8B5E34] group-hover:text-[#0047d6] transition" fill="none" viewBox="0 0 24 24" stroke-width="2.2" stroke="currentColor">
@@ -144,22 +144,7 @@
                         </svg>
                     </a>
 
-                    {{-- Catatan Kegiatan --}}
-                    <a href="{{ route('guru.catatan.index') }}"
-                       class="group flex items-center gap-4 rounded-2xl bg-white border border-slate-100 px-4 py-4 sm:py-5 shadow-sm active:scale-[0.99] hover:border-[#0047d6]/40 hover:shadow-md transition">
-                        <span class="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-[#0047d6]/10 text-[#0047d6]">
-                            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
-                            </svg>
-                        </span>
-                        <div class="min-w-0 flex-1">
-                            <h3 class="text-base sm:text-lg font-bold text-slate-900">Catatan Kegiatan</h3>
-                            <p class="text-sm text-slate-500 leading-snug">Baca refleksi &amp; catatan yang ditulis siswa.</p>
-                        </div>
-                        <svg class="h-6 w-6 flex-shrink-0 text-[#8B5E34] group-hover:text-[#0047d6] transition" fill="none" viewBox="0 0 24 24" stroke-width="2.2" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-                        </svg>
-                    </a>
+                    
 
                 </div>
             </div>
@@ -196,8 +181,8 @@
                             </svg>
                         </span>
                         <div class="min-w-0 flex-1">
-                            <h3 class="text-base sm:text-lg font-bold text-slate-900">Rekap Nilai Siswa</h3>
-                            <p class="text-sm text-slate-500 leading-snug">Lihat &amp; unduh nilai perkembangan siswa.</p>
+                            <h3 class="text-base sm:text-lg font-bold text-slate-900">Rekap Nilai Murid</h3>
+                            <p class="text-sm text-slate-500 leading-snug">Lihat &amp; unduh nilai perkembangan Murid.</p>
                         </div>
                         <svg class="h-6 w-6 flex-shrink-0 text-[#8B5E34] group-hover:text-[#0047d6] transition" fill="none" viewBox="0 0 24 24" stroke-width="2.2" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
@@ -213,7 +198,7 @@
                             </svg>
                         </span>
                         <div class="min-w-0 flex-1">
-                            <h3 class="text-base sm:text-lg font-bold text-slate-900">Dokumen Siswa</h3>
+                            <h3 class="text-base sm:text-lg font-bold text-slate-900">Dokumen Murid</h3>
                             <p class="text-sm text-slate-500 leading-snug">Surat tugas, surat penerimaan, &amp; laporan PKL.</p>
                         </div>
                         <svg class="h-6 w-6 flex-shrink-0 text-[#0047d6] group-hover:text-[#0047d6] transition" fill="none" viewBox="0 0 24 24" stroke-width="2.2" stroke="currentColor">

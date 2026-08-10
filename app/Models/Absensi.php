@@ -258,6 +258,15 @@ class Absensi extends Model
                     continue;
                 }
 
+                // TANGGAL MERAH yang didaftarkan admin pada menu
+                // Pengaturan > Tanggal Merah (libur nasional, cuti bersama,
+                // libur sekolah) -> absensi tidak perlu diisi dan hari itu
+                // TIDAK PERNAH ditandai Alpha. Sama seperti libur pekanan,
+                // tanggalnya dibiarkan kosong tanpa baris absensi.
+                if (HariLibur::adalahLibur($d)) {
+                    continue;
+                }
+
                 // Batas terakhir absensi hari itu (jam pulang + durasi).
                 $pulangEnd = Carbon::parse($tgl . ' ' . $jamPulang, $tz)->addMinutes($durasi);
 
@@ -336,6 +345,12 @@ class Absensi extends Model
 
         foreach ($daftar as $absensi) {
             $absensi->setRelation('siswa', $siswa);
+
+            // TANGGAL MERAH: absensi pada hari libur tidak boleh dipaksa
+            // menjadi Alpha, walaupun fotonya belum diganti sampai batas waktu.
+            if (HariLibur::adalahLibur($absensi->tanggal)) {
+                continue;
+            }
 
             $batas = $absensi->batasGantiFoto();
 
