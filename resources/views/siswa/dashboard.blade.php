@@ -145,6 +145,7 @@
                     </a>
 
                    
+                    
 
                     {{-- Lembar Observasi --}}
                     <a href="{{ route('siswa.observasi.index') }}"
