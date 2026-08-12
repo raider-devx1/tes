@@ -19,7 +19,6 @@ use App\Http\Controllers\NilaiController;
 use App\Http\Controllers\ObservasiController;
 use App\Http\Controllers\PeriodePklController;
 use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\RiwayatController;
 use App\Http\Controllers\SiswaController;
 use App\Http\Controllers\WakasekController;
 use App\Models\Jurnal;
@@ -89,7 +88,8 @@ Route::get('/cetak/absensi-semua', [CetakPdfController::class, 'cetakAbsensiSemu
         Route::delete('/hari-libur/{hariLibur}', [HariLiburController::class, 'destroy'])->name('hari-libur.destroy');
 
         // ---- PENGATURAN: RIWAYAT AKTIVITAS ----
-        Route::get('/riwayat', [RiwayatController::class, 'index'])->name('riwayat.index');
+        // DIHAPUS: rute admin.riwayat.index beserta pencatatan log aktivitas
+        // dihilangkan agar database tidak membengkak di shared hosting.
         // ---- PENGATURAN: KELOLA AKUN ADMIN ----
 Route::get('/akun-admin', [AdminAkunController::class, 'index'])->name('akun-admin.index');
 Route::get('/akun-admin/create', [AdminAkunController::class, 'create'])->name('akun-admin.create');

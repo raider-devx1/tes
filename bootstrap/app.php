@@ -17,10 +17,11 @@ return Application::configure(basePath: dirname(__DIR__))
         'role' => \App\Http\Middleware\CheckRole::class,
     ]);
 
-    // Catat aktivitas (audit log) untuk semua request web
-    $middleware->web(append: [
-        \App\Http\Middleware\LogActivity::class,
-    ]);
+    // CATATAN: middleware pencatat aktivitas (audit log) SUDAH DIHAPUS.
+    // Sebelumnya setiap aksi simpan/ubah/hapus menulis 1 baris ke tabel
+    // activity_logs. Di shared hosting hal itu membuat setiap penyimpanan
+    // data melakukan query INSERT tambahan dan tabelnya membengkak terus,
+    // sehingga database menjadi berat. Fitur Riwayat Aktivitas dihapus.
 })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

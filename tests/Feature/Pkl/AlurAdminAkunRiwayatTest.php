@@ -4,17 +4,15 @@
 
 namespace Tests\Feature\Pkl;
 
-use App\Models\ActivityLog;
 use App\Models\PeriodePkl;
 use App\Models\User;
 use App\Support\KonteksPeriode;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 
 /**
- * Menguji menu Pengaturan > Kelola Akun Admin dan Riwayat Aktivitas.
+ * Menguji menu Pengaturan > Kelola Akun Admin.
  */
 class AlurAdminAkunRiwayatTest extends TestCase
 {
@@ -197,69 +195,4 @@ class AlurAdminAkunRiwayatTest extends TestCase
             ->assertForbidden();
     }
 
-    public function test_admin_melihat_riwayat_aktivitas(): void
-    {
-        ActivityLog::create([
-            'user_id'     => $this->admin->id,
-            'description' => 'Membuka halaman percobaan',
-            'method'      => 'GET',
-            'route_name'  => 'admin.dashboard',
-            'url'         => 'http://localhost/admin/dashboard',
-            'ip'          => '127.0.0.1',
-        ]);
-
-        $this->actingAs($this->admin)
-            ->get(route('admin.riwayat.index'))
-            ->assertOk()
-            ->assertSee('Membuka halaman percobaan');
-    }
-
-    public function test_riwayat_aktivitas_dapat_disaring_menurut_tanggal(): void
-    {
-        $lama = ActivityLog::create([
-            'user_id'     => $this->admin->id,
-            'description' => 'Kegiatan Lama Sekali',
-            'method'      => 'GET',
-            'route_name'  => 'admin.dashboard',
-            'url'         => 'http://localhost/admin/dashboard',
-            'ip'          => '127.0.0.1',
-        ]);
-
-        // PENTING: 'created_at' TIDAK ada di $fillable milik ActivityLog,
-        // sehingga bila dikirim lewat create() nilainya diabaikan diam-diam
-        // dan baris ini tetap bertanggal hari ini (jadi lolos filter).
-        // Tulis langsung ke tabel supaya benar-benar berumur 40 hari.
-        DB::table('activity_logs')
-            ->where('id', $lama->id)
-            ->update([
-                'created_at' => now()->subDays(40),
-                'updated_at' => now()->subDays(40),
-            ]);
-
-        ActivityLog::create([
-            'user_id'     => $this->admin->id,
-            'description' => 'Kegiatan Hari Ini',
-            'method'      => 'GET',
-            'route_name'  => 'admin.dashboard',
-            'url'         => 'http://localhost/admin/dashboard',
-            'ip'          => '127.0.0.1',
-        ]);
-
-        $this->actingAs($this->admin)
-            ->get(route('admin.riwayat.index', [
-                'from' => now()->subDay()->toDateString(),
-            ]))
-            ->assertOk()
-            ->assertSee('Kegiatan Hari Ini')
-            ->assertDontSee('Kegiatan Lama Sekali');
-    }
-
-    public function test_siswa_tidak_boleh_membuka_riwayat_aktivitas(): void
-    {
-        $siswa = User::factory()->siswa()->create();
-
-        $this->actingAs($siswa)
-            ->get(route('admin.riwayat.index'))
-            ->assertForbidden();
-    }
 }

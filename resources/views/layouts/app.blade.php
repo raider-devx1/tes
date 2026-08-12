@@ -11,7 +11,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>{{ config('app.name', 'LMS PKL') }}</title>
+    <title>LMS PKL</title>
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=figtree:400,500,600,700&display=swap" rel="stylesheet" />
     @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -239,7 +239,7 @@
                 </a>
                 <div class="pt-4 px-3 mb-2 text-xs font-semibold text-slate-400 tracking-wider uppercase">Konfigurasi</div>
                 {{-- Pengaturan --}}
-                <div x-data="{ open: {{ request()->routeIs('admin.hari-libur.*', 'admin.riwayat.index', 'admin.akun-admin.*', 'profile.edit') ? 'true' : 'false' }} }">
+                <div x-data="{ open: {{ request()->routeIs('admin.hari-libur.*', 'admin.akun-admin.*', 'profile.edit') ? 'true' : 'false' }} }">
                     <button @click="open = !open"
                         class="group w-full flex items-center justify-between px-3 py-2.5 rounded-xl font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all duration-150">
                         <span class="flex items-center gap-3">
@@ -258,10 +258,7 @@
                             class="block px-3 py-2 text-[13px] rounded-lg transition-all {{ request()->routeIs('admin.hari-libur.*') ? 'text-blue-600 font-semibold' : 'text-slate-500 hover:text-slate-900' }}">
                             Tanggal Merah
                         </a>
-                        <a href="{{ route('admin.riwayat.index') }}"
-                            class="block px-3 py-2 text-[13px] rounded-lg transition-all {{ request()->routeIs('admin.riwayat.index') ? 'text-blue-600 font-semibold' : 'text-slate-500 hover:text-slate-900' }}">
-                            Riwayat Aktivitas
-                        </a>
+                        {{-- Menu "Riwayat Aktivitas" DIHAPUS agar database tidak berat di shared hosting --}}
                         <a href="{{ route('admin.akun-admin.index') }}"
                             class="block px-3 py-2 text-[13px] rounded-lg transition-all {{ request()->routeIs('admin.akun-admin.*') ? 'text-blue-600 font-semibold' : 'text-slate-500 hover:text-slate-900' }}">
                             Kelola Akun Admin

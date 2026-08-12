@@ -2,8 +2,6 @@
 
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schedule;
 
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
@@ -11,31 +9,25 @@ Artisan::command('inspire', function () {
 
 /*
 |--------------------------------------------------------------------------
-| Pemangkasan Log Aktivitas
+| Penjadwalan Pemangkasan Log Aktivitas -- SUDAH DIHAPUS
 |--------------------------------------------------------------------------
 |
-| Tabel activity_logs bertambah terus setiap hari. Tanpa pemangkasan, dalam
-| beberapa tahun ukurannya bisa jauh melebihi data PKL itu sendiri dan
-| membuat proses backup menjadi lambat.
+| Dahulu berkas ini menjalankan tugas harian pukul 01.00 untuk menghapus isi
+| tabel activity_logs yang lebih tua dari 30 hari.
 |
-| Ubah angka di bawah bila ingin masa simpan lebih panjang. Untuk satu
-| siklus PKL penuh, 180 hari adalah pilihan yang aman.
+| Fitur "Riwayat Aktivitas" beserta tabel activity_logs kini DIHAPUS total
+| supaya tidak membebani shared hosting:
 |
-| CATATAN PENTING -- JANGAN DIUBAH MENJADI const:
-| Angka ini sengaja ditulis sebagai variabel DI DALAM closure, bukan sebagai
-| "const" di tingkat file. Berkas ini dibaca ulang setiap kali aplikasi
-| dinyalakan. Dalam sekali menjalankan "php artisan test", aplikasi
-| dinyalakan ratusan kali di dalam SATU proses PHP yang sama. Sebuah const
-| hanya boleh didefinisikan sekali per proses, sehingga penyalaan kedua akan
-| gagal dengan pesan "Constant ... already defined". Variabel biasa tidak
-| memiliki batasan itu.
+|   1. Tidak ada lagi INSERT tambahan setiap kali menyimpan/mengubah/menghapus
+|      data, sehingga setiap aksi pengguna sedikit lebih cepat.
+|   2. Tabel activity_logs yang terus membengkak sudah dihapus, sehingga kuota
+|      database dan proses backup jauh lebih ringan.
+|   3. Tidak perlu lagi cron job "php artisan schedule:run" hanya untuk
+|      memangkas log. (Silakan tetap dipakai bila Anda menambah jadwal lain
+|      di kemudian hari.)
+|
+| Bila suatu saat fitur ini ingin dihidupkan kembali, buat ulang tabelnya,
+| daftarkan kembali middleware pencatat log di bootstrap/app.php, lalu
+| tambahkan lagi Schedule::call(...) di bawah ini.
 |
 */
-
-Schedule::call(function () {
-    $masaSimpanLogHari = 30;
-
-    DB::table('activity_logs')
-        ->where('created_at', '<', now()->subDays($masaSimpanLogHari))
-        ->delete();
-})->dailyAt('01:00')->name('pangkas-log-aktivitas');
