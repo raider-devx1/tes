@@ -12,9 +12,9 @@
     $bulanIndo   = $hariIni->locale('id')->translatedFormat('F');      // contoh: Juli
 
     /* ================= GERBANG NOTIFIKASI PENGINGAT =================
-     | Seluruh notifikasi yang sifatnya MENGINGATKAN (mengisi jurnal, catatan,
-     | absensi, serta validasi absensi/jurnal oleh guru) hanya boleh muncul
-     | pada HARI KERJA di DALAM JAM KERJA. Pengingat ditahan bila:
+     | BERLAKU KHUSUS UNTUK SISWA. Pengingat siswa (mengisi jurnal, catatan,
+     | dan absensi) hanya boleh muncul pada HARI KERJA di DALAM JAM KERJA.
+     | Pengingat siswa ditahan bila:
      |
      |   1. hari ini TANGGAL MERAH yang didaftarkan admin pada menu
      |      Pengaturan > Tanggal Merah, atau
@@ -24,6 +24,12 @@
      |
      | Jam kerja siswa memakai jam EFEKTIF miliknya (jam industri bila sudah
      | disetujui guru); guru/admin memakai jam global pada tabel pengaturans.
+     |
+     | NOTIFIKASI GURU TIDAK LAGI DITAHAN OLEH GERBANG INI. Guru sering membuka
+     | LMS di luar jam kerja dan justru saat itulah notifikasi validasi paling
+     | dibutuhkan. Karena itu notifikasi guru kini tampil KAPAN SAJA dan
+     | BERTAHAN sampai pekerjaannya benar-benar dilakukan. Lihat bagian
+     | GURU PEMBIMBING di bawah.
      |
      | CATATAN: peringatan "Absensi Anda Ditolak" di bagian bawah SENGAJA tidak
      | ikut ditahan. Itu bukan pengingat rutin, melainkan tenggat yang bisa
@@ -74,14 +80,13 @@
         function () use ($me, $hariIni, $tanggalIndo, $bulanIndo, $bolehIngatkan) {
             $notifikasi = [];
 
-            // Tanggal merah / bukan hari kerja / di luar jam kerja: tidak ada
-            // pengingat apa pun yang dimunculkan.
-            if (! $bolehIngatkan) {
-                return $notifikasi;
-            }
-
-            /* ================= SISWA PKL ================= */
-            if ($me->role === 'siswa_pkl') {
+            /* ================= SISWA PKL =================
+             | Hanya pengingat SISWA yang tunduk pada gerbang hari & jam kerja.
+             | Saat tanggal merah, bukan hari kerja, atau di luar jam kerja,
+             | pengingat siswa tidak dimunculkan. Notifikasi guru di bawah
+             | TIDAK memakai syarat ini.
+             */
+            if ($me->role === 'siswa_pkl' && $bolehIngatkan) {
                 $sudahIsiJurnalHariIni = Jurnal::where('siswa_id', $me->id)
                     ->whereDate('hari_tanggal', $hariIni)
                     ->exists();
@@ -145,7 +150,7 @@
                     ];
                 }
 
-                /* ---------- 2 & 3. VALIDASI HARI INI: ABSENSI & JURNAL ----------
+                /* ---------- 2 & 3. BELUM DIVALIDASI: ABSENSI & JURNAL ----------
                  | Nama kolomnya berbeda antar tabel:
                  |   - absensis memakai 'status_validasi' (agar tidak bentrok dengan
                  |     kolom 'status' yang berisi Hadir/Izin/Sakit/Alpha)
@@ -155,34 +160,53 @@
                  | Query dilewati bila guru belum punya siswa bimbingan aktif.
                  */
                 if ($siswaAktifIds->isNotEmpty()) {
-                    $absensiMenunggu = Absensi::whereIn('siswa_id', $siswaAktifIds)
-                        ->whereDate('tanggal', $hariIni)
-                        ->where('status_validasi', 'diajukan')
-                        ->count();
+                    /* Dihitung untuk SELURUH periode berjalan, bukan hanya hari
+                     | ini, supaya notifikasi tidak lenyap saat berganti hari
+                     | padahal gurunya belum memvalidasi apa pun. */
+                    $absensiPending = Absensi::whereIn('siswa_id', $siswaAktifIds)
+                        ->periodeBerjalan()
+                        ->where('status_validasi', 'diajukan');
+
+                    $absensiMenunggu = (clone $absensiPending)->count();
 
                     if ($absensiMenunggu > 0) {
+                        $absensiTerlama = (clone $absensiPending)->min('tanggal');
+                        $labelAbsensi   = $absensiTerlama
+                            ? \Carbon\Carbon::parse($absensiTerlama)->locale('id')->translatedFormat('d F Y')
+                            : $tanggalIndo;
+
                         $notifikasi[] = [
-                            'key'      => 'guru-validasi-absensi-' . $hariIni->toDateString(),
+                            // Kunci TANPA tanggal: satu notifikasi saja yang
+                            // bertahan sampai seluruh absensi selesai divalidasi.
+                            'key'      => 'guru-validasi-absensi',
                             'warna'    => 'biru',
-                            'judul'    => 'Absensi Hari Ini Belum Divalidasi',
-                            'pesan'    => "Ada {$absensiMenunggu} absensi siswa tanggal {$tanggalIndo} yang masih menunggu validasi Anda. "
-                                        . 'Periksa foto absensinya, lalu setujui atau tolak.',
+                            'judul'    => 'Absensi Siswa Belum Divalidasi',
+                            'pesan'    => "Ada {$absensiMenunggu} absensi siswa yang masih menunggu validasi Anda, terhitung sejak {$labelAbsensi}. "
+                                        . 'Periksa foto absensinya, lalu setujui atau tolak. '
+                                        . 'Notifikasi ini tetap tampil sampai semuanya selesai divalidasi.',
                             'aksi_url' => route('guru.monitoring.absensi'),
                             'aksi'     => 'Validasi Sekarang',
                         ];
                     }
 
-                    $jurnalMenunggu = Jurnal::whereIn('siswa_id', $siswaAktifIds)
-                        ->whereDate('hari_tanggal', $hariIni)
-                        ->where('status', 'diajukan')
-                        ->count();
+                    $jurnalPending = Jurnal::whereIn('siswa_id', $siswaAktifIds)
+                        ->periodeBerjalan()
+                        ->where('status', 'diajukan');
+
+                    $jurnalMenunggu = (clone $jurnalPending)->count();
 
                     if ($jurnalMenunggu > 0) {
+                        $jurnalTerlama = (clone $jurnalPending)->min('hari_tanggal');
+                        $labelJurnal   = $jurnalTerlama
+                            ? \Carbon\Carbon::parse($jurnalTerlama)->locale('id')->translatedFormat('d F Y')
+                            : $tanggalIndo;
+
                         $notifikasi[] = [
-                            'key'      => 'guru-validasi-jurnal-' . $hariIni->toDateString(),
+                            'key'      => 'guru-validasi-jurnal',
                             'warna'    => 'biru',
-                            'judul'    => 'Jurnal Hari Ini Belum Divalidasi',
-                            'pesan'    => "Ada {$jurnalMenunggu} jurnal siswa tanggal {$tanggalIndo} yang masih menunggu validasi Anda.",
+                            'judul'    => 'Jurnal Siswa Belum Divalidasi',
+                            'pesan'    => "Ada {$jurnalMenunggu} jurnal siswa yang masih menunggu validasi Anda, terhitung sejak {$labelJurnal}. "
+                                        . 'Notifikasi ini tetap tampil sampai semuanya selesai divalidasi.',
                             'aksi_url' => route('guru.monitoring.jurnal'),
                             'aksi'     => 'Validasi Sekarang',
                         ];
