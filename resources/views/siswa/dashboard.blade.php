@@ -23,7 +23,7 @@
                 {{-- ===== KARTU INFORMASI SISWA (mengisi 2/3 layar di PC) ===== --}}
                 {{--
                     Kartu ini menggantikan kartu lama "Petunjuk Penggunaan".
-                    Isinya identitas siswa PKL: Nama, NISN, Guru Pembimbing,
+                    Isinya identitas siswa PKL: Nama, NISN, No. HP, Guru Pembimbing,
                     dan Instruktur (pembimbing industri).
 
                     Sumber data dikirim dari DashboardController@siswa.
@@ -36,6 +36,9 @@
                     $infoNisn       = $nisnSiswa      ?? ($siswaInfo->nisn ?: '-');
                     $infoGuru       = $namaGuru       ?? ($siswaInfo->guru->name ?? 'Belum Diatur');
                     $infoInstruktur = $namaInstruktur ?? ($siswaInfo->instruktur->name ?? 'Belum Diatur');
+                    // No. HP siswa (kolom users.no_hp). Diisi admin saat membuat akun
+                    // atau oleh siswa sendiri dari menu Profil.
+                    $infoNoHp       = $noHpSiswa      ?? (filled($siswaInfo->no_hp) ? $siswaInfo->no_hp : 'Belum Diisi');
                 @endphp
 
                 <div class="xl:col-span-2 rounded-2xl bg-[#0047d6] p-6 sm:p-8 lg:p-10 text-white shadow-sm flex flex-col justify-center">
@@ -95,6 +98,19 @@
                             <div class="min-w-0">
                                 <dt class="text-xs font-semibold uppercase tracking-wide text-white/70">Instruktur</dt>
                                 <dd class="mt-0.5 text-base sm:text-lg font-bold break-words">{{ $infoInstruktur }}</dd>
+                            </div>
+                        </div>
+
+                        {{-- No. HP siswa --}}
+                        <div class="flex items-start gap-3 rounded-xl bg-white/10 px-4 py-3">
+                            <span class="mt-0.5 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-white/15">
+                                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 0 0 2.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 0 1-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 0 0-1.091-.852H4.5A2.25 2.25 0 0 0 2.25 4.5v2.25Z" />
+                                </svg>
+                            </span>
+                            <div class="min-w-0">
+                                <dt class="text-xs font-semibold uppercase tracking-wide text-white/70">No. HP</dt>
+                                <dd class="mt-0.5 text-base sm:text-lg font-bold font-mono break-words">{{ $infoNoHp }}</dd>
                             </div>
                         </div>
 

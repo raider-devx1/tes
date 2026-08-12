@@ -16,6 +16,13 @@ use Illuminate\Validation\Rule;
 class AbsensiController extends Controller
 {
     /**
+     * Batas ukuran berkas foto absensi yang boleh diunggah siswa (dalam KB).
+     * 3072 KB = 3 MB. Dipakai pada rule validasi "max:" untuk foto absensi
+     * (absen harian maupun ganti foto yang ditolak guru).
+     */
+    private const MAKS_UKURAN_FOTO_KB = 3072;
+
+    /**
      * Normalisasi input jam ke format H:i:s (tanpa milidetik).
      * Menerima "H:i" atau "H:i:s"; hasil selalu "HH:MM:SS".
      */
@@ -256,9 +263,13 @@ class AbsensiController extends Controller
 
         $batasGantiFoto = $absensiDitolak?->batasGantiFoto();
 
+        // Pilihan dropdown "Hari Awal" & "Hari Akhir" pada modal pengajuan
+        // jam + hari kerja industri (Senin s.d. Minggu).
+        $daftarHari = User::daftarHari();
+
         return view('siswa.absensi.index', compact(
             'absensis', 'rekap', 'bulan', 'jendela', 'siswa', 'jamAdmin', 'absensiHariIni',
-            'absensiDitolak', 'batasGantiFoto'
+            'absensiDitolak', 'batasGantiFoto', 'daftarHari'
         ));
     }
 
@@ -354,46 +365,55 @@ class AbsensiController extends Controller
             return back()->with('success', 'Jam pulang berhasil dicatat.');
         }
 
-        // ---- Tahap absen utama: status + foto kamera wajib + catatan opsional ----
+        // ---- Tahap absen utama: status + foto unggahan wajib + catatan opsional ----
         //
         // CATATAN PENTING (perubahan alur):
-        // Fitur UPLOAD berkas sudah DIHAPUS. Foto hanya boleh diambil LANGSUNG
-        // dari kamera perangkat (komponen <x-kamera-absensi />) dan dikirim
-        // sebagai data URL base64 pada field "foto_kamera", lalu dikompres
-        // otomatis oleh ImageCompressor::storeDataUrl().
+        // Pengambilan foto LANGSUNG DARI KAMERA sudah DIGANTI dengan UNGGAH FOTO.
+        // Siswa mengunggah berkas foto lewat komponen <x-upload-foto-absensi />
+        // pada field "foto_bukti" (form memakai enctype="multipart/form-data").
+        //
+        // Aturan berkas: gambar JPG/JPEG/PNG/WEBP, ukuran MAKSIMAL 3 MB
+        // (self::MAKS_UKURAN_FOTO_KB). Setelah lolos validasi, foto tetap
+        // diperkecil & dikompres otomatis oleh ImageCompressor::store().
         //
         // Foto HANYA diminta pada absen JAM MASUK, yaitu saat baris absensi
         // hari ini belum memiliki foto. Absen pulang tidak meminta foto lagi.
         $status    = $request->input('status', 'Hadir');
         $labelFoto = $status === 'Hadir'
-            ? 'Foto wajah dengan latar belakang tempat industri wajib diambil melalui kamera.'
-            : 'Foto bukti izin/sakit wajib diambil melalui kamera.';
+            ? 'Foto wajah dengan latar belakang tempat industri wajib diunggah.'
+            : 'Foto bukti izin/sakit wajib diunggah.';
 
         // Foto wajib bila belum ada foto tersimpan sebelumnya.
         $fotoRule = $absensi->foto_bukti ? 'nullable' : 'required';
 
-        $validated = $request->validate([
+        $request->validate([
             'status'             => ['required', Rule::in(['Hadir', 'Izin', 'Sakit'])],
             'catatan_instruktur' => ['nullable', 'string', 'max:1000'],
-            'foto_kamera'        => [
+            'foto_bukti'         => [
                 $fotoRule,
-                'string',
-                function ($atribut, $nilai, $gagal) {
-                    if (filled($nilai) && ! ImageCompressor::validDataUrl($nilai)) {
-                        $gagal('Foto kamera tidak terbaca atau rusak. Silakan ambil ulang foto.');
-                    }
-                },
+                'file',
+                'image',
+                'mimes:jpeg,jpg,png,webp',
+                'max:' . self::MAKS_UKURAN_FOTO_KB,
             ],
         ], [
-            'foto_kamera.required' => $labelFoto,
-            'foto_kamera.string'   => 'Foto harus diambil melalui kamera pada halaman ini.',
+            'foto_bukti.required' => $labelFoto,
+            'foto_bukti.file'     => 'Foto gagal diunggah. Silakan pilih ulang berkas fotonya.',
+            'foto_bukti.image'    => 'Berkas yang diunggah harus berupa gambar (JPG, JPEG, PNG, atau WEBP).',
+            'foto_bukti.mimes'    => 'Format foto harus JPG, JPEG, PNG, atau WEBP.',
+            'foto_bukti.max'      => 'Ukuran foto maksimal 3 MB. Silakan pilih foto lain yang ukurannya lebih kecil.',
         ]);
 
-        if (filled($validated['foto_kamera'] ?? null)) {
-            $pathFoto = ImageCompressor::storeDataUrl($validated['foto_kamera'], 'bukti_fisik/absensi');
+        $validated = [
+            'status'             => $request->input('status'),
+            'catatan_instruktur' => $request->input('catatan_instruktur'),
+        ];
+
+        if ($request->hasFile('foto_bukti')) {
+            $pathFoto = ImageCompressor::store($request->file('foto_bukti'), 'bukti_fisik/absensi');
 
             if (! $pathFoto) {
-                return back()->with('error', 'Foto gagal disimpan. Silakan ambil ulang foto lalu kirim kembali.');
+                return back()->with('error', 'Foto gagal disimpan. Silakan unggah ulang foto lalu kirim kembali.');
             }
 
             if ($absensi->foto_bukti) {
@@ -439,33 +459,53 @@ class AbsensiController extends Controller
     }
 
     /**
-     * Siswa MENGAJUKAN jam masuk/pulang khusus (bila jam yang ditetapkan admin
-     * tidak sesuai dengan template industri tempat PKL). Diajukan ke guru
-     * pembimbing untuk divalidasi.
+     * Siswa MENGAJUKAN jam masuk/pulang + HARI KERJA khusus (bila jam/hari yang
+     * ditetapkan admin tidak sesuai dengan industri tempat PKL). Jam dan hari
+     * kerja diajukan BERSAMAAN dalam satu pengajuan, lalu divalidasi guru
+     * pembimbing (atau admin).
+     *
+     * Hari kerja dipilih siswa lewat dua dropdown: hari awal & hari akhir
+     * (Senin s.d. Minggu), disimpan sebagai "{hari_awal}_{hari_akhir}" pada
+     * kolom users.hari_kerja_usulan sampai disetujui.
      */
     public function ajukanJamSiswa(Request $request)
     {
         $siswa = Auth::user();
 
+        $pilihanHari = implode(',', array_keys(User::daftarHari()));
+
         $validated = $request->validate([
             'jam_masuk_usulan'   => ['required', 'regex:/^\d{1,2}:\d{2}(:\d{2})?$/'],
             'jam_pulang_usulan'  => ['required', 'regex:/^\d{1,2}:\d{2}(:\d{2})?$/'],
+            'hari_awal_usulan'   => ['required', 'string', 'in:' . $pilihanHari],
+            'hari_akhir_usulan'  => ['required', 'string', 'in:' . $pilihanHari],
             'catatan_jam_usulan' => ['nullable', 'string', 'max:500'],
         ], [
             'jam_masuk_usulan.required'  => 'Jam masuk usulan wajib diisi.',
             'jam_pulang_usulan.required' => 'Jam pulang usulan wajib diisi.',
             'jam_masuk_usulan.regex'     => 'Format jam masuk harus HH:MM.',
             'jam_pulang_usulan.regex'    => 'Format jam pulang harus HH:MM.',
+            'hari_awal_usulan.required'  => 'Hari awal kerja wajib dipilih.',
+            'hari_akhir_usulan.required' => 'Hari akhir kerja wajib dipilih.',
+            'hari_awal_usulan.in'        => 'Pilihan hari awal tidak dikenali.',
+            'hari_akhir_usulan.in'       => 'Pilihan hari akhir tidak dikenali.',
         ]);
+
+        $hariKerjaUsulan = User::gabungHariKerja(
+            $validated['hari_awal_usulan'],
+            $validated['hari_akhir_usulan']
+        );
 
         $siswa->update([
             'jam_masuk_usulan'   => $this->normalizeJam($validated['jam_masuk_usulan']),
             'jam_pulang_usulan'  => $this->normalizeJam($validated['jam_pulang_usulan']),
+            'hari_kerja_usulan'  => $hariKerjaUsulan,
             'catatan_jam_usulan' => $validated['catatan_jam_usulan'] ?? null,
             'status_jam_usulan'  => 'diajukan',
         ]);
 
-        return back()->with('success', 'Usulan jam kerja industri berhasil diajukan ke guru pembimbing.');
+        return back()->with('success', 'Usulan jam kerja industri & hari kerja ('
+            . User::labelJadwal($hariKerjaUsulan) . ') berhasil diajukan ke guru pembimbing.');
     }
 
     /**
@@ -504,25 +544,28 @@ class AbsensiController extends Controller
             );
         }
 
-        $validated = $request->validate([
-            'foto_kamera' => [
+        // Foto pengganti DIUNGGAH (bukan lagi hasil jepretan kamera langsung).
+        // Aturan: gambar JPG/JPEG/PNG/WEBP, maksimal 3 MB.
+        $request->validate([
+            'foto_bukti' => [
                 'required',
-                'string',
-                function ($atribut, $nilai, $gagal) {
-                    if (filled($nilai) && ! ImageCompressor::validDataUrl($nilai)) {
-                        $gagal('Foto kamera tidak terbaca atau rusak. Silakan ambil ulang foto.');
-                    }
-                },
+                'file',
+                'image',
+                'mimes:jpeg,jpg,png,webp',
+                'max:' . self::MAKS_UKURAN_FOTO_KB,
             ],
         ], [
-            'foto_kamera.required' => 'Foto wajah dengan latar belakang tempat industri wajib diambil melalui kamera.',
-            'foto_kamera.string'   => 'Foto harus diambil melalui kamera pada halaman ini.',
+            'foto_bukti.required' => 'Foto wajah dengan latar belakang tempat industri wajib diunggah.',
+            'foto_bukti.file'     => 'Foto gagal diunggah. Silakan pilih ulang berkas fotonya.',
+            'foto_bukti.image'    => 'Berkas yang diunggah harus berupa gambar (JPG, JPEG, PNG, atau WEBP).',
+            'foto_bukti.mimes'    => 'Format foto harus JPG, JPEG, PNG, atau WEBP.',
+            'foto_bukti.max'      => 'Ukuran foto maksimal 3 MB. Silakan pilih foto lain yang ukurannya lebih kecil.',
         ]);
 
-        $pathFoto = ImageCompressor::storeDataUrl($validated['foto_kamera'], 'bukti_fisik/absensi');
+        $pathFoto = ImageCompressor::store($request->file('foto_bukti'), 'bukti_fisik/absensi');
 
         if (! $pathFoto) {
-            return back()->with('error', 'Foto gagal disimpan. Silakan ambil ulang foto lalu kirim kembali.');
+            return back()->with('error', 'Foto gagal disimpan. Silakan unggah ulang foto lalu kirim kembali.');
         }
 
         // Foto lama dihapus supaya tidak menumpuk di penyimpanan hosting.
@@ -698,9 +741,10 @@ class AbsensiController extends Controller
     }
 
     /**
-     * Guru memvalidasi USULAN jam masuk/pulang dari siswa bimbingannya.
-     * aksi = setuju  -> jam usulan diterapkan sebagai jam industri efektif.
-     * aksi = tolak   -> usulan dibatalkan, siswa kembali memakai jam admin.
+     * Guru memvalidasi USULAN jam masuk/pulang + HARI KERJA dari siswa
+     * bimbingannya (satu pengajuan berisi keduanya).
+     * aksi = setuju  -> jam & hari usulan diterapkan sebagai jadwal efektif.
+     * aksi = tolak   -> usulan dibatalkan, siswa kembali memakai jadwal admin.
      */
     public function validasiJamByGuru(Request $request, $siswaId)
     {
@@ -720,23 +764,38 @@ class AbsensiController extends Controller
                 'jam_masuk_usulan'   => null,
                 'jam_pulang_usulan'  => null,
                 'catatan_jam_usulan' => null,
+                // Usulan HARI kerja ikut dibatalkan; jadwal lama tetap berlaku.
+                'hari_kerja_usulan'  => null,
             ]);
 
-            return back()->with('success', 'Usulan jam kerja siswa ditolak. Siswa kembali memakai jam dari admin.');
+            return back()->with('success', 'Usulan jam & hari kerja siswa ditolak. Siswa kembali memakai jadwal sebelumnya.');
         }
+
+        // Hari kerja hanya ditimpa bila siswa memang mengusulkannya.
+        $hariUsulan = $siswa->punyaUsulanHariKerja()
+            ? (string) $siswa->hari_kerja_usulan
+            : null;
 
         $siswa->update([
             'jam_masuk_industri'  => $siswa->jam_masuk_usulan,
             'jam_pulang_industri' => $siswa->jam_pulang_usulan,
             'status_jam_usulan'   => 'disetujui',
+            'hari_kerja'          => $hariUsulan ?? $siswa->hari_kerja,
+            'hari_kerja_usulan'   => null,
         ]);
 
-        return back()->with('success', 'Usulan jam kerja disetujui dan diterapkan untuk siswa tersebut.');
+        return back()->with('success', $hariUsulan === null
+            ? 'Usulan jam kerja disetujui dan diterapkan untuk siswa tersebut.'
+            : 'Usulan jam & hari kerja disetujui. Jadwal siswa kini '
+                . User::labelJadwal($hariUsulan) . ' (' . User::keteranganJadwal($hariUsulan) . ').');
     }
 
     /**
-     * Guru mengubah SENDIRI jam masuk/pulang industri siswa bimbingannya
-     * (tanpa harus menunggu usulan siswa).
+     * Guru mengubah SENDIRI jam masuk/pulang + hari kerja industri siswa
+     * bimbingannya (tanpa harus menunggu usulan siswa).
+     *
+     * Hari kerja opsional: bila dropdown hari awal/akhir tidak dikirim, jadwal
+     * hari kerja siswa dibiarkan seperti sebelumnya.
      */
     public function updateJamByGuru(Request $request, $siswaId)
     {
@@ -748,25 +807,46 @@ class AbsensiController extends Controller
             'Akses ditolak: siswa ini bukan bimbingan Anda.'
         );
 
+        $pilihanHari = implode(',', array_keys(User::daftarHari()));
+
         $validated = $request->validate([
             'jam_masuk_industri'  => ['required', 'regex:/^\d{1,2}:\d{2}(:\d{2})?$/'],
             'jam_pulang_industri' => ['required', 'regex:/^\d{1,2}:\d{2}(:\d{2})?$/'],
+            'hari_awal'           => ['nullable', 'string', 'in:' . $pilihanHari],
+            'hari_akhir'          => ['nullable', 'string', 'in:' . $pilihanHari],
         ], [
             'jam_masuk_industri.required'  => 'Jam masuk wajib diisi.',
             'jam_pulang_industri.required' => 'Jam pulang wajib diisi.',
             'jam_masuk_industri.regex'     => 'Format jam masuk harus HH:MM.',
             'jam_pulang_industri.regex'    => 'Format jam pulang harus HH:MM.',
+            'hari_awal.in'                 => 'Pilihan hari awal tidak dikenali.',
+            'hari_akhir.in'                => 'Pilihan hari akhir tidak dikenali.',
         ]);
 
-        $siswa->update([
+        $hariKerja = User::gabungHariKerja(
+            $validated['hari_awal'] ?? null,
+            $validated['hari_akhir'] ?? null
+        );
+
+        $data = [
             'jam_masuk_industri'  => $this->normalizeJam($validated['jam_masuk_industri']),
             'jam_pulang_industri' => $this->normalizeJam($validated['jam_pulang_industri']),
             'status_jam_usulan'   => 'disetujui',
             'jam_masuk_usulan'    => null,
             'jam_pulang_usulan'   => null,
-        ]);
+        ];
 
-        return back()->with('success', 'Jam kerja industri siswa berhasil diperbarui.');
+        if ($hariKerja !== null) {
+            $data['hari_kerja']        = $hariKerja;
+            $data['hari_kerja_usulan'] = null;   // usulan siswa selesai ditangani
+        }
+
+        $siswa->update($data);
+
+        return back()->with('success', 'Jam kerja industri siswa berhasil diperbarui'
+            . ($hariKerja !== null
+                ? '. Hari kerja: ' . User::labelJadwal($hariKerja) . ' (' . User::keteranganJadwal($hariKerja) . ').'
+                : '.'));
     }
 
     /*

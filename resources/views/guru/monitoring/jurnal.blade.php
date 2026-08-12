@@ -87,8 +87,8 @@
             <form method="GET" action="{{ route('guru.monitoring.jurnal') }}"
                   class="rounded-2xl border-2 border-[#0047d6]/15 bg-white p-5 flex flex-wrap gap-3 items-end shadow-sm">
                 <div class="flex-1 min-w-[220px]">
-                    <label class="block text-xs font-bold uppercase tracking-wide text-black mb-1">Cari (Nama / NISN)</label>
-                    <input type="text" name="q" value="{{ request('q') }}" placeholder="Ketik nama atau NISN siswa..."
+                    <label class="block text-xs font-bold uppercase tracking-wide text-black mb-1">Cari (Nama / NIS)</label>
+                    <input type="text" name="q" value="{{ request('q') }}" placeholder="Ketik nama atau NIS siswa..."
                            class="w-full rounded-xl border-2 border-[#0047d6]/25 bg-white px-4 py-2.5 text-sm font-medium text-black placeholder-[#a8acb3] focus:border-[#0047d6] focus:ring-2 focus:ring-[#0047d6]/30">
                 </div>
                 <div>
@@ -122,7 +122,7 @@
                             <th class="px-4 py-3 text-center w-12 font-bold">No</th>
                             <th class="px-4 py-3 font-bold">Tanggal</th>
                             <th class="px-4 py-3 font-bold">Nama</th>
-                            <th class="px-4 py-3 font-bold">NISN</th>
+                            <th class="px-4 py-3 font-bold">NIS</th>
                             <th class="px-4 py-3 font-bold">Unit Kerja</th>
                             <th class="px-4 py-3 font-bold">Catatan Instruktur</th>
                             <th class="px-4 py-3 font-bold">Foto Kegiatan</th>
@@ -413,7 +413,7 @@
                                             <p class="text-sm font-bold text-black">{{ $jurnal->siswa->name ?? '-' }}</p>
                                         </div>
                                         <div>
-                                            <p class="text-xs font-bold uppercase tracking-wide text-[#5b616e]">NISN</p>
+                                            <p class="text-xs font-bold uppercase tracking-wide text-[#5b616e]">NIS</p>
                                             <p class="text-sm font-medium text-black">{{ $jurnal->siswa->nisn ?? '-' }}</p>
                                         </div>
                                         <div>

@@ -66,14 +66,15 @@
                 {{-- ==========  TAMPILAN LAPTOP / PC (TABEL, >=1024px)  ========= --}}
                 {{-- ============================================================= --}}
                 <div class="mon-desktop overflow-x-auto rounded-xl border-2 border-[#0047d6]/15">
-                    <table class="w-full min-w-[1100px] text-left text-sm">
+                    <table class="w-full min-w-[1200px] text-left text-sm">
                         <thead>
                             <tr class="bg-[#0047d6] text-xs uppercase tracking-wide text-white">
                                 <th class="px-3 py-3 text-center w-12 font-bold">No</th>
                                 <th class="px-3 py-3 font-bold">Nama Siswa</th>
-                                <th class="px-3 py-3 font-bold">NISN</th>
+                                <th class="px-3 py-3 font-bold">NIS</th>
                                 <th class="px-3 py-3 font-bold">Kelas</th>
                                 <th class="px-3 py-3 font-bold">Jurusan</th>
+                                <th class="px-3 py-3 font-bold">No. HP</th>
                                 <th class="px-3 py-3 font-bold">Nama Instruktur</th>
                                 <th class="px-3 py-3 font-bold">Tempat Industri</th>
                                 <th class="px-3 py-3 text-center font-bold">Status</th>
@@ -88,6 +89,8 @@
                                     <td class="px-3 py-3 whitespace-nowrap font-medium text-black">{{ $siswa->nisn ?? '-' }}</td>
                                     <td class="px-3 py-3 font-medium text-black">{{ $siswa->kelas ?? '-' }}</td>
                                     <td class="px-3 py-3 font-medium text-black">{{ $siswa->jurusan ?? '-' }}</td>
+                                    {{-- No. HP siswa: ditampilkan sebagai teks biasa (tanpa tautan) --}}
+                                    <td class="px-3 py-3 whitespace-nowrap font-medium text-black">{{ filled($siswa->no_hp) ? $siswa->no_hp : '-' }}</td>
                                     <td class="px-3 py-3 font-medium text-black">{{ optional($siswa->instruktur)->name ?? '-' }}</td>
                                     <td class="px-3 py-3 font-medium text-black">{{ optional($siswa->perusahaan)->nama_perusahaan ?? '-' }}</td>
                                     <td class="px-3 py-3 text-center">
@@ -190,7 +193,7 @@
                                         </div>
                                         <div class="grid grid-cols-2 gap-3">
                                             <div>
-                                                <p class="text-xs font-bold uppercase tracking-wide text-[#5b616e]">NISN</p>
+                                                <p class="text-xs font-bold uppercase tracking-wide text-[#5b616e]">NIS</p>
                                                 <p class="text-sm font-bold text-black">{{ $siswa->nisn ?? '-' }}</p>
                                             </div>
                                             <div>
@@ -211,6 +214,11 @@
                                                 <p class="text-xs font-bold uppercase tracking-wide text-[#5b616e]">Jurusan</p>
                                                 <p class="text-sm font-bold text-black">{{ $siswa->jurusan ?? '-' }}</p>
                                             </div>
+                                        </div>
+                                        {{-- No. HP siswa: ditampilkan sebagai teks biasa (tanpa tautan) --}}
+                                        <div>
+                                            <p class="text-xs font-bold uppercase tracking-wide text-[#5b616e]">No. HP Siswa</p>
+                                            <p class="text-sm font-bold text-black break-words">{{ filled($siswa->no_hp) ? $siswa->no_hp : 'Belum diisi' }}</p>
                                         </div>
                                         <div>
                                             <p class="text-xs font-bold uppercase tracking-wide text-[#5b616e]">Nama Instruktur</p>

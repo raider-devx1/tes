@@ -41,7 +41,10 @@ use Illuminate\Notifications\Notifiable;
     // Tenggat pembukaan manual; null = tanpa batas waktu (harus ditutup manual).
     'absensi_dibuka_sampai',
     // --- Jadwal hari kerja absensi (per-siswa; null = ikut jadwal global) ---
+    // Format nilai: "{hari_awal}_{hari_akhir}", mis. senin_jumat / selasa_sabtu.
     'hari_kerja',
+    // Usulan hari kerja dari siswa, divalidasi guru/admin bersama usulan jam.
+    'hari_kerja_usulan',
     // --- Tanda tangan tersimpan milik guru pembimbing ---
     // Diunggah SEKALI dari halaman Monitoring Absensi, lalu tinggal dipilih
     // saat memberi nilai supaya guru tidak mengunggah berkas yang sama terus.
@@ -353,13 +356,14 @@ class User extends Authenticatable
     |--------------------------------------------------------------------------
     | JADWAL HARI KERJA ABSENSI
     |--------------------------------------------------------------------------
-    | Default seluruh sekolah: SENIN - JUMAT. Admin dapat mengubahnya menjadi
-    | SENIN - SABTU atau SENIN - MINGGU lewat tombol "Jadwal Absensi"
-    | (kunci: absensi_hari_kerja).
+    | Jadwal ditulis sebagai RENTANG HARI: "{hari_awal}_{hari_akhir}", mis.
+    | senin_jumat, senin_sabtu, selasa_sabtu, bahkan sabtu_rabu (melewati
+    | akhir pekan). Default seluruh sekolah: SENIN - JUMAT, diatur admin pada
+    | modal Pengaturan Absensi (kunci: absensi_hari_kerja).
     |
-    | Kolom users.hari_kerja adalah PENGECUALIAN per siswa: siswa yang tetap
-    | masuk sampai Sabtu/Minggu dapat diberi jadwalnya sendiri walau jadwal
-    | sekolah hanya sampai Jumat. Bernilai null berarti ikut jadwal global.
+    | Kolom users.hari_kerja adalah PENGECUALIAN per siswa; null berarti ikut
+    | jadwal global. Kolom users.hari_kerja_usulan menampung USULAN siswa
+    | yang menunggu validasi guru/admin (diajukan bersama usulan jam kerja).
     |
     | Hari yang BUKAN hari kerja tidak boleh diisi absensi dan TIDAK pernah
     | ditandai Alpha otomatis -- barisnya sengaja dibiarkan kosong.
@@ -368,34 +372,160 @@ class User extends Authenticatable
     public const HARI_KERJA_SENIN_SABTU  = 'senin_sabtu';
     public const HARI_KERJA_SENIN_MINGGU = 'senin_minggu';
 
-    /** Semua pilihan jadwal yang sah (dipakai validasi & dropdown admin). */
-    public static function daftarHariKerja(): array
+    /**
+     * Tujuh hari dalam seminggu beserta labelnya. Kunci array dipakai sebagai
+     * nilai dropdown "Hari Awal" / "Hari Akhir", dan urutannya mengikuti ISO
+     * (Senin = 1 ... Minggu = 7) agar mudah dibandingkan dengan Carbon.
+     *
+     * @return array<string, string>
+     */
+    public static function daftarHari(): array
     {
         return [
-            self::HARI_KERJA_SENIN_JUMAT,
-            self::HARI_KERJA_SENIN_SABTU,
-            self::HARI_KERJA_SENIN_MINGGU,
+            'senin'  => 'Senin',
+            'selasa' => 'Selasa',
+            'rabu'   => 'Rabu',
+            'kamis'  => 'Kamis',
+            'jumat'  => 'Jumat',
+            'sabtu'  => 'Sabtu',
+            'minggu' => 'Minggu',
         ];
     }
 
-    /** Label layar untuk sebuah nilai jadwal. */
+    /** Label satu hari: 'senin' -> 'Senin'. String kosong bila tak dikenali. */
+    public static function labelHari(?string $hari): string
+    {
+        return self::daftarHari()[strtolower(trim((string) $hari))] ?? '';
+    }
+
+    /** Nomor hari ISO: senin = 1 ... minggu = 7 (0 bila tidak dikenali). */
+    public static function indeksHari(?string $hari): int
+    {
+        $posisi = array_search(
+            strtolower(trim((string) $hari)),
+            array_keys(self::daftarHari()),
+            true
+        );
+
+        return $posisi === false ? 0 : ((int) $posisi + 1);
+    }
+
+    /** Gabungkan pilihan dropdown menjadi nilai kolom: "senin" + "jumat" -> "senin_jumat". */
+    public static function gabungHariKerja(?string $awal, ?string $akhir): ?string
+    {
+        $daftar = self::daftarHari();
+        $a      = strtolower(trim((string) $awal));
+        $b      = strtolower(trim((string) $akhir));
+
+        if (! isset($daftar[$a]) || ! isset($daftar[$b])) {
+            return null;
+        }
+
+        return $a . '_' . $b;
+    }
+
+    /**
+     * Pecah nilai kolom menjadi ['awal' => 'senin', 'akhir' => 'jumat'].
+     * Mengembalikan null bila nilainya kosong / tidak dikenali.
+     *
+     * @return array{awal: string, akhir: string}|null
+     */
+    public static function pisahHariKerja(?string $nilai): ?array
+    {
+        $bagian = explode('_', strtolower(trim((string) $nilai)));
+
+        if (count($bagian) !== 2) {
+            return null;
+        }
+
+        [$awal, $akhir] = $bagian;
+        $daftar         = self::daftarHari();
+
+        if (! isset($daftar[$awal]) || ! isset($daftar[$akhir])) {
+            return null;
+        }
+
+        return ['awal' => $awal, 'akhir' => $akhir];
+    }
+
+    /**
+     * Semua kombinasi jadwal yang sah: hari awal & hari akhir bebas dipilih
+     * dari Senin sampai Minggu (7 x 7 = 49 kombinasi). Dipakai oleh Rule::in
+     * pada validasi usulan siswa, guru, maupun admin.
+     *
+     * @return array<int, string>
+     */
+    public static function daftarHariKerja(): array
+    {
+        $hari  = array_keys(self::daftarHari());
+        $hasil = [];
+
+        foreach ($hari as $awal) {
+            foreach ($hari as $akhir) {
+                $hasil[] = $awal . '_' . $akhir;
+            }
+        }
+
+        return $hasil;
+    }
+
+    /** Label layar untuk sebuah nilai jadwal, mis. 'Senin - Sabtu'. */
     public static function labelJadwal(?string $nilai): string
     {
-        return match ((string) $nilai) {
-            self::HARI_KERJA_SENIN_MINGGU => 'Senin - Minggu',
-            self::HARI_KERJA_SENIN_SABTU  => 'Senin - Sabtu',
-            default                       => 'Senin - Jumat',
-        };
+        $pecah = self::pisahHariKerja($nilai);
+
+        if (! $pecah) {
+            return 'Senin - Jumat';
+        }
+
+        return self::labelHari($pecah['awal']) . ' - ' . self::labelHari($pecah['akhir']);
+    }
+
+    /**
+     * Daftar hari yang MASUK KERJA pada sebuah jadwal (urut dari hari awal).
+     * Rentang boleh melewati akhir pekan, mis. 'sabtu_rabu'.
+     *
+     * @return array<int, string>
+     */
+    public static function hariMasukJadwal(?string $nilai): array
+    {
+        $pecah = self::pisahHariKerja($nilai) ?? ['awal' => 'senin', 'akhir' => 'jumat'];
+        $urut  = array_keys(self::daftarHari());
+        $awal  = self::indeksHari($pecah['awal']);
+        $akhir = self::indeksHari($pecah['akhir']);
+        $hasil = [];
+
+        for ($i = 0; $i < 7; $i++) {
+            $indeks  = (($awal - 1 + $i) % 7) + 1;
+            $hasil[] = $urut[$indeks - 1];
+
+            if ($indeks === $akhir) {
+                break;
+            }
+        }
+
+        return $hasil;
     }
 
     /** Keterangan singkat: hari mana saja yang dilewati oleh sebuah jadwal. */
     public static function keteranganJadwal(?string $nilai): string
     {
-        return match ((string) $nilai) {
-            self::HARI_KERJA_SENIN_MINGGU => 'tanpa hari libur, absensi diisi setiap hari',
-            self::HARI_KERJA_SENIN_SABTU  => 'hanya Minggu yang dilewati',
-            default                       => 'Sabtu & Minggu dilewati',
-        };
+        $masuk = self::hariMasukJadwal($nilai);
+        $libur = array_values(array_diff(array_keys(self::daftarHari()), $masuk));
+
+        if (empty($libur)) {
+            return 'tanpa hari libur, absensi diisi setiap hari';
+        }
+
+        $label = array_map(fn ($hari) => self::labelHari($hari), $libur);
+
+        if (count($label) === 1) {
+            return 'hanya ' . $label[0] . ' yang dilewati';
+        }
+
+        $terakhir = array_pop($label);
+
+        return implode(', ', $label) . ' & ' . $terakhir . ' dilewati';
     }
 
     /** Jadwal hari kerja GLOBAL yang berlaku di seluruh sekolah. */
@@ -403,9 +533,7 @@ class User extends Authenticatable
     {
         $nilai = (string) Pengaturan::ambil('absensi_hari_kerja', self::HARI_KERJA_SENIN_JUMAT);
 
-        return in_array($nilai, self::daftarHariKerja(), true)
-            ? $nilai
-            : self::HARI_KERJA_SENIN_JUMAT;
+        return self::pisahHariKerja($nilai) ? $nilai : self::HARI_KERJA_SENIN_JUMAT;
     }
 
     /** Jadwal hari kerja yang benar-benar berlaku untuk siswa ini. */
@@ -413,40 +541,86 @@ class User extends Authenticatable
     {
         $khusus = (string) ($this->hari_kerja ?? '');
 
-        if (in_array($khusus, self::daftarHariKerja(), true)) {
-            return $khusus;
-        }
-
-        return self::hariKerjaGlobal();
+        return self::pisahHariKerja($khusus) ? $khusus : self::hariKerjaGlobal();
     }
 
     /** True bila siswa ini memakai jadwal khusus (bukan jadwal global admin). */
     public function pakaiHariKerjaKhusus(): bool
     {
-        return in_array((string) ($this->hari_kerja ?? ''), self::daftarHariKerja(), true);
+        return (bool) self::pisahHariKerja((string) ($this->hari_kerja ?? ''));
+    }
+
+    /** Hari AWAL kerja yang berlaku untuk siswa ini (nilai dropdown). */
+    public function hariAwalEfektif(): string
+    {
+        return self::pisahHariKerja($this->hariKerjaEfektif())['awal'] ?? 'senin';
+    }
+
+    /** Hari AKHIR kerja yang berlaku untuk siswa ini (nilai dropdown). */
+    public function hariAkhirEfektif(): string
+    {
+        return self::pisahHariKerja($this->hariKerjaEfektif())['akhir'] ?? 'jumat';
+    }
+
+    /**
+     * Daftar hari masuk kerja siswa ini.
+     *
+     * @return array<int, string>
+     */
+    public function hariMasukEfektif(): array
+    {
+        return self::hariMasukJadwal($this->hariKerjaEfektif());
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | USULAN HARI KERJA DARI SISWA (diajukan bersama usulan jam kerja)
+    |--------------------------------------------------------------------------
+    */
+
+    /** True bila siswa ini sedang mengusulkan hari kerja. */
+    public function punyaUsulanHariKerja(): bool
+    {
+        return (bool) self::pisahHariKerja((string) ($this->hari_kerja_usulan ?? ''));
+    }
+
+    /** Hari awal yang diusulkan siswa (null bila tidak ada usulan). */
+    public function hariAwalUsulan(): ?string
+    {
+        return self::pisahHariKerja((string) ($this->hari_kerja_usulan ?? ''))['awal'] ?? null;
+    }
+
+    /** Hari akhir yang diusulkan siswa (null bila tidak ada usulan). */
+    public function hariAkhirUsulan(): ?string
+    {
+        return self::pisahHariKerja((string) ($this->hari_kerja_usulan ?? ''))['akhir'] ?? null;
+    }
+
+    /** Label usulan hari kerja siswa, mis. 'Senin - Sabtu' ('' bila kosong). */
+    public function labelHariKerjaUsulan(): string
+    {
+        return $this->punyaUsulanHariKerja()
+            ? self::labelJadwal((string) $this->hari_kerja_usulan)
+            : '';
     }
 
     /** True bila jadwal siswa ini menjadikan Sabtu sebagai hari kerja. */
     public function masukSampaiSabtu(): bool
     {
-        return in_array($this->hariKerjaEfektif(), [
-            self::HARI_KERJA_SENIN_SABTU,
-            self::HARI_KERJA_SENIN_MINGGU,
-        ], true);
+        return in_array('sabtu', $this->hariMasukEfektif(), true);
     }
 
     /** True bila jadwal siswa ini menjadikan Minggu sebagai hari kerja. */
     public function masukSampaiMinggu(): bool
     {
-        return $this->hariKerjaEfektif() === self::HARI_KERJA_SENIN_MINGGU;
+        return in_array('minggu', $this->hariMasukEfektif(), true);
     }
 
     /**
      * Apakah tanggal tertentu termasuk hari kerja bagi siswa ini?
-     *
-     *  - 'senin_jumat'  : Sabtu & Minggu BUKAN hari kerja
-     *  - 'senin_sabtu'  : hanya Minggu yang bukan hari kerja
-     *  - 'senin_minggu' : setiap hari adalah hari kerja
+     * Hari kerja = rentang "hari awal s.d. hari akhir" yang dipilih siswa,
+     * guru, atau admin -- mis. 'senin_jumat' (Sabtu & Minggu libur),
+     * 'selasa_sabtu', atau 'senin_minggu' (setiap hari masuk).
      */
     public function adalahHariKerja($tanggal): bool
     {
@@ -454,17 +628,10 @@ class User extends Authenticatable
             ? $tanggal
             : \Carbon\Carbon::parse($tanggal);
 
-        $hari = (int) $c->dayOfWeek; // 0 = Minggu ... 6 = Sabtu
+        $urut = array_keys(self::daftarHari());        // senin ... minggu
+        $hari = $urut[((int) $c->dayOfWeekIso) - 1] ?? 'senin';
 
-        if ($hari === 0) {
-            return $this->masukSampaiMinggu();
-        }
-
-        if ($hari === 6) {
-            return $this->masukSampaiSabtu();
-        }
-
-        return true;                // Senin - Jumat
+        return in_array($hari, $this->hariMasukEfektif(), true);
     }
 
     /** Label jadwal hari kerja untuk ditampilkan di layar. */

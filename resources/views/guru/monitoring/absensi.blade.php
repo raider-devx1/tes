@@ -53,7 +53,7 @@
                                 <div class="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain px-4 py-4 pb-[calc(1rem+env(safe-area-inset-bottom))] text-left sm:px-5 sm:pb-4">
                                     <div class="flex gap-2">
                                         <button type="button" @click="mode='semua'" :class="mode==='semua' ? 'bg-[#0047d6] text-white' : 'bg-gray-100 text-[#5b616e]'" class="flex-1 rounded-lg px-3 py-2 text-sm font-bold">Semua Bimbingan</button>
-                                        <button type="button" @click="mode='nisn'" :class="mode==='nisn' ? 'bg-[#0047d6] text-white' : 'bg-gray-100 text-[#5b616e]'" class="flex-1 rounded-lg px-3 py-2 text-sm font-bold">Per NISN</button>
+                                        <button type="button" @click="mode='nisn'" :class="mode==='nisn' ? 'bg-[#0047d6] text-white' : 'bg-gray-100 text-[#5b616e]'" class="flex-1 rounded-lg px-3 py-2 text-sm font-bold">Per NIS</button>
                                     </div>
                                     <p class="rounded-lg bg-amber-50 px-3 py-2 text-xs font-medium text-[#d98200]">Berlaku untuk siswa bimbingan Anda. Jika admin membuka absensi global, absensi tetap terbuka untuk semua.</p>
 
@@ -116,10 +116,10 @@
 
                                     <div x-show="mode==='nisn'" class="space-y-3">
                                         <div>
-                                            <label class="mb-1 block text-xs font-bold text-[#5b616e]">NISN Siswa</label>
-                                            <input type="text" x-model="nisn" placeholder="Masukkan NISN" class="w-full rounded-xl border-gray-200 text-sm focus:border-[#0047d6] focus:ring-[#0047d6]">
+                                            <label class="mb-1 block text-xs font-bold text-[#5b616e]">NIS Siswa</label>
+                                            <input type="text" x-model="nisn" placeholder="Masukkan NIS" class="w-full rounded-xl border-gray-200 text-sm focus:border-[#0047d6] focus:ring-[#0047d6]">
                                             <p x-show="nisn.trim()!=='' && cocok" x-cloak class="mt-1 text-xs font-bold text-[#05b169]">✓ Cocok: <span x-text="cocok?.name"></span></p>
-                                            <p x-show="nisn.trim()!=='' && !cocok" x-cloak class="mt-1 text-xs font-bold text-[#cf202f]">NISN bukan siswa bimbingan Anda / tidak ditemukan.</p>
+                                            <p x-show="nisn.trim()!=='' && !cocok" x-cloak class="mt-1 text-xs font-bold text-[#cf202f]">NIS bukan siswa bimbingan Anda / tidak ditemukan.</p>
                                         </div>
                                         <div class="flex gap-2">
                                             <form method="POST" action="{{ route('guru.monitoring.absensi.buka') }}" class="flex-1">@csrf<input type="hidden" name="mode" value="nisn"><input type="hidden" name="nisn" :value="nisn"><input type="hidden" name="aksi" value="buka"><input type="hidden" name="durasi_menit" :value="durasi"><input type="hidden" name="tanpa_batas" :value="tanpaBatas ? 1 : 0"><button type="submit" :disabled="!cocok || !durasiValid" :class="(!cocok || !durasiValid) ? 'opacity-40 cursor-not-allowed' : 'hover:bg-[#049a5b]'" class="w-full rounded-xl bg-[#05b169] px-4 py-2.5 text-sm font-bold text-white">Buka Siswa Ini</button></form>
@@ -293,13 +293,13 @@
                 <div class="rounded-2xl border-2 border-[#cf202f]/30 bg-[#cf202f]/5 p-5 shadow-sm"><p class="text-xs font-bold uppercase tracking-wide text-[#5b616e]">Alpha</p><p class="mt-1 text-3xl font-bold text-[#cf202f]">{{ $rekap['Alpha'] ?? 0 }}</p></div>
             </div>
 
-            {{-- ===== JAM KERJA INDUSTRI: VALIDASI USULAN + EDIT MANDIRI ===== --}}
+            {{-- ===== JAM & HARI KERJA INDUSTRI: VALIDASI USULAN + EDIT MANDIRI ===== --}}
             <div class="rounded-2xl border-2 border-[#0047d6]/15 bg-white p-4 sm:p-6 shadow-sm">
                 <div class="mb-4">
-                    <h3 class="text-lg font-bold tracking-tight text-black">Jam Kerja Industri Siswa Bimbingan</h3>
+                    <h3 class="text-lg font-bold tracking-tight text-black">Jam &amp; Hari Kerja Industri Siswa Bimbingan</h3>
                     <p class="text-xs font-medium text-[#5b616e]">
                         Jam standar admin: <span class="font-bold text-black">{{ substr($jamAdmin['masuk'],0,5) }} – {{ substr($jamAdmin['pulang'],0,5) }} WITA</span>.
-                        Validasi usulan jam siswa (bila sesuai tempat industrinya) atau atur sendiri jam masuk &amp; pulang siswa.
+                        Validasi usulan jam &amp; hari kerja siswa (bila sesuai tempat industrinya) atau atur sendiri jam masuk, jam pulang, dan rentang hari kerja siswa.
                     </p>
                 </div>
 
@@ -315,6 +315,12 @@
                             'kelas'       => $s->kelas ?? '-',
                             'jm'          => substr($s->jamMasukEfektif(), 0, 5),
                             'jp'          => substr($s->jamPulangEfektif(), 0, 5),
+                            // Hari kerja: nilai untuk dropdown (ha/hk) + label tampilan.
+                            'ha'          => $s->hariAwalEfektif(),
+                            'hk'          => $s->hariAkhirEfektif(),
+                            'hariLabel'   => $s->labelHariKerja(),
+                            'hariKhusus'  => $s->pakaiHariKerjaKhusus(),
+                            'usulanHari'  => $s->punyaUsulanHariKerja() ? $s->labelHariKerjaUsulan() : '',
                             'status'      => $st,
                             'statusLabel' => match ($st) {
                                 'diajukan'  => 'Menunggu Validasi',
@@ -341,8 +347,8 @@
                                     <div class="relative flex max-h-[85vh] w-full max-w-3xl flex-col rounded-2xl bg-white shadow-xl">
                                         <div class="flex items-center justify-between border-b border-gray-100 px-5 py-4">
                                             <div>
-                                                <h3 class="text-base font-bold text-black">Pengajuan Jam Menunggu Validasi</h3>
-                                                <p class="text-xs font-medium text-[#5b616e]">Total {{ $usulanJam->count() }} siswa mengajukan perubahan jam kerja.</p>
+                                                <h3 class="text-base font-bold text-black">Pengajuan Jam &amp; Hari Kerja Menunggu Validasi</h3>
+                                                <p class="text-xs font-medium text-[#5b616e]">Total {{ $usulanJam->count() }} siswa mengajukan perubahan jam &amp; hari kerja. Menyetujui berarti jam dan hari kerja usulan langsung berlaku.</p>
                                             </div>
                                             <button type="button" @click="openUsulan=false" class="text-2xl leading-none text-[#5b616e] hover:text-black">&times;</button>
                                         </div>
@@ -359,7 +365,9 @@
                                                         </div>
                                                         <div class="mt-2 grid grid-cols-2 gap-2 text-xs">
                                                             <div class="rounded-lg bg-slate-50 p-2"><p class="font-bold uppercase tracking-wide text-[#5b616e]">Jam Admin</p><p class="font-bold text-black">{{ substr($jamAdmin['masuk'],0,5) }} – {{ substr($jamAdmin['pulang'],0,5) }}</p></div>
-                                                            <div class="rounded-lg bg-[#0047d6]/5 p-2"><p class="font-bold uppercase tracking-wide text-[#5b616e]">Diajukan</p><p class="font-bold text-[#0047d6]">{{ substr($s->jam_masuk_usulan,0,5) }} – {{ substr($s->jam_pulang_usulan,0,5) }}</p></div>
+                                                            <div class="rounded-lg bg-[#0047d6]/5 p-2"><p class="font-bold uppercase tracking-wide text-[#5b616e]">Jam Diajukan</p><p class="font-bold text-[#0047d6]">{{ substr($s->jam_masuk_usulan,0,5) }} – {{ substr($s->jam_pulang_usulan,0,5) }}</p></div>
+                                                            <div class="rounded-lg bg-slate-50 p-2"><p class="font-bold uppercase tracking-wide text-[#5b616e]">Hari Berlaku</p><p class="font-bold text-black">{{ $s->labelHariKerja() }}</p></div>
+                                                            <div class="rounded-lg bg-[#0047d6]/5 p-2"><p class="font-bold uppercase tracking-wide text-[#5b616e]">Hari Diajukan</p><p class="font-bold text-[#0047d6]">{{ $s->punyaUsulanHariKerja() ? $s->labelHariKerjaUsulan() : 'tidak diubah' }}</p></div>
                                                         </div>
                                                         @if($s->catatan_jam_usulan)
                                                             <p class="mt-2 rounded-lg border-l-4 border-[#d98200] bg-[#d98200]/5 p-2 text-xs font-medium italic text-black">“{{ $s->catatan_jam_usulan }}”</p>
@@ -402,19 +410,19 @@
                                     <div class="absolute inset-0 bg-black/50" @click="tutupModal()"></div>
                                     <div class="relative flex max-h-[85vh] w-full max-w-md flex-col rounded-2xl bg-white shadow-xl">
                                         <div class="flex items-center justify-between border-b border-gray-100 px-5 py-4">
-                                            <h3 class="text-base font-bold text-black">Cari &amp; Edit Jam Kerja Siswa</h3>
+                                            <h3 class="text-base font-bold text-black">Cari &amp; Edit Jam &amp; Hari Kerja Siswa</h3>
                                             <button type="button" @click="tutupModal()" class="text-2xl leading-none text-[#5b616e] hover:text-black">&times;</button>
                                         </div>
                                         <div class="overflow-y-auto px-5 py-4 space-y-4 text-left">
                                             <div>
-                                                <label class="mb-1 block text-xs font-bold uppercase tracking-wide text-black">NISN Siswa</label>
+                                                <label class="mb-1 block text-xs font-bold uppercase tracking-wide text-black">NIS Siswa</label>
                                                 <div class="flex gap-2">
-                                                    <input type="text" x-model="nisn" @keydown.enter.prevent="cari()" inputmode="numeric" placeholder="Masukkan NISN siswa..."
+                                                    <input type="text" x-model="nisn" @keydown.enter.prevent="cari()" inputmode="numeric" placeholder="Masukkan NIS siswa..."
                                                            class="w-full rounded-xl border-2 border-[#0047d6]/25 bg-white px-4 py-2.5 text-sm font-medium text-black placeholder-[#a8acb3] focus:border-[#0047d6] focus:ring-2 focus:ring-[#0047d6]/30">
                                                     <button type="button" @click="cari()" class="shrink-0 rounded-xl bg-[#0047d6] px-4 py-2.5 text-sm font-bold text-white hover:bg-[#0038aa]">Cari</button>
                                                 </div>
                                                 <p x-show="pesanError" x-cloak x-text="pesanError" class="mt-1 text-xs font-bold text-[#cf202f]"></p>
-                                                <p class="mt-1 text-xs font-medium text-[#5b616e]">Masukkan NISN siswa bimbingan Anda untuk menampilkan &amp; mengubah jam kerjanya.</p>
+                                                <p class="mt-1 text-xs font-medium text-[#5b616e]">Masukkan NIS siswa bimbingan Anda untuk menampilkan &amp; mengubah jam &amp; hari kerjanya.</p>
                                             </div>
 
                                             <template x-if="siswa">
@@ -428,12 +436,16 @@
                                                             <span class="inline-block rounded-full bg-[#0047d6]/10 px-2.5 py-1 text-[11px] font-bold text-[#0047d6] whitespace-nowrap" x-text="siswa.statusLabel"></span>
                                                         </div>
                                                         <p class="mt-2 text-sm font-bold text-black">Jam berlaku saat ini: <span class="text-[#0047d6]" x-text="siswa.jm + ' – ' + siswa.jp"></span></p>
+                                                        <p class="mt-1 text-sm font-bold text-black">Hari kerja saat ini: <span class="text-[#0047d6]" x-text="siswa.hariLabel"></span></p>
+                                                        <template x-if="siswa.usulanHari">
+                                                            <p class="mt-1 text-xs font-bold text-[#d98200]" x-text="'Hari kerja diajukan siswa: ' + siswa.usulanHari"></p>
+                                                        </template>
                                                     </div>
 
                                                     <form :action="actionUrl" method="POST" class="space-y-4">
                                                         @csrf
                                                         @method('PUT')
-                                                        <p class="text-xs font-medium text-[#5b616e]">Jam yang Anda simpan langsung berlaku sebagai jam kerja industri siswa (status disetujui).</p>
+                                                        <p class="text-xs font-medium text-[#5b616e]">Jam <b>dan</b> hari kerja yang Anda simpan langsung berlaku untuk siswa ini (status disetujui).</p>
                                                         <div class="grid grid-cols-2 gap-3">
                                                             <div>
                                                                 <label class="block text-xs font-bold uppercase tracking-wide text-black mb-1">Jam Masuk</label>
@@ -446,9 +458,30 @@
                                                                        class="w-full rounded-xl border-2 border-[#0047d6]/25 bg-white px-3 py-2.5 text-sm font-medium text-black focus:border-[#0047d6] focus:ring-2 focus:ring-[#0047d6]/30">
                                                             </div>
                                                         </div>
+                                                        <div class="grid grid-cols-2 gap-3">
+                                                            <div>
+                                                                <label class="block text-xs font-bold uppercase tracking-wide text-black mb-1">Hari Awal</label>
+                                                                <select name="hari_awal" x-model="form.ha" required
+                                                                        class="w-full rounded-xl border-2 border-[#0047d6]/25 bg-white px-3 py-2.5 text-sm font-bold text-black focus:border-[#0047d6] focus:ring-2 focus:ring-[#0047d6]/30">
+                                                                    @foreach(\App\Models\User::daftarHari() as $kunciHari => $labelHari)
+                                                                        <option value="{{ $kunciHari }}">{{ $labelHari }}</option>
+                                                                    @endforeach
+                                                                </select>
+                                                            </div>
+                                                            <div>
+                                                                <label class="block text-xs font-bold uppercase tracking-wide text-black mb-1">Hari Akhir</label>
+                                                                <select name="hari_akhir" x-model="form.hk" required
+                                                                        class="w-full rounded-xl border-2 border-[#0047d6]/25 bg-white px-3 py-2.5 text-sm font-bold text-black focus:border-[#0047d6] focus:ring-2 focus:ring-[#0047d6]/30">
+                                                                    @foreach(\App\Models\User::daftarHari() as $kunciHari => $labelHari)
+                                                                        <option value="{{ $kunciHari }}">{{ $labelHari }}</option>
+                                                                    @endforeach
+                                                                </select>
+                                                            </div>
+                                                        </div>
+                                                        <p class="rounded-xl bg-[#0047d6]/5 px-3 py-2 text-xs font-medium text-[#5b616e]">Hari di luar rentang yang dipilih dilewati: tidak dibuatkan baris absensi dan tidak ditandai Alpha otomatis.</p>
                                                         <div class="flex justify-end gap-2 pt-2">
                                                             <button type="button" @click="tutupModal()" class="rounded-xl border-2 border-[#0047d6]/25 bg-white px-4 py-2 text-sm font-bold text-[#0047d6] hover:bg-[#0047d6]/5">Batal</button>
-                                                            <button type="submit" class="rounded-xl bg-[#0047d6] px-4 py-2 text-sm font-bold text-white hover:bg-[#0038aa]">Simpan Jam</button>
+                                                            <button type="submit" class="rounded-xl bg-[#0047d6] px-4 py-2 text-sm font-bold text-white hover:bg-[#0038aa]">Simpan Jam &amp; Hari</button>
                                                         </div>
                                                     </form>
                                                 </div>
@@ -478,8 +511,8 @@
             {{-- ===== FILTER ===== --}}
             <form method="GET" action="{{ route('guru.monitoring.absensi') }}" class="rounded-2xl border-2 border-[#0047d6]/15 bg-white p-5 flex flex-wrap gap-3 items-end shadow-sm">
                 <div class="flex-1 min-w-[220px]">
-                    <label class="block text-xs font-bold uppercase tracking-wide text-black mb-1">Cari (Nama / NISN)</label>
-                    <input type="text" name="q" value="{{ request('q') }}" placeholder="Ketik nama atau NISN siswa..."
+                    <label class="block text-xs font-bold uppercase tracking-wide text-black mb-1">Cari (Nama / NIS)</label>
+                    <input type="text" name="q" value="{{ request('q') }}" placeholder="Ketik nama atau NIS siswa..."
                            class="w-full rounded-xl border-2 border-[#0047d6]/25 bg-white px-4 py-2.5 text-sm font-medium text-black placeholder-[#a8acb3] focus:border-[#0047d6] focus:ring-2 focus:ring-[#0047d6]/30">
                 </div>
                 <div>
@@ -834,7 +867,7 @@
                 nisn: '',
                 siswa: null,
                 pesanError: '',
-                form: { jm: '', jp: '' },
+                form: { jm: '', jp: '', ha: 'senin', hk: 'jumat' },
                 list: Array.isArray(list) ? list : [],
                 urlTemplate: urlTemplate || '',
                 get actionUrl() {
@@ -853,7 +886,7 @@
                     const n = (this.nisn || '').trim();
                     if (!n) {
                         this.siswa = null;
-                        this.pesanError = 'Masukkan NISN terlebih dahulu.';
+                        this.pesanError = 'Masukkan NIS terlebih dahulu.';
                         return;
                     }
                     const found = this.list.find((x) => String(x.nisn) === n);
@@ -866,6 +899,9 @@
                     this.siswa = found;
                     this.form.jm = found.jm || '';
                     this.form.jp = found.jp || '';
+                    // Hari kerja yang berlaku sekarang menjadi nilai awal dropdown.
+                    this.form.ha = found.ha || 'senin';
+                    this.form.hk = found.hk || 'jumat';
                 },
             }));
         });

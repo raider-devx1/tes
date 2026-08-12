@@ -97,10 +97,10 @@
                     <div class="flex flex-col md:flex-row gap-3 md:items-end">
                         <div class="flex-1">
                             <label class="block text-xs font-bold uppercase tracking-wide text-black mb-1">
-                                Cari (Nama / NISN)
+                                Cari (Nama / NIS)
                             </label>
                             <input type="text" name="q" value="{{ request('q') }}"
-                                   placeholder="Ketik nama atau NISN siswa..."
+                                   placeholder="Ketik nama atau NIS siswa..."
                                    class="w-full rounded-xl border-2 border-[#0047d6]/25 bg-white px-4 py-2.5 text-sm font-medium text-black placeholder-[#a8acb3] focus:border-[#0047d6] focus:ring-2 focus:ring-[#0047d6]/30">
                         </div>
                         <div class="flex gap-2">
@@ -126,7 +126,7 @@
                                 <th class="px-4 py-3 text-center w-12 font-bold">No</th>
                                 <th class="px-4 py-3 font-bold w-28">Tanggal</th>
                                 <th class="px-4 py-3 font-bold w-36">Siswa</th>
-                                <th class="px-4 py-3 font-bold w-28">NISN</th>
+                                <th class="px-4 py-3 font-bold w-28">NIS</th>
                                 <th class="px-4 py-3 font-bold w-40">Pekerjaan/Projek</th>
                                 <th class="px-4 py-3 font-bold w-[20%]">Permasalahan</th>
                                 <th class="px-4 py-3 font-bold w-[20%]">Solusi Pemecahan</th>
@@ -422,7 +422,7 @@
                                                 <p class="text-sm font-bold text-black break-words">{{ $obs->user->name ?? '-' }}</p>
                                             </div>
                                             <div>
-                                                <p class="text-xs font-bold uppercase tracking-wide text-[#5b616e]">NISN</p>
+                                                <p class="text-xs font-bold uppercase tracking-wide text-[#5b616e]">NIS</p>
                                                 <p class="text-sm font-medium text-black">{{ $obs->user->nisn ?? '-' }}</p>
                                             </div>
                                             <div class="col-span-2">

@@ -875,14 +875,14 @@ public function absensi(Request $request)
     $siswaJam = User::siswa()->withoutTrashed()
         ->orderByRaw("CASE status_pkl WHEN 'aktif' THEN 1 WHEN 'belum' THEN 2 WHEN 'selesai' THEN 3 ELSE 4 END")
         ->orderBy('name')
-        ->get(['id', 'name', 'nisn', 'kelas', 'status_pkl', 'jam_masuk_industri', 'jam_pulang_industri', 'jam_masuk_usulan', 'jam_pulang_usulan', 'status_jam_usulan', 'catatan_jam_usulan', 'hari_kerja']);
+        ->get(['id', 'name', 'nisn', 'kelas', 'status_pkl', 'jam_masuk_industri', 'jam_pulang_industri', 'jam_masuk_usulan', 'jam_pulang_usulan', 'status_jam_usulan', 'catatan_jam_usulan', 'hari_kerja', 'hari_kerja_usulan']);
 
     // Pengajuan jam yang masih menunggu validasi admin.
     $usulanJam = $siswaJam->where('status_jam_usulan', 'diajukan')->values();
 
-    // Data JADWAL HARI KERJA per siswa untuk modal "Jadwal Absensi".
-    // Dipakai untuk mencocokkan NISN yang ditempel admin (boleh banyak sekaligus)
-    // dan menampilkan jadwal yang sedang berlaku bagi tiap siswa.
+    // Ringkasan JADWAL HARI KERJA per siswa. Pengaturannya kini menyatu pada
+    // modal "Cari & Edit Jam Kerja Siswa", jadi data ini hanya dipakai untuk
+    // menampilkan siapa saja yang memakai jadwal khusus.
     $siswaJadwal = $siswaJam->map(fn ($s) => [
         'nisn'       => (string) $s->nisn,
         'name'       => $s->name,
@@ -910,37 +910,65 @@ public function absensi(Request $request)
 }
 
 /**
- * Admin menyimpan / mengubah jam kerja industri seorang siswa secara langsung.
- * Jam yang disimpan langsung berlaku sebagai jam khusus (status disetujui).
+ * Admin menyimpan / mengubah JAM + HARI KERJA industri seorang siswa secara
+ * langsung dari modal "Cari & Edit Jam Kerja Siswa". Nilai yang disimpan
+ * langsung berlaku sebagai jadwal khusus siswa (status disetujui).
+ *
+ * Hari kerja dikirim sebagai dua dropdown: hari_awal & hari_akhir. Bila
+ * keduanya tidak dikirim, jadwal hari kerja siswa dibiarkan apa adanya.
  */
 public function updateJamAbsensi(Request $request, $siswa)
 {
     $siswa = User::where('id', $siswa)->siswa()->firstOrFail();
 
+    $pilihanHari = implode(',', array_keys(User::daftarHari()));
+
     $validated = $request->validate([
         'jam_masuk_industri'  => ['required', 'regex:/^\d{1,2}:\d{2}(:\d{2})?$/'],
         'jam_pulang_industri' => ['required', 'regex:/^\d{1,2}:\d{2}(:\d{2})?$/'],
+        'hari_awal'           => ['nullable', 'string', 'in:' . $pilihanHari],
+        'hari_akhir'          => ['nullable', 'string', 'in:' . $pilihanHari],
     ], [
         'jam_masuk_industri.required'  => 'Jam masuk wajib diisi.',
         'jam_pulang_industri.required' => 'Jam pulang wajib diisi.',
         'jam_masuk_industri.regex'     => 'Format jam masuk harus HH:MM.',
         'jam_pulang_industri.regex'    => 'Format jam pulang harus HH:MM.',
+        'hari_awal.in'                 => 'Pilihan hari awal tidak dikenali.',
+        'hari_akhir.in'                => 'Pilihan hari akhir tidak dikenali.',
     ]);
 
-    $siswa->update([
+    $hariKerja = User::gabungHariKerja(
+        $validated['hari_awal'] ?? null,
+        $validated['hari_akhir'] ?? null
+    );
+
+    $data = [
         'jam_masuk_industri'  => $this->normalizeJam($validated['jam_masuk_industri']),
         'jam_pulang_industri' => $this->normalizeJam($validated['jam_pulang_industri']),
         'status_jam_usulan'   => 'disetujui',
         'jam_masuk_usulan'    => null,
         'jam_pulang_usulan'   => null,
         'catatan_jam_usulan'  => null,
-    ]);
+    ];
 
-    return back()->with('success', "Jam kerja industri {$siswa->name} berhasil diperbarui.");
+    if ($hariKerja !== null) {
+        $data['hari_kerja']        = $hariKerja;
+        $data['hari_kerja_usulan'] = null;   // usulan siswa selesai ditangani
+    }
+
+    $siswa->update($data);
+
+    $this->lupakanCacheAbsensi([$siswa->id]);
+
+    return back()->with('success', "Jam kerja industri {$siswa->name} berhasil diperbarui."
+        . ($hariKerja !== null
+            ? ' Hari kerja: ' . User::labelJadwal($hariKerja) . ' (' . User::keteranganJadwal($hariKerja) . ').'
+            : ''));
 }
 
 /**
- * Admin menyetujui / menolak pengajuan jam kerja industri siswa.
+ * Admin menyetujui / menolak pengajuan JAM + HARI KERJA industri siswa.
+ * Satu pengajuan siswa memuat keduanya, jadi validasinya sekali jalan.
  */
 public function validasiJamAbsensi(Request $request, $siswa)
 {
@@ -953,10 +981,17 @@ public function validasiJamAbsensi(Request $request, $siswa)
             'jam_masuk_usulan'   => null,
             'jam_pulang_usulan'  => null,
             'catatan_jam_usulan' => null,
+            // Usulan HARI kerja ikut dibatalkan; jadwal lama tetap berlaku.
+            'hari_kerja_usulan'  => null,
         ]);
 
-        return back()->with('success', "Pengajuan jam {$siswa->name} ditolak. Siswa kembali memakai jam admin.");
+        return back()->with('success', "Pengajuan jam & hari kerja {$siswa->name} ditolak. Siswa kembali memakai jadwal sebelumnya.");
     }
+
+    // Hari kerja hanya ditimpa bila siswa memang mengusulkannya.
+    $hariUsulan = $siswa->punyaUsulanHariKerja()
+        ? (string) $siswa->hari_kerja_usulan
+        : null;
 
     $siswa->update([
         'jam_masuk_industri'  => $this->normalizeJam($siswa->jam_masuk_usulan),
@@ -965,9 +1000,16 @@ public function validasiJamAbsensi(Request $request, $siswa)
         'jam_masuk_usulan'    => null,
         'jam_pulang_usulan'   => null,
         'catatan_jam_usulan'  => null,
+        'hari_kerja'          => $hariUsulan ?? $siswa->hari_kerja,
+        'hari_kerja_usulan'   => null,
     ]);
 
-    return back()->with('success', "Pengajuan jam {$siswa->name} disetujui dan diterapkan.");
+    $this->lupakanCacheAbsensi([$siswa->id]);
+
+    return back()->with('success', "Pengajuan jam {$siswa->name} disetujui dan diterapkan."
+        . ($hariUsulan !== null
+            ? ' Hari kerja: ' . User::labelJadwal($hariUsulan) . ' (' . User::keteranganJadwal($hariUsulan) . ').'
+            : ''));
 }
 
 /** Normalisasi string jam ke format HH:MM:SS. */
@@ -995,26 +1037,39 @@ private function normalizeJam(?string $value): ?string
  */
 public function pengaturanAbsensi(Request $request)
 {
+    $pilihanHari = array_keys(User::daftarHari());
+
     $data = $request->validate([
         'absensi_jam_masuk'    => ['required', 'date_format:H:i'],
         'absensi_jam_pulang'   => ['required', 'date_format:H:i'],
         'absensi_durasi_menit' => ['required', 'integer', 'min:1', 'max:1440'],
-        // Jadwal hari kerja GLOBAL. Siswa yang jadwalnya berbeda tetap bisa
-        // diatur satu per satu lewat pencarian NISN (kolom users.hari_kerja).
-        'absensi_hari_kerja'   => ['nullable', Rule::in(User::daftarHariKerja())],
+        // Jadwal hari kerja GLOBAL: dipilih lewat dua dropdown (hari awal &
+        // hari akhir, Senin s.d. Minggu). Siswa yang jadwalnya berbeda tetap
+        // bisa diatur satu per satu pada modal "Cari & Edit Jam Kerja Siswa".
+        'absensi_hari_awal'    => ['nullable', 'string', Rule::in($pilihanHari)],
+        'absensi_hari_akhir'   => ['nullable', 'string', Rule::in($pilihanHari)],
+        // Kompatibilitas nilai gabungan lama, mis. "senin_jumat".
+        'absensi_hari_kerja'   => ['nullable', 'string', Rule::in(User::daftarHariKerja())],
     ], [
         'absensi_jam_masuk.required'    => 'Jam masuk wajib diisi.',
         'absensi_jam_masuk.date_format' => 'Format jam masuk harus HH:MM.',
         'absensi_jam_pulang.required'   => 'Jam pulang wajib diisi.',
         'absensi_jam_pulang.date_format'=> 'Format jam pulang harus HH:MM.',
         'absensi_durasi_menit.required' => 'Batas absensi (menit) wajib diisi.',
+        'absensi_hari_awal.in'          => 'Pilihan hari awal tidak dikenali.',
+        'absensi_hari_akhir.in'         => 'Pilihan hari akhir tidak dikenali.',
     ]);
 
     Pengaturan::simpan('absensi_jam_masuk', $data['absensi_jam_masuk']);
     Pengaturan::simpan('absensi_jam_pulang', $data['absensi_jam_pulang']);
     Pengaturan::simpan('absensi_durasi_menit', (string) $data['absensi_durasi_menit']);
 
-    $hariKerja = $data['absensi_hari_kerja'] ?? User::HARI_KERJA_SENIN_JUMAT;
+    // Prioritas: dua dropdown baru -> nilai gabungan lama -> jadwal yang aktif.
+    $hariKerja = User::gabungHariKerja(
+        $data['absensi_hari_awal'] ?? null,
+        $data['absensi_hari_akhir'] ?? null
+    ) ?? ($data['absensi_hari_kerja'] ?? null) ?? User::hariKerjaGlobal();
+
     Pengaturan::simpan('absensi_hari_kerja', $hariKerja);
     $this->lupakanCacheAbsensi();
 
@@ -1022,127 +1077,15 @@ public function pengaturanAbsensi(Request $request)
         . User::labelJadwal($hariKerja) . ' (' . User::keteranganJadwal($hariKerja) . ').');
 }
 
-/**
- * ATUR JADWAL HARI KERJA ABSENSI
- * -----------------------------------------------------------------------
- * Dua mode:
- *  - mode "semua" : mengubah jadwal GLOBAL sekolah, tersimpan pada tabel
- *                   `pengaturans` (kunci: absensi_hari_kerja).
- *  - mode "nisn"  : mengubah jadwal KHUSUS milik BEBERAPA siswa sekaligus
- *                   (kolom users.hari_kerja). NISN boleh ditempel banyak,
- *                   dipisah koma / titik koma / spasi / baris baru.
- *
- * Pilihan jadwal: senin_jumat, senin_sabtu, senin_minggu.
- * Khusus mode "nisn", nilai kosong berarti HAPUS jadwal khusus sehingga
- * siswa tersebut kembali mengikuti jadwal global.
- */
-public function jadwalAbsensi(Request $request)
-{
-    $data = $request->validate([
-        'mode'         => ['required', Rule::in(['semua', 'nisn'])],
-        'nisn'         => ['required_if:mode,nisn', 'nullable', 'string', 'max:5000'],
-        // '' hanya sah pada mode nisn (artinya: ikut jadwal global).
-        'hari_kerja'   => ['nullable', 'string', Rule::in(array_merge([''], User::daftarHariKerja()))],
-        'hapus_khusus' => ['nullable', 'boolean'],
-    ], [
-        'nisn.required_if' => 'NISN wajib diisi untuk mode per NISN.',
-        'hari_kerja.in'    => 'Pilihan jadwal hari kerja tidak dikenali.',
-    ]);
-
-    $jadwal = (string) ($data['hari_kerja'] ?? '');
-
-    // ================= MODE SELURUH SISWA (jadwal global) =================
-    if ($data['mode'] === 'semua') {
-        if ($jadwal === '') {
-            return back()->with('error', 'Pilih salah satu jadwal hari kerja terlebih dahulu.');
-        }
-
-        Pengaturan::simpan('absensi_hari_kerja', $jadwal);
-
-        $pesan = 'Jadwal absensi SELURUH siswa disetel ke ' . User::labelJadwal($jadwal)
-            . ' (' . User::keteranganJadwal($jadwal) . ').';
-
-        if ($request->boolean('hapus_khusus')) {
-            // Samakan semua siswa: jadwal khusus per orang dibuang.
-            $jumlah = User::siswa()->withoutTrashed()
-                ->whereNotNull('hari_kerja')
-                ->update(['hari_kerja' => null]);
-
-            $pesan .= ' ' . $jumlah . ' jadwal khusus per siswa ikut dihapus, jadi semua siswa memakai jadwal ini.';
-        } else {
-            $sisa = User::siswa()->withoutTrashed()->whereNotNull('hari_kerja')->count();
-
-            if ($sisa > 0) {
-                $pesan .= ' Catatan: ' . $sisa . ' siswa masih memakai jadwal khusus sendiri dan TIDAK terpengaruh.';
-            }
-        }
-
-        $this->lupakanCacheAbsensi();
-
-        return back()->with('success', $pesan);
-    }
-
-    // ============== MODE PER NISN (boleh banyak sekaligus) ===============
-    $daftarNisn = $this->pecahDaftar($data['nisn'] ?? '');
-
-    if (empty($daftarNisn)) {
-        return back()->with('error', 'Masukkan minimal satu NISN.');
-    }
-
-    if (count($daftarNisn) > 300) {
-        return back()->with('error', 'Terlalu banyak NISN sekaligus. Maksimal 300 NISN per proses.');
-    }
-
-    $sasaran = User::siswa()->withoutTrashed()
-        ->whereIn('nisn', $daftarNisn)
-        ->orderBy('name')
-        ->get();
-
-    $tidakDitemukan = array_values(array_diff(
-        $daftarNisn,
-        $sasaran->pluck('nisn')->map(fn ($n) => (string) $n)->all()
-    ));
-
-    if ($sasaran->isEmpty()) {
-        return back()->with('error', 'Tidak ada siswa yang cocok dengan NISN: '
-            . implode(', ', array_slice($daftarNisn, 0, 10))
-            . (count($daftarNisn) > 10 ? ' ...' : '') . '.');
-    }
-
-    // Kosong = hapus jadwal khusus (kembali ikut jadwal global).
-    $nilaiBaru = $jadwal === '' ? null : $jadwal;
-    $diubah    = 0;
-
-    foreach ($sasaran as $siswaSasaran) {
-        if ((string) ($siswaSasaran->hari_kerja ?? '') !== (string) ($nilaiBaru ?? '')) {
-            $siswaSasaran->hari_kerja = $nilaiBaru;
-            $siswaSasaran->save();
-            $diubah++;
-        }
-    }
-
-    $pesan = $nilaiBaru === null
-        ? 'Jadwal khusus dihapus untuk ' . $sasaran->count() . ' siswa; sekarang mengikuti jadwal global ('
-            . User::labelJadwal(User::hariKerjaGlobal()) . ').'
-        : 'Jadwal ' . User::labelJadwal($nilaiBaru) . ' (' . User::keteranganJadwal($nilaiBaru)
-            . ') disimpan untuk ' . $sasaran->count() . ' siswa: '
-            . $sasaran->take(8)->pluck('name')->implode(', ')
-            . ($sasaran->count() > 8 ? ', dan ' . ($sasaran->count() - 8) . ' lainnya' : '') . '.';
-
-    if ($diubah === 0) {
-        $pesan .= ' Tidak ada perubahan karena jadwalnya memang sudah sama.';
-    }
-
-    if (! empty($tidakDitemukan)) {
-        $pesan .= ' NISN tidak ditemukan: ' . implode(', ', array_slice($tidakDitemukan, 0, 15))
-            . (count($tidakDitemukan) > 15 ? ' ...' : '') . '.';
-    }
-
-    $this->lupakanCacheAbsensi($sasaran->pluck('id')->all());
-
-    return back()->with('success', $pesan);
-}
-
+/*
+|--------------------------------------------------------------------------
+| CATATAN: method jadwalAbsensi() DIHAPUS.
+|--------------------------------------------------------------------------
+| Pengaturan jadwal hari kerja kini menyatu pada:
+|  - Jadwal GLOBAL seluruh siswa  -> pengaturanAbsensi() (modal Pengaturan Absensi)
+|  - Jadwal per siswa             -> updateJamAbsensi() & validasiJamAbsensi()
+|    (modal "Cari & Edit Jam Kerja Siswa" dan validasi pengajuan siswa)
+*/
 /**
  * Bersihkan guard cache sinkronisasi Alpha agar jadwal yang baru langsung
  * berlaku, tanpa menunggu cache harian kedaluwarsa sendiri.

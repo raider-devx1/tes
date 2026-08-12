@@ -39,8 +39,7 @@
             fotoDitolak: {{ ($absensiDitolak ?? null) ? 'true' : 'false' }}
          })"
          x-init="mulai()"
-         x-on:keydown.escape.window="openAbsen=false; openJam=false; openGantiFoto=false"
-         x-effect="if (!openAbsen && !openGantiFoto && window.kameraAbsensiTutupSemua) window.kameraAbsensiTutupSemua()">
+         x-on:keydown.escape.window="openAbsen=false; openJam=false; openGantiFoto=false">
         <div class="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 2xl:px-12">
 
             <div class="mb-6">
@@ -143,7 +142,8 @@
                                 </div>
                             </div>
 
-                            <form method="POST" action="{{ route('siswa.absensi.ganti-foto', $absensiDitolak->id) }}" class="flex min-h-0 flex-1 flex-col">
+                            {{-- enctype WAJIB: foto dikirim sebagai berkas unggahan (bukan lagi data URL kamera) --}}
+                            <form method="POST" action="{{ route('siswa.absensi.ganti-foto', $absensiDitolak->id) }}" enctype="multipart/form-data" class="flex min-h-0 flex-1 flex-col">
                                 @csrf
 
                                 {{-- Isi yang bisa digulir --}}
@@ -156,7 +156,8 @@
                                     </div>
                                 @endif
 
-                                <x-kamera-absensi name="foto_kamera" label="Foto Pengganti (Kamera)" :wajib="true" />
+                                {{-- Unggah foto pengganti (maks 3 MB). Peringatan ketentuan foto ada di dalam komponen. --}}
+                                <x-upload-foto-absensi name="foto_bukti" label="Foto Pengganti (Unggah Foto)" :wajib="true" :maks-mb="3" />
 
                                 @if(!empty($batasGantiFoto))
                                     <p class="text-[11px] font-medium text-[#5b616e]">
@@ -202,17 +203,21 @@
                 </div>
             </div>
 
-            {{-- ===================== PENGATURAN JAM KERJA (USULAN KE GURU) ===================== --}}
+            {{-- ============== PENGATURAN JAM & HARI KERJA (USULAN KE GURU) ============== --}}
             <div class="mb-6 rounded-2xl border-2 border-[#0047d6]/15 bg-white p-4 sm:p-6 shadow-sm">
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                        <h3 class="text-lg font-bold tracking-tight text-black">Jam Kerja Industri</h3>
+                        <h3 class="text-lg font-bold tracking-tight text-black">Jam &amp; Hari Kerja Industri</h3>
                         <p class="text-xs font-medium text-[#5b616e] mt-0.5">
                             Jam dari admin: <span class="font-bold text-black">{{ substr($jamAdmin['masuk'],0,5) }} – {{ substr($jamAdmin['pulang'],0,5) }} WITA</span>.
-                            Bila tidak sesuai template industri Anda, ajukan jam khusus ke guru pembimbing.
+                            Bila jam atau hari kerja tidak sesuai template industri Anda, ajukan jam &amp; hari kerja khusus ke guru pembimbing.
                         </p>
                         <div class="mt-2 flex flex-wrap items-center gap-2 text-xs font-bold">
                             <span class="rounded-full bg-[#0047d6]/10 px-3 py-1 text-[#0047d6]">Jam berlaku: {{ substr($jamMasukEfektif,0,5) }} – {{ substr($jamPulangEfektif,0,5) }}</span>
+                            <span class="rounded-full bg-[#0047d6]/10 px-3 py-1 text-[#0047d6]">Hari kerja: {{ $siswa->labelHariKerja() }}</span>
+                            @if($siswa->pakaiHariKerjaKhusus())
+                                <span class="rounded-full bg-[#05b169]/15 px-3 py-1 text-[#05b169]">Hari kerja khusus disetujui</span>
+                            @endif
                             @if($statusUsulan === 'diajukan')
                                 <span class="rounded-full bg-[#d98200]/15 px-3 py-1 text-[#d98200]">Usulan menunggu validasi guru</span>
                             @elseif($statusUsulan === 'disetujui' && $pakaiKhusus)
@@ -223,6 +228,7 @@
                         </div>
                         @if($statusUsulan === 'diajukan')
                             <p class="mt-2 text-xs font-medium text-[#5b616e]">Diajukan: {{ substr($siswa->jam_masuk_usulan,0,5) }} – {{ substr($siswa->jam_pulang_usulan,0,5) }}
+                                · Hari: {{ $siswa->punyaUsulanHariKerja() ? $siswa->labelHariKerjaUsulan() : 'tidak diubah' }}
                                 @if($siswa->catatan_jam_usulan) · “{{ $siswa->catatan_jam_usulan }}” @endif</p>
                         @endif
                     </div>
@@ -230,12 +236,12 @@
                         <button type="button" @click="openJam=true"
                                 class="inline-flex items-center justify-center gap-1.5 rounded-xl border-2 border-[#0047d6]/25 bg-white px-5 py-3 text-sm font-bold text-[#0047d6] transition hover:bg-[#0047d6]/5">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                            Pengaturan Jam
+                            Pengaturan Jam &amp; Hari
                         </button>
                     </div>
                 </div>
 
-                {{-- MODAL: Ajukan Jam Khusus --}}
+                {{-- MODAL: Ajukan Jam & Hari Kerja Khusus (satu pengajuan) --}}
                 <template x-teleport="body">
                     {{-- Responsif: lembar bawah (bottom sheet) di HP, dialog tengah di laptop --}}
                     <div x-show="openJam" x-cloak class="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4" role="dialog" aria-modal="true">
@@ -245,7 +251,7 @@
                             <div class="flex-none border-b border-[#e6e9ef] px-4 pb-3 pt-3 sm:px-6 sm:pt-5">
                                 <div class="mx-auto mb-3 h-1.5 w-10 rounded-full bg-[#d7dbe3] sm:hidden"></div>
                                 <div class="flex items-start justify-between gap-3">
-                                    <h3 class="text-base font-bold text-black sm:text-lg">Ajukan Jam Kerja Industri</h3>
+                                    <h3 class="text-base font-bold text-black sm:text-lg">Ajukan Jam &amp; Hari Kerja Industri</h3>
                                     <button type="button" @click="openJam=false" aria-label="Tutup"
                                             class="-mr-1 flex h-8 w-8 flex-none items-center justify-center rounded-lg text-xl leading-none text-[#5b616e] transition hover:bg-black/5 hover:text-black">&times;</button>
                                 </div>
@@ -256,7 +262,15 @@
                                 @method('PUT')
 
                                 <div class="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain px-4 py-4 sm:px-6">
-                                <p class="text-xs font-medium text-[#5b616e]">Usulan dikirim ke guru pembimbing untuk divalidasi. Selama menunggu, Anda tetap memakai jam yang berlaku sekarang.</p>
+                                @php
+                                    // Pilihan dropdown hari: Senin s.d. Minggu.
+                                    // Nilai awal mengikuti usulan yang masih menunggu validasi;
+                                    // bila belum ada, memakai hari kerja yang sedang berlaku.
+                                    $pilihanHariUsulan = $daftarHari ?? \App\Models\User::daftarHari();
+                                    $hariAwalTerpilih   = $siswa->hariAwalUsulan()  ?? $siswa->hariAwalEfektif();
+                                    $hariAkhirTerpilih  = $siswa->hariAkhirUsulan() ?? $siswa->hariAkhirEfektif();
+                                @endphp
+                                <p class="text-xs font-medium text-[#5b616e]">Usulan jam <b>dan</b> hari kerja dikirim sekaligus ke guru pembimbing untuk divalidasi. Selama menunggu, Anda tetap memakai jam &amp; hari kerja yang berlaku sekarang.</p>
                                 <div class="grid grid-cols-2 gap-3">
                                     <div>
                                         <label class="block text-xs font-bold uppercase tracking-wide text-black mb-1">Jam Masuk</label>
@@ -267,6 +281,30 @@
                                         <x-jam-picker name="jam_pulang_usulan" :value="substr($siswa->jam_pulang_usulan ?? $jamPulangEfektif,0,5)" required />
                                     </div>
                                 </div>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label class="block text-xs font-bold uppercase tracking-wide text-black mb-1">Hari Awal</label>
+                                        <select name="hari_awal_usulan" required
+                                                class="w-full rounded-xl border-2 border-[#0047d6]/25 bg-white px-3 py-2.5 text-sm font-bold text-black focus:border-[#0047d6] focus:ring-2 focus:ring-[#0047d6]/30">
+                                            @foreach($pilihanHariUsulan as $kunciHari => $labelHari)
+                                                <option value="{{ $kunciHari }}" @selected($hariAwalTerpilih === $kunciHari)>{{ $labelHari }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-bold uppercase tracking-wide text-black mb-1">Hari Akhir</label>
+                                        <select name="hari_akhir_usulan" required
+                                                class="w-full rounded-xl border-2 border-[#0047d6]/25 bg-white px-3 py-2.5 text-sm font-bold text-black focus:border-[#0047d6] focus:ring-2 focus:ring-[#0047d6]/30">
+                                            @foreach($pilihanHariUsulan as $kunciHari => $labelHari)
+                                                <option value="{{ $kunciHari }}" @selected($hariAkhirTerpilih === $kunciHari)>{{ $labelHari }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                </div>
+                                <p class="rounded-xl bg-[#0047d6]/5 px-3 py-2 text-xs font-medium text-[#5b616e]">
+                                    Hari kerja berlaku sekarang: <span class="font-bold text-black">{{ $siswa->labelHariKerja() }}</span>.
+                                    Hari di luar rentang yang Anda pilih akan dilewati — tidak perlu absen dan tidak dihitung Alpha.
+                                </p>
                                 <div>
                                     <label class="block text-xs font-bold uppercase tracking-wide text-black mb-1">Catatan (opsional)</label>
                                     <textarea name="catatan_jam_usulan" rows="2" placeholder="Contoh: jam kerja industri 07:30 - 15:30"
@@ -277,7 +315,7 @@
                                 <div class="flex-none border-t border-[#e6e9ef] bg-white px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:px-6 sm:pb-3">
                                     <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
                                         <button type="button" @click="openJam=false" class="w-full rounded-xl border-2 border-[#0047d6]/25 bg-white px-4 py-3 text-sm font-bold text-[#0047d6] transition hover:bg-[#0047d6]/5 sm:w-auto sm:py-2">Batal</button>
-                                        <button type="submit" class="w-full rounded-xl bg-[#0047d6] px-4 py-3 text-sm font-bold text-white transition hover:bg-[#0038aa] sm:w-auto sm:py-2">Ajukan ke Guru</button>
+                                        <button type="submit" class="w-full rounded-xl bg-[#0047d6] px-4 py-3 text-sm font-bold text-white transition hover:bg-[#0038aa] sm:w-auto sm:py-2">Ajukan Jam &amp; Hari ke Guru</button>
                                     </div>
                                 </div>
                             </form>
@@ -376,7 +414,8 @@
                                 </div>
                             </div>
 
-                            <form method="POST" action="{{ route('siswa.absensi.store') }}" class="flex min-h-0 flex-1 flex-col"
+                            {{-- enctype WAJIB: foto dikirim sebagai berkas unggahan (bukan lagi data URL kamera) --}}
+                            <form method="POST" action="{{ route('siswa.absensi.store') }}" enctype="multipart/form-data" class="flex min-h-0 flex-1 flex-col"
                                   @submit="if (!terbuka) { $event.preventDefault(); window.swalPeringatan('Halaman absensi sudah tertutup.'); }">
                                 @csrf
 
@@ -398,15 +437,15 @@
                                     </div>
                                 </template>
 
-                                {{-- ===== AMBIL FOTO LANGSUNG DARI KAMERA ===== --}}
-                                {{-- Fitur upload berkas sudah dihapus. Foto hanya boleh diambil
-                                     langsung lewat kamera dan otomatis dikompres. --}}
+                                {{-- ===== UNGGAH FOTO BUKTI KEHADIRAN (MAKS 3 MB) ===== --}}
+                                {{-- Kamera langsung sudah diganti dengan unggah foto dari perangkat.
+                                     Peringatan ketentuan foto TETAP ditampilkan di dalam komponen. --}}
                                 @if(($absensiHariIni && $absensiHariIni->foto_bukti))
                                     <div class="rounded-xl border-2 border-[#05b169]/25 bg-[#05b169]/5 px-3 py-2.5 text-xs font-medium text-[#5b616e]">
-                                        Foto absen masuk Anda hari ini sudah tersimpan, jadi tidak perlu mengambil foto lagi.
+                                        Foto absen masuk Anda hari ini sudah tersimpan, jadi tidak perlu mengunggah foto lagi.
                                     </div>
                                 @else
-                                    <x-kamera-absensi name="foto_kamera" label="Foto Bukti Kehadiran (Kamera)" :wajib="true" />
+                                    <x-upload-foto-absensi name="foto_bukti" label="Foto Bukti Kehadiran (Unggah Foto)" :wajib="true" :maks-mb="3" />
                                 @endif
 
                                 <div>

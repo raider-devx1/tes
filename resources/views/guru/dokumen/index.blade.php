@@ -80,7 +80,7 @@
             <form method="GET" action="{{ route('guru.dokumen.index') }}" class="rounded-2xl border-2 border-[#0047d6]/15 bg-white p-5 flex flex-wrap gap-3 items-end shadow-sm">
                 <div class="flex-1 min-w-[200px]">
                     <label class="block text-xs font-bold uppercase tracking-wide text-black mb-1">Cari Murid</label>
-                    <input type="text" name="q" value="{{ request('q') }}" placeholder="Nama / NISN"
+                    <input type="text" name="q" value="{{ request('q') }}" placeholder="Nama / NIS"
                            class="w-full rounded-xl border-2 border-[#0047d6]/25 bg-white px-4 py-2.5 text-sm font-medium text-black placeholder-[#a8acb3] focus:border-[#0047d6] focus:ring-2 focus:ring-[#0047d6]/30">
                 </div>
                 <div>
@@ -109,7 +109,7 @@
                             <tr class="bg-[#0047d6] text-xs uppercase tracking-wide text-white">
                                 <th class="px-4 py-3 text-center w-12 font-bold">No</th>
                                 <th class="px-4 py-3 font-bold">Nama</th>
-                                <th class="px-4 py-3 font-bold w-28">NISN</th>
+                                <th class="px-4 py-3 font-bold w-28">NIS</th>
                                 <th class="px-4 py-3 font-bold w-28">Kelas</th>
                                 <th class="px-4 py-3 text-center font-bold w-32">Status</th>
                                 <th class="px-4 py-3 font-bold">Dokumen</th>
@@ -227,7 +227,7 @@
                                             <p class="text-sm font-bold text-black">{{ $s->name ?? '-' }}</p>
                                         </div>
                                         <div>
-                                            <p class="text-xs font-bold uppercase tracking-wide text-[#5b616e]">NISN</p>
+                                            <p class="text-xs font-bold uppercase tracking-wide text-[#5b616e]">NIS</p>
                                             <p class="text-sm font-medium text-black">{{ $s->nisn ?? '-' }}</p>
                                         </div>
                                         <div>

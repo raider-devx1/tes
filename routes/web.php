@@ -175,8 +175,9 @@ Route::delete('/monitoring/catatan/{catatan}', [MonitoringController::class, 'de
 
 Route::get('/monitoring/absensi', [MonitoringController::class, 'absensi'])->name('monitoring.absensi');
 Route::post('/monitoring/absensi/pengaturan', [MonitoringController::class, 'pengaturanAbsensi'])->name('monitoring.absensi.pengaturan');
-// Atur JADWAL hari kerja absensi: seluruh siswa (global) atau beberapa NISN sekaligus.
-Route::post('/monitoring/absensi/jadwal', [MonitoringController::class, 'jadwalAbsensi'])->name('monitoring.absensi.jadwal');
+// Catatan: pengaturan JADWAL HARI KERJA sekarang menyatu pada modal
+// "Cari & Edit Jam Kerja Siswa" (per siswa) dan modal Pengaturan Absensi
+// (global), sehingga route/modal "Jadwal Absensi" yang lama dihapus.
 Route::post('/monitoring/absensi/buka', [MonitoringController::class, 'bukaAbsensi'])->name('monitoring.absensi.buka');
 Route::post('/monitoring/absensi', [MonitoringController::class, 'storeAbsensi'])->name('monitoring.absensi.store');
 // Atur JUMLAH Hadir/Izin/Sakit/Alpha (per NISN atau semua siswa) dalam satu rentang tanggal.
