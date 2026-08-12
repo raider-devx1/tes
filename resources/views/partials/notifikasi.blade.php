@@ -106,10 +106,35 @@
 
             /* ============== GURU PEMBIMBING ============== */
             if ($me->role === 'guru_pembimbing') {
-                $siswaAktifIds = User::where('role', 'siswa_pkl')
+                /* ---------- DAFTAR SISWA BIMBINGAN YANG DIHITUNG ----------
+                 | Penyaring utama: status_pkl = 'aktif'. Begitu admin menutup
+                 | angkatan lama lewat Admin > Periode PKL (ubah status siswa
+                 | menjadi "selesai"), siswa tersebut langsung berhenti dihitung
+                 | dan digantikan siswa angkatan baru yang berstatus aktif.
+                 |
+                 | PENGAMAN ANGKATAN: scope berjalan() milik model User, yaitu
+                 | withoutTrashed() + periode(KonteksPeriode::id()). Gunanya bila
+                 | admin LUPA menutup angkatan lama -- siswa yang periode_id-nya
+                 | bukan periode berjalan tetap tidak ikut dihitung, sehingga
+                 | notifikasi guru tidak dipenuhi sisa pekerjaan angkatan yang
+                 | sudah lulus.
+                 |
+                 | JARING PENGAMAN: bila penyaringan angkatan menghasilkan daftar
+                 | KOSONG padahal guru sebenarnya punya siswa aktif (lazim pada
+                 | data lama yang kolom periode_id-nya masih kosong, atau bila
+                 | belum ada periode yang ditandai aktif), daftar tanpa penyaring
+                 | angkatan dipakai kembali. Dengan begitu notifikasi tidak pernah
+                 | hilang diam-diam hanya karena data belum berperiode.
+                 */
+                $siswaAktifQuery = User::where('role', 'siswa_pkl')
                     ->where('guru_id', $me->id)
-                    ->where('status_pkl', 'aktif')
-                    ->pluck('id');
+                    ->where('status_pkl', 'aktif');
+
+                $siswaAktifIds = (clone $siswaAktifQuery)->berjalan()->pluck('id');
+
+                if ($siswaAktifIds->isEmpty()) {
+                    $siswaAktifIds = $siswaAktifQuery->pluck('id');
+                }
 
                 /* ---------- 1. OBSERVASI: CUKUP SEKALI PER PERIODE PKL ----------
                  | Dulu penyaringnya per BULAN (whereMonth + whereYear), sehingga tiap
@@ -160,11 +185,19 @@
                  | Query dilewati bila guru belum punya siswa bimbingan aktif.
                  */
                 if ($siswaAktifIds->isNotEmpty()) {
-                    /* Dihitung untuk SELURUH periode berjalan, bukan hanya hari
-                     | ini, supaya notifikasi tidak lenyap saat berganti hari
-                     | padahal gurunya belum memvalidasi apa pun. */
+                    /* ABSENSI menunggu validasi.
+                     |
+                     | Tidak dibatasi "hari ini" supaya notifikasi tidak lenyap
+                     | saat berganti hari padahal gurunya belum memvalidasi.
+                     |
+                     | Sengaja TANPA scope periodeBerjalan(): halaman Monitoring
+                     | Absensi guru juga tidak menyaring periode, dan baris lama
+                     | yang kolom periode_id-nya masih kosong akan ikut tersaring
+                     | habis bila scope itu dipakai -- akibatnya notifikasi bisa
+                     | hilang diam-diam walau daftar validasinya masih berisi.
+                     | Penyaring siswa bimbingan aktif di atas sudah cukup.
+                     */
                     $absensiPending = Absensi::whereIn('siswa_id', $siswaAktifIds)
-                        ->periodeBerjalan()
                         ->where('status_validasi', 'diajukan');
 
                     $absensiMenunggu = (clone $absensiPending)->count();
@@ -189,8 +222,15 @@
                         ];
                     }
 
+                    /* JURNAL menunggu validasi.
+                     |
+                     | Status jurnal: draft -> diajukan -> disetujui. Yang butuh
+                     | tindakan guru hanyalah 'diajukan'. Angka di bawah dibuat
+                     | sama persis dengan kartu "Diajukan" pada halaman
+                     | Monitoring & Validasi Jurnal Murid, sehingga notifikasi
+                     | dan halaman validasi tidak pernah berbeda angka.
+                     */
                     $jurnalPending = Jurnal::whereIn('siswa_id', $siswaAktifIds)
-                        ->periodeBerjalan()
                         ->where('status', 'diajukan');
 
                     $jurnalMenunggu = (clone $jurnalPending)->count();
